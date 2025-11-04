@@ -105,18 +105,15 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.href} className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === item.href}
-                      className="rounded-full"
-                    >
-                      <Link href={item.href}>
-                        <div className="flex items-center gap-3">
+                    <Link href={item.href}>
+                      <SidebarMenuButton
+                        isActive={pathname === item.href}
+                        className="rounded-full"
+                      >
                           <item.icon />
                           <span className="flex-1 truncate">{item.label}</span>
-                        </div>
-                      </Link>
-                    </SidebarMenuButton>
+                      </SidebarMenuButton>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">
                     {item.label}
@@ -134,14 +131,12 @@ export function AppSidebar() {
                <SidebarMenuItem key={item.href} className="relative">
                  <Tooltip>
                    <TooltipTrigger asChild>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} className="rounded-full">
-                      <Link href={item.href}>
-                        <div className="flex items-center gap-3">
-                          <item.icon />
-                          <span className="flex-1 truncate">{item.label}</span>
-                        </div>
+                     <Link href={item.href}>
+                        <SidebarMenuButton isActive={pathname === item.href} className="rounded-full">
+                            <item.icon />
+                            <span className="flex-1 truncate">{item.label}</span>
+                        </SidebarMenuButton>
                       </Link>
-                    </SidebarMenuButton>
                    </TooltipTrigger>
                    <TooltipContent side="right" align="center">{item.label}</TooltipContent>
                  </Tooltip>
@@ -152,14 +147,12 @@ export function AppSidebar() {
           <SidebarSeparator />
           <Tooltip>
             <TooltipTrigger asChild>
-                <SidebarMenuButton asChild size="lg" className="justify-start">
-                    <Link href="/login">
-                      <div className="flex items-center gap-3">
-                        <LogOut />
-                        <span className="flex-1 truncate">Logout</span>
-                      </div>
-                    </Link>
-                </SidebarMenuButton>
+                <Link href="/login">
+                  <SidebarMenuButton size="lg" className="justify-start">
+                      <LogOut />
+                      <span className="flex-1 truncate">Logout</span>
+                  </SidebarMenuButton>
+                </Link>
             </TooltipTrigger>
             <TooltipContent side="right" align="center">Logout</TooltipContent>
           </Tooltip>
