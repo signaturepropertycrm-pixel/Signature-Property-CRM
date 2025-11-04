@@ -4,32 +4,32 @@
 
 @layer base {
   :root {
-    --background: 220 60% 97%; /* Lighter, cooler gray */
-    --foreground: 224 39% 16%;
-    --card: 220 30% 100% / 0.8; /* Glassmorphism card */
-    --card-foreground: 224 39% 16%;
+    --background: 220 40% 97%;
+    --foreground: 224 39% 10%;
+    --card: 220 30% 100% / 0.8;
+    --card-foreground: 224 39% 10%;
     --popover: 220 30% 100% / 0.8;
-    --popover-foreground: 224 39% 16%;
-    --primary: 240 50% 65%; /* Softer violet-blue */
-    --primary-foreground: 50 0% 100%;
+    --popover-foreground: 224 39% 10%;
+    --primary: 221 44% 28%; /* Deep Blue */
+    --primary-foreground: 0 0% 100%;
     --secondary: 220 20% 92%;
     --secondary-foreground: 224 39% 16%;
     --muted: 220 20% 94%;
     --muted-foreground: 220 10% 45%;
-    --accent: 250 80% 98%; /* Light lavender for hover */
-    --accent-foreground: 240 50% 55%;
+    --accent: 45 100% 67%; /* Warm Yellow */
+    --accent-foreground: 221 44% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 20% 88% / 0.5; /* Semi-transparent border */
+    --border: 220 20% 88% / 0.5;
     --input: 220 20% 92% / 0.7;
-    --ring: 240 50% 70%;
-    --radius: 1rem; /* rounded-2xl equivalent for many components */
+    --ring: 221 44% 40%;
+    --radius: 1rem;
 
-    --chart-1: 240 50% 65%;
-    --chart-2: 260 60% 70%;
-    --chart-3: 280 70% 75%;
-    --chart-4: 300 80% 80%;
-    --chart-5: 320 90% 85%;
+    --chart-1: 221 44% 28%;
+    --chart-2: 221 44% 40%;
+    --chart-3: 221 44% 50%;
+    --chart-4: 221 44% 60%;
+    --chart-5: 221 44% 70%;
   }
 
   .dark {
@@ -39,19 +39,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 224 30% 15% / 0.8;
     --popover-foreground: 210 40% 98%;
-    --primary: 240 50% 65%;
-    --primary-foreground: 50 0% 100%;
+    --primary: 221 44% 50%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 25%;
     --secondary-foreground: 210 40% 98%;
     --muted: 220 15% 25%;
     --muted-foreground: 210 20% 65%;
-    --accent: 240 20% 20% / 0.5;
-    --accent-foreground: 240 50% 75%;
+    --accent: 45 100% 67%;
+    --accent-foreground: 221 44% 15%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 15% 30% / 0.5;
     --input: 220 15% 25% / 0.7;
-    --ring: 240 50% 70%;
+    --ring: 221 44% 60%;
   }
 }
 
@@ -61,7 +61,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: linear-gradient(120deg, hsl(240, 80%, 97%), hsl(280, 80%, 97%));
+    background-image: linear-gradient(120deg, hsl(220, 50%, 95%), hsl(221, 50%, 98%));
     min-height: 100vh;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
@@ -69,7 +69,7 @@
   }
 
   .dark body {
-    background-image: linear-gradient(120deg, hsl(240, 20%, 15%), hsl(280, 20%, 15%));
+    background-image: linear-gradient(120deg, hsl(220, 25%, 10%), hsl(221, 25%, 15%));
   }
 }
 
@@ -83,7 +83,7 @@
   }
   
   .glowing-btn {
-    @apply bg-gradient-to-r from-primary to-purple-500 text-white font-bold relative overflow-hidden;
+    @apply bg-gradient-to-r from-primary to-blue-500 text-white font-bold relative overflow-hidden;
   }
 
   .glowing-btn::before {
