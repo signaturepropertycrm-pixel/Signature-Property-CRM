@@ -403,25 +403,6 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : "button"
     const { state } = useSidebar();
     
-    // This is the problematic part. When `asChild` is true, the children are expected to be a single React element.
-    // If multiple children are passed, `Slot` will throw an error.
-    // We check if children is an array and only take the first element (the icon) when collapsed.
-    // A better approach would be to ensure the parent always passes a single child.
-    const renderableChildren =
-      state === 'collapsed' && Array.isArray(children) ? children[0] : children;
-
-    // A better fix is to wrap the children in a single element if they are multiple.
-    const finalChildren =
-      state === 'expanded' && Array.isArray(children) ? (
-        <div className="flex w-full items-center gap-3">
-          {children[0]}
-          <span className="flex-1 truncate">{children[1]}</span>
-        </div>
-      ) : (
-        children
-      );
-
-
     return (
         <Comp
             ref={ref}
@@ -431,7 +412,7 @@ const SidebarMenuButton = React.forwardRef<
             className={cn(sidebarMenuButtonVariants({ size }), className)}
             {...props}
         >
-            {finalChildren}
+          {children}
         </Comp>
     )
   }
