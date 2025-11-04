@@ -18,6 +18,9 @@ import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 
 const adminAvatar = PlaceHolderImages.find(img => img.id === 'avatar-admin');
+const userName = "Demo Admin";
+const firstName = userName.split(' ')[0];
+
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -27,12 +30,12 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
       <SidebarTrigger className="md:hidden" />
       
-      <div className="hidden md:flex items-center gap-2">
-        <h1 className="text-xl font-bold text-foreground font-headline">Hello, Demo Admin</h1>
+      <div className="flex-1">
+        <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
         <p className="text-muted-foreground text-sm">Welcome back!</p>
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <div className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search..." className="w-full md:w-64 pl-10 rounded-full bg-input/80" />
@@ -51,9 +54,9 @@ export function AppHeader() {
             <Button variant="ghost" className="flex items-center gap-2 rounded-full p-1 h-auto">
               <Avatar className="h-9 w-9 border-2 border-primary/50">
                 {adminAvatar && <AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
-                <AvatarFallback>DA</AvatarFallback>
+                <AvatarFallback>{userName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline font-semibold">Demo Admin</span>
+              <span className="hidden sm:inline font-semibold">{userName}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
