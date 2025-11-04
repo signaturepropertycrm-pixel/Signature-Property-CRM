@@ -108,8 +108,10 @@ export function AppSidebar() {
                       className="rounded-full"
                     >
                       <Link href={item.href}>
-                        <item.icon />
-                        <span className="flex-1 truncate">{item.label}</span>
+                        <>
+                          <item.icon />
+                          <span className="flex-1 truncate">{item.label}</span>
+                        </>
                       </Link>
                     </SidebarMenuButton>
                   </TooltipTrigger>
@@ -131,8 +133,10 @@ export function AppSidebar() {
                    <TooltipTrigger asChild>
                     <SidebarMenuButton asChild isActive={pathname === item.href} className="rounded-full">
                       <Link href={item.href}>
-                        <item.icon />
-                        <span className="flex-1 truncate">{item.label}</span>
+                        <>
+                          <item.icon />
+                          <span className="flex-1 truncate">{item.label}</span>
+                        </>
                       </Link>
                     </SidebarMenuButton>
                    </TooltipTrigger>
@@ -147,8 +151,10 @@ export function AppSidebar() {
             <TooltipTrigger asChild>
                 <SidebarMenuButton asChild size="lg" className="justify-start">
                     <Link href="/login">
+                      <>
                         <LogOut />
                         <span className="flex-1 truncate">Logout</span>
+                      </>
                     </Link>
                 </SidebarMenuButton>
             </TooltipTrigger>
