@@ -1,3 +1,4 @@
+
 export type UserRole = 'Admin' | 'Agent' | 'Viewer';
 
 export type User = {
@@ -51,3 +52,41 @@ export type Property = {
     other?: string;
   }
 };
+
+export type BuyerStatus = 'New' | 'Contacted' | 'Interested' | 'Not Interested' | 'Closed';
+
+export type Buyer = {
+    id: string;
+    serial_no: string;
+    name: string;
+    phone: string;
+    email?: string;
+    status: BuyerStatus;
+    area_preference?: string;
+    property_type_preference?: string;
+};
+
+export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
+
+export type FollowUp = {
+    id: string;
+    buyerId: string;
+    buyerName: string;
+    propertyInterest: string;
+    lastContactDate: string;
+    nextReminder: string;
+    status: FollowUpStatus;
+    notes: string;
+};
+
+export type AppointmentStatus = 'Scheduled' | 'Completed' | 'Cancelled';
+
+export type Appointment = {
+    id: string;
+    buyerName: string;
+    agentName: string;
+    date: string;
+    time: string;
+    propertyAddress: string;
+    status: AppointmentStatus;
+}

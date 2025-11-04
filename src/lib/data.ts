@@ -1,4 +1,5 @@
-import type { Property } from './types';
+
+import type { Property, User, Buyer, FollowUp, Appointment } from './types';
 
 export const properties: Property[] = [
   {
@@ -91,4 +92,142 @@ export const properties: Property[] = [
     created_at: '2024-05-21T16:00:00Z',
     created_by: 'user_2',
   },
+];
+
+
+export const buyers: Buyer[] = [
+    {
+        id: '1',
+        serial_no: 'B-820',
+        name: 'Ahmed Hassan',
+        phone: '+92 301 2345678',
+        email: 'ahmed.hassan@example.com',
+        area_preference: 'DHA, Gulberg',
+        property_type_preference: 'House, Plot',
+        status: 'Interested',
+    },
+    {
+        id: '2',
+        serial_no: 'B-821',
+        name: 'Sana Iqbal',
+        phone: '+92 322 8765432',
+        email: 'sana.iqbal@example.com',
+        area_preference: 'Bahria Town',
+        property_type_preference: 'Flat',
+        status: 'Contacted',
+    },
+    {
+        id: '3',
+        serial_no: 'B-822',
+        name: 'Faisal Khan',
+        phone: '+92 333 1122334',
+        email: 'faisal.khan@example.com',
+        area_preference: 'Johar Town',
+        property_type_preference: 'Commercial',
+        status: 'New',
+    },
+     {
+        id: '4',
+        serial_no: 'B-823',
+        name: 'Ayesha Malik',
+        phone: '+92 315 4455667',
+        email: 'ayesha.malik@example.com',
+        area_preference: 'Harbanspura',
+        property_type_preference: 'House',
+        status: 'Not Interested',
+    }
+];
+
+export const teamMembers: User[] = [
+    {
+        id: '1',
+        name: 'Demo Admin',
+        email: 'admin@signaturecrm.test',
+        role: 'Admin',
+        avatar: '', // will be replaced by placeholder
+    },
+    {
+        id: '2',
+        name: 'Ali Khan',
+        email: 'ali.khan@signaturecrm.test',
+        role: 'Agent',
+        avatar: '',
+    },
+    {
+        id: '3',
+        name: 'Fatima Ahmed',
+        email: 'fatima.ahmed@signaturecrm.test',
+        role: 'Agent',
+        avatar: '',
+    },
+    {
+        id: '4',
+        name: 'Sana Javed',
+        email: 'sana.javed@signaturecrm.test',
+        role: 'Viewer',
+        avatar: '',
+    }
+];
+
+export const followUps: FollowUp[] = [
+    {
+        id: '1',
+        buyerId: '2',
+        buyerName: 'Sana Iqbal',
+        propertyInterest: 'P-1252: 2 Bedroom Flat in Gulberg',
+        lastContactDate: '2024-05-20T10:00:00Z',
+        nextReminder: '2024-05-25T10:00:00Z',
+        status: 'Scheduled',
+        notes: 'Client asked for more pictures and a video tour. Sent them via WhatsApp. Will follow up on Saturday.'
+    },
+    {
+        id: '2',
+        buyerId: '1',
+        buyerName: 'Ahmed Hassan',
+        propertyInterest: 'P-1251: 10 Marla Plot in DHA Phase 6',
+        lastContactDate: '2024-05-22T15:00:00Z',
+        nextReminder: '2024-05-24T15:00:00Z',
+        status: 'Due Soon',
+        notes: 'Negotiating on price. Client is firm on 2.4 Crore. Need to discuss with the owner.'
+    },
+    {
+        id: '3',
+        buyerId: '4',
+        buyerName: 'Ayesha Malik',
+        propertyInterest: 'P-1250: 5 Marla House in Harbanspura',
+        lastContactDate: '2024-05-19T12:00:00Z',
+        nextReminder: '2024-05-22T12:00:00Z',
+        status: 'Completed',
+        notes: 'Followed up. Client is no longer interested as they found another property. Marked as Not Interested.'
+    }
+];
+
+export const appointments: Appointment[] = [
+    {
+        id: '1',
+        buyerName: 'Ahmed Hassan',
+        agentName: 'Ali Khan',
+        date: '2024-05-26T00:00:00.000Z',
+        time: '11:00 AM',
+        propertyAddress: 'Plot 45, Sector D, DHA Phase 6, Lahore',
+        status: 'Scheduled'
+    },
+    {
+        id: '2',
+        buyerName: 'Sana Iqbal',
+        agentName: 'Fatima Ahmed',
+        date: '2024-05-25T00:00:00.000Z',
+        time: '2:30 PM',
+        propertyAddress: 'Apt 5A, Paradise Heights, Gulberg III, Lahore',
+        status: 'Scheduled'
+    },
+    {
+        id: '3',
+        buyerName: 'Faisal Khan',
+        agentName: 'Ali Khan',
+        date: '2024-05-22T00:00:00.000Z',
+        time: '4:00 PM',
+        propertyAddress: 'Commercial Plot 8, Block G, Johar Town, Lahore',
+        status: 'Completed'
+    }
 ];
