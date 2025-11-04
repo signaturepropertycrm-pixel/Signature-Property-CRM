@@ -309,7 +309,7 @@ export default function PropertiesPage() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="font-mono">{prop.serial_no}</Badge>
+                        <Badge variant="default" className="font-mono">{prop.serial_no}</Badge>
                         <span className="truncate max-w-48">{prop.address}</span>
                       </div>
                     </TableCell>
@@ -321,7 +321,10 @@ export default function PropertiesPage() {
                       {formatDemand(prop.demand_amount, prop.demand_unit)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant[prop.status]} className="capitalize">
+                      <Badge 
+                        variant={statusVariant[prop.status]}
+                        className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                      >
                         {prop.status}
                       </Badge>
                     </TableCell>
@@ -392,3 +395,5 @@ export default function PropertiesPage() {
     </TooltipProvider>
   );
 }
+
+    
