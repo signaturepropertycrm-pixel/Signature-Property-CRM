@@ -30,15 +30,28 @@ import {
   Search,
   PlusCircle,
 } from 'lucide-react';
-import { properties } from '@/lib/data';
+import { properties as allProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property } from '@/lib/types';
-import { useState } from 'react';
+import type { Property, PropertyType, SizeUnit } from '@/lib/types';
+import { useState, useMemo } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -55,6 +68,15 @@ const statusVariant = {
   'Off-Market': 'outline',
 } as const;
 
+interface Filters {
+  area: string;
+  propertyType: PropertyType | 'All';
+  minSize: string;
+  maxSize: string;
+  minDemand: string;
+  maxDemand: string;
+}
+
 export default function PropertiesPage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
@@ -63,6 +85,76 @@ export default function PropertiesPage() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Filters>({
+    area: '',
+    propertyType: 'All',
+    minSize: '',
+    maxSize: '',
+    minDemand: '',
+    maxDemand: '',
+  });
+  const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+
+  const handleFilterChange = (
+    key: keyof Filters,
+    value: string | PropertyType
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      area: '',
+      propertyType: 'All',
+      minSize: '',
+      maxSize: '',
+      minDemand: '',
+      maxDemand: '',
+    });
+    setIsFilterPopoverOpen(false);
+  };
+  
+  const properties = useMemo(() => {
+    let filteredProperties = allProperties;
+
+    // Search query filter
+    if (searchQuery) {
+        const lowercasedQuery = searchQuery.toLowerCase();
+        filteredProperties = filteredProperties.filter(prop => 
+            prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
+            prop.address.toLowerCase().includes(lowercasedQuery) ||
+            prop.area.toLowerCase().includes(lowercasedQuery) ||
+            prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
+            String(prop.size_value).toLowerCase().includes(lowercasedQuery) ||
+            String(prop.demand_amount).toLowerCase().includes(lowercasedQuery)
+        );
+    }
+    
+    // Advanced filters
+    if (filters.area) {
+        filteredProperties = filteredProperties.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
+    }
+    if (filters.propertyType !== 'All') {
+        filteredProperties = filteredProperties.filter(p => p.property_type === filters.propertyType);
+    }
+    if (filters.minSize) {
+        filteredProperties = filteredProperties.filter(p => p.size_value >= Number(filters.minSize));
+    }
+    if (filters.maxSize) {
+        filteredProperties = filteredProperties.filter(p => p.size_value <= Number(filters.maxSize));
+    }
+    // Note: This demand filter is simplified and doesn't account for units (Lacs vs Crore)
+    if (filters.minDemand) {
+        filteredProperties = filteredProperties.filter(p => p.demand_amount >= Number(filters.minDemand));
+    }
+    if (filters.maxDemand) {
+        filteredProperties = filteredProperties.filter(p => p.demand_amount <= Number(filters.maxDemand));
+    }
+
+
+    return filteredProperties;
+  }, [searchQuery, filters]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -99,12 +191,73 @@ export default function PropertiesPage() {
           <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
              <div className="relative w-full md:w-64">
                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-               <Input placeholder="Search area, size, demand..." className="w-full pl-10 rounded-full bg-input/80" />
+               <Input 
+                placeholder="Search area, size, demand..." 
+                className="w-full pl-10 rounded-full bg-input/80" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                />
              </div>
-            <Button variant="outline" className="rounded-full">
-              <Filter className="mr-2 h-4 w-4" />
-              Filters
-            </Button>
+            <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="rounded-full">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Filters</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Refine your property search.
+                    </p>
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label htmlFor="area">Area</Label>
+                      <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                    </div>
+                     <div className="grid grid-cols-3 items-center gap-4">
+                        <Label htmlFor="propertyType">Type</Label>
+                        <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                            <SelectTrigger className="col-span-2 h-8">
+                                <SelectValue placeholder="Property Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All</SelectItem>
+                                <SelectItem value="House">House</SelectItem>
+                                <SelectItem value="Plot">Plot</SelectItem>
+                                <SelectItem value="Flat">Flat</SelectItem>
+                                <SelectItem value="Shop">Shop</SelectItem>
+                                <SelectItem value="Commercial">Commercial</SelectItem>
+                                <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid grid-cols-3 items-center gap-4">
+                      <Label>Size</Label>
+                      <div className="col-span-2 grid grid-cols-2 gap-2">
+                        <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                        <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                      </div>
+                    </div>
+                     <div className="grid grid-cols-3 items-center gap-4">
+                      <Label>Demand</Label>
+                      <div className="col-span-2 grid grid-cols-2 gap-2">
+                        <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                        <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                      </div>
+                    </div>
+                  </div>
+                   <div className="flex justify-end gap-2">
+                      <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                      <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                    </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button variant="outline" className="rounded-full">
               <Upload className="mr-2 h-4 w-4" />
               Import
