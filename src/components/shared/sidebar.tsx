@@ -21,11 +21,11 @@ import {
   UserCog,
   PhoneForwarded,
   Calendar,
-  LineChart,
   Settings,
   Rocket,
   Home,
   LogOut,
+  LineChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -88,11 +88,13 @@ export function AppSidebar() {
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <Home className="text-primary size-8" />
-              <span className="font-bold text-xl font-headline text-primary">
-                Signature
-              </span>
+            <Link href="/dashboard">
+                <div className="flex items-center gap-2">
+                    <Home className="text-primary size-8" />
+                    <span className="font-bold text-xl font-headline text-primary">
+                        Signature
+                    </span>
+                </div>
             </Link>
           </SidebarMenuButton>
         </SidebarHeader>
