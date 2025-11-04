@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -108,10 +109,10 @@ export function AppSidebar() {
                       className="rounded-full"
                     >
                       <Link href={item.href}>
-                        <>
+                        <div className="flex items-center gap-3">
                           <item.icon />
                           <span className="flex-1 truncate">{item.label}</span>
-                        </>
+                        </div>
                       </Link>
                     </SidebarMenuButton>
                   </TooltipTrigger>
@@ -133,10 +134,10 @@ export function AppSidebar() {
                    <TooltipTrigger asChild>
                     <SidebarMenuButton asChild isActive={pathname === item.href} className="rounded-full">
                       <Link href={item.href}>
-                        <>
+                        <div className="flex items-center gap-3">
                           <item.icon />
                           <span className="flex-1 truncate">{item.label}</span>
-                        </>
+                        </div>
                       </Link>
                     </SidebarMenuButton>
                    </TooltipTrigger>
@@ -151,10 +152,10 @@ export function AppSidebar() {
             <TooltipTrigger asChild>
                 <SidebarMenuButton asChild size="lg" className="justify-start">
                     <Link href="/login">
-                      <>
+                      <div className="flex items-center gap-3">
                         <LogOut />
                         <span className="flex-1 truncate">Logout</span>
-                      </>
+                      </div>
                     </Link>
                 </SidebarMenuButton>
             </TooltipTrigger>
