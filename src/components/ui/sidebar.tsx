@@ -367,7 +367,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg p-2 text-left text-sm font-medium outline-none ring-primary/50 transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent/80 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:shadow-primary/30 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:p-0 [&>svg]:size-5 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg p-2 text-left text-sm font-medium outline-none ring-primary/50 transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent/80 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:shadow-primary/30 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:h-12 group-data-[state=collapsed]:w-12 group-data-[state=collapsed]:p-0 [&>svg]:size-5 [&>svg]:shrink-0",
   {
     variants: {
       size: {
@@ -403,6 +403,10 @@ const SidebarMenuButton = React.forwardRef<
     const Comp = asChild ? Slot : "button"
     const { state } = useSidebar();
     
+    const childNodes = React.Children.toArray(children)
+    const icon = childNodes.find(node => React.isValidElement(node) && node.type !== 'span')
+    const label = childNodes.find(node => React.isValidElement(node) && node.type === 'span')
+
     return (
         <Comp
             ref={ref}
@@ -412,7 +416,8 @@ const SidebarMenuButton = React.forwardRef<
             className={cn(sidebarMenuButtonVariants({ size }), className)}
             {...props}
         >
-          {children}
+            {icon}
+            {state === 'expanded' && label}
         </Comp>
     )
   }
