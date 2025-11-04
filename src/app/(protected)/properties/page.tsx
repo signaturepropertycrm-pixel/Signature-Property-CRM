@@ -52,6 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -177,7 +178,7 @@ export default function PropertiesPage() {
   };
 
   return (
-    <>
+    <TooltipProvider>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -292,11 +293,23 @@ export default function PropertiesPage() {
                 {properties.map((prop) => (
                   <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
                     <TableCell>
-                      <div className="font-bold font-headline text-base">
-                        {prop.auto_title}
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold font-headline text-base">
+                          {prop.auto_title}
+                        </span>
+                        {prop.is_recorded && (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Video className="h-4 w-4 text-primary" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Video is recorded</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        <Badge variant="outline" className="font-mono">{prop.serial_no}</Badge>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="font-mono">{prop.serial_no}</Badge>
                         <span className="truncate max-w-48">{prop.address}</span>
                       </div>
                     </TableCell>
@@ -311,7 +324,6 @@ export default function PropertiesPage() {
                       <Badge variant={statusVariant[prop.status]} className="capitalize">
                         {prop.status}
                       </Badge>
-                       {prop.is_recorded && <Badge variant="secondary" className="text-xs ml-2">Recorded</Badge>}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
                       <DropdownMenu>
@@ -377,6 +389,6 @@ export default function PropertiesPage() {
           />
         </>
       )}
-    </>
+    </TooltipProvider>
   );
 }
