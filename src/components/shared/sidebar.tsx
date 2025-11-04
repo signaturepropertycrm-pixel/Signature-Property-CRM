@@ -38,18 +38,18 @@ import {
 } from '../ui/tooltip';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/properties', label: 'Properties', icon: Building2 },
-  { href: '/buyers', label: 'Buyers', icon: Users },
-  { href: '/team', label: 'Team', icon: UserCog },
-  { href: '/follow-ups', label: 'Follow-ups', icon: PhoneForwarded },
-  { href: '/appointments', label: 'Appointments', icon: Calendar },
-  { href: '/analytics', label: 'Analytics', icon: LineChart },
+  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
+  { href: '/properties', label: 'Properties', icon: <Building2 /> },
+  { href: '/buyers', label: 'Buyers', icon: <Users /> },
+  { href: '/team', label: 'Team', icon: <UserCog /> },
+  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
+  { href: '/analytics', label: 'Analytics', icon: <LineChart /> },
 ];
 
 const bottomMenuItems = [
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: Rocket },
+  { href: '/settings', label: 'Settings', icon: <Settings /> },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket /> },
 ];
 
 export function AppSidebar() {
@@ -71,7 +71,7 @@ export function AppSidebar() {
                   : 'text-muted-foreground'
               )}
             >
-              <item.icon className="h-5 w-5" />
+              {item.icon}
               <span>{item.label}</span>
             </Link>
           ))}
@@ -106,14 +106,14 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.href} className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href={item.href} passHref>
-                        <SidebarMenuButton
-                            isActive={pathname === item.href}
-                            className="rounded-full"
-                        >
-                            <item.icon />
-                            <span className="flex-1 truncate">{item.label}</span>
-                        </SidebarMenuButton>
+                    <Link href={item.href}>
+                      <SidebarMenuButton
+                          isActive={pathname === item.href}
+                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                      >
+                          {item.icon}
+                          <span className="flex-1 truncate">{item.label}</span>
+                      </SidebarMenuButton>
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">
@@ -132,9 +132,9 @@ export function AppSidebar() {
                <SidebarMenuItem key={item.href} className="relative">
                  <Tooltip>
                    <TooltipTrigger asChild>
-                     <Link href={item.href} passHref>
-                        <SidebarMenuButton isActive={pathname === item.href} className="rounded-full">
-                            <item.icon />
+                     <Link href={item.href}>
+                        <SidebarMenuButton isActive={pathname === item.href} className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105">
+                            {item.icon}
                             <span className="flex-1 truncate">{item.label}</span>
                         </SidebarMenuButton>
                       </Link>
@@ -148,7 +148,7 @@ export function AppSidebar() {
           <SidebarSeparator />
           <Tooltip>
             <TooltipTrigger asChild>
-                <Link href="/login" passHref>
+                <Link href="/login">
                   <SidebarMenuButton size="lg" className="justify-start">
                       <LogOut />
                       <span className="flex-1 truncate">Logout</span>

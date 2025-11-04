@@ -67,8 +67,18 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    const isMobile = useIsMobile()
+    const [isMobile, setIsMobile] = React.useState(false);
     const [openMobile, setOpenMobile] = React.useState(false)
+
+     React.useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -404,8 +414,8 @@ const SidebarMenuButton = React.forwardRef<
     const { state } = useSidebar();
     
     const childNodes = React.Children.toArray(children)
-    const icon = childNodes.find(node => React.isValidElement(node) && node.type !== 'span')
-    const label = childNodes.find(node => React.isValidElement(node) && node.type === 'span')
+    const icon = childNodes.find(node => React.isValidElement(node) && (node.type as any).displayName !== 'span')
+    const label = childNodes.find(node => React.isValidElement(node) && (node.type as any).displayName === 'span')
 
     return (
         <Comp
