@@ -107,7 +107,7 @@ export default function PropertiesPage() {
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Toggle menu</span>
                       </Button>
-                    DropdownMenuTrigger>
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>
                         <Edit />
@@ -124,7 +124,7 @@ export default function PropertiesPage() {
                       <DropdownMenuItem>
                         <Copy />
                         Copy
-                      DropdownMenuItem>
+                      </DropdownMenuItem>
                       <DropdownMenuItem>
                         <Share2 />
                         Share
@@ -133,14 +133,14 @@ export default function PropertiesPage() {
                         <Trash2 />
                         Delete
                       </DropdownMenuItem>
-                    DropdownMenuContent>
+                    </DropdownMenuContent>
                   </DropdownMenu>
-                TableCell>Animation>
+                </TableCell>
               </TableRow>
             ))}
-          TableBody>
-        Table>
-      div>
-    div>
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }

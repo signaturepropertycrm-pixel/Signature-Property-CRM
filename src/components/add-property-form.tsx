@@ -103,279 +103,279 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
   }
 
   return (
-    Form {...form}>
-      form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        ScrollArea className="h-[65vh] pr-6">
-          div className="space-y-4">
-            FormField
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <ScrollArea className="h-[65vh] pr-6">
+          <div className="space-y-4">
+            <FormField
               control={form.control}
               name="auto_title"
               render={({ field }) => (
-                FormItem>
-                  FormLabel>Auto-Generated TitleFormLabel>
-                  FormControl>
-                    Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" />
-                  FormControl>
-                  FormMessage />
-                FormItem>
+                <FormItem>
+                  <FormLabel>Auto-Generated Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
-            div className="grid md:grid-cols-2 gap-4">
-              FormField
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
                 control={form.control}
                 name="owner_number"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>Owner NumberFormLabel>
-                    FormControl>
-                      Input {...field} placeholder="+92 300 1234567" />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Owner Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="+92 300 1234567" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              FormField
+              <FormField
                 control={form.control}
                 name="city"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>CityFormLabel>
-                    Select onValueChange={field.onChange} defaultValue={field.value}>
-                      FormControl>
-                        SelectTrigger>SelectValue />SelectTrigger>
-                      FormControl>
-                      SelectContent>
-                        SelectItem value="Lahore">LahoreSelectItem>
-                        SelectItem value="Karachi">KarachiSelectItem>
-                        SelectItem value="Islamabad">IslamabadSelectItem>
-                      SelectContent>
-                    Select>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Lahore">Lahore</SelectItem>
+                        <SelectItem value="Karachi">Karachi</SelectItem>
+                        <SelectItem value="Islamabad">Islamabad</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            div>
+            </div>
             
-            FormField
+            <FormField
               control={form.control}
               name="area"
               render={({ field }) => (
-                FormItem>
-                  FormLabel>AreaFormLabel>
-                  FormControl>
-                    Input {...field} placeholder="e.g. DHA Phase 5" />
-                  FormControl>
-                  FormMessage />
-                FormItem>
+                <FormItem>
+                  <FormLabel>Area</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="e.g. DHA Phase 5" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
             
-            FormField
+            <FormField
               control={form.control}
               name="address"
               render={({ field }) => (
-                FormItem>
-                  FormLabel>Full AddressFormLabel>
-                  FormControl>
-                    Textarea {...field} placeholder="Full property address" />
-                  FormControl>
-                  FormMessage />
-                FormItem>
+                <FormItem>
+                  <FormLabel>Full Address</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="Full property address" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
-            div className="grid md:grid-cols-2 gap-4">
-              FormField
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
                 control={form.control}
                 name="property_type"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>Property TypeFormLabel>
-                    Select onValueChange={field.onChange} defaultValue={field.value}>
-                      FormControl>
-                        SelectTrigger>SelectValue />SelectTrigger>
-                      FormControl>
-                      SelectContent>
-                        SelectItem value="House">HouseSelectItem>
-                        SelectItem value="Plot">PlotSelectItem>
-                        SelectItem value="Flat">FlatSelectItem>
-                        SelectItem value="Shop">ShopSelectItem>
-                        SelectItem value="Commercial">CommercialSelectItem>
-                        SelectItem value="Agricultural">AgriculturalSelectItem>
-                        SelectItem value="Other">OtherSelectItem>
-                      SelectContent>
-                    Select>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Property Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="House">House</SelectItem>
+                        <SelectItem value="Plot">Plot</SelectItem>
+                        <SelectItem value="Flat">Flat</SelectItem>
+                        <SelectItem value="Shop">Shop</SelectItem>
+                        <SelectItem value="Commercial">Commercial</SelectItem>
+                        <SelectItem value="Agricultural">Agricultural</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              div className="grid grid-cols-2 gap-2">
-                FormField
+              <div className="grid grid-cols-2 gap-2">
+                <FormField
                   control={form.control}
                   name="size_value"
                   render={({ field }) => (
-                    FormItem>
-                      FormLabel>Property SizeFormLabel>
-                      FormControl>
-                        Input type="number" {...field} placeholder="5" />
-                      FormControl>
-                      FormMessage />
-                    FormItem>
+                    <FormItem>
+                      <FormLabel>Property Size</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} placeholder="5" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-                FormField
+                <FormField
                   control={form.control}
                   name="size_unit"
                   render={({ field }) => (
-                    FormItem className="self-end">
-                      Select onValueChange={field.onChange} defaultValue={field.value}>
-                        FormControl>
-                          SelectTrigger>SelectValue />SelectTrigger>
-                        FormControl>
-                        SelectContent>
-                          SelectItem value="Marla">MarlaSelectItem>
-                          SelectItem value="SqFt">SqFtSelectItem>
-                          SelectItem value="Kanal">KanalSelectItem>
-                          SelectItem value="Acre">AcreSelectItem>
-                          SelectItem value="Maraba">MarabaSelectItem>
-                        SelectContent>
-                      Select>
-                      FormMessage />
-                    FormItem>
+                    <FormItem className="self-end">
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Marla">Marla</SelectItem>
+                          <SelectItem value="SqFt">SqFt</SelectItem>
+                          <SelectItem value="Kanal">Kanal</SelectItem>
+                          <SelectItem value="Acre">Acre</SelectItem>
+                          <SelectItem value="Maraba">Maraba</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
                 />
-              div>
-            div>
+              </div>
+            </div>
 
-            div className="grid md:grid-cols-2 gap-4">
-              FormField
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
                 control={form.control}
                 name="road_size_ft"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>Road Size (ft)FormLabel>
-                    FormControl>
-                      Input type="number" {...field} placeholder="20" />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Road Size (ft)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} placeholder="20" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              FormField
+              <FormField
                 control={form.control}
                 name="storey"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>StoreyFormLabel>
-                    FormControl>
-                      Input {...field} placeholder="Single, Double, etc." />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Storey</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Single, Double, etc." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            div>
+            </div>
             
-            FormItem>
-              FormLabel>MetersFormLabel>
-              div className="flex items-center gap-4 pt-2">
-                FormField
+            <FormItem>
+              <FormLabel>Meters</FormLabel>
+              <div className="flex items-center gap-4 pt-2">
+                <FormField
                   control={form.control}
                   name="meters.electricity"
                   render={({ field }) => (
-                    FormItem className="flex items-center space-x-2 space-y-0">
-                      FormControl>
-                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      FormControl>
-                      FormLabel>ElectricityFormLabel>
-                    FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel>Electricity</FormLabel>
+                    </FormItem>
                   )}
                 />
-                FormField
+                <FormField
                   control={form.control}
                   name="meters.gas"
                   render={({ field }) => (
-                    FormItem className="flex items-center space-x-2 space-y-0">
-                      FormControl>
-                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      FormControl>
-                      FormLabel>GasFormLabel>
-                    FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel>Gas</FormLabel>
+                    </FormItem>
                   )}
                 />
-                FormField
+                <FormField
                   control={form.control}
                   name="meters.water"
                   render={({ field }) => (
-                    FormItem className="flex items-center space-x-2 space-y-0">
-                      FormControl>
-                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      FormControl>
-                      FormLabel>WaterFormLabel>
-                    FormItem>
+                    <FormItem className="flex items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel>Water</FormLabel>
+                    </FormItem>
                   )}
                 />
-              div>
-            FormItem>
+              </div>
+            </FormItem>
 
-            div className="grid grid-cols-2 gap-2">
-              FormField
+            <div className="grid grid-cols-2 gap-2">
+              <FormField
                 control={form.control}
                 name="demand_amount"
                 render={({ field }) => (
-                  FormItem>
-                    FormLabel>DemandFormLabel>
-                    FormControl>
-                      Input type="number" {...field} placeholder="90" />
-                    FormControl>
-                    FormMessage />
-                  FormItem>
+                  <FormItem>
+                    <FormLabel>Demand</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} placeholder="90" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              FormField
+              <FormField
                 control={form.control}
                 name="demand_unit"
                 render={({ field }) => (
-                  FormItem className="self-end">
-                    Select onValueChange={field.onChange} defaultValue={field.value}>
-                      FormControl>
-                        SelectTrigger>SelectValue />SelectTrigger>
-                      FormControl>
-                      SelectContent>
-                        SelectItem value="Thousand">ThousandSelectItem>
-                        SelectItem value="Lacs">LacsSelectItem>
-                        SelectItem value="Crore">CroreSelectItem>
-                      SelectContent>
-                    Select>
-                    FormMessage />
-                  FormItem>
+                  <FormItem className="self-end">
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Thousand">Thousand</SelectItem>
+                        <SelectItem value="Lacs">Lacs</SelectItem>
+                        <SelectItem value="Crore">Crore</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-            div>
+            </div>
             
-            FormField
+            <FormField
               control={form.control}
               name="documents"
               render={({ field }) => (
-                FormItem>
-                  FormLabel>DocumentsFormLabel>
-                  FormControl>
-                    Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
-                  FormControl>
-                  FormMessage />
-                FormItem>
+                <FormItem>
+                  <FormLabel>Documents</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-          div>
-        ScrollArea>
-        div className="flex justify-end gap-2 pt-4">
-          Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+          </div>
+        </ScrollArea>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
             Cancel
-          Button>
-          Button type="submit">Save PropertyButton>
-        div>
-      form>
-    Form>
+          </Button>
+          <Button type="submit">Save Property</Button>
+        </div>
+      </form>
+    </Form>
   );
 }

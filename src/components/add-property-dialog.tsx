@@ -16,21 +16,21 @@ export function AddPropertyDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    Dialog open={isOpen} onOpenChange={setIsOpen}>
-      DialogTrigger asChild>
-        Button>
-          PlusCircle className="mr-2 h-4 w-4" /> Add Property
-        Button>
-      DialogTrigger>
-      DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        DialogHeader>
-          DialogTitle className="font-headline">Add New PropertyDialogTitle>
-          DialogDescription>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Property
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-headline">Add New Property</DialogTitle>
+          <DialogDescription>
             Fill in the details below to add a new property to the system.
-          DialogDescription>
-        DialogHeader>
-        AddPropertyForm setDialogOpen={setIsOpen} />
-      DialogContent>
-    Dialog>
+          </DialogDescription>
+        </DialogHeader>
+        <AddPropertyForm setDialogOpen={setIsOpen} />
+      </DialogContent>
+    </Dialog>
   );
 }
