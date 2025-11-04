@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -45,9 +46,13 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'New',
-      serial_no: `B-${Math.floor(1000 + Math.random() * 9000)}`,
     },
   });
+
+  useEffect(() => {
+    // Set serial number on mount
+    form.setValue('serial_no', `B-${Math.floor(1000 + Math.random() * 9000)}`);
+  }, [form]);
 
   function onSubmit(values: AddBuyerFormValues) {
     console.log(values);
@@ -70,7 +75,7 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
                 <FormItem>
                 <FormLabel>Serial No</FormLabel>
                 <FormControl>
-                    <Input {...field} readOnly />
+                    <Input {...field} readOnly className="bg-muted/50" />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -78,7 +83,7 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
             />
             <FormItem>
                 <FormLabel>Date</FormLabel>
-                <Input value={new Date().toLocaleDateString()} readOnly />
+                <Input value={new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
             </FormItem>
         </div>
         <FormField
@@ -156,10 +161,10 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+          <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          <Button type="submit">Save Buyer</Button>
+          <Button type="submit" className="glowing-btn">Save Buyer</Button>
         </div>
       </form>
     </Form>

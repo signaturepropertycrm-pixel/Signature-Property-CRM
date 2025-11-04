@@ -1,6 +1,5 @@
 
 'use client';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,28 +7,19 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { AddBuyerForm } from './add-buyer-form';
-import { Plus } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { PlusCircle } from 'lucide-react';
 
-export function AddBuyerDialog() {
-  const [isOpen, setIsOpen] = useState(false);
+interface AddBuyerDialogProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+}
+
+export function AddBuyerDialog({ isOpen, setIsOpen }: AddBuyerDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <Button size="icon" className="rounded-full w-14 h-14 shadow-lg">
-              <Plus className="h-6 w-6" />
-              <span className="sr-only">Add Buyer</span>
-            </Button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Add Buyer</TooltipContent>
-      </Tooltip>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Add New Buyer</DialogTitle>

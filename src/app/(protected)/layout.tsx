@@ -1,7 +1,7 @@
 import React from 'react';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/shared/sidebar';
 import { AppHeader } from '@/components/shared/header';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function ProtectedLayout({
   children,
@@ -10,15 +10,15 @@ export default function ProtectedLayout({
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <div className="flex flex-col min-h-screen">
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-col flex-1">
           <AppHeader />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-background/95">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 page-transition">
             {children}
           </main>
         </div>
-      </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 }

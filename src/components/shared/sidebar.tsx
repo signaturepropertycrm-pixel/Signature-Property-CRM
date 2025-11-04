@@ -26,8 +26,14 @@ import {
   Home,
   LogOut,
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -39,82 +45,117 @@ const menuItems = [
   { href: '/analytics', label: 'Analytics', icon: LineChart },
 ];
 
-const adminAvatar = PlaceHolderImages.find(img => img.id === 'avatar-admin');
+const bottomMenuItems = [
+  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: Rocket },
+];
 
 export function AppSidebar() {
   const pathname = usePathname();
-  return (
-    <Sidebar variant="sidebar" collapsible="icon">
-      <SidebarHeader>
-        <SidebarMenuButton asChild size="lg" className="justify-start">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Home className="text-primary size-7" />
-            <span className="font-bold text-lg font-headline text-primary">
-              SignatureCRM
-            </span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={{ children: item.label, side: 'right' }}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/upgrade'}
-              tooltip={{ children: 'Upgrade Plan', side: 'right' }}
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-card/80 backdrop-blur-md">
+        <div className="grid h-16 grid-cols-5">
+          {menuItems.slice(0, 5).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 text-xs font-medium',
+                pathname === item.href
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              )}
             >
-              <Link href="/upgrade">
-                <Rocket />
-                <span>Upgrade Plan</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={pathname === '/settings'}
-              tooltip={{ children: 'Settings', side: 'right' }}
-            >
-              <Link href="/settings">
-                <Settings />
-                <span>Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarSeparator />
-        <SidebarMenuButton asChild size="lg" className="justify-start">
-            <Link href="/login" className="flex items-center gap-2">
-                <Avatar className="size-8">
-                    {adminAvatar && <AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
-                    <AvatarFallback>DA</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                    <span className="font-semibold text-sm">Demo Admin</span>
-                    <span className="text-xs text-muted-foreground">demo_admin@signaturecrm.test</span>
-                </div>
-                <LogOut className="ml-auto size-4" />
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
             </Link>
-        </SidebarMenuButton>
-      </SidebarFooter>
-    </Sidebar>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <Sidebar
+        variant="sidebar"
+        collapsible="icon"
+        className="hidden md:flex flex-col bg-card/60 backdrop-blur-lg border-r-0"
+      >
+        <SidebarHeader>
+          <SidebarMenuButton asChild size="lg" className="justify-start my-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <Home className="text-primary size-8" />
+              <span className="font-bold text-xl font-headline text-primary">
+                Signature
+              </span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarHeader>
+
+        <SidebarContent className="flex-1">
+          <SidebarMenu>
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.href} className="relative">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      className="rounded-full"
+                    >
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+                 {pathname === item.href && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            {bottomMenuItems.map((item) => (
+               <SidebarMenuItem key={item.href} className="relative">
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                    <SidebarMenuButton asChild isActive={pathname === item.href} className="rounded-full">
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                   </TooltipTrigger>
+                   <TooltipContent side="right" align="center">{item.label}</TooltipContent>
+                 </Tooltip>
+                  {pathname === item.href && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+          <SidebarSeparator />
+          <Tooltip>
+            <TooltipTrigger asChild>
+                <SidebarMenuButton asChild size="lg" className="justify-start">
+                    <Link href="/login">
+                        <LogOut />
+                        <span className="text-sm">Logout</span>
+                    </Link>
+                </SidebarMenuButton>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center">Logout</TooltipContent>
+          </Tooltip>
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
   );
 }

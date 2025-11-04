@@ -1,6 +1,5 @@
 
 'use client';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,33 +10,35 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { AddPropertyForm } from './add-property-form';
-import { Plus } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import type { Property } from '@/lib/types';
+import { useEffect } from 'react';
 
-export function AddPropertyDialog() {
-  const [isOpen, setIsOpen] = useState(false);
+interface AddPropertyDialogProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    propertyToEdit: Property | null;
+}
+
+export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit }: AddPropertyDialogProps) {
+
+    useEffect(() => {
+        if (!isOpen) {
+            // clear propertyToEdit when dialog is closed
+        }
+    }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DialogTrigger asChild>
-            <Button size="icon" className="rounded-full w-14 h-14 shadow-lg">
-              <Plus className="h-6 w-6" />
-              <span className="sr-only">Add Property</span>
-            </Button>
-          </DialogTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="left">Add Property</TooltipContent>
-      </Tooltip>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-headline">Add New Property</DialogTitle>
+          <DialogTitle className="font-headline">{propertyToEdit ? 'Edit Property' : 'Add New Property'}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new property to the system.
+            {propertyToEdit ? 'Update the details for this property.' : 'Fill in the details to add a new property.'}
           </DialogDescription>
         </DialogHeader>
-        <AddPropertyForm setDialogOpen={setIsOpen} />
+        <AddPropertyForm setDialogOpen={setIsOpen} propertyToEdit={propertyToEdit} />
       </DialogContent>
     </Dialog>
   );
