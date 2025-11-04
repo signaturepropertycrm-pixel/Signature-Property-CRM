@@ -8,8 +8,9 @@ import {
 
 import { 
   generateShareableText as originalGenerateShareableText,
+  type ShareableTextInput,
+  type ShareableTextOutput,
 } from '@/ai/flows/shareable-text-generation';
-import type { ShareableTextInput, ShareableTextOutput } from '@/ai/flows/shareable-text-generation';
 
 
 export async function generateAutoTitle(input: AutoTitleInput) {
