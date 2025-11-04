@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -8,7 +9,7 @@ import {
 import { 
   generateShareableText as originalGenerateShareableText,
 } from '@/ai/flows/shareable-text-generation';
-import type { ShareableTextInput, ShareableTextOutput } from '@/ai/flows/shareable-text-schemas';
+import type { ShareableTextInput, ShareableTextOutput } from '@/ai/flows/shareable-text-generation';
 
 
 export async function generateAutoTitle(input: AutoTitleInput) {
@@ -18,3 +19,5 @@ export async function generateAutoTitle(input: AutoTitleInput) {
 export async function generateShareableText(input: ShareableTextInput): Promise<ShareableTextOutput> {
   return originalGenerateShareableText(input);
 }
+
+    

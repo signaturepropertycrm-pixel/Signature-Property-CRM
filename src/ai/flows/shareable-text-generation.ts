@@ -1,10 +1,43 @@
+
 'use server';
 /**
  * @fileOverview Generates shareable text for a property for customers and agents.
  */
-
+import { z } from 'zod';
 import { ai } from '@/ai/genkit';
-import { ShareableTextInputSchema, ShareableTextOutputSchema, type ShareableTextInput } from './shareable-text-schemas';
+
+export const ShareableTextInputSchema = z.object({
+  serial_no: z.string(),
+  area: z.string(),
+  address: z.string(),
+  property_type: z.string(),
+  size_value: z.number(),
+  size_unit: z.string(),
+  storey: z.string().optional(),
+  road_size_ft: z.number().optional(),
+  front_ft: z.number().optional(),
+  length_ft: z.number().optional(),
+  demand_amount: z.number(),
+  demand_unit: z.string(),
+  owner_number: z.string(),
+  potential_rent_amount: z.number().optional(),
+  potential_rent_unit: z.string().optional(),
+  meters: z.object({
+    electricity: z.boolean(),
+    gas: z.boolean(),
+    water: z.boolean(),
+  }).optional(),
+  documents: z.string().optional(),
+});
+
+export type ShareableTextInput = z.infer<typeof ShareableTextInputSchema>;
+
+export const ShareableTextOutputSchema = z.object({
+  forCustomer: z.string().describe("Formatted text for the customer."),
+  forAgent: z.string().describe("Formatted text for the agent."),
+});
+export type ShareableTextOutput = z.infer<typeof ShareableTextOutputSchema>;
+
 
 export async function generateShareableText(input: ShareableTextInput): Promise<ShareableTextOutput> {
   // Map the full property object to the schema for the AI flow
@@ -42,7 +75,7 @@ Size/Marla: {{{size_value}}} {{{size_unit}}}
 Demand: {{{demand_amount}}} {{{demand_unit}}}
 
 **Financials:**
-{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}} {{{potential_rent_unit}}}{{else}}- Potential Rent: N/A{{/if}}
+{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}}K{{else}}- Potential Rent: N/A{{/if}}
 
 **Utilities:**
 {{#if meters.gas}}- *Gas*{{/if}}
@@ -66,7 +99,7 @@ Demand: {{{demand_amount}}} {{{demand_unit}}}
 Owner Number: {{{owner_number}}}
 
 **Financials:**
-{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}} {{{potential_rent_unit}}}{{else}}- Potential Rent: N/A{{/if}}
+{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}}K{{else}}- Potential Rent: N/A{{/if}}
 
 **Utilities:**
 {{#if meters.gas}}- *Gas*{{/if}}
@@ -101,12 +134,18 @@ const shareableTextFlow = ai.defineFlow(
     outputSchema: ShareableTextOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI failed to generate shareable text.');
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        throw new Error('AI failed to generate shareable text.');
+      }
+      return output;
+    } catch (error: any) {
+        console.error("Error in shareableTextFlow:", error);
+        // Re-throw a more user-friendly error
+        throw new Error(error.message || 'An unexpected error occurred while generating text.');
     }
-    return output;
   }
 );
-export type { ShareableTextOutput } from './shareable-text-schemas';
-export type { ShareableTextInput } from './shareable-text-schemas';
+
+    

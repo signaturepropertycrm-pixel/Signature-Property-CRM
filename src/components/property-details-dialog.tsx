@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -147,3 +148,5 @@ export function PropertyDetailsDialog({
     </>
   );
 }
+
+    

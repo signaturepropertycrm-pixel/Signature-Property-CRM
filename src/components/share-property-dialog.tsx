@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,12 @@ export function SharePropertyDialog({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && !generatedText) {
+      handleGenerateText();
+    }
+  }, [isOpen]);
 
   const handleCopy = (text: string, type: 'customer' | 'agent') => {
     navigator.clipboard.writeText(text);
@@ -105,7 +111,14 @@ export function SharePropertyDialog({
           </div>
         )}
 
-        {generatedText && (
+        {loading && (
+             <div className="flex justify-center items-center h-40">
+                <Loader2 className="mr-2 h-8 w-8 animate-spin text-primary" />
+                <p>Generating shareable content...</p>
+             </div>
+        )}
+
+        {generatedText && !loading && (
           <Tabs defaultValue="customer">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="customer">For Customer</TabsTrigger>
@@ -155,3 +168,5 @@ export function SharePropertyDialog({
     </Dialog>
   );
 }
+
+    
