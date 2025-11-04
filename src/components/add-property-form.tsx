@@ -1,0 +1,381 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { generateAutoTitle } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from './ui/scroll-area';
+
+const formSchema = z.object({
+  auto_title: z.string().optional(),
+  owner_number: z.string().min(1, 'Owner number is required'),
+  city: z.string().default('Lahore'),
+  area: z.string().min(1, 'Area is required'),
+  address: z.string().min(1, 'Address is required'),
+  property_type: z.enum(['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other']),
+  size_value: z.coerce.number().positive('Size must be positive'),
+  size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
+  road_size_ft: z.coerce.number().int().optional(),
+  storey: z.string().optional(),
+  meters: z.object({
+    electricity: z.boolean().default(false),
+    gas: z.boolean().default(false),
+    water: z.boolean().default(false),
+  }),
+  demand_amount: z.coerce.number().positive('Demand must be positive'),
+  demand_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Lacs'),
+  documents: z.string().optional(),
+});
+
+type AddPropertyFormValues = z.infer<typeof formSchema>;
+
+interface AddPropertyFormProps {
+  setDialogOpen: (open: boolean) => void;
+}
+
+export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
+  const { toast } = useToast();
+  const form = useForm<AddPropertyFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      city: 'Lahore',
+      property_type: 'House',
+      size_unit: 'Marla',
+      demand_unit: 'Lacs',
+      meters: { electricity: false, gas: false, water: false },
+    },
+  });
+
+  const { watch, setValue } = form;
+  const sizeValue = watch('size_value');
+  const sizeUnit = watch('size_unit');
+  const propertyType = watch('property_type');
+  const area = watch('area');
+
+  useEffect(() => {
+    const handler = setTimeout(async () => {
+      if (sizeValue && sizeUnit && propertyType && area) {
+        try {
+          const { autoTitle } = await generateAutoTitle({
+            sizeValue,
+            sizeUnit,
+            propertyType,
+            area,
+          });
+          setValue('auto_title', autoTitle);
+        } catch (error) {
+          console.error('Failed to generate auto title:', error);
+        }
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [sizeValue, sizeUnit, propertyType, area, setValue]);
+
+  function onSubmit(values: AddPropertyFormValues) {
+    console.log(values);
+    toast({
+      title: 'Property Added',
+      description: `Property "${values.auto_title}" has been successfully added.`,
+    });
+    setDialogOpen(false);
+  }
+
+  return (
+    Form {...form}>
+      form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        ScrollArea className="h-[65vh] pr-6">
+          div className="space-y-4">
+            FormField
+              control={form.control}
+              name="auto_title"
+              render={({ field }) => (
+                FormItem>
+                  FormLabel>Auto-Generated TitleFormLabel>
+                  FormControl>
+                    Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" />
+                  FormControl>
+                  FormMessage />
+                FormItem>
+              )}
+            />
+
+            div className="grid md:grid-cols-2 gap-4">
+              FormField
+                control={form.control}
+                name="owner_number"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>Owner NumberFormLabel>
+                    FormControl>
+                      Input {...field} placeholder="+92 300 1234567" />
+                    FormControl>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+              FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>CityFormLabel>
+                    Select onValueChange={field.onChange} defaultValue={field.value}>
+                      FormControl>
+                        SelectTrigger>SelectValue />SelectTrigger>
+                      FormControl>
+                      SelectContent>
+                        SelectItem value="Lahore">LahoreSelectItem>
+                        SelectItem value="Karachi">KarachiSelectItem>
+                        SelectItem value="Islamabad">IslamabadSelectItem>
+                      SelectContent>
+                    Select>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+            div>
+            
+            FormField
+              control={form.control}
+              name="area"
+              render={({ field }) => (
+                FormItem>
+                  FormLabel>AreaFormLabel>
+                  FormControl>
+                    Input {...field} placeholder="e.g. DHA Phase 5" />
+                  FormControl>
+                  FormMessage />
+                FormItem>
+              )}
+            />
+            
+            FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                FormItem>
+                  FormLabel>Full AddressFormLabel>
+                  FormControl>
+                    Textarea {...field} placeholder="Full property address" />
+                  FormControl>
+                  FormMessage />
+                FormItem>
+              )}
+            />
+
+            div className="grid md:grid-cols-2 gap-4">
+              FormField
+                control={form.control}
+                name="property_type"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>Property TypeFormLabel>
+                    Select onValueChange={field.onChange} defaultValue={field.value}>
+                      FormControl>
+                        SelectTrigger>SelectValue />SelectTrigger>
+                      FormControl>
+                      SelectContent>
+                        SelectItem value="House">HouseSelectItem>
+                        SelectItem value="Plot">PlotSelectItem>
+                        SelectItem value="Flat">FlatSelectItem>
+                        SelectItem value="Shop">ShopSelectItem>
+                        SelectItem value="Commercial">CommercialSelectItem>
+                        SelectItem value="Agricultural">AgriculturalSelectItem>
+                        SelectItem value="Other">OtherSelectItem>
+                      SelectContent>
+                    Select>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+              div className="grid grid-cols-2 gap-2">
+                FormField
+                  control={form.control}
+                  name="size_value"
+                  render={({ field }) => (
+                    FormItem>
+                      FormLabel>Property SizeFormLabel>
+                      FormControl>
+                        Input type="number" {...field} placeholder="5" />
+                      FormControl>
+                      FormMessage />
+                    FormItem>
+                  )}
+                />
+                FormField
+                  control={form.control}
+                  name="size_unit"
+                  render={({ field }) => (
+                    FormItem className="self-end">
+                      Select onValueChange={field.onChange} defaultValue={field.value}>
+                        FormControl>
+                          SelectTrigger>SelectValue />SelectTrigger>
+                        FormControl>
+                        SelectContent>
+                          SelectItem value="Marla">MarlaSelectItem>
+                          SelectItem value="SqFt">SqFtSelectItem>
+                          SelectItem value="Kanal">KanalSelectItem>
+                          SelectItem value="Acre">AcreSelectItem>
+                          SelectItem value="Maraba">MarabaSelectItem>
+                        SelectContent>
+                      Select>
+                      FormMessage />
+                    FormItem>
+                  )}
+                />
+              div>
+            div>
+
+            div className="grid md:grid-cols-2 gap-4">
+              FormField
+                control={form.control}
+                name="road_size_ft"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>Road Size (ft)FormLabel>
+                    FormControl>
+                      Input type="number" {...field} placeholder="20" />
+                    FormControl>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+              FormField
+                control={form.control}
+                name="storey"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>StoreyFormLabel>
+                    FormControl>
+                      Input {...field} placeholder="Single, Double, etc." />
+                    FormControl>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+            div>
+            
+            FormItem>
+              FormLabel>MetersFormLabel>
+              div className="flex items-center gap-4 pt-2">
+                FormField
+                  control={form.control}
+                  name="meters.electricity"
+                  render={({ field }) => (
+                    FormItem className="flex items-center space-x-2 space-y-0">
+                      FormControl>
+                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      FormControl>
+                      FormLabel>ElectricityFormLabel>
+                    FormItem>
+                  )}
+                />
+                FormField
+                  control={form.control}
+                  name="meters.gas"
+                  render={({ field }) => (
+                    FormItem className="flex items-center space-x-2 space-y-0">
+                      FormControl>
+                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      FormControl>
+                      FormLabel>GasFormLabel>
+                    FormItem>
+                  )}
+                />
+                FormField
+                  control={form.control}
+                  name="meters.water"
+                  render={({ field }) => (
+                    FormItem className="flex items-center space-x-2 space-y-0">
+                      FormControl>
+                        Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      FormControl>
+                      FormLabel>WaterFormLabel>
+                    FormItem>
+                  )}
+                />
+              div>
+            FormItem>
+
+            div className="grid grid-cols-2 gap-2">
+              FormField
+                control={form.control}
+                name="demand_amount"
+                render={({ field }) => (
+                  FormItem>
+                    FormLabel>DemandFormLabel>
+                    FormControl>
+                      Input type="number" {...field} placeholder="90" />
+                    FormControl>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+              FormField
+                control={form.control}
+                name="demand_unit"
+                render={({ field }) => (
+                  FormItem className="self-end">
+                    Select onValueChange={field.onChange} defaultValue={field.value}>
+                      FormControl>
+                        SelectTrigger>SelectValue />SelectTrigger>
+                      FormControl>
+                      SelectContent>
+                        SelectItem value="Thousand">ThousandSelectItem>
+                        SelectItem value="Lacs">LacsSelectItem>
+                        SelectItem value="Crore">CroreSelectItem>
+                      SelectContent>
+                    Select>
+                    FormMessage />
+                  FormItem>
+                )}
+              />
+            div>
+            
+            FormField
+              control={form.control}
+              name="documents"
+              render={({ field }) => (
+                FormItem>
+                  FormLabel>DocumentsFormLabel>
+                  FormControl>
+                    Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
+                  FormControl>
+                  FormMessage />
+                FormItem>
+              )}
+            />
+          div>
+        ScrollArea>
+        div className="flex justify-end gap-2 pt-4">
+          Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+            Cancel
+          Button>
+          Button type="submit">Save PropertyButton>
+        div>
+      form>
+    Form>
+  );
+}
