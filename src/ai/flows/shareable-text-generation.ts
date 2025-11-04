@@ -4,44 +4,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { Property } from '@/lib/types';
-
-
-// We can't pass the full Property type directly as Genkit flows don't support complex types well.
-// So we define a Zod schema that matches the properties we need.
-export const ShareableTextInputSchema = z.object({
-  serial_no: z.string(),
-  area: z.string(),
-  address: z.string(),
-  property_type: z.string(),
-  size_value: z.number(),
-  size_unit: z.string(),
-  storey: z.string().optional(),
-  road_size_ft: z.number().optional(),
-  front_ft: z.number().optional(),
-  length_ft: z.number().optional(),
-  demand_amount: z.number(),
-  demand_unit: z.string(),
-  owner_number: z.string(),
-  potential_rent_amount: z.number().optional(),
-  potential_rent_unit: z.string().optional(),
-  meters: z.object({
-    electricity: z.boolean(),
-    gas: z.boolean(),
-    water: z.boolean(),
-  }).optional(),
-  documents: z.string().optional(),
-});
-
-export type ShareableTextInput = z.infer<typeof ShareableTextInputSchema>;
-
-export const ShareableTextOutputSchema = z.object({
-  forCustomer: z.string().describe("Formatted text for the customer."),
-  forAgent: z.string().describe("Formatted text for the agent."),
-});
-export type ShareableTextOutput = z.infer<typeof ShareableTextOutputSchema>;
-
+import { ShareableTextInputSchema, ShareableTextOutputSchema, type ShareableTextInput } from './shareable-text-schemas';
 
 export async function generateShareableText(input: ShareableTextInput): Promise<ShareableTextOutput> {
   // Map the full property object to the schema for the AI flow
@@ -74,12 +37,12 @@ Area: {{{area}}}
 Property Type: {{{property_type}}}
 Size/Marla: {{{size_value}}} {{{size_unit}}}
 {{#if storey}}Floor: {{{storey}}}{{/if}}
-{{#if road_size_ft}}Road Size: {{{road_size_ft}}}{{/if}}
-{{#if front_ft}}Front/Length: {{{front_ft}}}{{/if}}
+{{#if road_size_ft}}Road Size: {{{road_size_ft}}} ft{{/if}}
+{{#if front_ft}}Front/Length: {{{front_ft}}} ft{{/if}}
 Demand: {{{demand_amount}}} {{{demand_unit}}}
 
 **Financials:**
-{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}}{{#if potential_rent_unit}}{{{potential_rent_unit}}}{{/if}}{{else}}- Potential Rent: N/A{{/if}}
+{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}} {{{potential_rent_unit}}}{{else}}- Potential Rent: N/A{{/if}}
 
 **Utilities:**
 {{#if meters.gas}}- *Gas*{{/if}}
@@ -97,13 +60,13 @@ Full Address: {{{address}}}
 Property Type: {{{property_type}}}
 Size/Marla: {{{size_value}}} {{{size_unit}}}
 {{#if storey}}Floor: {{{storey}}}{{/if}}
-{{#if road_size_ft}}Road Size: {{{road_size_ft}}}{{/if}}
-{{#if front_ft}}Front/Length: {{{front_ft}}}{{/if}}
+{{#if road_size_ft}}Road Size: {{{road_size_ft}}} ft{{/if}}
+{{#if front_ft}}Front/Length: {{{front_ft}}} ft{{/if}}
 Demand: {{{demand_amount}}} {{{demand_unit}}}
 Owner Number: {{{owner_number}}}
 
 **Financials:**
-{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}}{{#if potential_rent_unit}}{{{potential_rent_unit}}}{{/if}}{{else}}- Potential Rent: N/A{{/if}}
+{{#if potential_rent_amount}}- Potential Rent: {{{potential_rent_amount}}} {{{potential_rent_unit}}}{{else}}- Potential Rent: N/A{{/if}}
 
 **Utilities:**
 {{#if meters.gas}}- *Gas*{{/if}}
@@ -139,6 +102,11 @@ const shareableTextFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('AI failed to generate shareable text.');
+    }
+    return output;
   }
 );
+export type { ShareableTextOutput } from './shareable-text-schemas';
+export type { ShareableTextInput } from './shareable-text-schemas';
