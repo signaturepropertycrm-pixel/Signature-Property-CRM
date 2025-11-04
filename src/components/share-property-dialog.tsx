@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -40,12 +41,12 @@ export function SharePropertyDialog({
     try {
       const result = await generateShareableText(property);
       setGeneratedText(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate text', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to generate shareable text.',
+        title: 'Error Generating Text',
+        description: error.message || 'Failed to generate shareable text.',
       });
     } finally {
       setLoading(false);

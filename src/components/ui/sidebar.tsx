@@ -410,29 +410,36 @@ const SidebarMenuButton = React.forwardRef<
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : "button"
-    const { state } = useSidebar();
-    
-    const childNodes = React.Children.toArray(children)
-    const icon = childNodes.find(node => React.isValidElement(node) && (node.type as any).displayName !== 'span')
-    const label = childNodes.find(node => React.isValidElement(node) && (node.type as any).displayName === 'span')
+    // agar multiple children ho to unko ek div ke andar wrap kar dega
+    const Comp = asChild ? Slot : "button";
+
+    const safeChildren =
+      React.Children.count(children) === 1 ? (
+        children
+      ) : (
+        <div className="flex items-center gap-2">{children}</div>
+      );
 
     return (
-        <Comp
-            ref={ref}
-            data-sidebar="menu-button"
-            data-size={size}
-            data-active={isActive}
-            className={cn(sidebarMenuButtonVariants({ size }), className)}
-            {...props}
-        >
-            {icon}
-            {state === 'expanded' && label}
-        </Comp>
-    )
+      <Comp
+        ref={ref}
+        data-sidebar="menu-button"
+        data-size={size}
+        data-active={isActive}
+        className={cn(
+          sidebarMenuButtonVariants({ size }),
+          "transition-all duration-200 hover:scale-105",
+          className
+        )}
+        {...props}
+      >
+        {safeChildren}
+      </Comp>
+    );
   }
-)
-SidebarMenuButton.displayName = "SidebarMenuButton"
+);
+SidebarMenuButton.displayName = "SidebarMenuButton";
+
 
 export {
   Sidebar,
