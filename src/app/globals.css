@@ -16,7 +16,7 @@
     --secondary-foreground: 224 39% 16%;
     --muted: 220 20% 94%;
     --muted-foreground: 220 10% 45%;
-    --accent: 45 100% 67%; /* Warm Yellow */
+    --accent: 220 20% 92%; /* Subtle Grey */
     --accent-foreground: 221 44% 15%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -45,8 +45,8 @@
     --secondary-foreground: 210 40% 98%;
     --muted: 220 15% 25%;
     --muted-foreground: 210 20% 65%;
-    --accent: 45 100% 67%;
-    --accent-foreground: 221 44% 15%;
+    --accent: 220 15% 25%; /* Subtle Grey - Dark */
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 15% 30% / 0.5;
