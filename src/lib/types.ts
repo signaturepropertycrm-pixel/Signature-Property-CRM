@@ -25,10 +25,29 @@ export type Property = {
   property_type: PropertyType;
   size_value: number;
   size_unit: SizeUnit;
+  road_size_ft?: number;
+  storey?: string;
+  meters?: {
+    electricity: boolean;
+    gas: boolean;
+    water: boolean;
+  };
+  potential_rent_amount?: number;
+  potential_rent_unit?: PriceUnit;
+  front_ft?: number;
+  length_ft?: number;
   demand_amount: number;
-  demand_unit: PriceUnit;
+  demand_unit: 'Lacs' | 'Crore';
+  documents?: string;
   status: PropertyStatus;
   is_recorded: boolean;
   created_at: string;
   created_by: string; // user id
+  video_links?: {
+    tiktok?: string;
+    youtube?: string;
+    instagram?: string;
+    facebook?: string;
+    other?: string;
+  }
 };

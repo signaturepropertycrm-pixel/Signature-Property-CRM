@@ -28,6 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 
 const formSchema = z.object({
+  serial_no: z.string().optional(),
   auto_title: z.string().optional(),
   owner_number: z.string().min(1, 'Owner number is required'),
   city: z.string().default('Lahore'),
@@ -43,8 +44,12 @@ const formSchema = z.object({
     gas: z.boolean().default(false),
     water: z.boolean().default(false),
   }),
+  potential_rent_amount: z.coerce.number().optional(),
+  potential_rent_unit: z.enum(['Thousand', 'Lacs', 'Crore']).optional(),
+  front_ft: z.coerce.number().int().optional(),
+  length_ft: z.coerce.number().int().optional(),
   demand_amount: z.coerce.number().positive('Demand must be positive'),
-  demand_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Lacs'),
+  demand_unit: z.enum(['Lacs', 'Crore']).default('Lacs'),
   documents: z.string().optional(),
 });
 
@@ -64,6 +69,9 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
       size_unit: 'Marla',
       demand_unit: 'Lacs',
       meters: { electricity: false, gas: false, water: false },
+      // Ideally, you'd fetch the last serial number and increment it.
+      // For now, we'll use a placeholder.
+      serial_no: `P-${Math.floor(1000 + Math.random() * 9000)}`
     },
   });
 
@@ -107,6 +115,26 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <ScrollArea className="h-[65vh] pr-6">
           <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="serial_no"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serial No</FormLabel>
+                    <FormControl>
+                      <Input {...field} readOnly />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormItem>
+                <FormLabel>Date</FormLabel>
+                <Input value={new Date().toLocaleDateString()} readOnly />
+              </FormItem>
+            </div>
+            
             <FormField
               control={form.control}
               name="auto_title"
@@ -149,6 +177,8 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
                         <SelectItem value="Lahore">Lahore</SelectItem>
                         <SelectItem value="Karachi">Karachi</SelectItem>
                         <SelectItem value="Islamabad">Islamabad</SelectItem>
+                        <SelectItem value="Faisalabad">Faisalabad</SelectItem>
+                        <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -318,6 +348,70 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
                 />
               </div>
             </FormItem>
+             <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-2 md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="potential_rent_amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Potential Rent</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} placeholder="30" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="potential_rent_unit"
+                    render={({ field }) => (
+                      <FormItem className="self-end">
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Thousand">Thousand</SelectItem>
+                            <SelectItem value="Lacs">Lacs</SelectItem>
+                            <SelectItem value="Crore">Crore</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+             </div>
+             <div className="grid md:grid-cols-2 gap-4">
+                 <FormField
+                  control={form.control}
+                  name="front_ft"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Front (ft)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} placeholder="25" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="length_ft"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Length (ft)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} placeholder="45" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <FormField
@@ -343,7 +437,6 @@ export function AddPropertyForm({ setDialogOpen }: AddPropertyFormProps) {
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Thousand">Thousand</SelectItem>
                         <SelectItem value="Lacs">Lacs</SelectItem>
                         <SelectItem value="Crore">Crore</SelectItem>
                       </SelectContent>
