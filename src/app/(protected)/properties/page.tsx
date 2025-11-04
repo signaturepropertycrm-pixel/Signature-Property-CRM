@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -104,7 +105,6 @@ export default function PropertiesPage() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <AddPropertyDialog />
           </div>
         </div>
         <div className="border rounded-lg">
@@ -184,6 +184,9 @@ export default function PropertiesPage() {
             </TableBody>
           </Table>
         </div>
+      </div>
+      <div className="fixed bottom-8 right-8 z-50">
+        <AddPropertyDialog />
       </div>
       {selectedProperty && (
         <>

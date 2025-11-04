@@ -10,11 +10,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { AddPropertyForm } from './add-property-form';
+import { AddBuyerForm } from './add-buyer-form';
 import { Plus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-export function AddPropertyDialog() {
+export function AddBuyerDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -24,20 +24,20 @@ export function AddPropertyDialog() {
           <DialogTrigger asChild>
             <Button size="icon" className="rounded-full w-14 h-14 shadow-lg">
               <Plus className="h-6 w-6" />
-              <span className="sr-only">Add Property</span>
+              <span className="sr-only">Add Buyer</span>
             </Button>
           </DialogTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Add Property</TooltipContent>
+        <TooltipContent side="left">Add Buyer</TooltipContent>
       </Tooltip>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Add New Property</DialogTitle>
+          <DialogTitle className="font-headline">Add New Buyer</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new property to the system.
+            Fill in the details for the new buyer lead.
           </DialogDescription>
         </DialogHeader>
-        <AddPropertyForm setDialogOpen={setIsOpen} />
+        <AddBuyerForm setDialogOpen={setIsOpen} />
       </DialogContent>
     </Dialog>
   );
