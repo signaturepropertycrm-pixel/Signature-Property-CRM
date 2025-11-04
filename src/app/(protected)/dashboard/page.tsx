@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -19,12 +20,33 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const kpiData = [
-  { title: 'Total Properties', value: '1,254', icon: Building2 },
-  { title: 'Total Buyers', value: '821', icon: Users },
-  { title: 'Active Follow-ups', value: '102', icon: CalendarCheck },
-  { title: 'Deals Closed (Month)', value: '12', icon: DollarSign },
+  {
+    title: 'Total Properties',
+    value: '1,254',
+    icon: Building2,
+    color: 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300',
+  },
+  {
+    title: 'Total Buyers',
+    value: '821',
+    icon: Users,
+    color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300',
+  },
+  {
+    title: 'Active Follow-ups',
+    value: '102',
+    icon: CalendarCheck,
+    color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
+  },
+  {
+    title: 'Deals Closed (Month)',
+    value: '12',
+    icon: DollarSign,
+    color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
+  },
 ];
 
 const recentActivities = [
@@ -73,7 +95,9 @@ export default function DashboardPage() {
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-              <kpi.icon className="h-4 w-4 text-muted-foreground" />
+               <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
+                 <kpi.icon className="h-4 w-4" />
+               </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpi.value}</div>
