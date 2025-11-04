@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -105,14 +106,14 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.href} className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Link href={item.href}>
-                      <SidebarMenuButton
-                        isActive={pathname === item.href}
-                        className="rounded-full"
-                      >
-                          <item.icon />
-                          <span className="flex-1 truncate">{item.label}</span>
-                      </SidebarMenuButton>
+                    <Link href={item.href} passHref>
+                        <SidebarMenuButton
+                            isActive={pathname === item.href}
+                            className="rounded-full"
+                        >
+                            <item.icon />
+                            <span className="flex-1 truncate">{item.label}</span>
+                        </SidebarMenuButton>
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" align="center">
@@ -131,7 +132,7 @@ export function AppSidebar() {
                <SidebarMenuItem key={item.href} className="relative">
                  <Tooltip>
                    <TooltipTrigger asChild>
-                     <Link href={item.href}>
+                     <Link href={item.href} passHref>
                         <SidebarMenuButton isActive={pathname === item.href} className="rounded-full">
                             <item.icon />
                             <span className="flex-1 truncate">{item.label}</span>
@@ -147,7 +148,7 @@ export function AppSidebar() {
           <SidebarSeparator />
           <Tooltip>
             <TooltipTrigger asChild>
-                <Link href="/login">
+                <Link href="/login" passHref>
                   <SidebarMenuButton size="lg" className="justify-start">
                       <LogOut />
                       <span className="flex-1 truncate">Logout</span>
