@@ -29,36 +29,36 @@ export function AppHeader() {
   };
 
   return (
-    header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:h-16 sm:px-6">
-      SidebarTrigger className="md:hidden" />
-      h1 className="hidden text-lg font-semibold md:block font-headline">{getPageTitle()}h1>
-      div className="ml-auto flex items-center gap-2">
-        Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-          Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          span className="sr-only">Toggle themespan>
-        Button>
-        DropdownMenu>
-          DropdownMenuTrigger asChild>
-            Button variant="ghost" className="flex items-center gap-2">
-              Avatar className="h-8 w-8">
-                {adminAvatar && AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
-                AvatarFallback>DAAvatarFallback>
-              Avatar>
-              span className="hidden sm:inline">Demo Adminspan>
-              ChevronDown className="h-4 w-4 text-muted-foreground" />
-            Button>
-          DropdownMenuTrigger>
-          DropdownMenuContent align="end">
-            DropdownMenuLabel>My AccountDropdownMenuLabel>
-            DropdownMenuSeparator />
-            DropdownMenuItem>SettingsDropdownMenuItem>
-            DropdownMenuItem>SupportDropdownMenuItem>
-            DropdownMenuSeparator />
-            DropdownMenuItem>LogoutDropdownMenuItem>
-          DropdownMenuContent>
-        DropdownMenu>
-      div>
-    header>
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-card px-4 sm:h-16 sm:px-6">
+      <SidebarTrigger className="md:hidden" />
+      <h1 className="hidden text-lg font-semibold md:block font-headline">{getPageTitle()}</h1>
+      <div className="ml-auto flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                {adminAvatar && <AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
+                <AvatarFallback>DA</AvatarFallback>
+              </Avatar>
+              <span className="hidden sm:inline">Demo Admin</span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>Logout</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
   );
 }
