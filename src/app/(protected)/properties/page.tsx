@@ -295,8 +295,8 @@ export default function PropertiesPage() {
                       <div className="font-bold font-headline text-base">
                         {prop.auto_title}
                       </div>
-                      <div className="text-xs text-muted-foreground font-mono flex items-center gap-2">
-                        <span>{prop.serial_no}</span>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono">{prop.serial_no}</Badge>
                         <span className="truncate max-w-48">{prop.address}</span>
                       </div>
                     </TableCell>
@@ -380,5 +380,3 @@ export default function PropertiesPage() {
     </>
   );
 }
-
-    
