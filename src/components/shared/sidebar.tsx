@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -13,7 +12,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -25,7 +23,7 @@ import {
   Settings,
   Rocket,
   Home,
-  LogOut,
+  ChevronDown,
   LineChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,11 +34,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { buyerStatuses } from '@/lib/data';
+import { Badge } from '../ui/badge';
 
 const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
   { href: '/properties', label: 'Properties', icon: <Building2 /> },
-  { href: '/buyers', label: 'Buyers', icon: <Users /> },
+  // Buyers is now a collapsible menu
+  // { href: '/buyers', label: 'Buyers', icon: <Users /> },
   { href: '/team', label: 'Team', icon: <UserCog /> },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
   { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
@@ -52,15 +54,23 @@ const bottomMenuItems = [
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket /> },
 ];
 
+const buyerStatusLinks = [
+    'All',
+    ...buyerStatuses
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const [isBuyersOpen, setIsBuyersOpen] = useState(pathname.startsWith('/buyers'));
+
 
   if (isMobile) {
+    // Mobile view remains unchanged for now, can be updated later if needed.
     return (
       <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-card/80 backdrop-blur-md">
         <div className="grid h-16 grid-cols-5">
-          {menuItems.slice(0, 5).map((item) => (
+          {menuItems.slice(0, 4).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -75,6 +85,18 @@ export function AppSidebar() {
               <span>{item.label}</span>
             </Link>
           ))}
+           <Link
+              href="/buyers"
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 text-xs font-medium',
+                pathname.startsWith('/buyers')
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              )}
+            >
+              <Users className="h-5 w-5" />
+              <span>Buyers</span>
+            </Link>
         </div>
       </div>
     );
@@ -123,6 +145,49 @@ export function AppSidebar() {
                  {pathname === item.href && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
               </SidebarMenuItem>
             ))}
+
+            {/* Buyers Collapsible Menu */}
+             <Collapsible open={isBuyersOpen} onOpenChange={setIsBuyersOpen}>
+                 <SidebarMenuItem className="relative">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <CollapsibleTrigger asChild>
+                                 <SidebarMenuButton
+                                    isActive={pathname.startsWith('/buyers')}
+                                    className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                                >
+                                    <Users/>
+                                    <span className="flex-1 truncate">Buyers</span>
+                                    <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isBuyersOpen && "rotate-180")} />
+                                </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" align="center">Buyers</TooltipContent>
+                    </Tooltip>
+                    {pathname.startsWith('/buyers') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+                 </SidebarMenuItem>
+
+                <CollapsibleContent asChild>
+                    <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
+                        <SidebarMenu className="pl-7">
+                            {buyerStatusLinks.map(status => {
+                                const href = status === 'All' ? '/buyers' : `/buyers?status=${encodeURIComponent(status)}`;
+                                const isActive = status === 'All' ? pathname === '/buyers' : pathname.includes(`status=${encodeURIComponent(status)}`);
+                                return (
+                                     <SidebarMenuItem key={status}>
+                                         <Link href={href}>
+                                             <SidebarMenuButton size="sm" isActive={isActive} className="w-full justify-start rounded-full text-xs">
+                                                 {status}
+                                             </SidebarMenuButton>
+                                         </Link>
+                                     </SidebarMenuItem>
+                                );
+                            })}
+                        </SidebarMenu>
+                    </div>
+                </CollapsibleContent>
+             </Collapsible>
+
           </SidebarMenu>
         </SidebarContent>
 

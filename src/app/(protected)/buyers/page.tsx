@@ -4,10 +4,10 @@ import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers as initialBuyers } from '@/lib/data';
+import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Buyer, BuyerStatus, PriceUnit } from '@/lib/types';
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSearchParams } from 'next/navigation';
 
 
 const statusVariant = {
@@ -46,20 +46,14 @@ interface Filters {
   area: string;
 }
 
-type FilterTab = 'All' | 'New' | 'Hot Lead' | 'Follow Up';
-
-const buyerStatuses: BuyerStatus[] = [
-    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
-    'Pending Response', 'Need More Info', 'Visited Property',
-    'Deal Closed', 'Hot Lead', 'Cold Lead'
-];
-
-export default function BuyersPage() {
+function BuyersPageContent() {
     const isMobile = useIsMobile();
+    const searchParams = useSearchParams();
+    const statusFilterFromURL = searchParams.get('status') as BuyerStatus | null;
+
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<FilterTab>('All');
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [filters, setFilters] = useState<Filters>({
         name: '',
@@ -87,9 +81,9 @@ export default function BuyersPage() {
     const filteredBuyers = useMemo(() => {
         let filtered = buyers;
 
-        // Status tab filter
-        if (activeTab !== 'All') {
-            filtered = filtered.filter(b => b.status === activeTab);
+        // Status filter from URL
+        if (statusFilterFromURL) {
+            filtered = filtered.filter(b => b.status === statusFilterFromURL);
         }
         
         // Search query filter
@@ -102,7 +96,7 @@ export default function BuyersPage() {
             );
         }
 
-        // Advanced filters
+        // Advanced filters from popover
         if (filters.name) {
             filtered = filtered.filter(b => b.name.toLowerCase().includes(filters.name.toLowerCase()));
         }
@@ -114,7 +108,7 @@ export default function BuyersPage() {
         }
 
         return filtered;
-    }, [searchQuery, activeTab, filters, buyers]);
+    }, [searchQuery, statusFilterFromURL, filters, buyers]);
     
     const renderTable = () => (
         <Table>
@@ -300,7 +294,9 @@ export default function BuyersPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
-            <p className="text-muted-foreground">Manage your buyer leads.</p>
+            <p className="text-muted-foreground">
+                {statusFilterFromURL ? `Filtering by status: ${statusFilterFromURL}` : 'Manage your buyer leads.'}
+            </p>
           </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                <div className="relative w-full md:w-64">
@@ -360,14 +356,6 @@ export default function BuyersPage() {
                 </Button>
             </div>
         </div>
-         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-              <TabsList>
-                  <TabsTrigger value="All">All</TabsTrigger>
-                  <TabsTrigger value="New">New</TabsTrigger>
-                  <TabsTrigger value="Hot Lead">Hot Leads</TabsTrigger>
-                  <TabsTrigger value="Follow Up">Follow Up</TabsTrigger>
-              </TabsList>
-          </Tabs>
         <Card className="md:block hidden">
             <CardContent className="p-0">
                 {renderTable()}
@@ -382,6 +370,14 @@ export default function BuyersPage() {
       </div>
     </>
   );
+}
+
+export default function BuyersPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <BuyersPageContent />
+        </Suspense>
+    );
 }
 
     

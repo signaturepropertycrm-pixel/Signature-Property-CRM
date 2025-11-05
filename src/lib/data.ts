@@ -1,5 +1,5 @@
 
-import type { Property, User, Buyer, FollowUp, Appointment } from './types';
+import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
   {
@@ -97,6 +97,13 @@ export const properties: Property[] = [
     created_at: '2024-05-21T16:00:00Z',
     created_by: 'user_2',
   },
+];
+
+
+export const buyerStatuses: BuyerStatus[] = [
+    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
+    'Pending Response', 'Need More Info', 'Visited Property',
+    'Deal Closed', 'Hot Lead', 'Cold Lead'
 ];
 
 
