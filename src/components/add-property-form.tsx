@@ -77,7 +77,7 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit }: AddPropertyFo
       size_unit: 'Marla',
       demand_unit: 'Lacs',
       meters: { electricity: false, gas: false, water: false },
-      serial_no: `P-${Math.floor(1000 + Math.random() * 9000)}`
+      serial_no: `P-${Math.floor(1 + Math.random() * 999)}`
     },
   });
 
@@ -494,5 +494,3 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit }: AddPropertyFo
     </Form>
   );
 }
-
-    

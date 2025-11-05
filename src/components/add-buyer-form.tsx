@@ -51,7 +51,7 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
 
   useEffect(() => {
     // Set serial number on mount
-    form.setValue('serial_no', `B-${Math.floor(1000 + Math.random() * 9000)}`);
+    form.setValue('serial_no', `B-${Math.floor(1 + Math.random() * 999)}`);
   }, [form]);
 
   function onSubmit(values: AddBuyerFormValues) {

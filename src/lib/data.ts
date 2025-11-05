@@ -4,7 +4,7 @@ import type { Property, User, Buyer, FollowUp, Appointment } from './types';
 export const properties: Property[] = [
   {
     id: '1',
-    serial_no: 'P-1250',
+    serial_no: 'P-1',
     auto_title: '5 Marla House in Harbanspura',
     owner_number: '+92 300 1234567',
     city: 'Lahore',
@@ -22,7 +22,7 @@ export const properties: Property[] = [
   },
   {
     id: '2',
-    serial_no: 'P-1251',
+    serial_no: 'P-2',
     auto_title: '10 Marla Plot in DHA Phase 6',
     owner_number: '+92 321 7654321',
     city: 'Lahore',
@@ -40,7 +40,7 @@ export const properties: Property[] = [
   },
   {
     id: '3',
-    serial_no: 'P-1252',
+    serial_no: 'P-3',
     auto_title: '2 Bedroom Flat in Gulberg',
     owner_number: '+92 333 1122334',
     city: 'Lahore',
@@ -58,7 +58,7 @@ export const properties: Property[] = [
   },
   {
     id: '4',
-    serial_no: 'P-1253',
+    serial_no: 'P-4',
     auto_title: '1 Kanal Commercial Plot in Johar Town',
     owner_number: '+92 312 9876543',
     city: 'Lahore',
@@ -76,7 +76,7 @@ export const properties: Property[] = [
   },
   {
     id: '5',
-    serial_no: 'P-1254',
+    serial_no: 'P-5',
     auto_title: '8 Marla House in Bahria Town',
     owner_number: '+92 345 5566778',
     city: 'Lahore',
@@ -98,7 +98,7 @@ export const properties: Property[] = [
 export const buyers: Buyer[] = [
     {
         id: '1',
-        serial_no: 'B-820',
+        serial_no: 'B-1',
         name: 'Ahmed Hassan',
         phone: '+92 301 2345678',
         email: 'ahmed.hassan@example.com',
@@ -108,7 +108,7 @@ export const buyers: Buyer[] = [
     },
     {
         id: '2',
-        serial_no: 'B-821',
+        serial_no: 'B-2',
         name: 'Sana Iqbal',
         phone: '+92 322 8765432',
         email: 'sana.iqbal@example.com',
@@ -118,7 +118,7 @@ export const buyers: Buyer[] = [
     },
     {
         id: '3',
-        serial_no: 'B-822',
+        serial_no: 'B-3',
         name: 'Faisal Khan',
         phone: '+92 333 1122334',
         email: 'faisal.khan@example.com',
@@ -128,7 +128,7 @@ export const buyers: Buyer[] = [
     },
      {
         id: '4',
-        serial_no: 'B-823',
+        serial_no: 'B-4',
         name: 'Ayesha Malik',
         phone: '+92 315 4455667',
         email: 'ayesha.malik@example.com',
