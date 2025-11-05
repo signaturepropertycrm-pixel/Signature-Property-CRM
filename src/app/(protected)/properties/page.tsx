@@ -28,7 +28,6 @@ import {
   Upload,
   Download,
   Search,
-  PlusCircle,
   MapPin,
   Tag,
   Wallet,
@@ -37,8 +36,8 @@ import {
 import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PropertyStatus } from '@/lib/types';
-import { useState, useMemo, useEffect } from 'react';
+import type { Property, PropertyType } from '@/lib/types';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
@@ -57,9 +56,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
-
+import { useSearchParams } from 'next/navigation';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -68,11 +66,6 @@ function formatDemand(amount: number, unit: string) {
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
 }
-
-const statusVariant = {
-  Available: 'default',
-  Sold: 'default',
-} as const;
 
 interface Filters {
   area: string;
@@ -85,9 +78,11 @@ interface Filters {
 
 type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
-
-export default function PropertiesPage() {
+function PropertiesPageContent() {
   const isMobile = useIsMobile();
+  const searchParams = useSearchParams();
+  const statusFilterFromURL = searchParams.get('status') as FilterTab | null;
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
@@ -106,7 +101,6 @@ export default function PropertiesPage() {
     maxDemand: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<FilterTab>('All');
   
   useEffect(() => {
     // Load properties from localStorage on mount
@@ -148,10 +142,10 @@ export default function PropertiesPage() {
   const filteredProperties = useMemo(() => {
     let filtered = properties;
 
-    // Status tab filter
-    if (activeTab === 'Available' || activeTab === 'Sold') {
-        filtered = filtered.filter(p => p.status === activeTab);
-    } else if (activeTab === 'Recorded') {
+    // Status tab filter from URL
+    if (statusFilterFromURL && (statusFilterFromURL === 'Available' || statusFilterFromURL === 'Sold')) {
+        filtered = filtered.filter(p => p.status === statusFilterFromURL);
+    } else if (statusFilterFromURL === 'Recorded') {
         filtered = filtered.filter(p => p.is_recorded);
     }
     
@@ -191,7 +185,7 @@ export default function PropertiesPage() {
 
 
     return filtered;
-  }, [searchQuery, filters, activeTab, properties]);
+  }, [searchQuery, filters, statusFilterFromURL, properties]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -426,6 +420,9 @@ export default function PropertiesPage() {
               <h1 className="text-3xl font-bold tracking-tight font-headline">
                 Properties
               </h1>
+              <p className="text-muted-foreground">
+                {statusFilterFromURL ? `Filtering by status: ${statusFilterFromURL}` : 'Manage your properties.'}
+              </p>
             </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                <div className="relative w-full md:w-64">
@@ -507,14 +504,7 @@ export default function PropertiesPage() {
               </Button>
             </div>
           </div>
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-              <TabsList>
-                  <TabsTrigger value="All">All</TabsTrigger>
-                  <TabsTrigger value="Available">Available</TabsTrigger>
-                  <TabsTrigger value="Sold">Sold</TabsTrigger>
-                  <TabsTrigger value="Recorded">Recorded</TabsTrigger>
-              </TabsList>
-          </Tabs>
+          
           <Card className="md:block hidden">
             <CardContent className="p-0">
               {renderTable()}
@@ -557,6 +547,10 @@ export default function PropertiesPage() {
   );
 }
 
-    
-
-    
+export default function PropertiesPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PropertiesPageContent />
+        </Suspense>
+    );
+}
