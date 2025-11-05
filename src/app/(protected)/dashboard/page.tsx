@@ -1,26 +1,52 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Activity,
   ArrowUpRight,
   Building2,
   CalendarCheck,
   DollarSign,
   FileDown,
   FileUp,
+  Flame,
   PlusCircle,
+  Star,
   Users,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent
+} from '@/components/ui/chart';
 
 const kpiData = [
   {
@@ -28,26 +54,87 @@ const kpiData = [
     value: '1,254',
     icon: Building2,
     color: 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300',
+    change: '+2.1%',
   },
   {
     title: 'Total Buyers',
     value: '821',
     icon: Users,
+    color: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
+    change: '+8.5%',
+  },
+  {
+    title: 'Properties Sold (Month)',
+    value: '12',
+    icon: DollarSign,
     color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300',
+    change: '+15%',
+  },
+  {
+    title: 'Monthly Revenue',
+    value: '₹1.2Cr',
+    icon: DollarSign,
+    color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
+    change: '+20.1%',
+  },
+   {
+    title: 'Interested Buyers',
+    value: '42',
+    icon: Star,
+    color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
+    change: '+10',
+  },
+  {
+    title: 'Hot Leads',
+    value: '18',
+    icon: Flame,
+    color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
+    change: '+3 this week',
   },
   {
     title: 'Active Follow-ups',
     value: '102',
     icon: CalendarCheck,
-    color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
-  },
-  {
-    title: 'Deals Closed (Month)',
-    value: '12',
-    icon: DollarSign,
-    color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
+    color: 'bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-300',
+    change: '5 due today',
   },
 ];
+
+const revenueData = [
+  { month: 'Jan', revenue: 4000000 },
+  { month: 'Feb', revenue: 3000000 },
+  { month: 'Mar', revenue: 5000000 },
+  { month: 'Apr', revenue: 4500000 },
+  { month: 'May', revenue: 6000000 },
+  { month: 'Jun', revenue: 7200000 },
+];
+
+const buyersStatusData = [
+    { name: 'Hot Lead', value: 18, fill: 'var(--chart-5)'},
+    { name: 'Interested', value: 42, fill: 'var(--chart-3)'},
+    { name: 'Follow Up', value: 25, fill: 'var(--chart-4)'},
+    { name: 'New', value: 55, fill: 'var(--chart-2)'},
+    { name: 'Cold Lead', value: 70, fill: 'var(--chart-1)'},
+];
+const buyersChartConfig = {
+    value: { label: 'Buyers' },
+    'Hot Lead': { label: 'Hot Lead', color: "hsl(var(--chart-5))"},
+    'Interested': { label: 'Interested', color: "hsl(var(--chart-3))"},
+    'Follow Up': { label: 'Follow Up', color: "hsl(var(--chart-4))"},
+    'New': { label: 'New', color: "hsl(var(--chart-2))"},
+    'Cold Lead': { label: 'Cold Lead', color: "hsl(var(--chart-1))"},
+}
+
+const agentPerformanceData = [
+    { name: 'Ali Khan', sold: 5 },
+    { name: 'Fatima Ahmed', sold: 8 },
+    { name: 'Sana Javed', sold: 3 },
+    { name: 'Zain Malik', sold: 6 },
+    { name: 'Ayesha Mir', sold: 9 },
+];
+const agentChartConfig = {
+    sold: { label: 'Properties Sold', color: 'hsl(var(--chart-1))' }
+}
 
 const recentActivities = [
   {
@@ -90,8 +177,8 @@ const recentActivities = [
 export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {kpiData.map((kpi) => (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {kpiData.slice(0, 4).map((kpi) => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
@@ -102,7 +189,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{kpi.value}</div>
               <p className="text-xs text-muted-foreground">
-                +5.2% from last month
+                {kpi.change} from last month
               </p>
             </CardContent>
           </Card>
@@ -112,19 +199,37 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
-            <CardTitle>Properties Added per Month</CardTitle>
+            <CardTitle>Monthly Revenue</CardTitle>
+            <CardDescription>Revenue from properties sold over the last 6 months.</CardDescription>
           </CardHeader>
-          <CardContent className="flex items-center justify-center h-80">
-            <p className="text-muted-foreground">Line Chart Placeholder</p>
+          <CardContent className="h-80">
+            <ChartContainer config={{}} className="h-full w-full">
+              <LineChart data={revenueData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value / 100000}L`} />
+                  <Tooltip
+                    cursor={{ strokeDasharray: '3 3' }}
+                    content={<ChartTooltipContent formatter={(value) => `₹${Number(value).toLocaleString()}`} />}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
+              </LineChart>
+            </ChartContainer>
           </CardContent>
         </Card>
         <div className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle>Buyers by Status</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Pie Chart Placeholder</p>
+            <CardContent className="flex items-center justify-center h-48">
+              <ChartContainer config={buyersChartConfig} className="mx-auto aspect-square h-full">
+                <PieChart>
+                    <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
+                    <Pie data={buyersStatusData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={60} strokeWidth={2} />
+                    <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+                </PieChart>
+              </ChartContainer>
             </CardContent>
           </Card>
           <Card>
@@ -148,6 +253,26 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {kpiData.slice(4).map((kpi) => (
+          <Card key={kpi.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+               <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
+                 <kpi.icon className="h-4 w-4" />
+               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpi.value}</div>
+              <p className="text-xs text-muted-foreground">
+                {kpi.change}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
@@ -187,19 +312,30 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
               <CardTitle>Agent Performance</CardTitle>
+              <CardDescription>Top agents by properties sold this month.</CardDescription>
             </div>
             <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="#">
+              <Link href="/team">
                 View All
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
           </CardHeader>
-          <CardContent className="flex items-center justify-center h-80">
-            <p className="text-muted-foreground">Bar Chart Placeholder</p>
+           <CardContent className="h-80">
+              <ChartContainer config={agentChartConfig}>
+                <BarChart data={agentPerformanceData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                    <CartesianGrid horizontal={false} />
+                    <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} />
+                    <XAxis dataKey="sold" type="number" hide />
+                    <Tooltip cursor={{fill: 'hsl(var(--accent))'}} content={<ChartTooltipContent hideLabel />} />
+                    <Bar dataKey="sold" layout="vertical" radius={5} />
+                </BarChart>
+              </ChartContainer>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+    
