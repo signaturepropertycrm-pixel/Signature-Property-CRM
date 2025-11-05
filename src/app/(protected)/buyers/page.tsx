@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -342,10 +342,14 @@ function BuyersPageContent() {
                     </div>
                     </PopoverContent>
                 </Popover>
-               <Button onClick={() => setIsAddBuyerOpen(true)} className="glowing-btn">
-                  <PlusCircle />
-                  Add Buyer
-                </Button>
+               <Button variant="outline" className="rounded-full">
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+              <Button variant="outline" className="rounded-full">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
             </div>
         </div>
         <Card className="md:block hidden">
@@ -357,7 +361,11 @@ function BuyersPageContent() {
             {renderCards()}
         </div>
       </div>
-      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+         <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+              <PlusCircle className="h-6 w-6" />
+              <span className="sr-only">Add Buyer</span>
+          </Button>
          <AddBuyerDialog isOpen={isAddBuyerOpen} setIsOpen={setIsAddBuyerOpen} totalBuyers={buyers.length} />
       </div>
     </>
@@ -371,7 +379,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
 
     

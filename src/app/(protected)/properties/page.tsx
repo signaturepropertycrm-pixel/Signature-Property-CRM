@@ -32,6 +32,7 @@ import {
   Tag,
   Wallet,
   VideoOff,
+  PlusCircle,
 } from 'lucide-react';
 import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
@@ -93,6 +94,7 @@ function PropertiesPageContent() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: '',
     propertyType: 'All',
@@ -119,6 +121,12 @@ function PropertiesPageContent() {
         localStorage.setItem('properties', JSON.stringify(properties));
     }
   }, [properties]);
+
+  useEffect(() => {
+    if (!isAddPropertyOpen) {
+        setPropertyToEdit(null);
+    }
+  }, [isAddPropertyOpen]);
 
 
   const handleFilterChange = (
@@ -204,7 +212,7 @@ function PropertiesPageContent() {
   };
   
   const handleEdit = (prop: Property) => {
-    setSelectedProperty(prop);
+    setPropertyToEdit(prop);
     setIsAddPropertyOpen(true); // Re-using add dialog for editing
   };
   
@@ -508,12 +516,19 @@ function PropertiesPageContent() {
         </div>
       </TooltipProvider>
 
-        <AddPropertyDialog 
-            isOpen={isAddPropertyOpen}
-            setIsOpen={setIsAddPropertyOpen}
-            propertyToEdit={selectedProperty}
-            totalProperties={properties.length}
-        />
+      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+          <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+              <PlusCircle className="h-6 w-6" />
+              <span className="sr-only">Add Property</span>
+          </Button>
+      </div>
+
+      <AddPropertyDialog 
+          isOpen={isAddPropertyOpen}
+          setIsOpen={setIsAddPropertyOpen}
+          propertyToEdit={propertyToEdit}
+          totalProperties={properties.length}
+      />
       
       {selectedProperty && (
         <>
@@ -546,3 +561,5 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
+
+    
