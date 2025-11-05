@@ -6,11 +6,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, User, Search, Filter } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, User, Search, Filter, Wallet } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,13 @@ const statusVariant = {
     'Not Interested': 'destructive',
     'Closed': 'default'
 } as const;
+
+function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) {
+    if (!minAmount || !minUnit || !maxAmount || !maxUnit) {
+        return 'N/A';
+    }
+    return `${minAmount} ${minUnit} - ${maxAmount} ${maxUnit}`;
+}
 
 
 interface Filters {
@@ -94,7 +101,7 @@ export default function BuyersPage() {
             <TableHeader>
                 <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
+                    <TableHead>Budget</TableHead>
                     <TableHead>Preferences</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -105,11 +112,13 @@ export default function BuyersPage() {
                     <TableRow key={buyer.id}>
                         <TableCell>
                             <div className="font-medium">{buyer.name}</div>
-                            <div className="text-sm text-muted-foreground font-mono">{buyer.serial_no}</div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                                <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                <span>{buyer.phone}</span>
+                            </div>
                         </TableCell>
                         <TableCell>
-                            <div>{buyer.phone}</div>
-                            <div className="text-sm text-muted-foreground">{buyer.email}</div>
+                            {formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}
                         </TableCell>
                         <TableCell>
                             <div className="flex flex-col text-sm">
@@ -152,10 +161,14 @@ export default function BuyersPage() {
                 <Card key={buyer.id}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
-                            <span className="font-medium text-lg">{buyer.name}</span>
+                            <div>
+                                <span className="font-medium text-lg">{buyer.name}</span>
+                                <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                                    <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                </div>
+                            </div>
                             <Badge variant={statusVariant[buyer.status]}>{buyer.status}</Badge>
                         </CardTitle>
-                        <p className="text-sm text-muted-foreground pt-1 font-mono">{buyer.serial_no}</p>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-2">
@@ -170,6 +183,13 @@ export default function BuyersPage() {
                            <div>
                                 <p className="text-muted-foreground">Preference</p>
                                 <p className="font-medium">{buyer.area_preference}</p>
+                           </div>
+                        </div>
+                         <div className="flex items-center gap-2 col-span-2">
+                           <Wallet className="h-4 w-4 text-muted-foreground" />
+                           <div>
+                                <p className="text-muted-foreground">Budget</p>
+                                <p className="font-medium">{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</p>
                            </div>
                         </div>
                     </CardContent>
@@ -289,5 +309,3 @@ export default function BuyersPage() {
     </>
   );
 }
-
-    

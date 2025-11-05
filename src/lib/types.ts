@@ -61,10 +61,13 @@ export type Buyer = {
     serial_no: string;
     name: string;
     phone: string;
-    email?: string;
     status: BuyerStatus;
     area_preference?: string;
     property_type_preference?: string;
+    budget_min_amount?: number;
+    budget_min_unit?: PriceUnit;
+    budget_max_amount?: number;
+    budget_max_unit?: PriceUnit;
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
