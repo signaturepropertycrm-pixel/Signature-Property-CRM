@@ -68,7 +68,9 @@ export function VideoLinksDialog({
                         <div className="text-primary w-6 h-6 flex-shrink-0">
                             {socialIcons[platformKey] || <LinkIcon />}
                         </div>
-                        <div className="flex-1 truncate text-sm font-medium">{link}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium break-words">{link}</p>
+                        </div>
                     </a>
                 )
             })}
