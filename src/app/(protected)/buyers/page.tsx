@@ -21,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 const statusVariant = {
     'New': 'default',
     'Contacted': 'secondary',
-    'Interested': 'outline',
+    'Interested': 'default', // Will be overridden by className for green color
     'Not Interested': 'destructive',
     'Closed': 'default'
 } as const;
@@ -102,7 +102,7 @@ export default function BuyersPage() {
                 <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Budget</TableHead>
-                    <TableHead>Preferences</TableHead>
+                    <TableHead>Areas</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -127,7 +127,7 @@ export default function BuyersPage() {
                             </div>
                         </TableCell>
                         <TableCell>
-                            <Badge variant={statusVariant[buyer.status]}>{buyer.status}</Badge>
+                            <Badge variant={statusVariant[buyer.status]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}>{buyer.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                                 <DropdownMenu>
@@ -167,7 +167,7 @@ export default function BuyersPage() {
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                 </div>
                             </div>
-                            <Badge variant={statusVariant[buyer.status]}>{buyer.status}</Badge>
+                            <Badge variant={statusVariant[buyer.status]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}>{buyer.status}</Badge>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -181,7 +181,7 @@ export default function BuyersPage() {
                          <div className="flex items-center gap-2">
                            <Home className="h-4 w-4 text-muted-foreground" />
                            <div>
-                                <p className="text-muted-foreground">Preference</p>
+                                <p className="text-muted-foreground">Area</p>
                                 <p className="font-medium">{buyer.area_preference}</p>
                            </div>
                         </div>
