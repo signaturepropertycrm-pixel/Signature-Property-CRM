@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSearchParams } from 'next/navigation';
+import { useSearch } from '../layout';
 
 
 const statusVariant = {
@@ -49,11 +50,11 @@ interface Filters {
 function BuyersPageContent() {
     const isMobile = useIsMobile();
     const searchParams = useSearchParams();
+    const { searchQuery } = useSearch();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | null;
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
-    const [searchQuery, setSearchQuery] = useState('');
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [filters, setFilters] = useState<Filters>({
         name: '',
@@ -81,12 +82,12 @@ function BuyersPageContent() {
     const filteredBuyers = useMemo(() => {
         let filtered = buyers;
 
-        // Status filter from URL
+        // Status filter from URL (Sidebar)
         if (statusFilterFromURL) {
             filtered = filtered.filter(b => b.status === statusFilterFromURL);
         }
         
-        // Search query filter
+        // Global search query from header
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer => 
@@ -299,15 +300,6 @@ function BuyersPageContent() {
             </p>
           </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-               <div className="relative w-full md:w-64">
-                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                 <Input 
-                  placeholder="Search name, area, serial..." 
-                  className="w-full pl-10 rounded-full bg-input/80" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-               </div>
                 <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                     <PopoverTrigger asChild>
                     <Button variant="outline" className="rounded-full">

@@ -23,7 +23,15 @@ const userName = "Demo Admin";
 const firstName = userName.split(' ')[0];
 
 
-export function AppHeader() {
+export function AppHeader({ 
+  searchable,
+  searchQuery,
+  setSearchQuery
+}: {
+  searchable: boolean;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
+}) {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
 
@@ -37,10 +45,17 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search..." className="w-full md:w-64 pl-10 rounded-full bg-input/80" />
-        </div>
+        {searchable && (
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search..." 
+              className="w-full pl-10 rounded-full bg-input/80" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery?.(e.target.value)}
+            />
+          </div>
+        )}
         <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="rounded-full">
           <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />

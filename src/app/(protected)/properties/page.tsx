@@ -58,6 +58,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearchParams } from 'next/navigation';
+import { useSearch } from '../layout';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -81,6 +82,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 function PropertiesPageContent() {
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
+  const { searchQuery } = useSearch();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | null;
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -91,7 +93,6 @@ function PropertiesPageContent() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({
     area: '',
     propertyType: 'All',
@@ -142,14 +143,14 @@ function PropertiesPageContent() {
   const filteredProperties = useMemo(() => {
     let filtered = properties;
 
-    // Status tab filter from URL
+    // Status tab filter from URL (Sidebar)
     if (statusFilterFromURL && (statusFilterFromURL === 'Available' || statusFilterFromURL === 'Sold')) {
         filtered = filtered.filter(p => p.status === statusFilterFromURL);
     } else if (statusFilterFromURL === 'Recorded') {
         filtered = filtered.filter(p => p.is_recorded);
     }
     
-    // Search query filter
+    // Global search query from header
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filtered = filtered.filter(prop => 
@@ -162,7 +163,7 @@ function PropertiesPageContent() {
         );
     }
     
-    // Advanced filters
+    // Advanced filters from popover
     if (filters.area) {
         filtered = filtered.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     }
@@ -425,15 +426,6 @@ function PropertiesPageContent() {
               </p>
             </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-               <div className="relative w-full md:w-64">
-                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                 <Input 
-                  placeholder="Search area, size, demand..." 
-                  className="w-full pl-10 rounded-full bg-input/80" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-               </div>
               <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="rounded-full">
