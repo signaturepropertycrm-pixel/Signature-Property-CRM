@@ -27,6 +27,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   Pie,
@@ -106,7 +107,7 @@ const kpiData = [
     value: '73',
     icon: TrendingDown,
     color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-    change: '2 new',
+    change: '-2 from yesterday',
   },
 ];
 
@@ -120,11 +121,11 @@ const revenueData = [
 ];
 
 const buyersStatusData = [
-    { name: 'Hot Lead', value: 18, fill: 'var(--chart-5)'},
-    { name: 'Interested', value: 42, fill: 'var(--chart-3)'},
-    { name: 'Follow Up', value: 25, fill: 'var(--chart-4)'},
-    { name: 'New', value: 55, fill: 'var(--chart-2)'},
-    { name: 'Cold Lead', value: 70, fill: 'var(--chart-1)'},
+    { name: 'Hot Lead', value: 18, fill: 'hsl(var(--chart-5))'},
+    { name: 'Interested', value: 42, fill: 'hsl(var(--chart-3))'},
+    { name: 'Follow Up', value: 25, fill: 'hsl(var(--chart-4))'},
+    { name: 'New', value: 55, fill: 'hsl(var(--chart-2))'},
+    { name: 'Cold Lead', value: 70, fill: 'hsl(var(--chart-1))'},
 ];
 const buyersChartConfig = {
     value: { label: 'Buyers' },
@@ -136,14 +137,14 @@ const buyersChartConfig = {
 }
 
 const agentPerformanceData = [
-    { name: 'Ali Khan', sold: 5 },
-    { name: 'Fatima Ahmed', sold: 8 },
-    { name: 'Sana Javed', sold: 3 },
-    { name: 'Zain Malik', sold: 6 },
-    { name: 'Ayesha Mir', sold: 9 },
+    { name: 'Ali Khan', sold: 5, fill: 'hsl(var(--chart-1))' },
+    { name: 'Fatima Ahmed', sold: 8, fill: 'hsl(var(--chart-2))' },
+    { name: 'Sana Javed', sold: 3, fill: 'hsl(var(--chart-3))' },
+    { name: 'Zain Malik', sold: 6, fill: 'hsl(var(--chart-4))' },
+    { name: 'Ayesha Mir', sold: 9, fill: 'hsl(var(--chart-5))' },
 ];
 const agentChartConfig = {
-    sold: { label: 'Properties Sold', color: 'hsl(var(--chart-1))' }
+    sold: { label: 'Properties Sold' }
 }
 
 
@@ -161,7 +162,11 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpi.value}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className={cn(
+                "text-xs text-muted-foreground",
+                kpi.change.startsWith('+') && "text-green-600",
+                kpi.change.startsWith('-') && "text-red-600"
+              )}>
                 {kpi.change}
               </p>
             </CardContent>
@@ -227,7 +232,11 @@ export default function DashboardPage() {
                     <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={80} />
                     <XAxis dataKey="sold" type="number" hide />
                     <Tooltip cursor={{fill: 'hsl(var(--accent))'}} content={<ChartTooltipContent hideLabel />} />
-                    <Bar dataKey="sold" layout="vertical" radius={5} />
+                    <Bar dataKey="sold" layout="vertical" radius={5}>
+                        {agentPerformanceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                    </Bar>
                 </BarChart>
               </ChartContainer>
           </CardContent>
