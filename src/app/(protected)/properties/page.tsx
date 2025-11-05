@@ -70,8 +70,8 @@ function formatSize(value: number, unit: string) {
 }
 
 const statusVariant = {
-  Available: 'default',
-  Sold: 'destructive',
+  Available: 'secondary',
+  Sold: 'default',
 } as const;
 
 interface Filters {

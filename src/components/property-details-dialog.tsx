@@ -28,7 +28,7 @@ const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: stri
     <div className="flex items-start gap-4">
         <div className="flex-shrink-0 text-primary">{icon}</div>
         <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
+            <div className="text-sm text-muted-foreground">{label}</div>
             <div className="font-semibold">{value || 'N/A'}</div>
         </div>
     </div>
@@ -83,7 +83,7 @@ export function PropertyDetailsDialog({
                   {property.address}
                 </DialogDescription>
               </div>
-              <Badge variant={property.status === 'Sold' ? 'default' : 'secondary'} className={property.status === 'Sold' ? 'bg-green-600' : ''}>{property.status}</Badge>
+              <Badge variant={property.status === 'Sold' ? 'default' : 'secondary'} className={property.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}>{property.status}</Badge>
             </div>
           </DialogHeader>
           <ScrollArea className="max-h-[65vh] pr-6">
