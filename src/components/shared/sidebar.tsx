@@ -25,6 +25,7 @@ import {
   Home,
   ChevronDown,
   LineChart,
+  History,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -42,6 +43,7 @@ const menuItems = [
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
   { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
   { href: '/analytics', label: 'Analytics', icon: <LineChart /> },
+  { href: '/activities', label: 'Activities', icon: <History /> },
 ];
 
 const bottomMenuItems = [
