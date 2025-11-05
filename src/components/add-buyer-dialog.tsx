@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { AddBuyerForm } from './add-buyer-form';
 import { PlusCircle } from 'lucide-react';
-import { ScrollArea } from './ui/scroll-area';
 
 interface AddBuyerDialogProps {
     isOpen: boolean;
@@ -22,16 +21,14 @@ export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers }: AddBuyerDialo
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh]">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Add New Buyer</DialogTitle>
           <DialogDescription>
             Fill in the details for the new buyer lead.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="pr-6 -mr-6">
-            <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} />
-        </ScrollArea>
+        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} />
       </DialogContent>
     </Dialog>
   );

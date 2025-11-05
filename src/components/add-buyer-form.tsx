@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import type { BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
 import { Separator } from './ui/separator';
+import { ScrollArea } from './ui/scroll-area';
 
 const buyerStatuses: BuyerStatus[] = [
     'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
@@ -96,191 +97,195 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-            control={form.control}
-            name="serial_no"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Serial No</FormLabel>
-                <FormControl>
-                    <Input {...field} readOnly className="bg-muted/50" />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <FormItem>
-                <FormLabel>Date</FormLabel>
-                <Input value={new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
-            </FormItem>
-        </div>
-        
-        <Separator />
-        <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
+        <ScrollArea className="h-[60vh] pr-6 -mr-6">
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="serial_no"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Serial No</FormLabel>
+                        <FormControl>
+                            <Input {...field} readOnly className="bg-muted/50" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <Input value={new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
+                    </FormItem>
+                </div>
+                
+                <Separator />
+                <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                    <Input {...field} placeholder="e.g. Ali Khan" />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                    <Input {...field} placeholder="+92 300 1234567" />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email (Optional)</FormLabel>
-              <FormControl>
-                <Input type="email" {...field} placeholder="buyer@example.com" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <Separator />
-        <h4 className="text-sm font-medium text-muted-foreground">Buyer Requirements</h4>
-        
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-            control={form.control}
-            name="area_preference"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Area Preference</FormLabel>
-                <FormControl>
-                    <Input {...field} placeholder="e.g. DHA, Bahria, Gulberg" />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-             <FormField
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="e.g. Ali Khan" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="+92 300 1234567" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                <FormField
                 control={form.control}
-                name="property_type_preference"
+                name="email"
                 render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Property Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormItem>
+                    <FormLabel>Email (Optional)</FormLabel>
                     <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                        <Input type="email" {...field} placeholder="buyer@example.com" />
                     </FormControl>
-                    <SelectContent>
-                        {propertyTypes.map(type => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                
+                <Separator />
+                <h4 className="text-sm font-medium text-muted-foreground">Buyer Requirements</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="area_preference"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Area Preference</FormLabel>
+                        <FormControl>
+                            <Input {...field} placeholder="e.g. DHA, Bahria, Gulberg" />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="property_type_preference"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Property Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {propertyTypes.map(type => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <FormLabel>Size Preference</FormLabel>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                            <FormField control={form.control} name="size_min_value" render={({field}) => (
+                                <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="size_min_unit" render={({field}) => (
+                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                    {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                </SelectContent></Select></FormItem>
+                            )} />
+                            <FormField control={form.control} name="size_max_value" render={({field}) => (
+                                <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="size_max_unit" render={({field}) => (
+                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                    {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                </SelectContent></Select></FormItem>
+                            )} />
+                        </div>
+                    </div>
+                    <div>
+                        <FormLabel>Budget Range</FormLabel>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                            <FormField control={form.control} name="budget_min_amount" render={({field}) => (
+                                <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="budget_min_unit" render={({field}) => (
+                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                    {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                </SelectContent></Select></FormItem>
+                            )} />
+                            <FormField control={form.control} name="budget_max_amount" render={({field}) => (
+                                <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="budget_max_unit" render={({field}) => (
+                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                    {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                </SelectContent></Select></FormItem>
+                            )} />
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+                <h4 className="text-sm font-medium text-muted-foreground">Status & Notes</h4>
+
+                <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                        {buyerStatuses.map(status => (
+                            <SelectItem key={status} value={status}>{status}</SelectItem>
                         ))}
-                    </SelectContent>
+                        </SelectContent>
                     </Select>
                     <FormMessage />
-                </FormItem>
+                    </FormItem>
                 )}
-            />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <FormLabel>Size Preference</FormLabel>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                    <FormField control={form.control} name="size_min_value" render={({field}) => (
-                        <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="size_min_unit" render={({field}) => (
-                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
-                            {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                        </SelectContent></Select></FormItem>
-                    )} />
-                    <FormField control={form.control} name="size_max_value" render={({field}) => (
-                        <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="size_max_unit" render={({field}) => (
-                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
-                            {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                        </SelectContent></Select></FormItem>
-                    )} />
-                </div>
+                />
+                <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Other Requirements / Notes</FormLabel>
+                    <FormControl>
+                        <Textarea {...field} placeholder="Any specific requirements or notes..." />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
             </div>
-             <div>
-                <FormLabel>Budget Range</FormLabel>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                    <FormField control={form.control} name="budget_min_amount" render={({field}) => (
-                        <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="budget_min_unit" render={({field}) => (
-                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
-                            {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                        </SelectContent></Select></FormItem>
-                    )} />
-                    <FormField control={form.control} name="budget_max_amount" render={({field}) => (
-                        <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="budget_max_unit" render={({field}) => (
-                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
-                            {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                        </SelectContent></Select></FormItem>
-                    )} />
-                </div>
-            </div>
-        </div>
-
-        <Separator />
-         <h4 className="text-sm font-medium text-muted-foreground">Status & Notes</h4>
-
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {buyerStatuses.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Other Requirements / Notes</FormLabel>
-              <FormControl>
-                <Textarea {...field} placeholder="Any specific requirements or notes..." />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        </ScrollArea>
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
             Cancel
