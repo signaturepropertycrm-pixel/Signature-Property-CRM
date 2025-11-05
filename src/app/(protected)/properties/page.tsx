@@ -80,6 +80,9 @@ interface Filters {
   maxDemand: string;
 }
 
+type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
+
+
 export default function PropertiesPage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
@@ -98,7 +101,7 @@ export default function PropertiesPage() {
     maxDemand: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'All'>('All');
+  const [activeTab, setActiveTab] = useState<FilterTab>('All');
 
   const handleFilterChange = (
     key: keyof Filters,
@@ -123,8 +126,10 @@ export default function PropertiesPage() {
     let filteredProperties = allProperties;
 
     // Status tab filter
-    if (statusFilter !== 'All') {
-        filteredProperties = filteredProperties.filter(p => p.status === statusFilter);
+    if (activeTab === 'Available' || activeTab === 'Sold') {
+        filteredProperties = filteredProperties.filter(p => p.status === activeTab);
+    } else if (activeTab === 'Recorded') {
+        filteredProperties = filteredProperties.filter(p => p.is_recorded);
     }
     
     // Search query filter
@@ -163,7 +168,7 @@ export default function PropertiesPage() {
 
 
     return filteredProperties;
-  }, [searchQuery, filters, statusFilter]);
+  }, [searchQuery, filters, activeTab]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -279,13 +284,12 @@ export default function PropertiesPage() {
             />
           </div>
         </div>
-        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as PropertyStatus | 'All')}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
             <TabsList>
                 <TabsTrigger value="All">All</TabsTrigger>
                 <TabsTrigger value="Available">Available</TabsTrigger>
                 <TabsTrigger value="Sold">Sold</TabsTrigger>
-                <TabsTrigger value="Reserved">Reserved</TabsTrigger>
-                <TabsTrigger value="Off-Market">Off-Market</TabsTrigger>
+                <TabsTrigger value="Recorded">Recorded</TabsTrigger>
             </TabsList>
         </Tabs>
         <Card>
@@ -409,7 +413,3 @@ export default function PropertiesPage() {
     </TooltipProvider>
   );
 }
-
-    
-
-    
