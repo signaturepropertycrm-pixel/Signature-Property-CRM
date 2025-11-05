@@ -15,88 +15,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/lib/types';
 import { Copy, Share2, Check } from 'lucide-react';
+import { generateShareableText } from '@/lib/actions';
+import { ShareableTextInput } from '@/ai/flows/shareable-text-generation';
 
-interface SharePropertyDialogProps {
-  property: Property;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-}
-
-const formatForCustomer = (property: Property): string => {
-  const parts = [
-    '*PROPERTY DETAILS 🏡*',
-    `Serial No: ${property.serial_no}`,
-    `Area: ${property.area}`,
-    `Property Type: ${property.property_type}`,
-    `Size/Marla: ${property.size_value} ${property.size_unit}`,
-  ];
-
-  if (property.storey) parts.push(`Floor: ${property.storey}`);
-  if (property.road_size_ft) parts.push(`Road Size: ${property.road_size_ft} ft`);
-  if (property.front_ft) parts.push(`Front/Length: ${property.front_ft} ft`);
-  parts.push(`Demand: ${property.demand_amount} ${property.demand_unit}`);
-  
-  parts.push('\n*Financials:*');
-  if (property.potential_rent_amount) {
-    parts.push(`- Potential Rent: ${property.potential_rent_amount}K`);
-  } else {
-    parts.push('- Potential Rent: N/A');
-  }
-
-  parts.push('\n*Utilities:*');
-  const utilities = [];
-  if (property.meters?.gas) utilities.push('_- Gas_');
-  if (property.meters?.electricity) utilities.push('_- Electricity_');
-  if (property.meters?.water) utilities.push('_- Water_');
-  if (utilities.length > 0) {
-    parts.push(...utilities);
-  } else {
-    parts.push('No utilities listed.');
-  }
-
-  parts.push(`\n*Documents:* ${property.documents || 'N/A'}`);
-
-  return parts.join('\n');
-};
-
-const formatForAgent = (property: Property): string => {
-    const parts = [
-    '*PROPERTY DETAILS 🏡*',
-    `Serial No: ${property.serial_no}`,
-    `Area: ${property.area}`,
-    `Full Address: ${property.address}`,
-    `Property Type: ${property.property_type}`,
-    `Size/Marla: ${property.size_value} ${property.size_unit}`,
-  ];
-
-  if (property.storey) parts.push(`Floor: ${property.storey}`);
-  if (property.road_size_ft) parts.push(`Road Size: ${property.road_size_ft} ft`);
-  if (property.front_ft) parts.push(`Front/Length: ${property.front_ft} ft`);
-  parts.push(`Demand: ${property.demand_amount} ${property.demand_unit}`);
-  parts.push(`Owner Number: ${property.owner_number}`);
-  
-  parts.push('\n*Financials:*');
-  if (property.potential_rent_amount) {
-    parts.push(`- Potential Rent: ${property.potential_rent_amount}K`);
-  } else {
-    parts.push('- Potential Rent: N/A');
-  }
-
-  parts.push('\n*Utilities:*');
-  const utilities = [];
-  if (property.meters?.gas) utilities.push('_- Gas_');
-  if (property.meters?.electricity) utilities.push('_- Electricity_');
-  if (property.meters?.water) utilities.push('_- Water_');
-  if (utilities.length > 0) {
-    parts.push(...utilities);
-  } else {
-    parts.push('No utilities listed.');
-  }
-
-  parts.push(`\n*Documents:* ${property.documents || 'N/A'}`);
-
-  return parts.join('\n');
-};
 
 export function SharePropertyDialog({
   property,
@@ -105,9 +26,50 @@ export function SharePropertyDialog({
 }: SharePropertyDialogProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<'customer' | 'agent' | null>(null);
+  const [customerText, setCustomerText] = useState('');
+  const [agentText, setAgentText] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const customerText = formatForCustomer(property);
-  const agentText = formatForAgent(property);
+  useEffect(() => {
+    if (isOpen && property) {
+        setLoading(true);
+        const propertyInput: ShareableTextInput = {
+            serial_no: property.serial_no,
+            area: property.area,
+            address: property.address,
+            property_type: property.property_type,
+            size_value: property.size_value,
+            size_unit: property.size_unit,
+            storey: property.storey,
+            road_size_ft: property.road_size_ft,
+            front_ft: property.front_ft,
+            length_ft: property.length_ft,
+            demand_amount: property.demand_amount,
+            demand_unit: property.demand_unit,
+            owner_number: property.owner_number,
+            potential_rent_amount: property.potential_rent_amount,
+            potential_rent_unit: property.potential_rent_unit,
+            meters: property.meters,
+            documents: property.documents,
+        };
+        
+        generateShareableText(propertyInput)
+            .then(res => {
+                setCustomerText(res.forCustomer);
+                setAgentText(res.forAgent);
+            })
+            .catch(err => {
+                console.error("Failed to generate shareable text:", err);
+                toast({
+                    variant: 'destructive',
+                    title: "AI Text Generation Failed",
+                    description: "Could not generate the property description. Please try again."
+                });
+            })
+            .finally(() => setLoading(false));
+    }
+  }, [isOpen, property, toast]);
+
 
   const handleCopy = (text: string, type: 'customer' | 'agent') => {
     navigator.clipboard.writeText(text);
@@ -116,7 +78,7 @@ export function SharePropertyDialog({
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleShare = async (text: string) => {
+  const handleShare = async (text: string, type: 'customer' | 'agent') => {
     try {
         if (navigator.share) {
             await navigator.share({
@@ -124,12 +86,17 @@ export function SharePropertyDialog({
                 text: text,
             });
         } else {
-            handleCopy(text, 'customer'); // Fallback
-            toast({ title: 'Link copied!', description: "Sharing not supported, text copied to clipboard."});
+            handleCopy(text, type); 
+            toast({ title: 'Sharing not supported', description: "Text copied to clipboard instead."});
         }
     } catch (error) {
-        console.error('Sharing failed', error);
-        toast({ variant: 'destructive', title: 'Could not share', description: 'There was an error trying to share.'});
+        console.error('Sharing failed, falling back to copy:', error);
+        handleCopy(text, type);
+        toast({ 
+            variant: 'destructive', 
+            title: 'Sharing Failed', 
+            description: 'Could not share. The text has been copied to your clipboard instead.'
+        });
     }
   };
 
@@ -154,15 +121,16 @@ export function SharePropertyDialog({
             <TabsContent value="customer">
               <Textarea
                 readOnly
-                value={customerText}
+                value={loading ? "Generating with AI..." : customerText}
                 className="h-60 mt-4"
+                disabled={loading}
               />
               <div className="flex gap-2 mt-4">
-                 <Button className="w-full" onClick={() => handleCopy(customerText, 'customer')}>
+                 <Button className="w-full" onClick={() => handleCopy(customerText, 'customer')} disabled={loading}>
                     {copied === 'customer' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
                     {copied === 'customer' ? 'Copied' : 'Copy'}
                 </Button>
-                <Button className="w-full" variant="outline" onClick={() => handleShare(customerText)}>
+                <Button className="w-full" variant="outline" onClick={() => handleShare(customerText, 'customer')} disabled={loading}>
                     <Share2 className="mr-2" /> Share
                 </Button>
               </div>
@@ -170,15 +138,16 @@ export function SharePropertyDialog({
             <TabsContent value="agent">
               <Textarea
                 readOnly
-                value={agentText}
+                value={loading ? "Generating with AI..." : agentText}
                 className="h-60 mt-4"
+                disabled={loading}
               />
                <div className="flex gap-2 mt-4">
-                 <Button className="w-full" onClick={() => handleCopy(agentText, 'agent')}>
+                 <Button className="w-full" onClick={() => handleCopy(agentText, 'agent')} disabled={loading}>
                     {copied === 'agent' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
                     {copied === 'agent' ? 'Copied' : 'Copy'}
                 </Button>
-                <Button className="w-full" variant="outline" onClick={() => handleShare(agentText)}>
+                <Button className="w-full" variant="outline" onClick={() => handleShare(agentText, 'agent')} disabled={loading}>
                     <Share2 className="mr-2" /> Share
                 </Button>
               </div>
@@ -194,5 +163,3 @@ export function SharePropertyDialog({
     </Dialog>
   );
 }
-
-    
