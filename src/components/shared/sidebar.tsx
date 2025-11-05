@@ -38,7 +38,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { buyerStatuses } from '@/lib/data';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
   { href: '/team', label: 'Team', icon: <UserCog /> },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
   { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
