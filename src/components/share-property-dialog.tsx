@@ -20,6 +20,7 @@ interface SharePropertyDialogProps {
     property: Property;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    mode: 'copy' | 'share';
 }
 
 const generateSimpleShareableText = (property: Property) => {
@@ -48,7 +49,7 @@ const generateSimpleShareableText = (property: Property) => {
 
     // Customer Text
     const customerTextParts = [
-        '**PROPERTY DETAILS 🏡**',
+        '*PROPERTY DETAILS 🏡*',
         details.serialNo,
         details.area,
         details.propertyType,
@@ -57,18 +58,18 @@ const generateSimpleShareableText = (property: Property) => {
         details.roadSize,
         details.front,
         details.demand,
-        '\n**Financials:**',
+        '\n*Financials:*',
         details.potentialRent,
-        '\n**Utilities:**',
+        '\n*Utilities:*',
         utilities,
-        '\n**Documents:**',
+        '\n*Documents:*',
         details.documents,
     ];
     const forCustomer = customerTextParts.filter(Boolean).join('\n');
 
     // Agent Text
     const agentTextParts = [
-        '**PROPERTY DETAILS 🏡**',
+        '*PROPERTY DETAILS 🏡*',
         details.serialNo,
         details.area,
         details.address,
@@ -79,11 +80,11 @@ const generateSimpleShareableText = (property: Property) => {
         details.front,
         details.demand,
         details.ownerNumber,
-        '\n**Financials:**',
+        '\n*Financials:*',
         details.potentialRent,
-        '\n**Utilities:**',
+        '\n*Utilities:*',
         utilities,
-        '\n**Documents:**',
+        '\n*Documents:*',
         details.documents,
     ];
     const forAgent = agentTextParts.filter(Boolean).join('\n');
@@ -96,6 +97,7 @@ export function SharePropertyDialog({
   property,
   isOpen,
   setIsOpen,
+  mode
 }: SharePropertyDialogProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<'customer' | 'agent' | null>(null);
@@ -121,29 +123,10 @@ export function SharePropertyDialog({
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleShare = async (text: string, type: 'customer' | 'agent') => {
-    try {
-        if (navigator.share) {
-            await navigator.share({
-                title: property.auto_title,
-                text: text,
-            });
-        } else {
-            handleCopy(text, type); 
-            toast({ title: 'Sharing not supported', description: "Text copied to clipboard instead."});
-        }
-    } catch (error) {
-        console.error('Sharing failed, falling back to copy:', error);
-        // Only show copy toast if it's not a permission denied error from user cancellation
-        if (error instanceof DOMException && error.name !== 'AbortError') {
-             handleCopy(text, type);
-             toast({ 
-                variant: 'destructive', 
-                title: 'Sharing Failed', 
-                description: 'Could not share. Text copied instead.'
-            });
-        }
-    }
+  const handleShare = async (text: string) => {
+    const encodedText = encodeURIComponent(text);
+    const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
 
@@ -155,7 +138,7 @@ export function SharePropertyDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline">
-            Share Property: {property.auto_title}
+            {mode === 'copy' ? 'Copy Details' : 'Share Property'}: {property.auto_title}
           </DialogTitle>
         </DialogHeader>
 
@@ -172,13 +155,16 @@ export function SharePropertyDialog({
                 disabled={loading}
               />
               <div className="flex gap-2 mt-4">
-                 <Button className="w-full" onClick={() => handleCopy(customerText, 'customer')} disabled={loading}>
-                    {copied === 'customer' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
-                    {copied === 'customer' ? 'Copied' : 'Copy'}
-                </Button>
-                <Button className="w-full" variant="outline" onClick={() => handleShare(customerText, 'customer')} disabled={loading}>
-                    <Share2 className="mr-2" /> Share
-                </Button>
+                 {mode === 'copy' ? (
+                    <Button className="w-full" onClick={() => handleCopy(customerText, 'customer')} disabled={loading}>
+                        {copied === 'customer' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
+                        {copied === 'customer' ? 'Copied' : 'Copy Text'}
+                    </Button>
+                 ) : (
+                    <Button className="w-full" variant="outline" onClick={() => handleShare(customerText)} disabled={loading}>
+                        <Share2 className="mr-2" /> Share on WhatsApp
+                    </Button>
+                 )}
               </div>
             </TabsContent>
             <TabsContent value="agent">
@@ -189,13 +175,16 @@ export function SharePropertyDialog({
                 disabled={loading}
               />
                <div className="flex gap-2 mt-4">
-                 <Button className="w-full" onClick={() => handleCopy(agentText, 'agent')} disabled={loading}>
-                    {copied === 'agent' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
-                    {copied === 'agent' ? 'Copied' : 'Copy'}
-                </Button>
-                <Button className="w-full" variant="outline" onClick={() => handleShare(agentText, 'agent')} disabled={loading}>
-                    <Share2 className="mr-2" /> Share
-                </Button>
+                 {mode === 'copy' ? (
+                    <Button className="w-full" onClick={() => handleCopy(agentText, 'agent')} disabled={loading}>
+                        {copied === 'agent' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
+                        {copied === 'agent' ? 'Copied' : 'Copy Text'}
+                    </Button>
+                 ) : (
+                    <Button className="w-full" variant="outline" onClick={() => handleShare(agentText)} disabled={loading}>
+                        <Share2 className="mr-2" /> Share on WhatsApp
+                    </Button>
+                 )}
               </div>
             </TabsContent>
           </Tabs>

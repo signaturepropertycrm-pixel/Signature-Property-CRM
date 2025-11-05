@@ -42,6 +42,8 @@ export function PropertyDetailsDialog({
 }: PropertyDetailsDialogProps) {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isVideoLinksOpen, setIsVideoLinksOpen] = useState(false);
+  const [shareMode, setShareMode] = useState<'copy' | 'share'>('share');
+
 
   if (!property) return null;
   
@@ -50,7 +52,8 @@ export function PropertyDetailsDialog({
     return `${amount} ${unit}`;
   }
 
-  const handleCopy = () => {
+  const handleOpenShareDialog = (mode: 'copy' | 'share') => {
+    setShareMode(mode);
     setIsShareOpen(true);
   }
 
@@ -143,15 +146,15 @@ export function PropertyDetailsDialog({
                 )}
             </div>
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleCopy}>
-                Copy
+                <Button variant="secondary" onClick={() => handleOpenShareDialog('copy')}>
+                  Copy
                 </Button>
-                <Button onClick={() => setIsShareOpen(true)}>Share</Button>
+                <Button onClick={() => handleOpenShareDialog('share')}>Share</Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <SharePropertyDialog property={property} isOpen={isShareOpen} setIsOpen={setIsShareOpen} />
+      <SharePropertyDialog property={property} isOpen={isShareOpen} setIsOpen={setIsShareOpen} mode={shareMode} />
       {hasVideoLinks && (
         <VideoLinksDialog 
             property={property}
