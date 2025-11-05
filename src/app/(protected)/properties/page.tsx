@@ -380,122 +380,126 @@ export default function PropertiesPage() {
   );
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">
-              Properties
-            </h1>
-          </div>
-          <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-             <div className="relative w-full md:w-64">
-               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-               <Input 
-                placeholder="Search area, size, demand..." 
-                className="w-full pl-10 rounded-full bg-input/80" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                />
-             </div>
-            <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="rounded-full">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filters
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Filters</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Refine your property search.
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label htmlFor="area">Area</Label>
-                      <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+    <>
+      <TooltipProvider>
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight font-headline">
+                Properties
+              </h1>
+            </div>
+            <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
+               <div className="relative w-full md:w-64">
+                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input 
+                  placeholder="Search area, size, demand..." 
+                  className="w-full pl-10 rounded-full bg-input/80" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+               </div>
+              <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="rounded-full">
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filters
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">Filters</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Refine your property search.
+                      </p>
                     </div>
-                     <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="propertyType">Type</Label>
-                        <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                            <SelectTrigger className="col-span-2 h-8">
-                                <SelectValue placeholder="Property Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All</SelectItem>
-                                <SelectItem value="House">House</SelectItem>
-                                <SelectItem value="Plot">Plot</SelectItem>
-                                <SelectItem value="Flat">Flat</SelectItem>
-                                <SelectItem value="Shop">Shop</SelectItem>
-                                <SelectItem value="Commercial">Commercial</SelectItem>
-                                <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-3 items-center gap-4">
-                      <Label>Size</Label>
-                      <div className="col-span-2 grid grid-cols-2 gap-2">
-                        <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                        <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                    <div className="grid gap-2">
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <Label htmlFor="area">Area</Label>
+                        <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                      </div>
+                       <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="propertyType">Type</Label>
+                          <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                              <SelectTrigger className="col-span-2 h-8">
+                                  <SelectValue placeholder="Property Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                  <SelectItem value="All">All</SelectItem>
+                                  <SelectItem value="House">House</SelectItem>
+                                  <SelectItem value="Plot">Plot</SelectItem>
+                                  <SelectItem value="Flat">Flat</SelectItem>
+                                  <SelectItem value="Shop">Shop</SelectItem>
+                                  <SelectItem value="Commercial">Commercial</SelectItem>
+                                  <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                          </Select>
+                      </div>
+                      <div className="grid grid-cols-3 items-center gap-4">
+                        <Label>Size</Label>
+                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                          <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                          <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                        </div>
+                      </div>
+                       <div className="grid grid-cols-3 items-center gap-4">
+                        <Label>Demand</Label>
+                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                          <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                          <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                        </div>
                       </div>
                     </div>
-                     <div className="grid grid-cols-3 items-center gap-4">
-                      <Label>Demand</Label>
-                      <div className="col-span-2 grid grid-cols-2 gap-2">
-                        <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
-                        <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                     <div className="flex justify-end gap-2">
+                        <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                        <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
                       </div>
-                    </div>
                   </div>
-                   <div className="flex justify-end gap-2">
-                      <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                      <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
-                    </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <Button variant="outline" className="rounded-full">
-              <Upload className="mr-2 h-4 w-4" />
-              Import
-            </Button>
-            <Button variant="outline" className="rounded-full">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <AddPropertyDialog 
-                isOpen={isAddPropertyOpen}
-                setIsOpen={setIsAddPropertyOpen}
-                propertyToEdit={selectedProperty}
-            />
+                </PopoverContent>
+              </Popover>
+              <Button variant="outline" className="rounded-full">
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+              <Button variant="outline" className="rounded-full">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+              <AddPropertyDialog 
+                  isOpen={isAddPropertyOpen}
+                  setIsOpen={setIsAddPropertyOpen}
+                  propertyToEdit={selectedProperty}
+              />
+            </div>
+          </div>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
+              <TabsList>
+                  <TabsTrigger value="All">All</TabsTrigger>
+                  <TabsTrigger value="Available">Available</TabsTrigger>
+                  <TabsTrigger value="Sold">Sold</TabsTrigger>
+                  <TabsTrigger value="Recorded">Recorded</TabsTrigger>
+              </TabsList>
+          </Tabs>
+          <Card className="md:block hidden">
+            <CardContent className="p-0">
+              {renderTable()}
+            </CardContent>
+          </Card>
+          <div className="md:hidden">
+              {renderCards()}
           </div>
         </div>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
-            <TabsList>
-                <TabsTrigger value="All">All</TabsTrigger>
-                <TabsTrigger value="Available">Available</TabsTrigger>
-                <TabsTrigger value="Sold">Sold</TabsTrigger>
-                <TabsTrigger value="Recorded">Recorded</TabsTrigger>
-            </TabsList>
-        </Tabs>
-        <Card className="md:block hidden">
-          <CardContent className="p-0">
-            {renderTable()}
-          </CardContent>
-        </Card>
-        <div className="md:hidden">
-            {renderCards()}
-        </div>
-      </div>
+      </TooltipProvider>
+
       <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
         <Button onClick={() => { setSelectedProperty(null); setIsAddPropertyOpen(true); }} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
             <PlusCircle className="h-6 w-6" />
             <span className="sr-only">Add Property</span>
         </Button>
       </div>
+
       {selectedProperty && (
         <>
           <PropertyDetailsDialog
@@ -515,6 +519,8 @@ export default function PropertiesPage() {
           />
         </>
       )}
-    </TooltipProvider>
+    </>
   );
 }
+
+    
