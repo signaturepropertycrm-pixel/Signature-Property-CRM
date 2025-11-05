@@ -70,7 +70,7 @@ function formatSize(value: number, unit: string) {
 }
 
 const statusVariant = {
-  Available: 'secondary',
+  Available: 'default',
   Sold: 'default',
 } as const;
 
