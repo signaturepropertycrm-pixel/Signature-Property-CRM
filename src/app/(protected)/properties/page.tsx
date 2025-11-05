@@ -33,7 +33,7 @@ import {
 import { properties as allProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PropertyStatus } from '@/lib/types';
 import { useState, useMemo } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -53,6 +53,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -96,6 +98,7 @@ export default function PropertiesPage() {
     maxDemand: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<PropertyStatus | 'All'>('All');
 
   const handleFilterChange = (
     key: keyof Filters,
@@ -119,6 +122,11 @@ export default function PropertiesPage() {
   const properties = useMemo(() => {
     let filteredProperties = allProperties;
 
+    // Status tab filter
+    if (statusFilter !== 'All') {
+        filteredProperties = filteredProperties.filter(p => p.status === statusFilter);
+    }
+    
     // Search query filter
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
@@ -155,7 +163,7 @@ export default function PropertiesPage() {
 
 
     return filteredProperties;
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, statusFilter]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -185,9 +193,6 @@ export default function PropertiesPage() {
             <h1 className="text-3xl font-bold tracking-tight font-headline">
               Properties
             </h1>
-            <p className="text-muted-foreground">
-              Browse and manage your property listings.
-            </p>
           </div>
           <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
              <div className="relative w-full md:w-64">
@@ -274,6 +279,15 @@ export default function PropertiesPage() {
             />
           </div>
         </div>
+        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as PropertyStatus | 'All')}>
+            <TabsList>
+                <TabsTrigger value="All">All</TabsTrigger>
+                <TabsTrigger value="Available">Available</TabsTrigger>
+                <TabsTrigger value="Sold">Sold</TabsTrigger>
+                <TabsTrigger value="Reserved">Reserved</TabsTrigger>
+                <TabsTrigger value="Off-Market">Off-Market</TabsTrigger>
+            </TabsList>
+        </Tabs>
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -309,7 +323,7 @@ export default function PropertiesPage() {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                        <Badge variant="default" className="font-mono">{prop.serial_no}</Badge>
+                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
                         <span className="truncate max-w-48">{prop.address}</span>
                       </div>
                     </TableCell>
@@ -395,5 +409,7 @@ export default function PropertiesPage() {
     </TooltipProvider>
   );
 }
+
+    
 
     
