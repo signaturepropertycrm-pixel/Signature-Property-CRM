@@ -24,13 +24,20 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import type { BuyerStatus } from '@/lib/types';
+
+const buyerStatuses: BuyerStatus[] = [
+    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
+    'Pending Response', 'Need More Info', 'Visited Property',
+    'Deal Closed', 'Hot Lead', 'Cold Lead'
+];
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
   name: z.string().min(1, 'Buyer name is required'),
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
-  status: z.enum(['New', 'Contacted', 'Interested', 'Not Interested', 'Closed']).default('New'),
+  status: z.enum(buyerStatuses).default('New'),
   notes: z.string().optional(),
 });
 
@@ -138,11 +145,9 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                   <SelectTrigger><SelectValue /></SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Interested">Interested</SelectItem>
-                  <SelectItem value="Not Interested">Not Interested</SelectItem>
-                  <SelectItem value="Closed">Closed</SelectItem>
+                  {buyerStatuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -172,5 +177,3 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
     </Form>
   );
 }
-
-    

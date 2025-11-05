@@ -19,11 +19,17 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const statusVariant = {
-    'New': 'default',
+    'New': 'secondary',
     'Contacted': 'secondary',
-    'Interested': 'default', // Will be overridden by className for green color
+    'Interested': 'default',
     'Not Interested': 'destructive',
-    'Closed': 'default'
+    'Follow Up': 'secondary',
+    'Pending Response': 'secondary',
+    'Need More Info': 'secondary',
+    'Visited Property': 'secondary',
+    'Deal Closed': 'default',
+    'Hot Lead': 'default',
+    'Cold Lead': 'secondary'
 } as const;
 
 function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) {
@@ -41,6 +47,12 @@ interface Filters {
 }
 
 type FilterTab = BuyerStatus | 'All';
+
+const buyerStatuses: BuyerStatus[] = [
+    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
+    'Pending Response', 'Need More Info', 'Visited Property',
+    'Deal Closed', 'Hot Lead', 'Cold Lead'
+];
 
 export default function BuyersPage() {
     const isMobile = useIsMobile();
@@ -127,7 +139,16 @@ export default function BuyersPage() {
                             </div>
                         </TableCell>
                         <TableCell>
-                            <Badge variant={statusVariant[buyer.status]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}>{buyer.status}</Badge>
+                           <Badge 
+                                variant={statusVariant[buyer.status] || 'default'} 
+                                className={
+                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                }
+                            >
+                                {buyer.status}
+                            </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                                 <DropdownMenu>
@@ -167,7 +188,16 @@ export default function BuyersPage() {
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                 </div>
                             </div>
-                            <Badge variant={statusVariant[buyer.status]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}>{buyer.status}</Badge>
+                            <Badge 
+                                variant={statusVariant[buyer.status] || 'default'} 
+                                className={
+                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                }
+                            >
+                                {buyer.status}
+                            </Badge>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -260,11 +290,9 @@ export default function BuyersPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="All">All</SelectItem>
-                                    <SelectItem value="New">New</SelectItem>
-                                    <SelectItem value="Contacted">Contacted</SelectItem>
-                                    <SelectItem value="Interested">Interested</SelectItem>
-                                    <SelectItem value="Not Interested">Not Interested</SelectItem>
-                                    <SelectItem value="Closed">Closed</SelectItem>
+                                    {buyerStatuses.map(status => (
+                                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -290,8 +318,8 @@ export default function BuyersPage() {
               <TabsList>
                   <TabsTrigger value="All">All</TabsTrigger>
                   <TabsTrigger value="New">New</TabsTrigger>
-                  <TabsTrigger value="Contacted">Contacted</TabsTrigger>
-                  <TabsTrigger value="Interested">Interested</TabsTrigger>
+                  <TabsTrigger value="Hot Lead">Hot Leads</TabsTrigger>
+                  <TabsTrigger value="Follow Up">Follow Up</TabsTrigger>
               </TabsList>
           </Tabs>
         <Card className="md:block hidden">
