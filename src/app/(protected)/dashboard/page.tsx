@@ -178,7 +178,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {kpiData.slice(0, 4).map((kpi) => (
+        {kpiData.map((kpi) => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{kpi.value}</div>
               <p className="text-xs text-muted-foreground">
-                {kpi.change} from last month
+                {kpi.change}
               </p>
             </CardContent>
           </Card>
@@ -254,26 +254,6 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {kpiData.slice(4).map((kpi) => (
-          <Card key={kpi.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-               <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
-                 <kpi.icon className="h-4 w-4" />
-               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {kpi.change}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
@@ -337,5 +317,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
