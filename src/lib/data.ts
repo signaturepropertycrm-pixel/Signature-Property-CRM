@@ -209,7 +209,8 @@ export const followUps: FollowUp[] = [
 export const appointments: Appointment[] = [
     {
         id: '1',
-        buyerName: 'Ahmed Hassan',
+        contactName: 'Ahmed Hassan',
+        contactType: 'Buyer',
         agentName: 'Ali Khan',
         date: '2024-05-26T00:00:00.000Z',
         time: '11:00 AM',
@@ -218,7 +219,8 @@ export const appointments: Appointment[] = [
     },
     {
         id: '2',
-        buyerName: 'Sana Iqbal',
+        contactName: 'Sana Iqbal',
+        contactType: 'Buyer',
         agentName: 'Fatima Ahmed',
         date: '2024-05-25T00:00:00.000Z',
         time: '2:30 PM',
@@ -227,7 +229,8 @@ export const appointments: Appointment[] = [
     },
     {
         id: '3',
-        buyerName: 'Faisal Khan',
+        contactName: 'Property Owner (P-4)',
+        contactType: 'Owner',
         agentName: 'Ali Khan',
         date: '2024-05-22T00:00:00.000Z',
         time: '4:00 PM',

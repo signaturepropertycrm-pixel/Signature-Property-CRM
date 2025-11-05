@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Admin' | 'Agent' | 'Viewer';
 
 export type User = {
@@ -80,10 +81,13 @@ export type FollowUp = {
 };
 
 export type AppointmentStatus = 'Scheduled' | 'Completed' | 'Cancelled';
+export type AppointmentContactType = 'Buyer' | 'Owner';
+
 
 export type Appointment = {
     id: string;
-    buyerName: string;
+    contactName: string;
+    contactType: AppointmentContactType;
     agentName: string;
     date: string;
     time: string;
