@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { generateAutoTitle } from '@/lib/actions';
+import { generateAutoTitle } from '@/ai/flows/auto-title-generation';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';

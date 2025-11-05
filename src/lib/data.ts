@@ -19,6 +19,10 @@ export const properties: Property[] = [
     is_recorded: true,
     created_at: '2024-05-20T10:00:00Z',
     created_by: 'user_1',
+    video_links: {
+      tiktok: 'https://www.tiktok.com/@laibak522/video/7560351668261408008',
+      youtube: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    }
   },
   {
     id: '2',
@@ -174,7 +178,7 @@ export const followUps: FollowUp[] = [
         id: '1',
         buyerId: '2',
         buyerName: 'Sana Iqbal',
-        propertyInterest: 'P-1252: 2 Bedroom Flat in Gulberg',
+        propertyInterest: 'P-3: 2 Bedroom Flat in Gulberg',
         lastContactDate: '2024-05-20T10:00:00Z',
         nextReminder: '2024-05-25T10:00:00Z',
         status: 'Scheduled',
@@ -184,7 +188,7 @@ export const followUps: FollowUp[] = [
         id: '2',
         buyerId: '1',
         buyerName: 'Ahmed Hassan',
-        propertyInterest: 'P-1251: 10 Marla Plot in DHA Phase 6',
+        propertyInterest: 'P-2: 10 Marla Plot in DHA Phase 6',
         lastContactDate: '2024-05-22T15:00:00Z',
         nextReminder: '2024-05-24T15:00:00Z',
         status: 'Due Soon',
@@ -194,7 +198,7 @@ export const followUps: FollowUp[] = [
         id: '3',
         buyerId: '4',
         buyerName: 'Ayesha Malik',
-        propertyInterest: 'P-1250: 5 Marla House in Harbanspura',
+        propertyInterest: 'P-1: 5 Marla House in Harbanspura',
         lastContactDate: '2024-05-19T12:00:00Z',
         nextReminder: '2024-05-22T12:00:00Z',
         status: 'Completed',
