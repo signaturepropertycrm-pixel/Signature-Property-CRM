@@ -35,6 +35,20 @@ const socialIcons = {
     other: (<LinkIcon />)
 };
 
+const truncateUrl = (url: string, length = 30) => {
+    if (url.length <= length) return url;
+    try {
+        const urlObject = new URL(url);
+        const origin = urlObject.origin;
+        if (origin.length > length - 3) {
+             return url.substring(0, length - 3) + '...';
+        }
+        return origin + '...';
+    } catch (e) {
+        return url.substring(0, length - 3) + '...';
+    }
+}
+
 
 export function VideoLinksDialog({
   property,
@@ -69,7 +83,7 @@ export function VideoLinksDialog({
                             {socialIcons[platformKey] || <LinkIcon />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium break-words">{link}</p>
+                          <p className="text-sm font-medium break-words">{truncateUrl(link, 40)}</p>
                         </div>
                     </a>
                 )
@@ -84,3 +98,5 @@ export function VideoLinksDialog({
     </Dialog>
   );
 }
+
+    

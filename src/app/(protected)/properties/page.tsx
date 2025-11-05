@@ -38,7 +38,7 @@ import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PropertyStatus } from '@/lib/types';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
@@ -88,7 +88,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
 export default function PropertiesPage() {
   const isMobile = useIsMobile();
-  const [properties, setProperties] = useState<Property[]>(initialProperties);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -107,6 +107,24 @@ export default function PropertiesPage() {
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  
+  useEffect(() => {
+    // Load properties from localStorage on mount
+    const savedProperties = localStorage.getItem('properties');
+    if (savedProperties) {
+      setProperties(JSON.parse(savedProperties));
+    } else {
+      setProperties(initialProperties);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save properties to localStorage whenever they change
+    if (properties.length > 0) {
+        localStorage.setItem('properties', JSON.stringify(properties));
+    }
+  }, [properties]);
+
 
   const handleFilterChange = (
     key: keyof Filters,
@@ -250,8 +268,7 @@ export default function PropertiesPage() {
               </TableCell>
               <TableCell>
                 <Badge 
-                  variant={statusVariant[prop.status as keyof typeof statusVariant] || 'default'}
-                  className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                  className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}
                 >
                   {prop.status}
                 </Badge>
@@ -323,8 +340,7 @@ export default function PropertiesPage() {
                             )}
                         </div>
                         <Badge 
-                           variant={statusVariant[prop.status as keyof typeof statusVariant] || 'default'}
-                           className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                           className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}
                         >
                             {prop.status}
                         </Badge>
@@ -533,3 +549,5 @@ export default function PropertiesPage() {
     </>
   );
 }
+
+    
