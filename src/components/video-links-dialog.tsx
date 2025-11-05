@@ -65,7 +65,7 @@ export function VideoLinksDialog({
                         rel="noopener noreferrer" 
                         className="flex items-center gap-4 p-3 rounded-lg bg-secondary hover:bg-accent transition-colors"
                     >
-                        <div className="text-primary w-6 h-6">
+                        <div className="text-primary w-6 h-6 flex-shrink-0">
                             {socialIcons[platformKey] || <LinkIcon />}
                         </div>
                         <div className="flex-1 truncate text-sm font-medium">{link}</div>
