@@ -526,6 +526,13 @@ export default function PropertiesPage() {
         </div>
       </TooltipProvider>
 
+        <AddPropertyDialog 
+            isOpen={isAddPropertyOpen}
+            setIsOpen={setIsAddPropertyOpen}
+            propertyToEdit={selectedProperty}
+            totalProperties={properties.length}
+        />
+      
       {selectedProperty && (
         <>
           <PropertyDetailsDialog
@@ -549,5 +556,7 @@ export default function PropertiesPage() {
     </>
   );
 }
+
+    
 
     

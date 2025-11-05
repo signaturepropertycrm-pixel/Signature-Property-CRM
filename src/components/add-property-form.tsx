@@ -61,9 +61,10 @@ type AddPropertyFormValues = z.infer<typeof formSchema>;
 interface AddPropertyFormProps {
   setDialogOpen: (open: boolean) => void;
   propertyToEdit?: Property | null;
+  totalProperties: number;
 }
 
-export function AddPropertyForm({ setDialogOpen, propertyToEdit }: AddPropertyFormProps) {
+export function AddPropertyForm({ setDialogOpen, propertyToEdit, totalProperties }: AddPropertyFormProps) {
   const { toast } = useToast();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
@@ -77,15 +78,35 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit }: AddPropertyFo
       size_unit: 'Marla',
       demand_unit: 'Lacs',
       meters: { electricity: false, gas: false, water: false },
-      serial_no: `P-${Math.floor(1 + Math.random() * 999)}`
+      serial_no: `P-${totalProperties + 1}`
     },
   });
 
-  const { control, setValue, formState } = form;
+  const { control, setValue, formState, reset } = form;
   const watchedFields = useWatch({
     control,
     name: ['size_value', 'size_unit', 'property_type', 'area'],
   });
+
+   useEffect(() => {
+    if (!propertyToEdit) {
+      reset({
+        city: 'Lahore',
+        property_type: 'House',
+        size_unit: 'Marla',
+        demand_unit: 'Lacs',
+        meters: { electricity: false, gas: false, water: false },
+        serial_no: `P-${totalProperties + 1}`
+      });
+    } else {
+        reset({
+            ...propertyToEdit,
+            potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
+            demand_unit: propertyToEdit.demand_unit,
+        });
+    }
+  }, [propertyToEdit, totalProperties, reset]);
+
 
   useEffect(() => {
     const [sizeValue, sizeUnit, propertyType, area] = watchedFields;
@@ -494,3 +515,5 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit }: AddPropertyFo
     </Form>
   );
 }
+
+    

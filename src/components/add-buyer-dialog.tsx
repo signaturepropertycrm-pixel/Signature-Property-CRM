@@ -14,9 +14,10 @@ import { PlusCircle } from 'lucide-react';
 interface AddBuyerDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    totalBuyers: number;
 }
 
-export function AddBuyerDialog({ isOpen, setIsOpen }: AddBuyerDialogProps) {
+export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers }: AddBuyerDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -27,8 +28,10 @@ export function AddBuyerDialog({ isOpen, setIsOpen }: AddBuyerDialogProps) {
             Fill in the details for the new buyer lead.
           </DialogDescription>
         </DialogHeader>
-        <AddBuyerForm setDialogOpen={setIsOpen} />
+        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} />
       </DialogContent>
     </Dialog>
   );
 }
+
+    

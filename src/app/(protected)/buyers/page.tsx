@@ -4,10 +4,10 @@ import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers } from '@/lib/data';
+import { buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, User } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Buyer } from '@/lib/types';
@@ -23,6 +23,7 @@ const statusVariant = {
 export default function BuyersPage() {
     const isMobile = useIsMobile();
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
+    const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
     
     const renderTable = () => (
         <Table>
@@ -149,8 +150,10 @@ export default function BuyersPage() {
         </div>
       </div>
       <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
-         <AddBuyerDialog isOpen={isAddBuyerOpen} setIsOpen={setIsAddBuyerOpen} />
+         <AddBuyerDialog isOpen={isAddBuyerOpen} setIsOpen={setIsAddBuyerOpen} totalBuyers={buyers.length} />
       </div>
     </>
   );
 }
+
+    

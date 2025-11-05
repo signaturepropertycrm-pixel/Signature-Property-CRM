@@ -19,9 +19,10 @@ interface AddPropertyDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     propertyToEdit: Property | null;
+    totalProperties: number;
 }
 
-export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit }: AddPropertyDialogProps) {
+export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit, totalProperties }: AddPropertyDialogProps) {
 
     useEffect(() => {
         if (!isOpen) {
@@ -38,8 +39,10 @@ export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit }: AddProp
             {propertyToEdit ? 'Update the details for this property.' : 'Fill in the details to add a new property.'}
           </DialogDescription>
         </DialogHeader>
-        <AddPropertyForm setDialogOpen={setIsOpen} propertyToEdit={propertyToEdit} />
+        <AddPropertyForm setDialogOpen={setIsOpen} propertyToEdit={propertyToEdit} totalProperties={totalProperties} />
       </DialogContent>
     </Dialog>
   );
 }
+
+    

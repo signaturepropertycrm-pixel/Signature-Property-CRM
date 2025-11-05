@@ -38,21 +38,23 @@ type AddBuyerFormValues = z.infer<typeof formSchema>;
 
 interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
+  totalBuyers: number;
 }
 
-export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
+export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) {
   const { toast } = useToast();
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'New',
+      serial_no: `B-${totalBuyers + 1}`,
     },
   });
 
   useEffect(() => {
-    // Set serial number on mount
-    form.setValue('serial_no', `B-${Math.floor(1 + Math.random() * 999)}`);
-  }, [form]);
+    // Set serial number when totalBuyers changes
+    form.setValue('serial_no', `B-${totalBuyers + 1}`);
+  }, [totalBuyers, form]);
 
   function onSubmit(values: AddBuyerFormValues) {
     console.log(values);
@@ -170,3 +172,5 @@ export function AddBuyerForm({ setDialogOpen }: AddBuyerFormProps) {
     </Form>
   );
 }
+
+    
