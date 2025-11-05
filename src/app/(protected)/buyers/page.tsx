@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -173,7 +173,8 @@ export default function BuyersPage() {
                                     </DropdownMenuItem>
                                      <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
-                                            Change Status
+                                            <Bookmark />
+                                            Status
                                         </DropdownMenuSubTrigger>
                                         <DropdownMenuPortal>
                                             <DropdownMenuSubContent>
@@ -264,7 +265,8 @@ export default function BuyersPage() {
                                 </DropdownMenuItem>
                                  <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
-                                        Change Status
+                                        <Bookmark />
+                                        Status
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuPortal>
                                         <DropdownMenuSubContent>
@@ -381,5 +383,7 @@ export default function BuyersPage() {
     </>
   );
 }
+
+    
 
     
