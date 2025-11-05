@@ -490,7 +490,7 @@ export default function PropertiesPage() {
             {renderCards()}
         </div>
       </div>
-      <div className="fixed bottom-8 right-8 md:bottom-8 md:right-8 z-50">
+      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
         <Button onClick={() => { setSelectedProperty(null); setIsAddPropertyOpen(true); }} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
             <PlusCircle className="h-6 w-6" />
             <span className="sr-only">Add Property</span>
