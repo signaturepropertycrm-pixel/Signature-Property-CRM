@@ -71,7 +71,7 @@ export function AppSidebar() {
                   : 'text-muted-foreground'
               )}
             >
-              {item.icon}
+              {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
               <span>{item.label}</span>
             </Link>
           ))}
@@ -145,18 +145,6 @@ export function AppSidebar() {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-          <SidebarSeparator />
-          <Tooltip>
-            <TooltipTrigger asChild>
-                <Link href="/login">
-                  <SidebarMenuButton size="lg" className="justify-start">
-                      <LogOut />
-                      <span className="flex-1 truncate">Logout</span>
-                  </SidebarMenuButton>
-                </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" align="center">Logout</TooltipContent>
-          </Tooltip>
         </SidebarFooter>
       </Sidebar>
     </TooltipProvider>

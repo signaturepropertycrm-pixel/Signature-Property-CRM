@@ -29,6 +29,9 @@ import {
   Download,
   Search,
   PlusCircle,
+  MapPin,
+  Tag,
+  Wallet,
 } from 'lucide-react';
 import { properties as allProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
@@ -38,7 +41,7 @@ import { useState, useMemo } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
   Popover,
   PopoverContent,
@@ -54,6 +57,7 @@ import {
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 function formatDemand(amount: number, unit: string) {
@@ -84,6 +88,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
 
 export default function PropertiesPage() {
+  const isMobile = useIsMobile();
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -189,6 +194,190 @@ export default function PropertiesPage() {
     setSelectedProperty(prop);
     setIsAddPropertyOpen(true); // Re-using add dialog for editing
   };
+  
+  const renderTable = () => (
+     <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[350px]">Property</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Size</TableHead>
+            <TableHead>Demand</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">
+              Actions
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {properties.map((prop) => (
+            <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold font-headline text-base">
+                    {prop.auto_title}
+                  </span>
+                  {prop.is_recorded && (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Video className="h-4 w-4 text-primary" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Video is recorded</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                  <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                  <span className="truncate max-w-48">{prop.address}</span>
+                </div>
+              </TableCell>
+              <TableCell>{prop.property_type}</TableCell>
+              <TableCell>
+                {formatSize(prop.size_value, prop.size_unit)}
+              </TableCell>
+              <TableCell>
+                {formatDemand(prop.demand_amount, prop.demand_unit)}
+              </TableCell>
+              <TableCell>
+                <Badge 
+                  variant={statusVariant[prop.status]}
+                  className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                >
+                  {prop.status}
+                </Badge>
+              </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Toggle menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="glass-card">
+                      <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
+                      <Eye />
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleEdit(prop)}>
+                      <Edit />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
+                      <CheckCircle />
+                      Mark as Sold
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                      <Video />
+                      Mark as Recorded
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                      <Trash2 />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+  );
+
+  const renderCards = () => (
+    <div className="space-y-4">
+        {properties.map((prop) => (
+            <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
+                <CardHeader>
+                    <CardTitle className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                             <span className="font-bold font-headline text-base">
+                                {prop.auto_title}
+                            </span>
+                            {prop.is_recorded && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Video className="h-4 w-4 text-primary" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                    <p>Video is recorded</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                        </div>
+                        <Badge 
+                            variant={statusVariant[prop.status]}
+                            className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                        >
+                            {prop.status}
+                        </Badge>
+                    </CardTitle>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                        <span className="truncate">{prop.address}</span>
+                    </div>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-muted-foreground">Type</p>
+                            <p className="font-medium">{prop.property_type}</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-muted-foreground">Size</p>
+                            <p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                            <p className="text-muted-foreground">Demand</p>
+                            <p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p>
+                        </div>
+                    </div>
+                </CardContent>
+                 <CardFooter className="flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="glass-card">
+                          <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
+                            <Eye />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleEdit(prop)}>
+                            <Edit />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
+                            <CheckCircle />
+                            Mark as Sold
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                            <Video />
+                            Mark as Recorded
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                            <Trash2 />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                </CardFooter>
+            </Card>
+        ))}
+    </div>
+  );
 
   return (
     <TooltipProvider>
@@ -292,100 +481,16 @@ export default function PropertiesPage() {
                 <TabsTrigger value="Recorded">Recorded</TabsTrigger>
             </TabsList>
         </Tabs>
-        <Card>
+        <Card className="md:block hidden">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[350px]">Property</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Demand</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {properties.map((prop) => (
-                  <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold font-headline text-base">
-                          {prop.auto_title}
-                        </span>
-                        {prop.is_recorded && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Video className="h-4 w-4 text-primary" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Video is recorded</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
-                        <span className="truncate max-w-48">{prop.address}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{prop.property_type}</TableCell>
-                    <TableCell>
-                      {formatSize(prop.size_value, prop.size_unit)}
-                    </TableCell>
-                    <TableCell>
-                      {formatDemand(prop.demand_amount, prop.demand_unit)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={statusVariant[prop.status]}
-                        className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
-                      >
-                        {prop.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="glass-card">
-                           <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
-                            <Eye />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleEdit(prop)}>
-                            <Edit />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
-                            <CheckCircle />
-                            Mark as Sold
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                            <Video />
-                            Mark as Recorded
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {renderTable()}
           </CardContent>
         </Card>
+        <div className="md:hidden">
+            {renderCards()}
+        </div>
       </div>
-      <div className="fixed bottom-8 right-8 z-50">
+      <div className="fixed bottom-8 right-8 md:bottom-8 md:right-8 z-50">
         <Button onClick={() => { setSelectedProperty(null); setIsAddPropertyOpen(true); }} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
             <PlusCircle className="h-6 w-6" />
             <span className="sr-only">Add Property</span>

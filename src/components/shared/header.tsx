@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, Moon, Search, Sun } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
@@ -23,7 +24,7 @@ const firstName = userName.split(' ')[0];
 
 
 export function AppHeader() {
-  const pathname = usePathname();
+  const router = useRouter();
   const { setTheme, theme } = useTheme();
 
   return (
@@ -63,10 +64,17 @@ export function AppHeader() {
           <DropdownMenuContent align="end" className="glass-card">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem>
+                <User />
+                Profile
+            </DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/login')}>
+                <LogOut />
+                Logout
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

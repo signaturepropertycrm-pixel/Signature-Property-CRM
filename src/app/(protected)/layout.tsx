@@ -10,11 +10,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex h-screen w-full bg-background">
         <AppSidebar />
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 overflow-hidden">
           <AppHeader />
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 page-transition">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 page-transition">
             {children}
           </main>
         </div>
