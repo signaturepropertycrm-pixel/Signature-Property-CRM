@@ -2,11 +2,11 @@
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, User, Search, Filter, Wallet } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,7 +46,7 @@ interface Filters {
   area: string;
 }
 
-type FilterTab = BuyerStatus | 'All';
+type FilterTab = 'All' | 'New' | 'Hot Lead' | 'Follow Up';
 
 const buyerStatuses: BuyerStatus[] = [
     'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
@@ -74,6 +74,14 @@ export default function BuyersPage() {
     const clearFilters = () => {
         setFilters({ name: '', status: 'All', area: '' });
         setIsFilterPopoverOpen(false);
+    };
+
+    const handleStatusChange = (buyerId: string, newStatus: BuyerStatus) => {
+        setBuyers(prevBuyers => 
+            prevBuyers.map(buyer => 
+                buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
+            )
+        );
     };
 
     const filteredBuyers = useMemo(() => {
@@ -159,14 +167,32 @@ export default function BuyersPage() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                <DropdownMenuItem>
-                                    <Edit />
-                                    Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                    <Trash2 />
-                                    Delete
-                                </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                        <Edit />
+                                        Edit
+                                    </DropdownMenuItem>
+                                     <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            Change Status
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal>
+                                            <DropdownMenuSubContent>
+                                                {buyerStatuses.map((status) => (
+                                                    <DropdownMenuItem 
+                                                        key={status} 
+                                                        onClick={() => handleStatusChange(buyer.id, status)}
+                                                        disabled={buyer.status === status}
+                                                    >
+                                                        {status}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                        <Trash2 />
+                                        Delete
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>
@@ -232,14 +258,32 @@ export default function BuyersPage() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
-                            <DropdownMenuItem>
-                                <Edit />
-                                Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                <Trash2 />
-                                Delete
-                            </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Edit />
+                                    Edit
+                                </DropdownMenuItem>
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        Change Status
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                            {buyerStatuses.map((status) => (
+                                                <DropdownMenuItem 
+                                                    key={status} 
+                                                    onClick={() => handleStatusChange(buyer.id, status)}
+                                                    disabled={buyer.status === status}
+                                                >
+                                                    {status}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                    <Trash2 />
+                                    Delete
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </CardFooter>
@@ -337,3 +381,5 @@ export default function BuyersPage() {
     </>
   );
 }
+
+    
