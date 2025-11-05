@@ -13,7 +13,7 @@ export type User = {
 export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
-export type PropertyStatus = 'Available' | 'Reserved' | 'Sold' | 'Off-Market';
+export type PropertyStatus = 'Available' | 'Sold';
 
 export type Property = {
   id: string;

@@ -32,6 +32,7 @@ import {
   MapPin,
   Tag,
   Wallet,
+  VideoOff,
 } from 'lucide-react';
 import { properties as allProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
@@ -70,9 +71,7 @@ function formatSize(value: number, unit: string) {
 
 const statusVariant = {
   Available: 'default',
-  Reserved: 'secondary',
   Sold: 'destructive',
-  'Off-Market': 'outline',
 } as const;
 
 interface Filters {
@@ -195,6 +194,13 @@ export default function PropertiesPage() {
     setIsAddPropertyOpen(true); // Re-using add dialog for editing
   };
   
+  const handleUnmarkRecorded = (prop: Property) => {
+    // Here you would update the property in your state/database
+    console.log(`Unmarking ${prop.serial_no} as recorded.`);
+    // Example state update (would be more complex in a real app)
+    // setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
+  };
+  
   const renderTable = () => (
      <Table>
         <TableHeader>
@@ -242,7 +248,7 @@ export default function PropertiesPage() {
               </TableCell>
               <TableCell>
                 <Badge 
-                  variant={statusVariant[prop.status]}
+                  variant={statusVariant[prop.status as keyof typeof statusVariant] || 'default'}
                   className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
                 >
                   {prop.status}
@@ -269,10 +275,17 @@ export default function PropertiesPage() {
                       <CheckCircle />
                       Mark as Sold
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                      <Video />
-                      Mark as Recorded
-                    </DropdownMenuItem>
+                    {prop.is_recorded ? (
+                      <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
+                        <VideoOff />
+                        Unmark as Recorded
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                        <Video />
+                        Mark as Recorded
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                       <Trash2 />
                       Delete
@@ -308,8 +321,8 @@ export default function PropertiesPage() {
                             )}
                         </div>
                         <Badge 
-                            variant={statusVariant[prop.status]}
-                            className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                           variant={statusVariant[prop.status as keyof typeof statusVariant] || 'default'}
+                           className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
                         >
                             {prop.status}
                         </Badge>
@@ -363,10 +376,17 @@ export default function PropertiesPage() {
                             <CheckCircle />
                             Mark as Sold
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                            <Video />
-                            Mark as Recorded
-                          </DropdownMenuItem>
+                          {prop.is_recorded ? (
+                            <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
+                                <VideoOff />
+                                Unmark as Recorded
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                                <Video />
+                                Mark as Recorded
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                             <Trash2 />
                             Delete
@@ -515,5 +535,3 @@ export default function PropertiesPage() {
     </>
   );
 }
-
-    

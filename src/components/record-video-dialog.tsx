@@ -57,20 +57,20 @@ export function RecordVideoDialog({
     },
   });
 
-  const { watch } = form;
+  const { watch, reset } = form;
   const formValues = watch();
 
   const canSave = Object.values(formValues).some(link => link && link.length > 0);
 
   useEffect(() => {
-    form.reset({
+    reset({
       tiktok: property.video_links?.tiktok || '',
       youtube: property.video_links?.youtube || '',
       instagram: property.video_links?.instagram || '',
       facebook: property.video_links?.facebook || '',
       other: property.video_links?.other || '',
     });
-  }, [property, form]);
+  }, [property, reset]);
 
 
   function onSubmit(values: RecordVideoFormValues) {
@@ -81,6 +81,23 @@ export function RecordVideoDialog({
     });
     // Here you would update the property in your database
     // and then update the local state to show 'Recorded' badge
+    setIsOpen(false);
+  }
+
+  function handleClear() {
+    reset({
+        tiktok: '',
+        youtube: '',
+        instagram: '',
+        facebook: '',
+        other: '',
+    });
+    console.log('Cleared all links');
+    toast({
+        title: 'Links Cleared',
+        description: `All video links for ${property.auto_title} have been removed. The property is no longer marked as recorded.`,
+    });
+    // Here you would update the property in the database
     setIsOpen(false);
   }
 
@@ -161,15 +178,22 @@ export function RecordVideoDialog({
               )}
             />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!canSave}>Save</Button>
+            <div className="flex justify-between gap-2 pt-4">
+               <div>
+                {property.is_recorded && (
+                    <Button type="button" variant="destructive" onClick={handleClear}>Clear all links</Button>
+                )}
+               </div>
+               <div className="flex gap-2">
+                 <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsOpen(false)}
+                >
+                    Cancel
+                </Button>
+                <Button type="submit" disabled={!canSave}>Save</Button>
+               </div>
             </div>
           </form>
         </Form>
@@ -177,5 +201,3 @@ export function RecordVideoDialog({
     </Dialog>
   );
 }
-
-    

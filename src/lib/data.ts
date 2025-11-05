@@ -69,7 +69,7 @@ export const properties: Property[] = [
     size_unit: 'Kanal',
     demand_amount: 15,
     demand_unit: 'Crore',
-    status: 'Reserved',
+    status: 'Available',
     is_recorded: false,
     created_at: '2024-05-17T09:00:00Z',
     created_by: 'user_3',
