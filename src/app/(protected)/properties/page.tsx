@@ -34,7 +34,7 @@ import {
   Wallet,
   VideoOff,
 } from 'lucide-react';
-import { properties as allProperties } from '@/lib/data';
+import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PropertyStatus } from '@/lib/types';
@@ -88,6 +88,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
 export default function PropertiesPage() {
   const isMobile = useIsMobile();
+  const [properties, setProperties] = useState<Property[]>(initialProperties);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -126,20 +127,20 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
   
-  const properties = useMemo(() => {
-    let filteredProperties = allProperties;
+  const filteredProperties = useMemo(() => {
+    let filtered = properties;
 
     // Status tab filter
     if (activeTab === 'Available' || activeTab === 'Sold') {
-        filteredProperties = filteredProperties.filter(p => p.status === activeTab);
+        filtered = filtered.filter(p => p.status === activeTab);
     } else if (activeTab === 'Recorded') {
-        filteredProperties = filteredProperties.filter(p => p.is_recorded);
+        filtered = filtered.filter(p => p.is_recorded);
     }
     
     // Search query filter
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
-        filteredProperties = filteredProperties.filter(prop => 
+        filtered = filtered.filter(prop => 
             prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
             prop.address.toLowerCase().includes(lowercasedQuery) ||
             prop.area.toLowerCase().includes(lowercasedQuery) ||
@@ -151,28 +152,28 @@ export default function PropertiesPage() {
     
     // Advanced filters
     if (filters.area) {
-        filteredProperties = filteredProperties.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
+        filtered = filtered.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     }
     if (filters.propertyType !== 'All') {
-        filteredProperties = filteredProperties.filter(p => p.property_type === filters.propertyType);
+        filtered = filtered.filter(p => p.property_type === filters.propertyType);
     }
     if (filters.minSize) {
-        filteredProperties = filteredProperties.filter(p => p.size_value >= Number(filters.minSize));
+        filtered = filtered.filter(p => p.size_value >= Number(filters.minSize));
     }
     if (filters.maxSize) {
-        filteredProperties = filteredProperties.filter(p => p.size_value <= Number(filters.maxSize));
+        filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize));
     }
     // Note: This demand filter is simplified and doesn't account for units (Lacs vs Crore)
     if (filters.minDemand) {
-        filteredProperties = filteredProperties.filter(p => p.demand_amount >= Number(filters.minDemand));
+        filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand));
     }
     if (filters.maxDemand) {
-        filteredProperties = filteredProperties.filter(p => p.demand_amount <= Number(filters.maxDemand));
+        filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand));
     }
 
 
-    return filteredProperties;
-  }, [searchQuery, filters, activeTab]);
+    return filtered;
+  }, [searchQuery, filters, activeTab, properties]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -195,10 +196,11 @@ export default function PropertiesPage() {
   };
   
   const handleUnmarkRecorded = (prop: Property) => {
-    // Here you would update the property in your state/database
-    console.log(`Unmarking ${prop.serial_no} as recorded.`);
-    // Example state update (would be more complex in a real app)
-    // setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
+    setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
+  };
+
+  const handleUpdateProperty = (updatedProperty: Property) => {
+    setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
   };
   
   const renderTable = () => (
@@ -216,7 +218,7 @@ export default function PropertiesPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {properties.map((prop) => (
+          {filteredProperties.map((prop) => (
             <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -301,7 +303,7 @@ export default function PropertiesPage() {
 
   const renderCards = () => (
     <div className="space-y-4">
-        {properties.map((prop) => (
+        {filteredProperties.map((prop) => (
             <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
                 <CardHeader>
                     <CardTitle className="flex justify-between items-start">
@@ -487,11 +489,6 @@ export default function PropertiesPage() {
                 <Download className="mr-2 h-4 w-4" />
                 Export
               </Button>
-              <AddPropertyDialog 
-                  isOpen={isAddPropertyOpen}
-                  setIsOpen={setIsAddPropertyOpen}
-                  propertyToEdit={selectedProperty}
-              />
             </div>
           </div>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as FilterTab)}>
@@ -529,6 +526,7 @@ export default function PropertiesPage() {
             property={selectedProperty}
             isOpen={isRecordVideoOpen}
             setIsOpen={setIsRecordVideoOpen}
+            onUpdateProperty={handleUpdateProperty}
           />
         </>
       )}

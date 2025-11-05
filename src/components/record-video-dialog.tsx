@@ -38,12 +38,14 @@ interface RecordVideoDialogProps {
   property: Property;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  onUpdateProperty: (updatedProperty: Property) => void;
 }
 
 export function RecordVideoDialog({
   property,
   isOpen,
   setIsOpen,
+  onUpdateProperty,
 }: RecordVideoDialogProps) {
   const { toast } = useToast();
   const form = useForm<RecordVideoFormValues>({
@@ -74,30 +76,31 @@ export function RecordVideoDialog({
 
 
   function onSubmit(values: RecordVideoFormValues) {
-    console.log(values);
+    const updatedProperty: Property = {
+        ...property,
+        is_recorded: true,
+        video_links: values
+    };
+    onUpdateProperty(updatedProperty);
+
     toast({
       title: 'Video Links Saved',
       description: `Links for ${property.auto_title} have been updated.`,
     });
-    // Here you would update the property in your database
-    // and then update the local state to show 'Recorded' badge
     setIsOpen(false);
   }
 
   function handleClear() {
-    reset({
-        tiktok: '',
-        youtube: '',
-        instagram: '',
-        facebook: '',
-        other: '',
-    });
-    console.log('Cleared all links');
+    const updatedProperty: Property = {
+        ...property,
+        is_recorded: false,
+        video_links: {}
+    };
+    onUpdateProperty(updatedProperty);
     toast({
         title: 'Links Cleared',
         description: `All video links for ${property.auto_title} have been removed. The property is no longer marked as recorded.`,
     });
-    // Here you would update the property in the database
     setIsOpen(false);
   }
 
