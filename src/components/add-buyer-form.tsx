@@ -24,7 +24,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
-import type { BuyerStatus } from '@/lib/types';
+import type { BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
+import { Separator } from './ui/separator';
 
 const buyerStatuses: BuyerStatus[] = [
     'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
@@ -32,12 +33,27 @@ const buyerStatuses: BuyerStatus[] = [
     'Deal Closed', 'Hot Lead', 'Cold Lead'
 ];
 
+const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
+const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
+const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
+
+
 const formSchema = z.object({
   serial_no: z.string().optional(),
   name: z.string().min(1, 'Buyer name is required'),
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(buyerStatuses).default('New'),
+  area_preference: z.string().optional(),
+  property_type_preference: z.string().optional(),
+  size_min_value: z.coerce.number().optional(),
+  size_min_unit: z.enum(sizeUnits).optional(),
+  size_max_value: z.coerce.number().optional(),
+  size_max_unit: z.enum(sizeUnits).optional(),
+  budget_min_amount: z.coerce.number().optional(),
+  budget_min_unit: z.enum(priceUnits).optional(),
+  budget_max_amount: z.coerce.number().optional(),
+  budget_max_unit: z.enum(priceUnits).optional(),
   notes: z.string().optional(),
 });
 
@@ -55,6 +71,10 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
     defaultValues: {
       status: 'New',
       serial_no: `B-${totalBuyers + 1}`,
+      size_min_unit: 'Marla',
+      size_max_unit: 'Marla',
+      budget_min_unit: 'Lacs',
+      budget_max_unit: 'Lacs',
     },
   });
 
@@ -95,32 +115,38 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                 <Input value={new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
             </FormItem>
         </div>
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Ali Khan" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="+92 300 1234567" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        
+        <Separator />
+        <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                    <Input {...field} placeholder="e.g. Ali Khan" />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                    <Input {...field} placeholder="+92 300 1234567" />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="email"
@@ -134,6 +160,94 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
             </FormItem>
           )}
         />
+        
+        <Separator />
+        <h4 className="text-sm font-medium text-muted-foreground">Buyer Requirements</h4>
+        
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+            control={form.control}
+            name="area_preference"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Area Preference</FormLabel>
+                <FormControl>
+                    <Input {...field} placeholder="e.g. DHA, Bahria, Gulberg" />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+             <FormField
+                control={form.control}
+                name="property_type_preference"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Property Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        {propertyTypes.map(type => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <FormLabel>Size Preference</FormLabel>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                    <FormField control={form.control} name="size_min_value" render={({field}) => (
+                        <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="size_min_unit" render={({field}) => (
+                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                            {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                        </SelectContent></Select></FormItem>
+                    )} />
+                    <FormField control={form.control} name="size_max_value" render={({field}) => (
+                        <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="size_max_unit" render={({field}) => (
+                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                            {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                        </SelectContent></Select></FormItem>
+                    )} />
+                </div>
+            </div>
+             <div>
+                <FormLabel>Budget Range</FormLabel>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                    <FormField control={form.control} name="budget_min_amount" render={({field}) => (
+                        <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="budget_min_unit" render={({field}) => (
+                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                            {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                        </SelectContent></Select></FormItem>
+                    )} />
+                    <FormField control={form.control} name="budget_max_amount" render={({field}) => (
+                        <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="budget_max_unit" render={({field}) => (
+                        <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                            {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                        </SelectContent></Select></FormItem>
+                    )} />
+                </div>
+            </div>
+        </div>
+
+        <Separator />
+         <h4 className="text-sm font-medium text-muted-foreground">Status & Notes</h4>
+
         <FormField
           control={form.control}
           name="status"
@@ -159,7 +273,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes</FormLabel>
+              <FormLabel>Other Requirements / Notes</FormLabel>
               <FormControl>
                 <Textarea {...field} placeholder="Any specific requirements or notes..." />
               </FormControl>

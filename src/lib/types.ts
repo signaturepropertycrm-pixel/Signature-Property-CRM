@@ -74,11 +74,16 @@ export type Buyer = {
     phone: string;
     status: BuyerStatus;
     area_preference?: string;
-    property_type_preference?: string;
+    property_type_preference?: PropertyType;
     budget_min_amount?: number;
     budget_min_unit?: PriceUnit;
     budget_max_amount?: number;
     budget_max_unit?: PriceUnit;
+    size_min_value?: number;
+    size_min_unit?: SizeUnit;
+    size_max_value?: number;
+    size_max_unit?: SizeUnit;
+    notes?: string;
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
