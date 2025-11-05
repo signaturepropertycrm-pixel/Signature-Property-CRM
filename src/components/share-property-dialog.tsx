@@ -15,8 +15,81 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/lib/types';
 import { Copy, Share2, Check } from 'lucide-react';
-import { generateShareableText } from '@/lib/actions';
-import { ShareableTextInput } from '@/ai/flows/shareable-text-generation';
+
+interface SharePropertyDialogProps {
+    property: Property;
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+}
+
+const generateSimpleShareableText = (property: Property) => {
+    if (!property) return { forCustomer: '', forAgent: '' };
+
+    const details = {
+        serialNo: `Serial No: ${property.serial_no}`,
+        area: `Area: ${property.area}`,
+        propertyType: `Property Type: ${property.property_type}`,
+        size: `Size/Marla: ${property.size_value} ${property.size_unit}`,
+        storey: property.storey ? `Floor: ${property.storey}` : null,
+        roadSize: property.road_size_ft ? `Road Size: ${property.road_size_ft}ft` : null,
+        front: property.front_ft ? `Front/Length: ${property.front_ft}ft` : null,
+        demand: `Demand: ${property.demand_amount} ${property.demand_unit}`,
+        address: `Full Address: ${property.address}`,
+        ownerNumber: `Owner Number: ${property.owner_number}`,
+        potentialRent: property.potential_rent_amount ? `- Potential Rent: ${property.potential_rent_amount}K` : '- Potential Rent: N/A',
+        documents: `Documents: ${property.documents || 'N/A'}`
+    };
+
+    const utilities = [
+        property.meters?.gas && '*- Gas*',
+        property.meters?.electricity && '*- Electricity*',
+        property.meters?.water && '*- Water*'
+    ].filter(Boolean).join('\n') || 'No utilities listed.';
+
+    // Customer Text
+    const customerTextParts = [
+        '**PROPERTY DETAILS 🏡**',
+        details.serialNo,
+        details.area,
+        details.propertyType,
+        details.size,
+        details.storey,
+        details.roadSize,
+        details.front,
+        details.demand,
+        '\n**Financials:**',
+        details.potentialRent,
+        '\n**Utilities:**',
+        utilities,
+        '\n**Documents:**',
+        details.documents,
+    ];
+    const forCustomer = customerTextParts.filter(Boolean).join('\n');
+
+    // Agent Text
+    const agentTextParts = [
+        '**PROPERTY DETAILS 🏡**',
+        details.serialNo,
+        details.area,
+        details.address,
+        details.propertyType,
+        details.size,
+        details.storey,
+        details.roadSize,
+        details.front,
+        details.demand,
+        details.ownerNumber,
+        '\n**Financials:**',
+        details.potentialRent,
+        '\n**Utilities:**',
+        utilities,
+        '\n**Documents:**',
+        details.documents,
+    ];
+    const forAgent = agentTextParts.filter(Boolean).join('\n');
+
+    return { forCustomer, forAgent };
+};
 
 
 export function SharePropertyDialog({
@@ -33,42 +106,12 @@ export function SharePropertyDialog({
   useEffect(() => {
     if (isOpen && property) {
         setLoading(true);
-        const propertyInput: ShareableTextInput = {
-            serial_no: property.serial_no,
-            area: property.area,
-            address: property.address,
-            property_type: property.property_type,
-            size_value: property.size_value,
-            size_unit: property.size_unit,
-            storey: property.storey,
-            road_size_ft: property.road_size_ft,
-            front_ft: property.front_ft,
-            length_ft: property.length_ft,
-            demand_amount: property.demand_amount,
-            demand_unit: property.demand_unit,
-            owner_number: property.owner_number,
-            potential_rent_amount: property.potential_rent_amount,
-            potential_rent_unit: property.potential_rent_unit,
-            meters: property.meters,
-            documents: property.documents,
-        };
-        
-        generateShareableText(propertyInput)
-            .then(res => {
-                setCustomerText(res.forCustomer);
-                setAgentText(res.forAgent);
-            })
-            .catch(err => {
-                console.error("Failed to generate shareable text:", err);
-                toast({
-                    variant: 'destructive',
-                    title: "AI Text Generation Failed",
-                    description: "Could not generate the property description. Please try again."
-                });
-            })
-            .finally(() => setLoading(false));
+        const { forCustomer, forAgent } = generateSimpleShareableText(property);
+        setCustomerText(forCustomer);
+        setAgentText(forAgent);
+        setLoading(false);
     }
-  }, [isOpen, property, toast]);
+  }, [isOpen, property]);
 
 
   const handleCopy = (text: string, type: 'customer' | 'agent') => {
@@ -91,12 +134,15 @@ export function SharePropertyDialog({
         }
     } catch (error) {
         console.error('Sharing failed, falling back to copy:', error);
-        handleCopy(text, type);
-        toast({ 
-            variant: 'destructive', 
-            title: 'Sharing Failed', 
-            description: 'Could not share. The text has been copied to your clipboard instead.'
-        });
+        // Only show copy toast if it's not a permission denied error from user cancellation
+        if (error instanceof DOMException && error.name !== 'AbortError') {
+             handleCopy(text, type);
+             toast({ 
+                variant: 'destructive', 
+                title: 'Sharing Failed', 
+                description: 'Could not share. Text copied instead.'
+            });
+        }
     }
   };
 
@@ -121,7 +167,7 @@ export function SharePropertyDialog({
             <TabsContent value="customer">
               <Textarea
                 readOnly
-                value={loading ? "Generating with AI..." : customerText}
+                value={customerText}
                 className="h-60 mt-4"
                 disabled={loading}
               />
@@ -138,7 +184,7 @@ export function SharePropertyDialog({
             <TabsContent value="agent">
               <Textarea
                 readOnly
-                value={loading ? "Generating with AI..." : agentText}
+                value={agentText}
                 className="h-60 mt-4"
                 disabled={loading}
               />
