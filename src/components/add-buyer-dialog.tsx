@@ -18,9 +18,10 @@ interface AddBuyerDialogProps {
     setIsOpen: (open: boolean) => void;
     totalBuyers: number;
     buyerToEdit?: Buyer | null;
+    onSave: (buyer: Buyer) => void;
 }
 
-export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit }: AddBuyerDialogProps) {
+export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -31,8 +32,10 @@ export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit }: 
             {buyerToEdit ? 'Update the details for this buyer.' : 'Fill in the details for the new buyer lead.'}
           </DialogDescription>
         </DialogHeader>
-        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} buyerToEdit={buyerToEdit} />
+        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} buyerToEdit={buyerToEdit} onSave={onSave} />
       </DialogContent>
     </Dialog>
   );
 }
+
+    

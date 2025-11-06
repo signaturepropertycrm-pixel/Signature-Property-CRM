@@ -106,6 +106,17 @@ function BuyersPageContent() {
         );
     };
 
+     const handleSaveBuyer = (buyerData: Buyer) => {
+        if (buyerToEdit) {
+            // Update existing buyer
+            setBuyers(buyers.map(b => b.id === buyerData.id ? buyerData : b));
+        } else {
+            // Add new buyer
+            setBuyers([...buyers, buyerData]);
+        }
+        setBuyerToEdit(null);
+    };
+
     const filteredBuyers = useMemo(() => {
         let filtered = buyers;
 
@@ -148,8 +159,8 @@ function BuyersPageContent() {
                 <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Areas</TableHead>
-                    <TableHead>Budget</TableHead>
-                    <TableHead>Size</TableHead>
+                    <TableHead>Budget & Size</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -160,17 +171,7 @@ function BuyersPageContent() {
                             <div className="font-medium">{buyer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                 <Badge 
-                                    variant={statusVariant[buyer.status] || 'default'} 
-                                    className={
-                                        buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
-                                    }
-                                >
-                                    {buyer.status}
-                                </Badge>
+                                <span>{buyer.phone}</span>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -180,10 +181,23 @@ function BuyersPageContent() {
                             </div>
                         </TableCell>
                         <TableCell>
-                            {formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}
+                            <div className="flex flex-col text-sm">
+                                <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
+                                <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
+                            </div>
                         </TableCell>
                         <TableCell>
-                            {formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}
+                            <Badge 
+                                variant={statusVariant[buyer.status] || 'default'} 
+                                className={
+                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                }
+                            >
+                                {buyer.status}
+                            </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                                 <DropdownMenu>
@@ -419,6 +433,7 @@ function BuyersPageContent() {
             setIsOpen={setIsAddBuyerOpen} 
             totalBuyers={buyers.length}
             buyerToEdit={buyerToEdit}
+            onSave={handleSaveBuyer}
          />
       </div>
     </>
@@ -432,3 +447,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    

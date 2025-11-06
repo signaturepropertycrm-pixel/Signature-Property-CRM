@@ -40,6 +40,7 @@ const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 
 
 const formSchema = z.object({
+  id: z.string().optional(),
   serial_no: z.string().optional(),
   name: z.string().min(1, 'Buyer name is required'),
   phone: z.string().min(1, 'Phone number is required'),
@@ -52,7 +53,7 @@ const formSchema = z.object({
   size_max_value: z.coerce.number().optional(),
   size_max_unit: z.enum(sizeUnits).optional(),
   budget_min_amount: z.coerce.number().optional(),
-  budget_min_unit: z.enum(priceUnits).optional(),
+  budget_min_unit: zenum(priceUnits).optional(),
   budget_max_amount: z.coerce.number().optional(),
   budget_max_unit: z.enum(priceUnits).optional(),
   notes: z.string().optional(),
@@ -64,6 +65,7 @@ interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
   totalBuyers: number;
   buyerToEdit?: Buyer | null;
+  onSave: (buyer: Buyer) => void;
 }
 
 const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined): AddBuyerFormValues => {
@@ -87,6 +89,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         };
     }
     return {
+        id: `B-${totalBuyers + 1}`,
         name: '',
         phone: '',
         email: '',
@@ -107,7 +110,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
 };
 
 
-export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuyerFormProps) {
+export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerFormProps) {
   const { toast } = useToast();
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
@@ -121,7 +124,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
   }, [buyerToEdit, totalBuyers, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
-    console.log(values);
+    onSave(values as Buyer);
     toast({
       title: buyerToEdit ? 'Buyer Updated' : 'Buyer Added',
       description: `Buyer "${values.name}" has been successfully ${buyerToEdit ? 'updated' : 'added'}.`,
