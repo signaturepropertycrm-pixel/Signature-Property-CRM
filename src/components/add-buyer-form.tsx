@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -57,6 +58,7 @@ const formSchema = z.object({
   budget_max_amount: z.coerce.number().optional(),
   budget_max_unit: z.enum(priceUnits).optional(),
   notes: z.string().optional(),
+  created_at: z.string().optional(),
 });
 
 type AddBuyerFormValues = z.infer<typeof formSchema>;
@@ -106,6 +108,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         size_max_value: undefined,
         budget_min_amount: undefined,
         budget_max_amount: undefined,
+        created_at: new Date().toISOString(),
     };
 };
 
@@ -153,7 +156,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                     />
                     <FormItem>
                         <FormLabel>Date</FormLabel>
-                        <Input value={new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
+                        <Input value={new Date(form.getValues('created_at') || new Date()).toLocaleDateString()} readOnly className="bg-muted/50" />
                     </FormItem>
                 </div>
                 
@@ -273,6 +276,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                     {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                                 </SelectContent></Select></FormItem>
+
                             )} />
                             <FormField control={form.control} name="budget_max_amount" render={({field}) => (
                                 <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Max" /></FormControl></FormItem>

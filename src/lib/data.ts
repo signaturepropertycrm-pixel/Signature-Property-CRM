@@ -1,4 +1,5 @@
 
+
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
@@ -120,6 +121,7 @@ export const buyers: Buyer[] = [
         budget_min_unit: 'Crore',
         budget_max_amount: 2.5,
         budget_max_unit: 'Crore',
+        created_at: '2024-07-20T10:00:00Z'
     },
     {
         id: '2',
@@ -133,6 +135,7 @@ export const buyers: Buyer[] = [
         budget_min_unit: 'Lacs',
         budget_max_amount: 1.2,
         budget_max_unit: 'Crore',
+        created_at: '2024-07-19T14:30:00Z'
     },
     {
         id: '3',
@@ -146,6 +149,7 @@ export const buyers: Buyer[] = [
         budget_min_unit: 'Crore',
         budget_max_amount: 15,
         budget_max_unit: 'Crore',
+        created_at: '2024-07-18T11:00:00Z'
     },
      {
         id: '4',
@@ -159,6 +163,7 @@ export const buyers: Buyer[] = [
         budget_min_unit: 'Lacs',
         budget_max_amount: 90,
         budget_max_unit: 'Lacs',
+        created_at: '2024-07-17T09:00:00Z'
     }
 ];
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -125,7 +126,7 @@ function BuyersPageContent() {
             setBuyers(buyers.map(b => b.id === buyerData.id ? buyerData : b));
         } else {
             // Add new buyer
-            const newBuyer = { ...buyerData, id: `B-${buyers.length + 1}`, serial_no: `B-${buyers.length + 1}`};
+            const newBuyer = { ...buyerData, id: `B-${buyers.length + 1}`, serial_no: `B-${buyers.length + 1}`, created_at: new Date().toISOString()};
             setBuyers([...buyers, newBuyer]);
         }
         setBuyerToEdit(null);

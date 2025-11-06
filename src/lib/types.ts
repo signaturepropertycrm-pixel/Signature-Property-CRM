@@ -85,6 +85,7 @@ export type Buyer = {
     size_max_value?: number;
     size_max_unit?: SizeUnit;
     notes?: string;
+    created_at: string;
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -14,7 +15,7 @@ import { Buyer, PriceUnit, SizeUnit } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, Bookmark } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, Bookmark, CalendarDays } from 'lucide-react';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
@@ -83,17 +84,18 @@ export function BuyerDetailsDialog({
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="font-headline text-2xl">{buyer.name}</DialogTitle>
-                <DialogDescription>
-                  <Badge variant="outline" className="font-mono">{buyer.serial_no}</Badge>
+                <DialogDescription className="flex items-center gap-2 text-xs">
+                  <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                   <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3" /> {new Date(buyer.created_at).toLocaleDateString()}</span>
                 </DialogDescription>
               </div>
                <Badge 
                     variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
                     className={
-                        buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                        `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                         buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                         buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
                     }
                 >
                     {buyer.status}
