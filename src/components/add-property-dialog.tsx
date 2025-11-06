@@ -18,11 +18,12 @@ import { useEffect } from 'react';
 interface AddPropertyDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    onSave: (property: Property) => void;
     propertyToEdit: Property | null;
     totalProperties: number;
 }
 
-export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit, totalProperties }: AddPropertyDialogProps) {
+export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, totalProperties }: AddPropertyDialogProps) {
 
     useEffect(() => {
         if (!isOpen) {
@@ -39,10 +40,8 @@ export function AddPropertyDialog({ isOpen, setIsOpen, propertyToEdit, totalProp
             {propertyToEdit ? 'Update the details for this property.' : 'Fill in the details to add a new property.'}
           </DialogDescription>
         </DialogHeader>
-        <AddPropertyForm setDialogOpen={setIsOpen} propertyToEdit={propertyToEdit} totalProperties={totalProperties} />
+        <AddPropertyForm setDialogOpen={setIsOpen} onSave={onSave} propertyToEdit={propertyToEdit} totalProperties={totalProperties} />
       </DialogContent>
     </Dialog>
   );
 }
-
-    

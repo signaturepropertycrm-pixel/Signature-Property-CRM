@@ -60,11 +60,12 @@ type AddPropertyFormValues = z.infer<typeof formSchema>;
 
 interface AddPropertyFormProps {
   setDialogOpen: (open: boolean) => void;
+  onSave: (property: Property) => void;
   propertyToEdit?: Property | null;
   totalProperties: number;
 }
 
-export function AddPropertyForm({ setDialogOpen, propertyToEdit, totalProperties }: AddPropertyFormProps) {
+export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddPropertyFormProps) {
   const { toast } = useToast();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
@@ -89,7 +90,13 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit, totalProperties
   });
 
    useEffect(() => {
-    if (!propertyToEdit) {
+    if (propertyToEdit) {
+        reset({
+            ...propertyToEdit,
+            potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
+            demand_unit: propertyToEdit.demand_unit,
+        });
+    } else {
       reset({
         city: 'Lahore',
         property_type: 'House',
@@ -98,12 +105,6 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit, totalProperties
         meters: { electricity: false, gas: false, water: false },
         serial_no: `P-${totalProperties + 1}`
       });
-    } else {
-        reset({
-            ...propertyToEdit,
-            potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
-            demand_unit: propertyToEdit.demand_unit,
-        });
     }
   }, [propertyToEdit, totalProperties, reset]);
 
@@ -130,7 +131,17 @@ export function AddPropertyForm({ setDialogOpen, propertyToEdit, totalProperties
   }, [watchedFields, setValue]);
 
   function onSubmit(values: AddPropertyFormValues) {
-    console.log(values);
+    const propertyData = {
+        ...propertyToEdit,
+        ...values,
+        id: propertyToEdit?.id || `P-${totalProperties + 1}`,
+        serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
+        status: propertyToEdit?.status || 'Available',
+        created_at: propertyToEdit?.created_at || new Date().toISOString(),
+        is_deleted: propertyToEdit?.is_deleted || false,
+    } as Property;
+    onSave(propertyData);
+
     toast({
       title: propertyToEdit ? 'Property Updated!' : 'Property Added!',
       description: `Property "${values.auto_title}" has been successfully ${propertyToEdit ? 'updated' : 'added'}.`,

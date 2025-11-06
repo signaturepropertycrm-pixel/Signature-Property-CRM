@@ -20,6 +20,7 @@ import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { useSearch } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 
 const statusVariant = {
@@ -75,6 +76,7 @@ function BuyersPageContent() {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
+    const { toast } = useToast();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
     const activeTab = statusFilterFromURL || 'All';
 
@@ -90,6 +92,23 @@ function BuyersPageContent() {
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
+    useEffect(() => {
+        // Load buyers from localStorage on mount
+        const savedBuyers = localStorage.getItem('buyers');
+        if (savedBuyers) {
+            setBuyers(JSON.parse(savedBuyers));
+        } else {
+            setBuyers(initialBuyers);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Save buyers to localStorage whenever they change
+        if (buyers.length > 0) {
+            localStorage.setItem('buyers', JSON.stringify(buyers));
+        }
+    }, [buyers]);
+    
     useEffect(() => {
         if (!isAddBuyerOpen) {
             setBuyerToEdit(null);
@@ -115,6 +134,14 @@ function BuyersPageContent() {
         });
         setIsAppointmentOpen(true);
     };
+    
+    const handleDelete = (buyerId: string) => {
+        setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, is_deleted: true } : b));
+        toast({
+            title: "Buyer Moved to Trash",
+            description: "You can restore them from the trash page.",
+        });
+    };
 
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus | PropertyType | PriceUnit | SizeUnit) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -139,14 +166,13 @@ function BuyersPageContent() {
             setBuyers(buyers.map(b => b.id === buyerData.id ? buyerData : b));
         } else {
             // Add new buyer
-            const newBuyer = { ...buyerData, id: `B-${buyers.length + 1}`, serial_no: `B-${buyers.length + 1}`, created_at: new Date().toISOString()};
-            setBuyers([...buyers, newBuyer]);
+            setBuyers([...buyers, buyerData]);
         }
         setBuyerToEdit(null);
     };
 
     const filteredBuyers = useMemo(() => {
-        let filtered = buyers;
+        let filtered = buyers.filter(b => !b.is_deleted);
 
         // Status filter from URL (Sidebar or Mobile Tabs)
         if (activeTab && activeTab !== 'All') {
@@ -282,7 +308,7 @@ function BuyersPageContent() {
                                             </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
                                     </DropdownMenuSub>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                    <DropdownMenuItem onSelect={() => handleDelete(buyer.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                         <Trash2 />
                                         Delete
                                     </DropdownMenuItem>
@@ -391,7 +417,7 @@ function BuyersPageContent() {
                                         </DropdownMenuSubContent>
                                     </DropdownMenuPortal>
                                 </DropdownMenuSub>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                <DropdownMenuItem onSelect={() => handleDelete(buyer.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                     <Trash2 />
                                     Delete
                                 </DropdownMenuItem>
@@ -580,6 +606,7 @@ function BuyersPageContent() {
             <SetAppointmentDialog 
                 isOpen={isAppointmentOpen}
                 setIsOpen={setIsAppointmentOpen}
+                onSave={() => {}}
                 appointmentDetails={appointmentDetails}
             />
         )}

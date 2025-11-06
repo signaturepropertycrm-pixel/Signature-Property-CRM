@@ -62,6 +62,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSearch } from '../layout';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -99,6 +100,7 @@ function PropertiesPageContent() {
   const { searchQuery } = useSearch();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
   const activeTab = statusFilterFromURL || 'All';
+  const { toast } = useToast();
 
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -170,7 +172,7 @@ function PropertiesPageContent() {
   };
   
   const filteredProperties = useMemo(() => {
-    let filtered = properties;
+    let filtered = properties.filter(p => !p.is_deleted);
 
     // Status tab filter from URL (Sidebar or Mobile Tabs)
     if (activeTab && (activeTab === 'Available' || activeTab === 'Sold')) {
@@ -252,6 +254,25 @@ function PropertiesPageContent() {
 
   const handleUpdateProperty = (updatedProperty: Property) => {
     setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
+  };
+  
+  const handleDelete = (propertyId: string) => {
+    setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, is_deleted: true } : p));
+    toast({
+        title: "Property Moved to Trash",
+        description: "You can restore it from the trash page.",
+    });
+  };
+
+  const handleSaveProperty = (propertyData: Property) => {
+    if (propertyToEdit) {
+        // Update existing property
+        setProperties(properties.map(p => p.id === propertyData.id ? propertyData : p));
+    } else {
+        // Add new property
+        setProperties([...properties, propertyData]);
+    }
+    setPropertyToEdit(null);
   };
 
   const handleTabChange = (value: string) => {
@@ -348,7 +369,7 @@ function PropertiesPageContent() {
                         Mark as Recorded
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                    <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                       <Trash2 />
                       Delete
                     </DropdownMenuItem>
@@ -452,7 +473,7 @@ function PropertiesPageContent() {
                                 Mark as Recorded
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                          <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                             <Trash2 />
                             Delete
                           </DropdownMenuItem>
@@ -622,12 +643,14 @@ function PropertiesPageContent() {
           setIsOpen={setIsAddPropertyOpen}
           propertyToEdit={propertyToEdit}
           totalProperties={properties.length}
+          onSave={handleSaveProperty}
       />
 
       {appointmentDetails && (
         <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
             setIsOpen={setIsAppointmentOpen}
+            onSave={() => {}}
             appointmentDetails={appointmentDetails}
         />
       )}

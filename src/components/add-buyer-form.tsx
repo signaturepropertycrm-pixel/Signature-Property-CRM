@@ -127,7 +127,15 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
   }, [buyerToEdit, totalBuyers, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
-    onSave(values as Buyer);
+     const buyerData = {
+        ...buyerToEdit,
+        ...values,
+        id: buyerToEdit?.id || `B-${totalBuyers + 1}`,
+        serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
+        created_at: buyerToEdit?.created_at || new Date().toISOString(),
+        is_deleted: buyerToEdit?.is_deleted || false,
+    } as Buyer;
+    onSave(buyerData);
     toast({
       title: buyerToEdit ? 'Buyer Updated' : 'Buyer Added',
       description: `Buyer "${values.name}" has been successfully ${buyerToEdit ? 'updated' : 'added'}.`,

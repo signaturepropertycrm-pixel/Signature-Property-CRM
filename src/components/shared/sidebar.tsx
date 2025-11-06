@@ -26,6 +26,7 @@ import {
   ChevronDown,
   LineChart,
   History,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -44,6 +45,7 @@ const menuItems = [
   { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
   { href: '/analytics', label: 'Analytics', icon: <LineChart /> },
   { href: '/activities', label: 'Activities', icon: <History /> },
+  { href: '/trash', label: 'Trash', icon: <Trash2 /> },
 ];
 
 const bottomMenuItems = [

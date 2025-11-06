@@ -51,7 +51,8 @@ export type Property = {
     instagram?: string;
     facebook?: string;
     other?: string;
-  }
+  };
+  is_deleted?: boolean;
 };
 
 export type BuyerStatus =
@@ -86,6 +87,7 @@ export type Buyer = {
     size_max_unit?: SizeUnit;
     notes?: string;
     created_at: string;
+    is_deleted?: boolean;
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
