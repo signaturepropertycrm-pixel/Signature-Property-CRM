@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { AppointmentContactType } from '@/lib/types';
+import { AppointmentContactType, AppointmentVenue } from '@/lib/types';
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,6 +43,16 @@ const formSchema = z.object({
   propertyAddress: z.string().min(1, 'Property address is required'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
+  venue: z.enum(['Office', 'Property Location', 'Other']),
+  venueDetails: z.string().optional(),
+}).refine(data => {
+    if (data.venue === 'Other') {
+        return !!data.venueDetails && data.venueDetails.length > 0;
+    }
+    return true;
+}, {
+    message: 'Venue details are required when "Other" is selected.',
+    path: ['venueDetails'],
 });
 
 type AppointmentFormValues = z.infer<typeof formSchema>;
@@ -61,10 +71,13 @@ export function SetAppointmentDialog({
       propertyAddress: appointmentDetails.propertyAddress,
       date: '',
       time: '',
+      venue: 'Property Location',
+      venueDetails: '',
     },
   });
 
-  const { reset } = form;
+  const { reset, watch } = form;
+  const venue = watch('venue');
 
   useEffect(() => {
     if (isOpen) {
@@ -74,6 +87,8 @@ export function SetAppointmentDialog({
         propertyAddress: appointmentDetails.propertyAddress,
         date: '',
         time: '',
+        venue: 'Property Location',
+        venueDetails: ''
       });
     }
   }, [isOpen, appointmentDetails, reset]);
@@ -174,6 +189,43 @@ export function SetAppointmentDialog({
                         )}
                     />
                 </div>
+                 <FormField
+                    control={form.control}
+                    name="venue"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Venue</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select venue" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Property Location">Property Location</SelectItem>
+                                    <SelectItem value="Office">Office</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {venue === 'Other' && (
+                     <FormField
+                        control={form.control}
+                        name="venueDetails"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Venue Details</FormLabel>
+                                <FormControl>
+                                    <Input {...field} placeholder="Enter venue address" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
                  <DialogFooter className="pt-4">
                     <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
                     <Button type="submit">Save Appointment</Button>

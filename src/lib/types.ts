@@ -103,6 +103,7 @@ export type FollowUp = {
 
 export type AppointmentStatus = 'Scheduled' | 'Completed' | 'Cancelled';
 export type AppointmentContactType = 'Buyer' | 'Owner';
+export type AppointmentVenue = 'Office' | 'Property Location' | 'Other';
 
 
 export type Appointment = {
@@ -114,6 +115,8 @@ export type Appointment = {
     time: string;
     propertyAddress: string;
     status: AppointmentStatus;
+    venue?: AppointmentVenue;
+    venueDetails?: string;
 }
 
     
