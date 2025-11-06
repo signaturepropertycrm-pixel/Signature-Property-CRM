@@ -24,7 +24,7 @@ const statusVariant = {
     'Contacted': 'secondary',
     'Interested': 'default',
     'Not Interested': 'destructive',
-    'Follow Up': 'secondary',
+    'Follow Up': 'default',
     'Pending Response': 'secondary',
     'Need More Info': 'secondary',
     'Visited Property': 'secondary',
@@ -361,7 +361,7 @@ function BuyersPageContent() {
             {renderCards()}
         </div>
       </div>
-      <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
          <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
               <PlusCircle className="h-6 w-6" />
               <span className="sr-only">Add Buyer</span>
@@ -380,4 +380,5 @@ export default function BuyersPage() {
     );
 }
 
+    
     
