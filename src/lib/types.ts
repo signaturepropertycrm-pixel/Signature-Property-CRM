@@ -108,6 +108,7 @@ export type AppointmentContactType = 'Buyer' | 'Owner';
 export type Appointment = {
     id: string;
     contactName: string;
+    contactSerialNo?: string;
     contactType: AppointmentContactType;
     agentName: string;
     date: string;

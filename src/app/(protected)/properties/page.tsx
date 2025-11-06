@@ -110,7 +110,7 @@ function PropertiesPageContent() {
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; message: string; } | null>(null);
+  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: '',
@@ -240,6 +240,7 @@ function PropertiesPageContent() {
     setAppointmentDetails({
       contactType: 'Owner',
       contactName: `Owner of ${prop.serial_no}`,
+      contactSerialNo: prop.serial_no,
       message: `Regarding property: ${prop.auto_title} (${prop.address})`,
     });
     setIsAppointmentOpen(true);
@@ -607,7 +608,7 @@ function PropertiesPageContent() {
         </div>
       </TooltipProvider>
 
-      {pathname === '/properties' && (
+      {pathname.startsWith('/properties') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
             <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />

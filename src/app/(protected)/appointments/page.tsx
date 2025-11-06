@@ -6,30 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { appointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState } from 'react';
 import { Appointment } from '@/lib/types';
-import { Textarea } from '@/components/ui/textarea';
 
 
 export default function AppointmentsPage() {
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(appointments);
+  const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -42,50 +26,10 @@ export default function AppointmentsPage() {
             Manage your upcoming appointments.
           </p>
         </div>
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button className="glowing-btn">
-                    <PlusCircle />
-                    Add Appointment
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add New Appointment</DialogTitle>
-                    <DialogDescription>Fill in the details for the new appointment.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="contact-type" className="text-right">Contact Type</Label>
-                         <Select>
-                            <SelectTrigger className="col-span-3">
-                                <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="buyer">Buyer</SelectItem>
-                                <SelectItem value="owner">Property Owner</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">Name</Label>
-                        <Input id="name" placeholder="e.g. Ahmed Hassan" className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="message" className="text-right">Message</Label>
-                        <Textarea id="message" placeholder="e.g. Meeting at property location..." className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="date" className="text-right">Date</Label>
-                        <Input id="date" type="date" className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="time" className="text-right">Time</Label>
-                        <Input id="time" type="time" className="col-span-3" />
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
+        <Button className="glowing-btn" onClick={() => setIsAppointmentOpen(true)}>
+            <PlusCircle />
+            Add Appointment
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -125,6 +69,10 @@ export default function AppointmentsPage() {
           </Card>
         ))}
       </div>
+       <SetAppointmentDialog 
+            isOpen={isAppointmentOpen}
+            setIsOpen={setIsAppointmentOpen}
+        />
     </div>
   );
 }

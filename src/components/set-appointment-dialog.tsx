@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -22,31 +23,38 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AppointmentContactType } from '@/lib/types';
 import { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Textarea } from './ui/textarea';
+import { teamMembers } from '@/lib/data';
 
 interface SetAppointmentDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  appointmentDetails: {
+  appointmentDetails?: {
     contactType: AppointmentContactType;
     contactName: string;
+    contactSerialNo?: string;
     message: string;
   };
 }
 
 const formSchema = z.object({
   contactType: z.enum(['Buyer', 'Owner']),
+  contactSerialNo: z.string().optional(),
   contactName: z.string().min(1, 'Contact name is required'),
+  agentName: z.string().min(1, "Please select an agent."),
   message: z.string().min(1, 'Message is required'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
 });
 
 type AppointmentFormValues = z.infer<typeof formSchema>;
+
+const agentNames = teamMembers.filter(m => m.role === 'Agent' || m.role === 'Admin').map(m => m.name);
+
 
 export function SetAppointmentDialog({
   isOpen,
@@ -57,11 +65,13 @@ export function SetAppointmentDialog({
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      contactType: appointmentDetails.contactType,
-      contactName: appointmentDetails.contactName,
-      message: appointmentDetails.message,
-      date: '',
-      time: '',
+        contactType: appointmentDetails?.contactType || 'Buyer',
+        contactName: appointmentDetails?.contactName || '',
+        contactSerialNo: appointmentDetails?.contactSerialNo || '',
+        message: appointmentDetails?.message || '',
+        agentName: '',
+        date: '',
+        time: '',
     },
   });
 
@@ -70,9 +80,11 @@ export function SetAppointmentDialog({
   useEffect(() => {
     if (isOpen) {
       reset({
-        contactType: appointmentDetails.contactType,
-        contactName: appointmentDetails.contactName,
-        message: appointmentDetails.message,
+        contactType: appointmentDetails?.contactType || 'Buyer',
+        contactName: appointmentDetails?.contactName || '',
+        contactSerialNo: appointmentDetails?.contactSerialNo || '',
+        message: appointmentDetails?.message || '',
+        agentName: '',
         date: '',
         time: '',
       });
@@ -100,27 +112,42 @@ export function SetAppointmentDialog({
         </DialogHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-                <FormField
-                    control={form.control}
-                    name="contactType"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Contact Type</FormLabel>
-                             <Select onValueChange={field.onChange} value={field.value}>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="contactType"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Contact Type</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Buyer">Buyer</SelectItem>
+                                        <SelectItem value="Owner">Property Owner</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="contactSerialNo"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Contact Serial No.</FormLabel>
                                 <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
+                                    <Input {...field} placeholder="e.g. B-1 or P-1" />
                                 </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Buyer">Buyer</SelectItem>
-                                    <SelectItem value="Owner">Property Owner</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
                  <FormField
                     control={form.control}
                     name="contactName"
@@ -134,12 +161,34 @@ export function SetAppointmentDialog({
                         </FormItem>
                     )}
                 />
+                 <FormField
+                    control={form.control}
+                    name="agentName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Assign to Agent</FormLabel>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select an agent..." />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {agentNames.map(name => (
+                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <FormField
                     control={form.control}
                     name="message"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Message</FormLabel>
+                            <FormLabel>Message / Purpose</FormLabel>
                             <FormControl>
                                 <Textarea {...field} placeholder="e.g. Meeting at property location..." />
                             </FormControl>

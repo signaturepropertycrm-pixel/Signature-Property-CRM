@@ -86,7 +86,7 @@ function BuyersPageContent() {
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-    const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; message: string; } | null>(null);
+    const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
@@ -110,6 +110,7 @@ function BuyersPageContent() {
         setAppointmentDetails({
             contactType: 'Buyer',
             contactName: buyer.name,
+            contactSerialNo: buyer.serial_no,
             message: `Regarding buyer's interest in ${buyer.area_preference || 'general properties'}.`, 
         });
         setIsAppointmentOpen(true);

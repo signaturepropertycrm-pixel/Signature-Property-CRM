@@ -115,13 +115,17 @@ export const buyers: Buyer[] = [
         name: 'Ahmed Hassan',
         phone: '+92 301 2345678',
         area_preference: 'DHA, Gulberg',
-        property_type_preference: 'House, Plot',
+        property_type_preference: 'House',
         status: 'Hot Lead',
         budget_min_amount: 2,
         budget_min_unit: 'Crore',
         budget_max_amount: 2.5,
         budget_max_unit: 'Crore',
-        created_at: '2024-07-20T10:00:00Z'
+        created_at: '2024-07-20T10:00:00Z',
+        size_min_value: 8,
+        size_min_unit: 'Marla',
+        size_max_value: 10,
+        size_max_unit: 'Marla',
     },
     {
         id: '2',
@@ -235,6 +239,7 @@ export const appointments: Appointment[] = [
     {
         id: '1',
         contactName: 'Ahmed Hassan',
+        contactSerialNo: 'B-1',
         contactType: 'Buyer',
         agentName: 'Ali Khan',
         date: '2024-05-26T00:00:00.000Z',
@@ -245,6 +250,7 @@ export const appointments: Appointment[] = [
     {
         id: '2',
         contactName: 'Sana Iqbal',
+        contactSerialNo: 'B-2',
         contactType: 'Buyer',
         agentName: 'Fatima Ahmed',
         date: '2024-05-25T00:00:00.000Z',
@@ -254,9 +260,10 @@ export const appointments: Appointment[] = [
     },
     {
         id: '3',
-        contactName: 'Property Owner (P-4)',
+        contactName: 'Owner of P-4',
+        contactSerialNo: 'P-4',
         contactType: 'Owner',
-        agentName: 'Ali Khan',
+        agentName: 'Demo Admin',
         date: '2024-05-22T00:00:00.000Z',
         time: '4:00 PM',
         message: 'Discussing final offer for the commercial plot in Johar Town.',
