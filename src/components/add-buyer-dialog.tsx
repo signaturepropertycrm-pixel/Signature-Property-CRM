@@ -10,25 +10,28 @@ import {
 } from '@/components/ui/dialog';
 import { AddBuyerForm } from './add-buyer-form';
 import { PlusCircle } from 'lucide-react';
+import type { Buyer } from '@/lib/types';
+import { useEffect } from 'react';
 
 interface AddBuyerDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     totalBuyers: number;
+    buyerToEdit?: Buyer | null;
 }
 
-export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers }: AddBuyerDialogProps) {
+export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit }: AddBuyerDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Add New Buyer</DialogTitle>
+          <DialogTitle className="font-headline">{buyerToEdit ? 'Edit Buyer' : 'Add New Buyer'}</DialogTitle>
           <DialogDescription>
-            Fill in the details for the new buyer lead.
+            {buyerToEdit ? 'Update the details for this buyer.' : 'Fill in the details for the new buyer lead.'}
           </DialogDescription>
         </DialogHeader>
-        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} />
+        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} buyerToEdit={buyerToEdit} />
       </DialogContent>
     </Dialog>
   );

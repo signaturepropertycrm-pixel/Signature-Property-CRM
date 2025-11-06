@@ -70,12 +70,24 @@ function BuyersPageContent() {
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [filters, setFilters] = useState<Filters>({
         status: 'All',
         area: '',
         minBudget: '',
         maxBudget: '',
     });
+
+    useEffect(() => {
+        if (!isAddBuyerOpen) {
+            setBuyerToEdit(null);
+        }
+    }, [isAddBuyerOpen]);
+
+    const handleEdit = (buyer: Buyer) => {
+        setBuyerToEdit(buyer);
+        setIsAddBuyerOpen(true);
+    };
 
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -182,7 +194,7 @@ function BuyersPageContent() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                         <Edit />
                                         Edit
                                     </DropdownMenuItem>
@@ -228,19 +240,20 @@ function BuyersPageContent() {
                                 <span className="font-medium text-lg">{buyer.name}</span>
                                 <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                     <Badge 
+                                        variant={statusVariant[buyer.status] || 'default'} 
+                                        className={
+                                            buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                            buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                            buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                            buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                        }
+                                    >
+                                        {buyer.status}
+                                    </Badge>
                                 </div>
                             </div>
-                            <Badge 
-                                variant={statusVariant[buyer.status] || 'default'} 
-                                className={
-                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
-                                }
-                            >
-                                {buyer.status}
-                            </Badge>
+                           
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -282,7 +295,7 @@ function BuyersPageContent() {
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                     <Edit />
                                     Edit
                                 </DropdownMenuItem>
@@ -401,7 +414,12 @@ function BuyersPageContent() {
               <PlusCircle className="h-6 w-6" />
               <span className="sr-only">Add Buyer</span>
           </Button>
-         <AddBuyerDialog isOpen={isAddBuyerOpen} setIsOpen={setIsAddBuyerOpen} totalBuyers={buyers.length} />
+         <AddBuyerDialog 
+            isOpen={isAddBuyerOpen} 
+            setIsOpen={setIsAddBuyerOpen} 
+            totalBuyers={buyers.length}
+            buyerToEdit={buyerToEdit}
+         />
       </div>
     </>
   );
@@ -414,7 +432,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
-    
-    

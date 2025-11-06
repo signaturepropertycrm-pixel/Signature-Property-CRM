@@ -24,7 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
-import type { BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
+import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -63,13 +63,21 @@ type AddBuyerFormValues = z.infer<typeof formSchema>;
 interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
   totalBuyers: number;
+  buyerToEdit?: Buyer | null;
 }
 
-export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) {
+export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuyerFormProps) {
   const { toast } = useToast();
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: buyerToEdit ? {
+      ...buyerToEdit,
+      property_type_preference: buyerToEdit.property_type_preference || undefined,
+      size_min_unit: buyerToEdit.size_min_unit || 'Marla',
+      size_max_unit: buyerToEdit.size_max_unit || 'Marla',
+      budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
+      budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
+    } : {
       status: 'New',
       serial_no: `B-${totalBuyers + 1}`,
       size_min_unit: 'Marla',
@@ -79,19 +87,47 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
     },
   });
 
+  const { reset } = form;
+
   useEffect(() => {
-    // Set serial number when totalBuyers changes
-    form.setValue('serial_no', `B-${totalBuyers + 1}`);
-  }, [totalBuyers, form]);
+    if (buyerToEdit) {
+      reset({
+        ...buyerToEdit,
+        property_type_preference: buyerToEdit.property_type_preference || undefined,
+        size_min_unit: buyerToEdit.size_min_unit || 'Marla',
+        size_max_unit: buyerToEdit.size_max_unit || 'Marla',
+        budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
+        budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
+      });
+    } else {
+      reset({
+        status: 'New',
+        serial_no: `B-${totalBuyers + 1}`,
+        size_min_unit: 'Marla',
+        size_max_unit: 'Marla',
+        budget_min_unit: 'Lacs',
+        budget_max_unit: 'Lacs',
+        name: '',
+        phone: '',
+        email: '',
+        area_preference: '',
+        property_type_preference: undefined,
+        size_min_value: undefined,
+        size_max_value: undefined,
+        budget_min_amount: undefined,
+        budget_max_amount: undefined,
+        notes: '',
+      });
+    }
+  }, [buyerToEdit, totalBuyers, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
     console.log(values);
     toast({
-      title: 'Buyer Added',
-      description: `Buyer "${values.name}" has been successfully added.`,
+      title: buyerToEdit ? 'Buyer Updated' : 'Buyer Added',
+      description: `Buyer "${values.name}" has been successfully ${buyerToEdit ? 'updated' : 'added'}.`,
     });
     setDialogOpen(false);
-    form.reset();
   }
 
   return (
@@ -187,7 +223,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Property Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                                 <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                             </FormControl>
@@ -211,7 +247,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                                 <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_min_unit" render={({field}) => (
-                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                     {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                                 </SelectContent></Select></FormItem>
                             )} />
@@ -219,7 +255,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                                 <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_max_unit" render={({field}) => (
-                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                     {sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                                 </SelectContent></Select></FormItem>
                             )} />
@@ -232,7 +268,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                                 <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_min_unit" render={({field}) => (
-                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                     {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                                 </SelectContent></Select></FormItem>
                             )} />
@@ -240,7 +276,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                                 <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_max_unit" render={({field}) => (
-                                <FormItem><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
+                                <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
                                     {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                                 </SelectContent></Select></FormItem>
                             )} />
@@ -257,7 +293,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         </FormControl>
@@ -290,7 +326,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers }: AddBuyerFormProps) 
           <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          <Button type="submit" className="glowing-btn">Save Buyer</Button>
+          <Button type="submit" className="glowing-btn">{buyerToEdit ? 'Save Changes' : 'Save Buyer'}</Button>
         </div>
       </form>
     </Form>
