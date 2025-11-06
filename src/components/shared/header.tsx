@@ -18,11 +18,9 @@ import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User } from 'lucide-react
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
+import { useProfile } from '@/context/profile-context';
 
 const adminAvatar = PlaceHolderImages.find(img => img.id === 'avatar-admin');
-const userName = "Demo Admin";
-const firstName = userName.split(' ')[0];
-
 
 export function AppHeader({ 
   searchable,
@@ -35,6 +33,9 @@ export function AppHeader({
 }) {
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  const { profile } = useProfile();
+  const ownerName = profile.ownerName;
+  const firstName = ownerName.split(' ')[0];
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
@@ -71,9 +72,9 @@ export function AppHeader({
             <Button variant="ghost" className="flex items-center gap-2 rounded-full p-1 h-auto">
               <Avatar className="h-9 w-9 border-2 border-primary/50">
                 {adminAvatar && <AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
-                <AvatarFallback>{userName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                <AvatarFallback>{ownerName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline font-semibold">{userName}</span>
+              <span className="hidden sm:inline font-semibold">{ownerName}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
@@ -84,7 +85,7 @@ export function AppHeader({
                 <User />
                 Profile
             </DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/login')}>

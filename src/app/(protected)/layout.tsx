@@ -7,6 +7,7 @@ import { AppHeader } from '@/components/shared/header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { CurrencyProvider } from '@/context/currency-context';
+import { ProfileProvider } from '@/context/profile-context';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -39,25 +40,27 @@ export default function ProtectedLayout({
 
 
   return (
-    <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-      <CurrencyProvider>
-        <SidebarProvider>
-          <div className="flex h-screen w-full bg-background">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <AppHeader 
-                searchable={isSearchable}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-              />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                {children}
-              </main>
+    <ProfileProvider>
+      <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+        <CurrencyProvider>
+          <SidebarProvider>
+            <div className="flex h-screen w-full bg-background">
+              <AppSidebar />
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <AppHeader 
+                  searchable={isSearchable}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                  {children}
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarProvider>
-      </CurrencyProvider>
-    </SearchContext.Provider>
+          </SidebarProvider>
+        </CurrencyProvider>
+      </SearchContext.Provider>
+    </ProfileProvider>
   );
 }
 

@@ -23,13 +23,25 @@ import { useCurrency } from '@/context/currency-context';
 import type { Currency } from '@/context/currency-context';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useProfile } from '@/context/profile-context';
+import React, { useState } from 'react';
+import type { ProfileData } from '@/context/profile-context';
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
+  const { profile, setProfile } = useProfile();
   const { toast } = useToast();
+  
+  const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
+
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { id, value } = e.target;
+      setLocalProfile(prev => ({ ...prev, [id]: value }));
+  };
 
   const handleProfileSave = (e: React.FormEvent) => {
     e.preventDefault();
+    setProfile(localProfile);
     toast({
       title: 'Profile Updated',
       description: 'Your profile information has been saved successfully.',
@@ -69,18 +81,19 @@ export default function SettingsPage() {
                 <Label htmlFor="agencyName">Agency Name</Label>
                 <Input
                   id="agencyName"
-                  defaultValue="Signature Properties"
+                  value={localProfile.agencyName}
+                  onChange={handleProfileChange}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ownerName">Agency Owner Name</Label>
-                <Input id="ownerName" defaultValue="Demo Admin" />
+                <Input id="ownerName" value={localProfile.ownerName} onChange={handleProfileChange} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" defaultValue="+92 300 1234567" />
+                <Input id="phone" value={localProfile.phone} onChange={handleProfileChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Account Email</Label>
