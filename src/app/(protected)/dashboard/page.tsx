@@ -14,12 +14,15 @@ import {
   ArrowUpRight,
   Building2,
   CalendarCheck,
+  CalendarDays,
+  CheckCheck,
   CheckCircle,
   DollarSign,
   Flame,
   Star,
   TrendingDown,
   Users,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -44,6 +47,15 @@ import {
   ChartLegend,
   ChartLegendContent
 } from '@/components/ui/chart';
+import { appointments } from '@/lib/data';
+import { subMonths, isWithinInterval } from 'date-fns';
+
+const lastMonth = subMonths(new Date(), 1);
+const now = new Date();
+
+const appointmentsLastMonth = appointments.filter(a => isWithinInterval(new Date(a.date), { start: lastMonth, end: now }));
+const completedLastMonth = appointmentsLastMonth.filter(a => a.status === 'Completed').length;
+const cancelledLastMonth = appointmentsLastMonth.filter(a => a.status === 'Cancelled').length;
 
 const kpiData = [
   {
@@ -88,26 +100,33 @@ const kpiData = [
     color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
     change: '+3 this week',
   },
+   {
+    title: 'Appointments (Month)',
+    value: appointmentsLastMonth.length.toString(),
+    icon: CalendarDays,
+    color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
+    change: `${appointments.filter(a => a.status === 'Scheduled').length} upcoming`,
+  },
+   {
+    title: 'Completed (Month)',
+    value: completedLastMonth.toString(),
+    icon: CheckCheck,
+    color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
+    change: 'Keep it up!',
+  },
+    {
+    title: 'Cancelled (Month)',
+    value: cancelledLastMonth.toString(),
+    icon: XCircle,
+    color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300',
+    change: 'Review reasons',
+  },
   {
     title: 'Active Follow-ups',
     value: '102',
     icon: CalendarCheck,
     color: 'bg-violet-100 dark:bg-violet-900 text-violet-600 dark:text-violet-300',
     change: '5 due today',
-  },
-  {
-    title: 'Deals Closed',
-    value: '21',
-    icon: CheckCircle,
-    color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
-    change: '+5 this month',
-  },
-  {
-    title: 'Cold Leads',
-    value: '73',
-    icon: TrendingDown,
-    color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
-    change: '-2 from yesterday',
   },
 ];
 

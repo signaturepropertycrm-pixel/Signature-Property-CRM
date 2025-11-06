@@ -235,6 +235,10 @@ export const followUps: FollowUp[] = [
     }
 ];
 
+const now = new Date();
+const lastMonth = new Date();
+lastMonth.setMonth(now.getMonth() - 1);
+
 export const appointments: Appointment[] = [
     {
         id: '1',
@@ -242,8 +246,8 @@ export const appointments: Appointment[] = [
         contactSerialNo: 'B-1',
         contactType: 'Buyer',
         agentName: 'Ali Khan',
-        date: '2024-05-26T00:00:00.000Z',
-        time: '11:00 AM',
+        date: new Date().toISOString(),
+        time: '11:00',
         message: 'Meeting at property location: Plot 45, Sector D, DHA Phase 6, Lahore',
         status: 'Scheduled'
     },
@@ -253,8 +257,8 @@ export const appointments: Appointment[] = [
         contactSerialNo: 'B-2',
         contactType: 'Buyer',
         agentName: 'Fatima Ahmed',
-        date: '2024-05-25T00:00:00.000Z',
-        time: '2:30 PM',
+        date: new Date(new Date().setDate(now.getDate() + 2)).toISOString(),
+        time: '14:30',
         message: 'Client will visit the office to discuss flat options.',
         status: 'Scheduled'
     },
@@ -264,9 +268,34 @@ export const appointments: Appointment[] = [
         contactSerialNo: 'P-4',
         contactType: 'Owner',
         agentName: 'Demo Admin',
-        date: '2024-05-22T00:00:00.000Z',
-        time: '4:00 PM',
+        date: new Date(new Date().setDate(now.getDate() - 2)).toISOString(),
+        time: '16:00',
         message: 'Discussing final offer for the commercial plot in Johar Town.',
-        status: 'Completed'
+        status: 'Completed',
+        notes: 'Deal finalized. Paperwork to be started.'
+    },
+    {
+        id: '4',
+        contactName: 'Faisal Khan',
+        contactSerialNo: 'B-3',
+        contactType: 'Buyer',
+        agentName: 'Ali Khan',
+        date: new Date(new Date().setDate(now.getDate() - 5)).toISOString(),
+        time: '10:00',
+        message: 'Initial call to discuss commercial options.',
+        status: 'Completed',
+        notes: 'Client is interested in plots around Johar Town.'
+    },
+    {
+        id: '5',
+        contactName: 'Owner of P-1',
+        contactSerialNo: 'P-1',
+        contactType: 'Owner',
+        agentName: 'Fatima Ahmed',
+        date: new Date(new Date().setDate(now.getDate() - 3)).toISOString(),
+        time: '12:00',
+        message: 'Scheduled visit, but owner had to cancel.',
+        status: 'Cancelled',
+        notes: 'Family emergency. Will reschedule next week.'
     }
 ];
