@@ -84,7 +84,7 @@ const kpiData = [
   {
     id: 'monthly-revenue',
     title: 'Monthly Revenue',
-    value: '1.2Cr',
+    value: 12000000,
     icon: DollarSign,
     color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
     change: '+20.1%',
@@ -176,7 +176,7 @@ export default function DashboardPage() {
   const getUpdatedKpi = () => {
     return kpiData.map(kpi => {
       if (kpi.id === 'monthly-revenue') {
-        return { ...kpi, value: formatCurrency(12000000, currency) };
+        return { ...kpi, value: formatCurrency(kpi.value as number, currency, { notation: 'compact' }) };
       }
       return kpi;
     });
