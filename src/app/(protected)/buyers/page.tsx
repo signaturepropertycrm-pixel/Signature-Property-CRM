@@ -122,8 +122,8 @@ function BuyersPageContent() {
             <TableHeader>
                 <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Budget</TableHead>
                     <TableHead>Areas</TableHead>
+                    <TableHead>Budget</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -135,17 +135,16 @@ function BuyersPageContent() {
                             <div className="font-medium">{buyer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                <span>{buyer.phone}</span>
                             </div>
-                        </TableCell>
-                        <TableCell>
-                            {formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}
                         </TableCell>
                         <TableCell>
                             <div className="flex flex-col text-sm">
                                 <span>{buyer.area_preference}</span>
                                 <span className="text-muted-foreground">{buyer.property_type_preference}</span>
                             </div>
+                        </TableCell>
+                        <TableCell>
+                            {formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}
                         </TableCell>
                         <TableCell>
                            <Badge 
@@ -232,25 +231,25 @@ function BuyersPageContent() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">Phone</p>
-                                <p className="font-medium">{buyer.phone}</p>
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-2">
                            <Home className="h-4 w-4 text-muted-foreground" />
                            <div>
                                 <p className="text-muted-foreground">Area</p>
                                 <p className="font-medium">{buyer.area_preference}</p>
                            </div>
                         </div>
-                         <div className="flex items-center gap-2 col-span-2">
+                        <div className="flex items-center gap-2">
                            <Wallet className="h-4 w-4 text-muted-foreground" />
                            <div>
                                 <p className="text-muted-foreground">Budget</p>
                                 <p className="font-medium">{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</p>
                            </div>
+                        </div>
+                         <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                                <p className="text-muted-foreground">Phone</p>
+                                <p className="font-medium">{buyer.phone}</p>
+                            </div>
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end">
@@ -395,4 +394,5 @@ export default function BuyersPage() {
     );
 }
 
+    
     
