@@ -37,7 +37,7 @@ import {
 import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit } from '@/lib/types';
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -74,8 +74,10 @@ interface Filters {
   propertyType: PropertyType | 'All';
   minSize: string;
   maxSize: string;
+  sizeUnit: SizeUnit | 'All';
   minDemand: string;
   maxDemand: string;
+  demandUnit: PriceUnit | 'All';
 }
 
 type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
@@ -100,8 +102,10 @@ function PropertiesPageContent() {
     propertyType: 'All',
     minSize: '',
     maxSize: '',
+    sizeUnit: 'Marla',
     minDemand: '',
     maxDemand: '',
+    demandUnit: 'Lacs'
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   
@@ -142,8 +146,10 @@ function PropertiesPageContent() {
       propertyType: 'All',
       minSize: '',
       maxSize: '',
+      sizeUnit: 'Marla',
       minDemand: '',
       maxDemand: '',
+      demandUnit: 'Lacs'
     });
     setIsFilterPopoverOpen(false);
   };
@@ -561,5 +567,7 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
+
+    
 
     

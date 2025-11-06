@@ -10,7 +10,7 @@ import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -59,6 +59,9 @@ interface Filters {
   area: string;
   minBudget: string;
   maxBudget: string;
+  propertyType: PropertyType | 'All';
+  minSize: string;
+  maxSize: string;
 }
 
 function BuyersPageContent() {
@@ -76,6 +79,9 @@ function BuyersPageContent() {
         area: '',
         minBudget: '',
         maxBudget: '',
+        propertyType: 'All',
+        minSize: '',
+        maxSize: ''
     });
 
     useEffect(() => {
@@ -94,7 +100,7 @@ function BuyersPageContent() {
     };
 
     const clearFilters = () => {
-        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '' });
+        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', propertyType: 'All', minSize: '', maxSize: '' });
         setIsFilterPopoverOpen(false);
     };
 
@@ -147,6 +153,15 @@ function BuyersPageContent() {
         }
         if (filters.maxBudget) {
              filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget));
+        }
+         if (filters.propertyType !== 'All') {
+            filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
+        }
+        if (filters.minSize) {
+            filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize));
+        }
+        if (filters.maxSize) {
+            filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize));
         }
 
 
@@ -390,10 +405,35 @@ function BuyersPageContent() {
                             <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
                         </div>
                         <div className="grid grid-cols-3 items-center gap-4">
+                           <Label htmlFor="propertyType">Type</Label>
+                           <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                               <SelectTrigger className="col-span-2 h-8">
+                                   <SelectValue placeholder="Property Type" />
+                               </SelectTrigger>
+                               <SelectContent>
+                                   <SelectItem value="All">All</SelectItem>
+                                   <SelectItem value="House">House</SelectItem>
+                                   <SelectItem value="Plot">Plot</SelectItem>
+                                   <SelectItem value="Flat">Flat</SelectItem>
+                                   <SelectItem value="Shop">Shop</SelectItem>
+                                   <SelectItem value="Commercial">Commercial</SelectItem>
+                                   <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                   <SelectItem value="Other">Other</SelectItem>
+                               </SelectContent>
+                           </Select>
+                       </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
                             <Label>Budget</Label>
                             <div className="col-span-2 grid grid-cols-2 gap-2">
                             <Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" />
                             <Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" />
+                            </div>
+                        </div>
+                         <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Size</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                            <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
                             </div>
                         </div>
                         </div>
@@ -447,5 +487,7 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
 
     
