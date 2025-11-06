@@ -6,11 +6,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -34,10 +34,23 @@ const statusVariant = {
 } as const;
 
 function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) {
-    if (!minAmount || !minUnit || !maxAmount || !maxUnit) {
+    if (!minAmount || !minUnit) {
         return 'N/A';
     }
+    if (!maxAmount || !maxUnit) {
+        return `${minAmount} ${minUnit}`;
+    }
     return `${minAmount} ${minUnit} - ${maxAmount} ${maxUnit}`;
+}
+
+function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
+    if (!minAmount || !minUnit) {
+        return 'N/A';
+    }
+     if (!maxAmount || !maxUnit) {
+        return `${minAmount} ${minUnit}`;
+    }
+    return `${minAmount} - ${maxAmount} ${maxUnit}`;
 }
 
 
@@ -124,7 +137,7 @@ function BuyersPageContent() {
                     <TableHead>Name</TableHead>
                     <TableHead>Areas</TableHead>
                     <TableHead>Budget</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Size</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -135,6 +148,17 @@ function BuyersPageContent() {
                             <div className="font-medium">{buyer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                 <Badge 
+                                    variant={statusVariant[buyer.status] || 'default'} 
+                                    className={
+                                        buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                    }
+                                >
+                                    {buyer.status}
+                                </Badge>
                             </div>
                         </TableCell>
                         <TableCell>
@@ -147,17 +171,7 @@ function BuyersPageContent() {
                             {formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}
                         </TableCell>
                         <TableCell>
-                           <Badge 
-                                variant={statusVariant[buyer.status] || 'default'} 
-                                className={
-                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
-                                }
-                            >
-                                {buyer.status}
-                            </Badge>
+                            {formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}
                         </TableCell>
                         <TableCell className="text-right">
                                 <DropdownMenu>
@@ -235,6 +249,13 @@ function BuyersPageContent() {
                            <div>
                                 <p className="text-muted-foreground">Area</p>
                                 <p className="font-medium">{buyer.area_preference}</p>
+                           </div>
+                        </div>
+                         <div className="flex items-center gap-2">
+                           <Ruler className="h-4 w-4 text-muted-foreground" />
+                           <div>
+                                <p className="text-muted-foreground">Size</p>
+                                <p className="font-medium">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</p>
                            </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -394,5 +415,6 @@ export default function BuyersPage() {
     );
 }
 
+    
     
     
