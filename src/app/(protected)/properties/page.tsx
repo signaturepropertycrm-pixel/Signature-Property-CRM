@@ -58,8 +58,9 @@ import {
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSearch } from '../layout';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -82,11 +83,22 @@ interface Filters {
 
 type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
+const propertyStatusLinks: {label: string, status: FilterTab}[] = [
+    { label: 'All', status: 'All' },
+    { label: 'Available', status: 'Available' },
+    { label: 'Sold', status: 'Sold' },
+    { label: 'Recorded', status: 'Recorded' },
+];
+
 function PropertiesPageContent() {
   const isMobile = useIsMobile();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { searchQuery } = useSearch();
-  const statusFilterFromURL = searchParams.get('status') as FilterTab | null;
+  const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
+  const activeTab = statusFilterFromURL || 'All';
+
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -102,10 +114,10 @@ function PropertiesPageContent() {
     propertyType: 'All',
     minSize: '',
     maxSize: '',
-    sizeUnit: 'Marla',
+    sizeUnit: 'All',
     minDemand: '',
     maxDemand: '',
-    demandUnit: 'Lacs'
+    demandUnit: 'All'
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   
@@ -135,7 +147,7 @@ function PropertiesPageContent() {
 
   const handleFilterChange = (
     key: keyof Filters,
-    value: string | PropertyType
+    value: string | PropertyType | SizeUnit | PriceUnit
   ) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -146,10 +158,10 @@ function PropertiesPageContent() {
       propertyType: 'All',
       minSize: '',
       maxSize: '',
-      sizeUnit: 'Marla',
+      sizeUnit: 'All',
       minDemand: '',
       maxDemand: '',
-      demandUnit: 'Lacs'
+      demandUnit: 'All'
     });
     setIsFilterPopoverOpen(false);
   };
@@ -157,10 +169,10 @@ function PropertiesPageContent() {
   const filteredProperties = useMemo(() => {
     let filtered = properties;
 
-    // Status tab filter from URL (Sidebar)
-    if (statusFilterFromURL && (statusFilterFromURL === 'Available' || statusFilterFromURL === 'Sold')) {
-        filtered = filtered.filter(p => p.status === statusFilterFromURL);
-    } else if (statusFilterFromURL === 'Recorded') {
+    // Status tab filter from URL (Sidebar or Mobile Tabs)
+    if (activeTab && (activeTab === 'Available' || activeTab === 'Sold')) {
+        filtered = filtered.filter(p => p.status === activeTab);
+    } else if (activeTab === 'Recorded') {
         filtered = filtered.filter(p => p.is_recorded);
     }
     
@@ -185,22 +197,21 @@ function PropertiesPageContent() {
         filtered = filtered.filter(p => p.property_type === filters.propertyType);
     }
     if (filters.minSize) {
-        filtered = filtered.filter(p => p.size_value >= Number(filters.minSize));
+        filtered = filtered.filter(p => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
     }
     if (filters.maxSize) {
-        filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize));
+        filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
     }
-    // Note: This demand filter is simplified and doesn't account for units (Lacs vs Crore)
     if (filters.minDemand) {
-        filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand));
+        filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     }
     if (filters.maxDemand) {
-        filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand));
+        filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     }
 
 
     return filtered;
-  }, [searchQuery, filters, statusFilterFromURL, properties]);
+  }, [searchQuery, filters, activeTab, properties]);
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -228,6 +239,12 @@ function PropertiesPageContent() {
 
   const handleUpdateProperty = (updatedProperty: Property) => {
     setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
+  };
+
+  const handleTabChange = (value: string) => {
+    const status = value as FilterTab;
+    const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
+    router.push(url);
   };
   
   const renderTable = () => (
@@ -436,7 +453,7 @@ function PropertiesPageContent() {
                 Properties
               </h1>
               <p className="text-muted-foreground">
-                {statusFilterFromURL ? `Filtering by status: ${statusFilterFromURL}` : 'Manage your properties.'}
+                {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your properties.'}
               </p>
             </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
@@ -511,6 +528,18 @@ function PropertiesPageContent() {
             </div>
           </div>
           
+           {isMobile && (
+              <div className="w-full overflow-x-auto">
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                    <TabsList>
+                        {propertyStatusLinks.map(({label, status}) => (
+                            <TabsTrigger key={status} value={status}>{label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+              </div>
+          )}
+
           <Card className="md:block hidden">
             <CardContent className="p-0">
               {renderTable()}
@@ -522,12 +551,14 @@ function PropertiesPageContent() {
         </div>
       </TooltipProvider>
 
-      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
-          <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-              <PlusCircle className="h-6 w-6" />
-              <span className="sr-only">Add Property</span>
-          </Button>
-      </div>
+      {pathname === '/properties' && (
+        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+            <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                <PlusCircle className="h-6 w-6" />
+                <span className="sr-only">Add Property</span>
+            </Button>
+        </div>
+      )}
 
       <AddPropertyDialog 
           isOpen={isAddPropertyOpen}

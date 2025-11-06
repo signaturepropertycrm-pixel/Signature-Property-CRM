@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -39,12 +40,12 @@ export function AppHeader({
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
       <SidebarTrigger className="md:hidden" />
       
-      <div className="flex-1">
+      <div className="flex-1 hidden md:block">
         <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
         <p className="text-muted-foreground text-sm">Welcome back!</p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-1 md:flex-initial items-center gap-2 justify-end">
         {searchable && (
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

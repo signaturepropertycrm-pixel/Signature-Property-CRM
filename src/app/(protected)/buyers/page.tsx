@@ -15,8 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { useSearch } from '../layout';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const statusVariant = {
@@ -59,16 +60,22 @@ interface Filters {
   area: string;
   minBudget: string;
   maxBudget: string;
+  budgetUnit: PriceUnit | 'All',
   propertyType: PropertyType | 'All';
   minSize: string;
   maxSize: string;
+  sizeUnit: SizeUnit | 'All';
 }
 
 function BuyersPageContent() {
     const isMobile = useIsMobile();
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
-    const { searchQuery, setSearchQuery } = useSearch();
-    const statusFilterFromURL = searchParams.get('status') as BuyerStatus | null;
+    const { searchQuery } = useSearch();
+    const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
+    const activeTab = statusFilterFromURL || 'All';
+
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
@@ -79,9 +86,11 @@ function BuyersPageContent() {
         area: '',
         minBudget: '',
         maxBudget: '',
+        budgetUnit: 'All',
         propertyType: 'All',
         minSize: '',
-        maxSize: ''
+        maxSize: '',
+        sizeUnit: 'All'
     });
 
     useEffect(() => {
@@ -95,12 +104,12 @@ function BuyersPageContent() {
         setIsAddBuyerOpen(true);
     };
 
-    const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus) => {
+    const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus | PropertyType | PriceUnit | SizeUnit) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
     const clearFilters = () => {
-        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', propertyType: 'All', minSize: '', maxSize: '' });
+        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
         setIsFilterPopoverOpen(false);
     };
 
@@ -126,9 +135,9 @@ function BuyersPageContent() {
     const filteredBuyers = useMemo(() => {
         let filtered = buyers;
 
-        // Status filter from URL (Sidebar)
-        if (statusFilterFromURL) {
-            filtered = filtered.filter(b => b.status === statusFilterFromURL);
+        // Status filter from URL (Sidebar or Mobile Tabs)
+        if (activeTab && activeTab !== 'All') {
+            filtered = filtered.filter(b => b.status === activeTab);
         }
         
         // Global search query from header
@@ -149,24 +158,30 @@ function BuyersPageContent() {
             filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         }
         if (filters.minBudget) {
-             filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget));
+             filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
         }
         if (filters.maxBudget) {
-             filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget));
+             filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
         }
          if (filters.propertyType !== 'All') {
             filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
         }
         if (filters.minSize) {
-            filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize));
+            filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
         }
         if (filters.maxSize) {
-            filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize));
+            filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
         }
 
 
         return filtered;
-    }, [searchQuery, statusFilterFromURL, filters, buyers]);
+    }, [searchQuery, activeTab, filters, buyers]);
+
+    const handleTabChange = (value: string) => {
+        const status = value as BuyerStatus | 'All';
+        const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
+        router.push(url);
+    };
     
     const renderTable = () => (
         <Table>
@@ -203,7 +218,7 @@ function BuyersPageContent() {
                         </TableCell>
                         <TableCell>
                             <Badge 
-                                variant={statusVariant[buyer.status] || 'default'} 
+                                variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
                                 className={
                                     buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                                     buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
@@ -270,7 +285,7 @@ function BuyersPageContent() {
                                 <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                      <Badge 
-                                        variant={statusVariant[buyer.status] || 'default'} 
+                                        variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
                                         className={
                                             buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                                             buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
@@ -366,7 +381,7 @@ function BuyersPageContent() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
             <p className="text-muted-foreground">
-                {statusFilterFromURL ? `Filtering by status: ${statusFilterFromURL}` : 'Manage your buyer leads.'}
+                {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your buyer leads.'}
             </p>
           </div>
             <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
@@ -454,6 +469,20 @@ function BuyersPageContent() {
               </Button>
             </div>
         </div>
+        
+        {isMobile && (
+            <div className="w-full overflow-x-auto">
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                    <TabsList>
+                        <TabsTrigger value="All">All</TabsTrigger>
+                        {buyerStatuses.map((status) => (
+                           <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+            </div>
+        )}
+        
         <Card className="md:block hidden">
             <CardContent className="p-0">
                 {renderTable()}
@@ -463,19 +492,23 @@ function BuyersPageContent() {
             {renderCards()}
         </div>
       </div>
-      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
-         <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-              <PlusCircle className="h-6 w-6" />
-              <span className="sr-only">Add Buyer</span>
-          </Button>
-         <AddBuyerDialog 
-            isOpen={isAddBuyerOpen} 
-            setIsOpen={setIsAddBuyerOpen} 
-            totalBuyers={buyers.length}
-            buyerToEdit={buyerToEdit}
-            onSave={handleSaveBuyer}
-         />
-      </div>
+
+      {pathname.startsWith('/buyers') && (
+        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+           <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                <PlusCircle className="h-6 w-6" />
+                <span className="sr-only">Add Buyer</span>
+            </Button>
+        </div>
+      )}
+      
+       <AddBuyerDialog 
+          isOpen={isAddBuyerOpen} 
+          setIsOpen={setIsAddBuyerOpen} 
+          totalBuyers={buyers.length}
+          buyerToEdit={buyerToEdit}
+          onSave={handleSaveBuyer}
+       />
     </>
   );
 }

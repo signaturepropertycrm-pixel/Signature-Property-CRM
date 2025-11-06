@@ -34,7 +34,7 @@ export default function ProtectedLayout({
     if (!isSearchable) {
       setSearchQuery('');
     }
-  }, [isSearchable, pathname]);
+  }, [isSearchable]);
 
 
   return (
