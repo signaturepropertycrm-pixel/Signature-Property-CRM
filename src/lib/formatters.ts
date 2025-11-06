@@ -5,7 +5,7 @@ import type { Currency } from "@/context/currency-context";
 import type { PriceUnit } from "./types";
 
 const currencySymbols: Record<Currency, string> = {
-    PKR: 'PKR',
+    PKR: 'RS',
     USD: '$',
     AED: 'AED',
 };
@@ -31,18 +31,31 @@ export const formatCurrency = (
 ): string => {
     const symbol = currencySymbols[currency];
     
-    // For compact notation, we don't use a currency symbol, just the notation (e.g., K, M, B)
-    if (options.notation === 'compact') {
-         if (currency === 'PKR' && value >= 10000000) {
-             return `${(value / 10000000).toFixed(2)}Cr`;
+    // For compact notation on dashboard
+    if (options.notation === 'compact' && currency === 'PKR') {
+         if (value >= 10000000) {
+             return `${symbol} ${(value / 10000000).toFixed(2)}Cr`;
          }
-         if (currency === 'PKR' && value >= 100000) {
-              return `${(value / 100000).toFixed(2)} Lacs`;
+         if (value >= 100000) {
+              return `${symbol} ${(value / 100000).toFixed(2)}Lac`;
          }
          return new Intl.NumberFormat('en-US', {
-            ...options,
+            style: 'currency',
+            currency: 'USD', // using USD as a base for formatting, but with custom symbol
+            notation: 'compact',
+            compactDisplay: 'short',
             maximumFractionDigits: 1,
-         }).format(value);
+         }).format(value).replace('$', `${symbol} `);
+    }
+    
+    // Custom Lacs/Crore formatting for PKR elsewhere
+    if (currency === 'PKR') {
+        if (value >= 10000000) {
+            return `${symbol} ${(value / 10000000).toFixed(2)} Crore`;
+        }
+        if (value >= 100000) {
+            return `${symbol} ${(value / 100000).toFixed(2)} Lacs`;
+        }
     }
 
     const formattedValue = new Intl.NumberFormat('en-US', options).format(value);
