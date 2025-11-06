@@ -471,15 +471,18 @@ function BuyersPageContent() {
         </div>
         
         {isMobile && (
-            <div className="w-full overflow-x-auto">
-                <Tabs value={activeTab} onValueChange={handleTabChange}>
-                    <TabsList>
-                        <TabsTrigger value="All">All</TabsTrigger>
-                        {buyerStatuses.map((status) => (
-                           <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
+             <div className="w-full">
+                <Select value={activeTab} onValueChange={handleTabChange}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Filter by status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="All">All Statuses</SelectItem>
+                         {buyerStatuses.map((status) => (
+                           <SelectItem key={status} value={status}>{status}</SelectItem>
                         ))}
-                    </TabsList>
-                </Tabs>
+                    </SelectContent>
+                </Select>
             </div>
         )}
         

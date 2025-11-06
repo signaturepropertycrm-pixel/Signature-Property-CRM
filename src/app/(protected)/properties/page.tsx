@@ -529,14 +529,17 @@ function PropertiesPageContent() {
           </div>
           
            {isMobile && (
-              <div className="w-full overflow-x-auto">
-                <Tabs value={activeTab} onValueChange={handleTabChange}>
-                    <TabsList>
-                        {propertyStatusLinks.map(({label, status}) => (
-                            <TabsTrigger key={status} value={status}>{label}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                </Tabs>
+              <div className="w-full">
+                <Select value={activeTab} onValueChange={handleTabChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filter by status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {propertyStatusLinks.map(({label, status}) => (
+                        <SelectItem key={status} value={status}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
           )}
 
