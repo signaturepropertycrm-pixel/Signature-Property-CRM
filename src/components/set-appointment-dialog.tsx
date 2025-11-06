@@ -33,6 +33,7 @@ interface SetAppointmentDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   onSave: (appointment: Appointment) => void;
+  appointmentToEdit?: Appointment | null;
   appointmentDetails?: {
     contactType: AppointmentContactType;
     contactName: string;
@@ -42,6 +43,7 @@ interface SetAppointmentDialogProps {
 }
 
 const formSchema = z.object({
+  id: z.string().optional(),
   contactType: z.enum(['Buyer', 'Owner']),
   contactSerialNo: z.string().optional(),
   contactName: z.string().min(1, 'Contact name is required'),
@@ -61,47 +63,52 @@ export function SetAppointmentDialog({
   setIsOpen,
   onSave,
   appointmentDetails,
+  appointmentToEdit,
 }: SetAppointmentDialogProps) {
   const { toast } = useToast();
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-        contactType: appointmentDetails?.contactType || 'Buyer',
-        contactName: appointmentDetails?.contactName || '',
-        contactSerialNo: appointmentDetails?.contactSerialNo || '',
-        message: appointmentDetails?.message || '',
-        agentName: '',
-        date: '',
-        time: '',
-    },
   });
 
   const { reset } = form;
 
   useEffect(() => {
     if (isOpen) {
-      reset({
-        contactType: appointmentDetails?.contactType || 'Buyer',
-        contactName: appointmentDetails?.contactName || '',
-        contactSerialNo: appointmentDetails?.contactSerialNo || '',
-        message: appointmentDetails?.message || '',
-        agentName: '',
-        date: '',
-        time: '',
-      });
+      if (appointmentToEdit) {
+         reset({
+            id: appointmentToEdit.id,
+            contactType: appointmentToEdit.contactType,
+            contactName: appointmentToEdit.contactName,
+            contactSerialNo: appointmentToEdit.contactSerialNo || '',
+            message: appointmentToEdit.message,
+            agentName: appointmentToEdit.agentName,
+            date: appointmentToEdit.date,
+            time: appointmentToEdit.time,
+        });
+      } else {
+        reset({
+            contactType: appointmentDetails?.contactType || 'Buyer',
+            contactName: appointmentDetails?.contactName || '',
+            contactSerialNo: appointmentDetails?.contactSerialNo || '',
+            message: appointmentDetails?.message || '',
+            agentName: '',
+            date: '',
+            time: '',
+        });
+      }
     }
-  }, [isOpen, appointmentDetails, reset]);
+  }, [isOpen, appointmentDetails, appointmentToEdit, reset]);
 
   const onSubmit = (data: AppointmentFormValues) => {
     const newAppointment: Appointment = {
         ...data,
-        id: new Date().toISOString(), // simple unique id
+        id: appointmentToEdit?.id || new Date().toISOString(), // simple unique id
         status: 'Scheduled',
     };
     onSave(newAppointment);
     toast({
-      title: 'Appointment Set!',
-      description: `Appointment with ${data.contactName} has been scheduled.`,
+      title: appointmentToEdit ? 'Appointment Rescheduled!' : 'Appointment Set!',
+      description: `Appointment with ${data.contactName} has been ${appointmentToEdit ? 'updated' : 'scheduled'}.`,
     });
     setIsOpen(false);
   };
@@ -110,9 +117,9 @@ export function SetAppointmentDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">Set New Appointment</DialogTitle>
+          <DialogTitle className="font-headline">{appointmentToEdit ? 'Reschedule Appointment' : 'Set New Appointment'}</DialogTitle>
           <DialogDescription>
-            Fill in the details to schedule a new appointment.
+            {appointmentToEdit ? 'Update the details for this appointment.' : 'Fill in the details to schedule a new appointment.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

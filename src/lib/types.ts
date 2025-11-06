@@ -115,6 +115,7 @@ export type Appointment = {
     time: string;
     message: string;
     status: AppointmentStatus;
+    notes?: string;
 }
 
     
