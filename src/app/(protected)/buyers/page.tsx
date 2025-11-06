@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { useSearch } from '../layout';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 
 
 const statusVariant = {
@@ -38,7 +38,7 @@ function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: numbe
     if (!minAmount || !minUnit) {
         return 'N/A';
     }
-    if (!maxAmount || !maxUnit) {
+    if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
         return `${minAmount} ${minUnit}`;
     }
     return `${minAmount} ${minUnit} - ${maxAmount} ${maxUnit}`;
@@ -48,7 +48,7 @@ function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, 
     if (!minAmount || !minUnit) {
         return 'N/A';
     }
-     if (!maxAmount || !maxUnit) {
+     if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
         return `${minAmount} ${minUnit}`;
     }
     return `${minAmount} - ${maxAmount} ${maxUnit}`;
@@ -81,17 +81,8 @@ function BuyersPageContent() {
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
-    const [filters, setFilters] = useState<Filters>({
-        status: 'All',
-        area: '',
-        minBudget: '',
-        maxBudget: '',
-        budgetUnit: 'All',
-        propertyType: 'All',
-        minSize: '',
-        maxSize: '',
-        sizeUnit: 'All'
-    });
+    const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     useEffect(() => {
         if (!isAddBuyerOpen) {
@@ -103,6 +94,11 @@ function BuyersPageContent() {
         setBuyerToEdit(buyer);
         setIsAddBuyerOpen(true);
     };
+
+    const handleDetailsClick = (buyer: Buyer) => {
+        setSelectedBuyer(buyer);
+        setIsDetailsOpen(true);
+    }
 
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus | PropertyType | PriceUnit | SizeUnit) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -127,7 +123,8 @@ function BuyersPageContent() {
             setBuyers(buyers.map(b => b.id === buyerData.id ? buyerData : b));
         } else {
             // Add new buyer
-            setBuyers([...buyers, buyerData]);
+            const newBuyer = { ...buyerData, id: `B-${buyers.length + 1}`, serial_no: `B-${buyers.length + 1}`};
+            setBuyers([...buyers, newBuyer]);
         }
         setBuyerToEdit(null);
     };
@@ -188,7 +185,7 @@ function BuyersPageContent() {
             <TableHeader>
                 <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Areas</TableHead>
+                    <TableHead>Area & Type</TableHead>
                     <TableHead>Budget & Size</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -196,7 +193,7 @@ function BuyersPageContent() {
             </TableHeader>
             <TableBody>
                 {filteredBuyers.map(buyer => (
-                    <TableRow key={buyer.id}>
+                    <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
                         <TableCell>
                             <div className="font-medium">{buyer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
@@ -229,7 +226,7 @@ function BuyersPageContent() {
                                 {buyer.status}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                 <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
@@ -238,6 +235,10 @@ function BuyersPageContent() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
+                                    <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}>
+                                        <Eye />
+                                        View Details
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                         <Edit />
                                         Edit
@@ -277,7 +278,7 @@ function BuyersPageContent() {
     const renderCards = () => (
         <div className="space-y-4">
             {filteredBuyers.map(buyer => (
-                <Card key={buyer.id}>
+                <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
                             <div>
@@ -333,12 +334,16 @@ function BuyersPageContent() {
                     <CardFooter className="flex justify-end">
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
+                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4" />
                                 <span className="sr-only">Toggle menu</span>
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
+                                <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}>
+                                    <Eye />
+                                    View Details
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                     <Edit />
                                     Edit
@@ -470,7 +475,7 @@ function BuyersPageContent() {
             </div>
         </div>
         
-        {isMobile && (
+        {isMobile ? (
              <div className="w-full">
                 <Select value={activeTab} onValueChange={handleTabChange}>
                     <SelectTrigger className="w-full">
@@ -484,7 +489,7 @@ function BuyersPageContent() {
                     </SelectContent>
                 </Select>
             </div>
-        )}
+        ) : null}
         
         <Card className="md:block hidden">
             <CardContent className="p-0">
@@ -512,6 +517,14 @@ function BuyersPageContent() {
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
+
+        {selectedBuyer && (
+            <BuyerDetailsDialog
+                buyer={selectedBuyer}
+                isOpen={isDetailsOpen}
+                setIsOpen={setIsDetailsOpen}
+            />
+        )}
     </>
   );
 }
