@@ -15,6 +15,10 @@ export default function AppointmentsPage() {
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(appointments);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
 
+  const handleSaveAppointment = (newAppointment: Appointment) => {
+    setAppointmentsData(prev => [newAppointment, ...prev]);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -72,6 +76,7 @@ export default function AppointmentsPage() {
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
             setIsOpen={setIsAppointmentOpen}
+            onSave={handleSaveAppointment}
         />
     </div>
   );

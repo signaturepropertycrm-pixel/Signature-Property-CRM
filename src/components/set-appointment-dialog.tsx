@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -21,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { AppointmentContactType } from '@/lib/types';
+import { Appointment, AppointmentContactType } from '@/lib/types';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +32,7 @@ import { teamMembers } from '@/lib/data';
 interface SetAppointmentDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  onSave: (appointment: Appointment) => void;
   appointmentDetails?: {
     contactType: AppointmentContactType;
     contactName: string;
@@ -59,6 +59,7 @@ const agentNames = teamMembers.filter(m => m.role === 'Agent' || m.role === 'Adm
 export function SetAppointmentDialog({
   isOpen,
   setIsOpen,
+  onSave,
   appointmentDetails,
 }: SetAppointmentDialogProps) {
   const { toast } = useToast();
@@ -92,8 +93,12 @@ export function SetAppointmentDialog({
   }, [isOpen, appointmentDetails, reset]);
 
   const onSubmit = (data: AppointmentFormValues) => {
-    // Here you would typically save the appointment to your state or backend.
-    console.log('New Appointment:', data);
+    const newAppointment: Appointment = {
+        ...data,
+        id: new Date().toISOString(), // simple unique id
+        status: 'Scheduled',
+    };
+    onSave(newAppointment);
     toast({
       title: 'Appointment Set!',
       description: `Appointment with ${data.contactName} has been scheduled.`,
