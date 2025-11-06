@@ -42,9 +42,10 @@ function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: numbe
 
 
 interface Filters {
-  name: string;
   status: BuyerStatus | 'All';
   area: string;
+  minBudget: string;
+  maxBudget: string;
 }
 
 function BuyersPageContent() {
@@ -57,9 +58,10 @@ function BuyersPageContent() {
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [filters, setFilters] = useState<Filters>({
-        name: '',
         status: 'All',
         area: '',
+        minBudget: '',
+        maxBudget: '',
     });
 
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus) => {
@@ -67,7 +69,7 @@ function BuyersPageContent() {
     };
 
     const clearFilters = () => {
-        setFilters({ name: '', status: 'All', area: '' });
+        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '' });
         setIsFilterPopoverOpen(false);
     };
 
@@ -98,15 +100,19 @@ function BuyersPageContent() {
         }
 
         // Advanced filters from popover
-        if (filters.name) {
-            filtered = filtered.filter(b => b.name.toLowerCase().includes(filters.name.toLowerCase()));
-        }
         if (filters.status !== 'All') {
             filtered = filtered.filter(b => b.status === filters.status);
         }
         if (filters.area) {
             filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         }
+        if (filters.minBudget) {
+             filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget));
+        }
+        if (filters.maxBudget) {
+             filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget));
+        }
+
 
         return filtered;
     }, [searchQuery, statusFilterFromURL, filters, buyers]);
@@ -336,6 +342,13 @@ function BuyersPageContent() {
                             <Label htmlFor="area">Area</Label>
                             <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
                         </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Budget</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" />
+                            <Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" />
+                            </div>
+                        </div>
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button variant="ghost" onClick={clearFilters}>Clear</Button>
@@ -382,6 +395,4 @@ export default function BuyersPage() {
     );
 }
 
-    
-    
     
