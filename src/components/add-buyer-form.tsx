@@ -53,7 +53,7 @@ const formSchema = z.object({
   size_max_value: z.coerce.number().optional(),
   size_max_unit: z.enum(sizeUnits).optional(),
   budget_min_amount: z.coerce.number().optional(),
-  budget_min_unit: zenum(priceUnits).optional(),
+  budget_min_unit: z.enum(priceUnits).optional(),
   budget_max_amount: z.coerce.number().optional(),
   budget_max_unit: z.enum(priceUnits).optional(),
   notes: z.string().optional(),
