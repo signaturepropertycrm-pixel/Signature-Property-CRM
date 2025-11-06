@@ -83,6 +83,8 @@ function BuyersPageContent() {
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
+
 
     useEffect(() => {
         if (!isAddBuyerOpen) {
@@ -450,10 +452,44 @@ function BuyersPageContent() {
                             </div>
                         </div>
                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label></Label>
+                            <div className="col-span-2">
+                                <Select value={filters.budgetUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('budgetUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Units</SelectItem>
+                                        <SelectItem value="Thousand">Thousand</SelectItem>
+                                        <SelectItem value="Lacs">Lacs</SelectItem>
+                                        <SelectItem value="Crore">Crore</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
                             <Label>Size</Label>
                             <div className="col-span-2 grid grid-cols-2 gap-2">
                             <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
                             <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label></Label>
+                            <div className="col-span-2">
+                                <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Units</SelectItem>
+                                        <SelectItem value="Marla">Marla</SelectItem>
+                                        <SelectItem value="SqFt">SqFt</SelectItem>
+                                        <SelectItem value="Kanal">Kanal</SelectItem>
+                                        <SelectItem value="Acre">Acre</SelectItem>
+                                        <SelectItem value="Maraba">Maraba</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                         </div>
@@ -536,6 +572,8 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
 
     
 
