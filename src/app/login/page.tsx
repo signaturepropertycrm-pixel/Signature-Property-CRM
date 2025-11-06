@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-violet-900 p-4 font-body">
-      <div className="w-full max-w-sm space-y-6 page-transition">
+      <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
             <Home className="h-8 w-8 text-primary" />
