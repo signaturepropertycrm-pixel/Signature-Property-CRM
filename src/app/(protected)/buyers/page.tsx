@@ -20,7 +20,7 @@ import { useSearch } from '../layout';
 
 
 const statusVariant = {
-    'New': 'secondary',
+    'New': 'default',
     'Contacted': 'secondary',
     'Interested': 'default',
     'Not Interested': 'destructive',
@@ -50,7 +50,7 @@ interface Filters {
 function BuyersPageContent() {
     const isMobile = useIsMobile();
     const searchParams = useSearchParams();
-    const { searchQuery } = useSearch();
+    const { searchQuery, setSearchQuery } = useSearch();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | null;
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
@@ -146,6 +146,7 @@ function BuyersPageContent() {
                                 variant={statusVariant[buyer.status] || 'default'} 
                                 className={
                                     buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                                     buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
                                     buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
                                 }
@@ -214,6 +215,7 @@ function BuyersPageContent() {
                                 variant={statusVariant[buyer.status] || 'default'} 
                                 className={
                                     buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                                     buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
                                     buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
                                 }
@@ -380,5 +382,6 @@ export default function BuyersPage() {
     );
 }
 
+    
     
     
