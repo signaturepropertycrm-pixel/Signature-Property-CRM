@@ -88,6 +88,7 @@ export type Buyer = {
     notes?: string;
     created_at: string;
     is_deleted?: boolean;
+    last_follow_up_note?: string;
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
@@ -119,5 +120,7 @@ export type Appointment = {
     status: AppointmentStatus;
     notes?: string;
 }
+
+    
 
     

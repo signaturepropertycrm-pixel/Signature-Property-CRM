@@ -1,17 +1,16 @@
 
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
+import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, FollowUp } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -23,6 +22,7 @@ import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
+import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 
 
 const statusVariant = {
@@ -76,32 +76,34 @@ function BuyersPageContent() {
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
+    const [followUps, setFollowUps] = useState<FollowUp[]>(initialFollowUps);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
+    const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+    const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
     useEffect(() => {
-        // Load buyers from localStorage on mount
         const savedBuyers = localStorage.getItem('buyers');
-        if (savedBuyers) {
-            setBuyers(JSON.parse(savedBuyers));
-        } else {
-            setBuyers(initialBuyers);
-        }
+        if (savedBuyers) setBuyers(JSON.parse(savedBuyers)); else setBuyers(initialBuyers);
+
+        const savedFollowUps = localStorage.getItem('followUps');
+        if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps)); else setFollowUps(initialFollowUps);
     }, []);
 
     useEffect(() => {
-        // Save buyers to localStorage whenever they change
-        if (buyers.length > 0) {
-            localStorage.setItem('buyers', JSON.stringify(buyers));
-        }
+        if (buyers.length > 0) localStorage.setItem('buyers', JSON.stringify(buyers));
     }, [buyers]);
     
+    useEffect(() => {
+        if (followUps.length > 0) localStorage.setItem('followUps', JSON.stringify(followUps));
+    }, [followUps]);
+
     useEffect(() => {
         if (!isAddBuyerOpen) {
             setBuyerToEdit(null);
@@ -159,12 +161,48 @@ function BuyersPageContent() {
     };
 
     const handleStatusChange = (buyerId: string, newStatus: BuyerStatus) => {
-        setBuyers(prevBuyers => 
-            prevBuyers.map(buyer => 
-                buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
-            )
-        );
+         if (newStatus === 'Follow Up') {
+            const buyerToUpdate = buyers.find(b => b.id === buyerId);
+            if (buyerToUpdate) {
+                setBuyerForFollowUp(buyerToUpdate);
+                setIsFollowUpOpen(true);
+            }
+        } else {
+            setBuyers(prevBuyers => 
+                prevBuyers.map(buyer => 
+                    buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
+                )
+            );
+        }
     };
+    
+     const handleSaveFollowUp = (buyerId: string, notes: string) => {
+        const buyer = buyers.find(b => b.id === buyerId);
+        if (!buyer) return;
+
+        const newFollowUp: FollowUp = {
+            id: `FU-${followUps.length + 1}`,
+            buyerId: buyer.id,
+            buyerName: buyer.name,
+            propertyInterest: buyer.area_preference || 'General',
+            lastContactDate: new Date().toISOString(),
+            nextReminder: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), // default 3 days
+            status: 'Scheduled',
+            notes: notes,
+        };
+        
+        setFollowUps(prev => [...prev, newFollowUp]);
+        setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
+        
+        toast({
+            title: "Follow-up Scheduled",
+            description: `A follow-up has been created for ${buyer.name}.`
+        });
+
+        setIsFollowUpOpen(false);
+        setBuyerForFollowUp(null);
+    };
+
 
      const handleSaveBuyer = (buyerData: Buyer) => {
         if (buyerToEdit) {
@@ -607,6 +645,16 @@ function BuyersPageContent() {
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
+        
+        {buyerForFollowUp && (
+            <AddFollowUpDialog
+                isOpen={isFollowUpOpen}
+                setIsOpen={setIsFollowUpOpen}
+                buyer={buyerForFollowUp}
+                onSave={handleSaveFollowUp}
+            />
+        )}
+
 
         {appointmentDetails && (
             <SetAppointmentDialog 
@@ -635,3 +683,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
