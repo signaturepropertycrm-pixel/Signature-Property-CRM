@@ -66,59 +66,58 @@ interface AddBuyerFormProps {
   buyerToEdit?: Buyer | null;
 }
 
-export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuyerFormProps) {
-  const { toast } = useToast();
-  const form = useForm<AddBuyerFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: buyerToEdit ? {
-      ...buyerToEdit,
-      property_type_preference: buyerToEdit.property_type_preference || undefined,
-      size_min_unit: buyerToEdit.size_min_unit || 'Marla',
-      size_max_unit: buyerToEdit.size_max_unit || 'Marla',
-      budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
-      budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
-    } : {
-      status: 'New',
-      serial_no: `B-${totalBuyers + 1}`,
-      size_min_unit: 'Marla',
-      size_max_unit: 'Marla',
-      budget_min_unit: 'Lacs',
-      budget_max_unit: 'Lacs',
-    },
-  });
-
-  const { reset } = form;
-
-  useEffect(() => {
+const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined): AddBuyerFormValues => {
     if (buyerToEdit) {
-      reset({
-        ...buyerToEdit,
-        property_type_preference: buyerToEdit.property_type_preference || undefined,
-        size_min_unit: buyerToEdit.size_min_unit || 'Marla',
-        size_max_unit: buyerToEdit.size_max_unit || 'Marla',
-        budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
-        budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
-      });
-    } else {
-      reset({
+        return {
+            ...buyerToEdit,
+            property_type_preference: buyerToEdit.property_type_preference || '',
+            size_min_unit: buyerToEdit.size_min_unit || 'Marla',
+            size_max_unit: buyerToEdit.size_max_unit || 'Marla',
+            budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
+            budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
+            name: buyerToEdit.name || '',
+            phone: buyerToEdit.phone || '',
+            email: buyerToEdit.email || '',
+            area_preference: buyerToEdit.area_preference || '',
+            notes: buyerToEdit.notes || '',
+            size_min_value: buyerToEdit.size_min_value,
+            size_max_value: buyerToEdit.size_max_value,
+            budget_min_amount: buyerToEdit.budget_min_amount,
+            budget_max_amount: buyerToEdit.budget_max_amount,
+        };
+    }
+    return {
+        name: '',
+        phone: '',
+        email: '',
+        area_preference: '',
+        property_type_preference: '',
+        notes: '',
         status: 'New',
         serial_no: `B-${totalBuyers + 1}`,
         size_min_unit: 'Marla',
         size_max_unit: 'Marla',
         budget_min_unit: 'Lacs',
         budget_max_unit: 'Lacs',
-        name: '',
-        phone: '',
-        email: '',
-        area_preference: '',
-        property_type_preference: undefined,
         size_min_value: undefined,
         size_max_value: undefined,
         budget_min_amount: undefined,
         budget_max_amount: undefined,
-        notes: '',
-      });
-    }
+    };
+};
+
+
+export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuyerFormProps) {
+  const { toast } = useToast();
+  const form = useForm<AddBuyerFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit)
+  });
+
+  const { reset } = form;
+
+  useEffect(() => {
+    reset(getInitialFormValues(totalBuyers, buyerToEdit));
   }, [buyerToEdit, totalBuyers, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
@@ -244,7 +243,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
                         <FormLabel>Size Preference</FormLabel>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                             <FormField control={form.control} name="size_min_value" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_min_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -252,7 +251,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
                                 </SelectContent></Select></FormItem>
                             )} />
                             <FormField control={form.control} name="size_max_value" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_max_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -265,7 +264,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
                         <FormLabel>Budget Range</FormLabel>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                             <FormField control={form.control} name="budget_min_amount" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} placeholder="Min" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_min_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -273,7 +272,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
                                 </SelectContent></Select></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_max_amount" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} placeholder="Max" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_max_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -332,3 +331,5 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit }: AddBuy
     </Form>
   );
 }
+
+    

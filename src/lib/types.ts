@@ -11,7 +11,7 @@ export type User = {
   permissions?: Record<string, boolean>;
 };
 
-export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other';
+export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold';
@@ -72,6 +72,7 @@ export type Buyer = {
     serial_no: string;
     name: string;
     phone: string;
+    email?: string;
     status: BuyerStatus;
     area_preference?: string;
     property_type_preference?: PropertyType;
@@ -113,3 +114,5 @@ export type Appointment = {
     propertyAddress: string;
     status: AppointmentStatus;
 }
+
+    
