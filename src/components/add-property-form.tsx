@@ -38,6 +38,7 @@ const formSchema = z.object({
   area: z.string().min(1, 'Area is required'),
   address: z.string().min(1, 'Address is required'),
   property_type: z.enum(['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other']),
+  custom_property_type: z.string().optional(),
   size_value: z.coerce.number().positive('Size must be positive'),
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
   road_size_ft: z.coerce.number().int().optional(),
@@ -54,7 +55,16 @@ const formSchema = z.object({
   demand_amount: z.coerce.number().positive('Demand must be positive'),
   demand_unit: z.enum(['Lacs', 'Crore']).default('Lacs'),
   documents: z.string().optional(),
+}).refine(data => {
+    if (data.property_type === 'Other') {
+        return !!data.custom_property_type && data.custom_property_type.length > 0;
+    }
+    return true;
+}, {
+    message: "Custom property type is required when 'Other' is selected.",
+    path: ["custom_property_type"],
 });
+
 
 type AddPropertyFormValues = z.infer<typeof formSchema>;
 
@@ -86,7 +96,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   const { control, setValue, formState, reset } = form;
   const watchedFields = useWatch({
     control,
-    name: ['size_value', 'size_unit', 'property_type', 'area'],
+    name: ['size_value', 'size_unit', 'property_type', 'area', 'custom_property_type'],
   });
 
    useEffect(() => {
@@ -110,14 +120,16 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
 
 
   useEffect(() => {
-    const [sizeValue, sizeUnit, propertyType, area] = watchedFields;
+    const [sizeValue, sizeUnit, propertyType, area, customPropertyType] = watchedFields;
+    const finalPropertyType = propertyType === 'Other' ? customPropertyType : propertyType;
+
     const handler = setTimeout(async () => {
-      if (sizeValue && sizeUnit && propertyType && area) {
+      if (sizeValue && sizeUnit && finalPropertyType && area) {
         try {
           const { autoTitle } = await generateAutoTitle({
             sizeValue,
             sizeUnit,
-            propertyType,
+            propertyType: finalPropertyType,
             area,
           });
           setValue('auto_title', autoTitle);
@@ -131,23 +143,31 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   }, [watchedFields, setValue]);
 
   function onSubmit(values: AddPropertyFormValues) {
+     const finalValues = {
+        ...values,
+        property_type: values.property_type === 'Other' ? values.custom_property_type : values.property_type,
+    };
+
     const propertyData = {
         ...propertyToEdit,
-        ...values,
+        ...finalValues,
         id: propertyToEdit?.id || `P-${totalProperties + 1}`,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),
         is_deleted: propertyToEdit?.is_deleted || false,
     } as Property;
+
     onSave(propertyData);
 
     toast({
       title: propertyToEdit ? 'Property Updated!' : 'Property Added!',
-      description: `Property "${values.auto_title}" has been successfully ${propertyToEdit ? 'updated' : 'added'}.`,
+      description: `Property "${finalValues.auto_title}" has been successfully ${propertyToEdit ? 'updated' : 'added'}.`,
     });
     setDialogOpen(false);
   }
+  
+  const watchedPropertyType = useWatch({ control, name: 'property_type' });
 
   return (
     <Form {...form}>
@@ -271,6 +291,21 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   </FormItem>
                 )}
               />
+                {watchedPropertyType === 'Other' && (
+                    <FormField
+                        control={control}
+                        name="custom_property_type"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Custom Property Type</FormLabel>
+                            <FormControl>
+                            <Input {...field} placeholder="e.g., Penthouse" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                )}
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={control}
@@ -526,5 +561,3 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     </Form>
   );
 }
-
-    
