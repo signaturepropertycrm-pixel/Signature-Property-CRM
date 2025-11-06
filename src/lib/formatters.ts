@@ -34,10 +34,10 @@ export const formatCurrency = (
     // For compact notation on dashboard
     if (options.notation === 'compact' && currency === 'PKR') {
          if (value >= 10000000) {
-             return `${symbol} ${(value / 10000000).toFixed(2)}Cr`;
+             return `${symbol} ${Number((value / 10000000).toFixed(2))}Cr`;
          }
          if (value >= 100000) {
-              return `${symbol} ${(value / 100000).toFixed(2)}Lac`;
+              return `${symbol} ${Number((value / 100000).toFixed(2))}Lac`;
          }
          return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -51,10 +51,10 @@ export const formatCurrency = (
     // Custom Lacs/Crore formatting for PKR elsewhere
     if (currency === 'PKR') {
         if (value >= 10000000) {
-            return `${symbol} ${(value / 10000000).toFixed(2)} Crore`;
+            return `${symbol} ${Number((value / 10000000).toFixed(2))} Crore`;
         }
         if (value >= 100000) {
-            return `${symbol} ${(value / 100000).toFixed(2)} Lacs`;
+            return `${symbol} ${Number((value / 100000).toFixed(2))} Lacs`;
         }
     }
 
