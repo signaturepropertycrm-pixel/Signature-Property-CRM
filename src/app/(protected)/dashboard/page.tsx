@@ -49,6 +49,8 @@ import {
 } from '@/components/ui/chart';
 import { appointments } from '@/lib/data';
 import { subMonths, isWithinInterval } from 'date-fns';
+import { useCurrency } from '@/context/currency-context';
+import { formatCurrency } from '@/lib/formatters';
 
 const lastMonth = subMonths(new Date(), 1);
 const now = new Date();
@@ -80,8 +82,9 @@ const kpiData = [
     change: '+15%',
   },
   {
+    id: 'monthly-revenue',
     title: 'Monthly Revenue',
-    value: '₹1.2Cr',
+    value: '1.2Cr',
     icon: DollarSign,
     color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
     change: '+20.1%',
@@ -168,10 +171,21 @@ const agentChartConfig = {
 
 
 export default function DashboardPage() {
+  const { currency } = useCurrency();
+
+  const getUpdatedKpi = () => {
+    return kpiData.map(kpi => {
+      if (kpi.id === 'monthly-revenue') {
+        return { ...kpi, value: formatCurrency(12000000, currency) };
+      }
+      return kpi;
+    });
+  };
+
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {kpiData.map((kpi) => (
+        {getUpdatedKpi().map((kpi) => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
@@ -204,10 +218,10 @@ export default function DashboardPage() {
               <LineChart data={revenueData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₹${value / 100000}L`} />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => formatCurrency(value, currency, { notation: 'compact' })} />
                   <Tooltip
                     cursor={{ strokeDasharray: '3 3' }}
-                    content={<ChartTooltipContent formatter={(value) => `₹${Number(value).toLocaleString()}`} />}
+                    content={<ChartTooltipContent formatter={(value) => formatCurrency(Number(value), currency)} />}
                   />
                   <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
               </LineChart>

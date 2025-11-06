@@ -15,6 +15,8 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, Bookmark, CalendarDays } from 'lucide-react';
+import { useCurrency } from '@/context/currency-context';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
@@ -46,16 +48,6 @@ const statusVariant = {
     'Cold Lead': 'secondary'
 } as const;
 
-function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) {
-    if (!minAmount || !minUnit) {
-        return 'N/A';
-    }
-    if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
-        return `${minAmount} ${minUnit}`;
-    }
-    return `${minAmount} ${minUnit} - ${maxAmount} ${maxUnit}`;
-}
-
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
     if (!minAmount || !minUnit) {
         return 'N/A';
@@ -72,6 +64,20 @@ export function BuyerDetailsDialog({
   isOpen,
   setIsOpen,
 }: BuyerDetailsDialogProps) {
+  const { currency } = useCurrency();
+
+  const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
+    if (!minAmount || !minUnit) {
+      return 'N/A';
+    }
+    const minVal = formatUnit(minAmount, minUnit);
+
+    if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
+      return formatCurrency(minVal, currency);
+    }
+    const maxVal = formatUnit(maxAmount, maxUnit);
+    return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
+  };
 
   if (!buyer) return null;
 
@@ -83,11 +89,11 @@ export function BuyerDetailsDialog({
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="font-headline text-2xl">{buyer.name}</DialogTitle>
-                <DialogDescription>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                    <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3" /> {new Date(buyer.created_at).toLocaleDateString()}</span>
-                  </div>
+                <DialogDescription asChild>
+                    <div className="flex items-center gap-2 text-xs">
+                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                        <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3" /> {new Date(buyer.created_at).toLocaleDateString()}</span>
+                    </div>
                 </DialogDescription>
               </div>
                <Badge 

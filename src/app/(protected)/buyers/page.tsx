@@ -21,6 +21,8 @@ import { useSearch } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { useCurrency } from '@/context/currency-context';
 
 
 const statusVariant = {
@@ -36,16 +38,6 @@ const statusVariant = {
     'Hot Lead': 'default',
     'Cold Lead': 'secondary'
 } as const;
-
-function formatBudget(minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) {
-    if (!minAmount || !minUnit) {
-        return 'N/A';
-    }
-    if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
-        return `${minAmount} ${minUnit}`;
-    }
-    return `${minAmount} ${minUnit} - ${maxAmount} ${maxUnit}`;
-}
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
     if (!minAmount || !minUnit) {
@@ -77,6 +69,7 @@ function BuyersPageContent() {
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
     const { toast } = useToast();
+    const { currency } = useCurrency();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
     const activeTab = statusFilterFromURL || 'All';
 
@@ -114,6 +107,19 @@ function BuyersPageContent() {
             setBuyerToEdit(null);
         }
     }, [isAddBuyerOpen]);
+
+    const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
+        if (!minAmount || !minUnit) {
+            return 'N/A';
+        }
+        const minVal = formatUnit(minAmount, minUnit);
+
+        if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) {
+            return formatCurrency(minVal, currency);
+        }
+        const maxVal = formatUnit(maxAmount, maxUnit);
+        return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
+    };
 
     const handleEdit = (buyer: Buyer) => {
         setBuyerToEdit(buyer);

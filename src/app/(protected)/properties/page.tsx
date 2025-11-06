@@ -63,10 +63,8 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSearch } from '../layout';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
-
-function formatDemand(amount: number, unit: string) {
-  return `${amount} ${unit}`;
-}
+import { useCurrency } from '@/context/currency-context';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -101,6 +99,7 @@ function PropertiesPageContent() {
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
   const activeTab = statusFilterFromURL || 'All';
   const { toast } = useToast();
+  const { currency } = useCurrency();
 
 
   const [properties, setProperties] = useState<Property[]>([]);
@@ -148,6 +147,11 @@ function PropertiesPageContent() {
         setPropertyToEdit(null);
     }
   }, [isAddPropertyOpen]);
+
+  const formatDemand = (amount: number, unit: PriceUnit) => {
+    const valueInPkr = formatUnit(amount, unit);
+    return formatCurrency(valueInPkr, currency);
+  };
 
 
   const handleFilterChange = (

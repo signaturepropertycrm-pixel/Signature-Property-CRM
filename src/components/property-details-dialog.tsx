@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Property } from '@/lib/types';
+import { Property, PriceUnit } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
@@ -18,6 +18,8 @@ import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
 import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
+import { useCurrency } from '@/context/currency-context';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
 
 interface PropertyDetailsDialogProps {
   property: Property;
@@ -43,13 +45,15 @@ export function PropertyDetailsDialog({
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isVideoLinksOpen, setIsVideoLinksOpen] = useState(false);
   const [shareMode, setShareMode] = useState<'copy' | 'share'>('share');
+  const { currency } = useCurrency();
 
 
   if (!property) return null;
   
-  const formatPrice = (amount?: number, unit?: string) => {
+  const formatPrice = (amount?: number, unit?: PriceUnit) => {
     if (!amount || !unit) return 'N/A';
-    return `${amount} ${unit}`;
+    const valueInPkr = formatUnit(amount, unit);
+    return formatCurrency(valueInPkr, currency);
   }
 
   const handleOpenShareDialog = (mode: 'copy' | 'share') => {
