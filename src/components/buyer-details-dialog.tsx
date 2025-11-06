@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -84,9 +83,11 @@ export function BuyerDetailsDialog({
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="font-headline text-2xl">{buyer.name}</DialogTitle>
-                <DialogDescription className="flex items-center gap-2 text-xs">
-                  <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                   <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3" /> {new Date(buyer.created_at).toLocaleDateString()}</span>
+                <DialogDescription>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                    <span className="flex items-center gap-1.5"><CalendarDays className="h-3 w-3" /> {new Date(buyer.created_at).toLocaleDateString()}</span>
+                  </div>
                 </DialogDescription>
               </div>
                <Badge 
