@@ -33,11 +33,12 @@ import {
   Wallet,
   VideoOff,
   PlusCircle,
+  CalendarPlus,
 } from 'lucide-react';
 import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType } from '@/lib/types';
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -60,7 +61,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSearch } from '../layout';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 
 function formatDemand(amount: number, unit: string) {
   return `${amount} ${unit}`;
@@ -84,7 +85,7 @@ interface Filters {
 type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
 
 const propertyStatusLinks: {label: string, status: FilterTab}[] = [
-    { label: 'All', status: 'All' },
+    { label: 'All Properties', status: 'All' },
     { label: 'Available', status: 'Available' },
     { label: 'Sold', status: 'Sold' },
     { label: 'Recorded', status: 'Recorded' },
@@ -108,6 +109,8 @@ function PropertiesPageContent() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; propertyAddress: string; } | null>(null);
   const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: '',
@@ -232,6 +235,15 @@ function PropertiesPageContent() {
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true); // Re-using add dialog for editing
   };
+
+  const handleSetAppointment = (prop: Property) => {
+    setAppointmentDetails({
+      contactType: 'Owner',
+      contactName: `Owner of ${prop.serial_no}`,
+      propertyAddress: prop.address,
+    });
+    setIsAppointmentOpen(true);
+  };
   
   const handleUnmarkRecorded = (prop: Property) => {
     setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
@@ -315,6 +327,10 @@ function PropertiesPageContent() {
                     <DropdownMenuItem onSelect={() => handleEdit(prop)}>
                       <Edit />
                       Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
+                      <CalendarPlus />
+                      Set Appointment
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
                       <CheckCircle />
@@ -416,6 +432,10 @@ function PropertiesPageContent() {
                             <Edit />
                             Edit
                           </DropdownMenuItem>
+                           <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
+                            <CalendarPlus />
+                            Set Appointment
+                          </DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
                             <CheckCircle />
                             Mark as Sold
@@ -503,12 +523,45 @@ function PropertiesPageContent() {
                         </div>
                       </div>
                        <div className="grid grid-cols-3 items-center gap-4">
+                        <Label></Label>
+                            <div className="col-span-2">
+                                <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Units</SelectItem>
+                                        <SelectItem value="Marla">Marla</SelectItem>
+                                        <SelectItem value="SqFt">SqFt</SelectItem>
+                                        <SelectItem value="Kanal">Kanal</SelectItem>
+                                        <SelectItem value="Acre">Acre</SelectItem>
+                                        <SelectItem value="Maraba">Maraba</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                       <div className="grid grid-cols-3 items-center gap-4">
                         <Label>Demand</Label>
                         <div className="col-span-2 grid grid-cols-2 gap-2">
                           <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
                           <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
                         </div>
                       </div>
+                       <div className="grid grid-cols-3 items-center gap-4">
+                            <Label></Label>
+                            <div className="col-span-2">
+                                <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All Units</SelectItem>
+                                        <SelectItem value="Lacs">Lacs</SelectItem>
+                                        <SelectItem value="Crore">Crore</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
                     </div>
                      <div className="flex justify-end gap-2">
                         <Button variant="ghost" onClick={clearFilters}>Clear</Button>
@@ -569,6 +622,14 @@ function PropertiesPageContent() {
           propertyToEdit={propertyToEdit}
           totalProperties={properties.length}
       />
+
+      {appointmentDetails && (
+        <SetAppointmentDialog 
+            isOpen={isAppointmentOpen}
+            setIsOpen={setIsAppointmentOpen}
+            appointmentDetails={appointmentDetails}
+        />
+      )}
       
       {selectedProperty && (
         <>
@@ -601,7 +662,3 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
-
-    
-
-    

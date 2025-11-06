@@ -7,11 +7,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers, buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { useSearch } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
+import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 
 
 const statusVariant = {
@@ -84,6 +85,8 @@ function BuyersPageContent() {
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+    const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; propertyAddress: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
@@ -102,6 +105,15 @@ function BuyersPageContent() {
         setSelectedBuyer(buyer);
         setIsDetailsOpen(true);
     }
+
+     const handleSetAppointment = (buyer: Buyer) => {
+        setAppointmentDetails({
+            contactType: 'Buyer',
+            contactName: buyer.name,
+            propertyAddress: '', 
+        });
+        setIsAppointmentOpen(true);
+    };
 
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus | PropertyType | PriceUnit | SizeUnit) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
@@ -210,7 +222,7 @@ function BuyersPageContent() {
                                 <span className="text-muted-foreground">{buyer.property_type_preference}</span>
                             </div>
                         </TableCell>
-                        <TableCell>
+                         <TableCell>
                             <div className="flex flex-col text-sm">
                                 <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
                                 <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
@@ -245,6 +257,10 @@ function BuyersPageContent() {
                                     <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                         <Edit />
                                         Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}>
+                                        <CalendarPlus />
+                                        Set Appointment
                                     </DropdownMenuItem>
                                      <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
@@ -288,20 +304,20 @@ function BuyersPageContent() {
                                 <span className="font-medium text-lg">{buyer.name}</span>
                                 <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                     <Badge 
-                                        variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
-                                        className={
-                                            buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                            buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                            buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                            buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
-                                        }
-                                    >
-                                        {buyer.status}
-                                    </Badge>
+                                    <span>{buyer.phone}</span>
                                 </div>
                             </div>
-                           
+                           <Badge 
+                                variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
+                                className={
+                                    `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
+                                }
+                            >
+                                {buyer.status}
+                            </Badge>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -350,6 +366,10 @@ function BuyersPageContent() {
                                 <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                     <Edit />
                                     Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}>
+                                    <CalendarPlus />
+                                    Set Appointment
                                 </DropdownMenuItem>
                                  <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
@@ -513,7 +533,7 @@ function BuyersPageContent() {
         </div>
         
         {isMobile ? (
-             <div className="w-full">
+            <div className="w-full">
                 <Select value={activeTab} onValueChange={handleTabChange}>
                     <SelectTrigger className="w-full">
                         <SelectValue placeholder="Filter by status..." />
@@ -555,6 +575,14 @@ function BuyersPageContent() {
           onSave={handleSaveBuyer}
        />
 
+        {appointmentDetails && (
+            <SetAppointmentDialog 
+                isOpen={isAppointmentOpen}
+                setIsOpen={setIsAppointmentOpen}
+                appointmentDetails={appointmentDetails}
+            />
+        )}
+
         {selectedBuyer && (
             <BuyerDetailsDialog
                 buyer={selectedBuyer}
@@ -573,9 +601,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
-
-    
-
-    
