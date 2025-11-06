@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { appointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building } from 'lucide-react';
+import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { useState } from 'react';
 import { Appointment } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export default function AppointmentsPage() {
@@ -71,8 +72,8 @@ export default function AppointmentsPage() {
                         <Input id="name" placeholder="e.g. Ahmed Hassan" className="col-span-3" />
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="address" className="text-right">Property Address</Label>
-                        <Input id="address" placeholder="e.g. Plot 45, DHA Phase 6" className="col-span-3" />
+                        <Label htmlFor="message" className="text-right">Message</Label>
+                        <Textarea id="message" placeholder="e.g. Meeting at property location..." className="col-span-3" />
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="date" className="text-right">Date</Label>
@@ -105,8 +106,11 @@ export default function AppointmentsPage() {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{appt.propertyAddress}</p>
-              <div className="flex items-center text-sm">
+              <div className="flex items-start text-sm">
+                <MessageSquare className="mr-2 mt-1 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">{appt.message}</p>
+              </div>
+              <div className="flex items-center text-sm pt-3 border-t">
                 <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                 <span>{new Date(appt.date).toLocaleDateString()}</span>
                 <Clock className="ml-4 mr-2 h-4 w-4 text-muted-foreground" />

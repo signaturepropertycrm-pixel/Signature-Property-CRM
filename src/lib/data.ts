@@ -239,7 +239,7 @@ export const appointments: Appointment[] = [
         agentName: 'Ali Khan',
         date: '2024-05-26T00:00:00.000Z',
         time: '11:00 AM',
-        propertyAddress: 'Plot 45, Sector D, DHA Phase 6, Lahore',
+        message: 'Meeting at property location: Plot 45, Sector D, DHA Phase 6, Lahore',
         status: 'Scheduled'
     },
     {
@@ -249,7 +249,7 @@ export const appointments: Appointment[] = [
         agentName: 'Fatima Ahmed',
         date: '2024-05-25T00:00:00.000Z',
         time: '2:30 PM',
-        propertyAddress: 'Apt 5A, Paradise Heights, Gulberg III, Lahore',
+        message: 'Client will visit the office to discuss flat options.',
         status: 'Scheduled'
     },
     {
@@ -259,7 +259,7 @@ export const appointments: Appointment[] = [
         agentName: 'Ali Khan',
         date: '2024-05-22T00:00:00.000Z',
         time: '4:00 PM',
-        propertyAddress: 'Commercial Plot 8, Block G, Johar Town, Lahore',
+        message: 'Discussing final offer for the commercial plot in Johar Town.',
         status: 'Completed'
     }
 ];

@@ -86,7 +86,7 @@ function BuyersPageContent() {
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-    const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; propertyAddress: string; } | null>(null);
+    const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
@@ -110,7 +110,7 @@ function BuyersPageContent() {
         setAppointmentDetails({
             contactType: 'Buyer',
             contactName: buyer.name,
-            propertyAddress: '', 
+            message: `Regarding buyer's interest in ${buyer.area_preference || 'general properties'}.`, 
         });
         setIsAppointmentOpen(true);
     };
@@ -406,7 +406,7 @@ function BuyersPageContent() {
     <>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
+          <div className='hidden md:block'>
             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
             <p className="text-muted-foreground">
                 {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your buyer leads.'}

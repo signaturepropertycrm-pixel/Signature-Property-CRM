@@ -110,7 +110,7 @@ function PropertiesPageContent() {
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; propertyAddress: string; } | null>(null);
+  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; message: string; } | null>(null);
   const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: '',
@@ -240,7 +240,7 @@ function PropertiesPageContent() {
     setAppointmentDetails({
       contactType: 'Owner',
       contactName: `Owner of ${prop.serial_no}`,
-      propertyAddress: prop.address,
+      message: `Regarding property: ${prop.auto_title} (${prop.address})`,
     });
     setIsAppointmentOpen(true);
   };
@@ -468,7 +468,7 @@ function PropertiesPageContent() {
       <TooltipProvider>
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
+            <div className='hidden md:block'>
               <h1 className="text-3xl font-bold tracking-tight font-headline">
                 Properties
               </h1>
