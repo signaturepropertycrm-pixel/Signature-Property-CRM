@@ -5,10 +5,16 @@ export type UserRole = 'Admin' | 'Agent' | 'Viewer';
 export type User = {
   id: string;
   name: string;
-  email: string;
+  email?: string;
+  phone?: string;
   role: UserRole;
   avatar: string;
   permissions?: Record<string, boolean>;
+  stats?: {
+      propertiesSold: number;
+      activeBuyers: number;
+      appointmentsToday: number;
+  }
 };
 
 export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other' | '';

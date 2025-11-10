@@ -1,5 +1,6 @@
 
 
+
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
@@ -176,27 +177,44 @@ export const teamMembers: User[] = [
         id: '1',
         name: 'Demo Admin',
         email: 'admin@signaturecrm.test',
+        phone: '+92 300 1112233',
         role: 'Admin',
         avatar: '', // will be replaced by placeholder
+        stats: {
+            propertiesSold: 5,
+            activeBuyers: 12,
+            appointmentsToday: 2,
+        }
     },
     {
         id: '2',
         name: 'Ali Khan',
         email: 'ali.khan@signaturecrm.test',
+        phone: '+92 321 4455667',
         role: 'Agent',
         avatar: '',
+        stats: {
+            propertiesSold: 8,
+            activeBuyers: 25,
+            appointmentsToday: 5,
+        }
     },
     {
         id: '3',
         name: 'Fatima Ahmed',
         email: 'fatima.ahmed@signaturecrm.test',
+        phone: '+92 333 7788990',
         role: 'Agent',
         avatar: '',
+        stats: {
+            propertiesSold: 12,
+            activeBuyers: 18,
+            appointmentsToday: 3,
+        }
     },
     {
         id: '4',
         name: 'Sana Javed',
-        email: 'sana.javed@signaturecrm.test',
         role: 'Viewer',
         avatar: '',
     }
@@ -207,6 +225,7 @@ export const followUps: FollowUp[] = [
         id: '1',
         buyerId: '2',
         buyerName: 'Sana Iqbal',
+        buyerPhone: '+92 322 8765432',
         propertyInterest: 'P-3: 2 Bedroom Flat in Gulberg',
         lastContactDate: '2024-05-20T10:00:00Z',
         nextReminder: '2024-05-25T10:00:00Z',
@@ -217,6 +236,7 @@ export const followUps: FollowUp[] = [
         id: '2',
         buyerId: '1',
         buyerName: 'Ahmed Hassan',
+        buyerPhone: '+92 301 2345678',
         propertyInterest: 'P-2: 10 Marla Plot in DHA Phase 6',
         lastContactDate: '2024-05-22T15:00:00Z',
         nextReminder: '2024-05-24T15:00:00Z',
