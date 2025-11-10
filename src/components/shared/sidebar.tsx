@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -27,6 +28,7 @@ import {
   History,
   Trash2,
   MessageSquare,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -41,6 +43,7 @@ import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 
 const menuItems = [
+  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Agent', 'Editor'] },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent', 'Editor'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent', 'Editor'] },
