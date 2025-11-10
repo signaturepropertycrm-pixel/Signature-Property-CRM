@@ -26,10 +26,14 @@ import { Separator } from '@/components/ui/separator';
 import { useProfile } from '@/context/profile-context';
 import React, { useState } from 'react';
 import type { ProfileData } from '@/context/profile-context';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useTheme } from 'next-themes';
+import { Switch } from '@/components/ui/switch';
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
   const { profile, setProfile } = useProfile();
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
@@ -145,13 +149,34 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>App Settings</CardTitle>
+          <CardTitle>Appearance</CardTitle>
           <CardDescription>
-            Customize the application behavior.
+            Customize the look and feel of the application.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-6">
+        <CardContent className="space-y-6">
+           <div className="space-y-2">
+              <Label>Theme</Label>
+              <RadioGroup
+                defaultValue={theme}
+                onValueChange={setTheme}
+                className="flex flex-col space-y-1"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="light" id="theme-light" />
+                  <Label htmlFor="theme-light">Light</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dark" id="theme-dark" />
+                  <Label htmlFor="theme-dark">Dark</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="system" id="theme-system" />
+                  <Label htmlFor="theme-system">System</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <Separator />
             <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-3">
               <Label htmlFor="currency" className="md:col-span-1">
                 Currency
@@ -175,7 +200,58 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
-          </div>
+            <Separator />
+             <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-3">
+              <Label htmlFor="language" className="md:col-span-1">
+                Language
+              </Label>
+              <div className="md:col-span-2">
+                <Select defaultValue="en-us">
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en-us">English (United States)</SelectItem>
+                    <SelectItem value="ur-pk" disabled>Urdu (Pakistan)</SelectItem>
+                  </SelectContent>
+                </Select>
+                 <p className="mt-2 text-xs text-muted-foreground">
+                  Choose your preferred language for the interface.
+                </p>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
+      
+       <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+          <CardDescription>
+            Manage how you receive notifications.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <Label>Email for new leads</Label>
+                    <p className="text-xs text-muted-foreground">Receive an email every time a new buyer is added.</p>
+                </div>
+                <Switch defaultChecked />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <Label>Appointment reminders</Label>
+                    <p className="text-xs text-muted-foreground">Get an email reminder one hour before an appointment.</p>
+                </div>
+                <Switch />
+            </div>
+             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <Label>In-app mentions</Label>
+                    <p className="text-xs text-muted-foreground">Get a notification when a team member @-mentions you.</p>
+                </div>
+                <Switch defaultChecked />
+            </div>
         </CardContent>
       </Card>
     </div>
