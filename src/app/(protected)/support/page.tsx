@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Linkedin, Facebook, Twitter, Instagram } from 'lucide-react';
 import { SubmitTicketForm } from '@/components/submit-ticket-form';
 
 
@@ -80,7 +80,22 @@ export default function SupportPage() {
                     Contact via WhatsApp
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">or email us at</p>
-                <p className="text-center font-semibold">SignaturePropertyCRM@gmail.com</p>
+                <p className="text-center font-semibold">signaturepropertycrm@gmail.com</p>
+                 <Separator />
+                <div className="flex justify-center gap-4">
+                    <Button variant="outline" size="icon" asChild>
+                        <a href="#" target="_blank" rel="noopener noreferrer"><Linkedin /></a>
+                    </Button>
+                     <Button variant="outline" size="icon" asChild>
+                        <a href="#" target="_blank" rel="noopener noreferrer"><Facebook /></a>
+                    </Button>
+                     <Button variant="outline" size="icon" asChild>
+                        <a href="#" target="_blank" rel="noopener noreferrer"><Twitter /></a>
+                    </Button>
+                     <Button variant="outline" size="icon" asChild>
+                        <a href="#" target="_blank" rel="noopener noreferrer"><Instagram /></a>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
          <Card>
