@@ -26,7 +26,7 @@ interface ListGeneratorToolProps {
   allProperties: Property[];
 }
 
-type SelectableField = 'serial_no' | 'area' | 'address' | 'size' | 'demand' | 'property_type' | 'status' | 'road_size_ft' | 'storey';
+type SelectableField = 'serial_no' | 'area' | 'address' | 'size' | 'demand' | 'property_type' | 'status' | 'road_size_ft' | 'storey' | 'utilities' | 'documents';
 
 const fieldLabels: Record<SelectableField, string> = {
   serial_no: 'Serial No',
@@ -37,7 +37,9 @@ const fieldLabels: Record<SelectableField, string> = {
   property_type: 'Property Type',
   status: 'Status',
   road_size_ft: 'Road Size',
-  storey: 'Storey'
+  storey: 'Storey',
+  utilities: 'Utilities',
+  documents: 'Documents'
 };
 
 export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
@@ -139,6 +141,17 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
       }
       if (selectedFields.includes('status')) {
         listString += `*Status:* ${p.status}\n`;
+      }
+      if (selectedFields.includes('utilities')) {
+        const utils = [
+            p.meters?.electricity && 'Electricity',
+            p.meters?.gas && 'Gas',
+            p.meters?.water && 'Water'
+        ].filter(Boolean).join(', ') || 'N/A';
+        listString += `*Utilities:* ${utils}\n`;
+      }
+      if (selectedFields.includes('documents')) {
+        listString += `*Documents:* ${p.documents || 'N/A'}\n`;
       }
       listString += '\n';
     });
