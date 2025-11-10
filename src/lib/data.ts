@@ -179,7 +179,6 @@ export const teamMembers: User[] = [
         email: 'admin@signaturecrm.test',
         phone: '+92 300 1112233',
         role: 'Admin',
-        avatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 5,
             activeBuyers: 12,
@@ -192,7 +191,6 @@ export const teamMembers: User[] = [
         email: 'ali.khan@signaturecrm.test',
         phone: '+92 321 4455667',
         role: 'Agent',
-        avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 8,
             activeBuyers: 25,
@@ -205,7 +203,6 @@ export const teamMembers: User[] = [
         email: 'fatima.ahmed@signaturecrm.test',
         phone: '+92 333 7788990',
         role: 'Agent',
-        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 12,
             activeBuyers: 18,
@@ -215,8 +212,8 @@ export const teamMembers: User[] = [
     {
         id: '4',
         name: 'Sana Javed',
+        email: 'sana.javed@signaturecrm.test',
         role: 'Viewer',
-        avatar: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
     }
 ];
 
@@ -298,5 +295,3 @@ export const appointments: Appointment[] = [
         notes: 'Family emergency. Will reschedule next week.'
     }
 ];
-
-    

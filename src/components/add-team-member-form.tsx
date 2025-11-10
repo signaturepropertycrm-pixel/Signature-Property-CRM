@@ -32,7 +32,6 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().optional(),
   role: z.enum(userRoles).default('Agent'),
-  avatar: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
 });
 
 type AddTeamMemberFormValues = z.infer<typeof formSchema>;
@@ -50,7 +49,6 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
             email: memberToEdit.email || '',
             phone: memberToEdit.phone || '',
             role: memberToEdit.role || 'Agent',
-            avatar: memberToEdit.avatar || '',
         };
     }
     return {
@@ -58,7 +56,6 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
         email: '',
         phone: '',
         role: 'Agent',
-        avatar: '',
     };
 };
 
@@ -134,19 +131,6 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
         />
         <FormField
           control={form.control}
-          name="avatar"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Avatar Image URL (Optional)</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="https://example.com/image.png" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="role"
           render={({ field }) => (
             <FormItem>
@@ -175,5 +159,3 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
     </Form>
   );
 }
-
-    

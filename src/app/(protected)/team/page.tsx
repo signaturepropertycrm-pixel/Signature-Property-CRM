@@ -1,7 +1,6 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -134,10 +133,6 @@ export default function TeamPage() {
                             </DropdownMenu>
                         </CardHeader>
                         <CardContent className="text-center flex-1">
-                            <Avatar className="w-24 h-24 border-4 border-primary/20 mx-auto">
-                                <AvatarImage src={member.avatar} data-ai-hint="person portrait" />
-                                <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
-                            </Avatar>
                             <CardTitle className="font-headline mt-4">{member.name}</CardTitle>
                             <CardDescription>{member.email || 'No email provided'}</CardDescription>
                         </CardContent>

@@ -8,7 +8,6 @@ export type User = {
   email?: string;
   phone?: string;
   role: UserRole;
-  avatar: string;
   permissions?: Record<string, boolean>;
   stats?: {
       propertiesSold: number;
@@ -127,7 +126,3 @@ export type Appointment = {
     status: AppointmentStatus;
     notes?: string;
 }
-
-    
-
-    
