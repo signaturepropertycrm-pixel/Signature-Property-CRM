@@ -24,7 +24,7 @@ import type { Currency } from '@/context/currency-context';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useProfile } from '@/context/profile-context';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ProfileData } from '@/context/profile-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
@@ -37,6 +37,13 @@ export default function SettingsPage() {
   const { toast } = useToast();
   
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
+  const [mounted, setMounted] = useState(false);
+
+  // useEffect only runs on the client, so now we can safely show the UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { id, value } = e.target;
@@ -59,6 +66,10 @@ export default function SettingsPage() {
       description: 'Your password has been changed successfully.',
     });
   };
+  
+  if (!mounted) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="space-y-8">
@@ -158,7 +169,7 @@ export default function SettingsPage() {
            <div className="space-y-2">
               <Label>Theme</Label>
               <RadioGroup
-                defaultValue={theme}
+                value={theme}
                 onValueChange={setTheme}
                 className="flex flex-col space-y-1"
               >
