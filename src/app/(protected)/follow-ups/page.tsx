@@ -18,7 +18,6 @@ const statusConfig = {
 } as const;
 
 export default function FollowUpsPage() {
-  const agentAvatar = PlaceHolderImages.find(p => p.id === 'avatar-agent');
   const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
 
   useEffect(() => {
@@ -45,15 +44,9 @@ export default function FollowUpsPage() {
             <Card key={followUp.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={agentAvatar?.imageUrl} data-ai-hint={agentAvatar?.imageHint} />
-                      <AvatarFallback>{followUp.buyerName.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="font-headline text-lg">{followUp.buyerName}</CardTitle>
-                      <CardDescription>{followUp.propertyInterest}</CardDescription>
-                    </div>
+                  <div>
+                    <CardTitle className="font-headline text-lg">{followUp.buyerName}</CardTitle>
+                    <CardDescription>{followUp.propertyInterest}</CardDescription>
                   </div>
                    <Badge variant={statusConfig[followUp.status].variant}>
                     {statusConfig[followUp.status].label}
