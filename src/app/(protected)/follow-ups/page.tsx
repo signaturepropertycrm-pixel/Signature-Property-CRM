@@ -13,12 +13,6 @@ import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog'; // Re-using for status change
 
 
-const statusConfig = {
-  'Due Soon': { variant: 'destructive', label: 'Due Soon' },
-  'Completed': { variant: 'default', label: 'Completed' },
-  'Scheduled': { variant: 'secondary', label: 'Scheduled' },
-} as const;
-
 export default function FollowUpsPage() {
   const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
   const [buyersData, setBuyersData] = useState<Buyer[]>([]);
@@ -175,8 +169,8 @@ export default function FollowUpsPage() {
                       <CardTitle className="font-headline text-lg">{followUp.buyerName}</CardTitle>
                       <CardDescription>{followUp.propertyInterest}</CardDescription>
                     </div>
-                    <Badge variant={statusConfig[followUp.status].variant}>
-                      {statusConfig[followUp.status].label}
+                    <Badge variant="secondary">
+                      Scheduled
                     </Badge>
                   </div>
                 </CardHeader>

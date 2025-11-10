@@ -91,7 +91,7 @@ export type Buyer = {
     last_follow_up_note?: string;
 };
 
-export type FollowUpStatus = 'Scheduled' | 'Due Soon' | 'Completed';
+export type FollowUpStatus = 'Scheduled';
 
 export type FollowUp = {
     id: string;

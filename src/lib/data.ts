@@ -220,18 +220,8 @@ export const followUps: FollowUp[] = [
         propertyInterest: 'P-2: 10 Marla Plot in DHA Phase 6',
         lastContactDate: '2024-05-22T15:00:00Z',
         nextReminder: '2024-05-24T15:00:00Z',
-        status: 'Due Soon',
+        status: 'Scheduled',
         notes: 'Negotiating on price. Client is firm on 2.4 Crore. Need to discuss with the owner.'
-    },
-    {
-        id: '3',
-        buyerId: '4',
-        buyerName: 'Ayesha Malik',
-        propertyInterest: 'P-1: 5 Marla House in Harbanspura',
-        lastContactDate: '2024-05-19T12:00:00Z',
-        nextReminder: '2024-05-22T12:00:00Z',
-        status: 'Completed',
-        notes: 'Followed up. Client is no longer interested as they found another property. Marked as Not Interested.'
     }
 ];
 
