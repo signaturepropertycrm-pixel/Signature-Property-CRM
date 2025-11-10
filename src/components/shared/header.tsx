@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User, MessageSquare } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
@@ -77,12 +77,15 @@ export function AppHeader({
           <DropdownMenuContent align="end" className="glass-card">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>
                 <User />
                 Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/support')}>
+                <MessageSquare />
+                Support
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/login')}>
                 <LogOut />

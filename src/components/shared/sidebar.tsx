@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -27,6 +26,7 @@ import {
   LineChart,
   History,
   Trash2,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -49,6 +49,7 @@ const menuItems = [
 ];
 
 const bottomMenuItems = [
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent', 'Editor'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
 ];
