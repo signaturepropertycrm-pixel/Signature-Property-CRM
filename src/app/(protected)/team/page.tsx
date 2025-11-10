@@ -25,10 +25,10 @@ const roleVariant = {
     Viewer: 'outline',
 } as const;
 
-const StatItem = ({ icon, value, label }: { icon: React.ElementType, value: number, label: string }) => (
+const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: number, label: string }) => (
     <div className="flex flex-col items-center gap-1 text-center">
         <div className="flex items-center gap-2">
-            <icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className="h-4 w-4 text-muted-foreground" />
             <span className="font-bold text-lg">{value}</span>
         </div>
         <span className="text-xs text-muted-foreground">{label}</span>
