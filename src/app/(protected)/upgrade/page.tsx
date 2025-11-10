@@ -94,7 +94,7 @@ export default function UpgradePage() {
         <span className="text-sm font-semibold text-green-600">(Save 2 months!)</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 items-start">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 items-start max-w-5xl mx-auto">
         {plans.map((plan) => (
           <Card key={plan.name} className={cn("flex flex-col h-full", plan.isPopular && "border-primary border-2 shadow-primary/20")}>
             {plan.isPopular && (
