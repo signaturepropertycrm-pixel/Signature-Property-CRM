@@ -43,7 +43,6 @@ const menuItems = [
   { href: '/team', label: 'Team', icon: <UserCog /> },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
   { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
-  { href: '/analytics', label: 'Analytics', icon: <LineChart /> },
   { href: '/activities', label: 'Activities', icon: <History /> },
   { href: '/trash', label: 'Trash', icon: <Trash2 /> },
 ];
