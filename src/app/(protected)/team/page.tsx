@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { teamMembers as initialTeamMembers } from '@/lib/data';
-import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import type { User } from '@/lib/types';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import {
@@ -65,7 +65,7 @@ export default function TeamPage() {
         }
     }, [isAddMemberOpen]);
     
-    const handleCardClick = (member: User) => {
+    const handleViewDetails = (member: User) => {
         setSelectedMember(member);
         setIsDetailsOpen(true);
     };
@@ -111,7 +111,7 @@ export default function TeamPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {teamMembers.map(member => (
-                    <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleCardClick(member)}>
+                    <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
                         <CardHeader className="flex-row items-center justify-between">
                             <Badge variant={roleVariant[member.role]} className="capitalize">{member.role}</Badge>
                             <DropdownMenu>
@@ -121,6 +121,9 @@ export default function TeamPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
+                                     <DropdownMenuItem onSelect={() => handleViewDetails(member)}>
+                                        <Eye /> View Details
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleEditMember(member)}>
                                         <Edit /> Edit Member
                                     </DropdownMenuItem>
@@ -165,5 +168,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    
