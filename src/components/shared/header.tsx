@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -15,12 +14,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
-
-const adminAvatar = PlaceHolderImages.find(img => img.id === 'avatar-admin');
 
 export function AppHeader({ 
   searchable,
@@ -71,7 +67,7 @@ export function AppHeader({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 rounded-full p-1 h-auto">
               <Avatar className="h-9 w-9 border-2 border-primary/50">
-                {adminAvatar && <AvatarImage src={adminAvatar.imageUrl} data-ai-hint={adminAvatar.imageHint} />}
+                <AvatarImage src={profile.avatar} alt={profile.ownerName} />
                 <AvatarFallback>{ownerName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
               <span className="hidden sm:inline font-semibold">{ownerName}</span>

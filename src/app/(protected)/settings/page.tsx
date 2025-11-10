@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -29,6 +28,15 @@ import type { ProfileData } from '@/context/profile-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
@@ -38,11 +46,15 @@ export default function SettingsPage() {
   
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
   const [mounted, setMounted] = useState(false);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar || '');
 
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
-  }, []);
+    setLocalProfile(profile);
+    setAvatarUrl(profile.avatar || '');
+  }, [profile]);
 
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,12 +78,22 @@ export default function SettingsPage() {
       description: 'Your password has been changed successfully.',
     });
   };
+
+  const handleAvatarSave = () => {
+    setProfile({ ...profile, avatar: avatarUrl });
+    toast({
+        title: "Profile Picture Updated",
+        description: "Your new avatar has been saved."
+    });
+    setIsAvatarDialogOpen(false);
+  }
   
   if (!mounted) {
     return null; // or a loading spinner
   }
 
   return (
+    <>
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">
@@ -90,7 +112,23 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleProfileSave}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+             <div className="flex items-center gap-6">
+                <Avatar className="h-20 w-20 border-4 border-primary/20">
+                    <AvatarImage src={profile.avatar} alt={profile.ownerName} />
+                    <AvatarFallback>{profile.ownerName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <h3 className="text-lg font-bold">{profile.ownerName}</h3>
+                    <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setIsAvatarDialogOpen(true)}>
+                        Change Picture
+                    </Button>
+                </div>
+            </div>
+
+            <Separator />
+
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="agencyName">Agency Name</Label>
@@ -266,5 +304,31 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+    <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Change Profile Picture</DialogTitle>
+                <DialogDescription>
+                    Paste an image URL below to update your profile picture.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="avatar-url">Image URL</Label>
+                    <Input 
+                        id="avatar-url"
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                        placeholder="https://example.com/your-image.png"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAvatarSave}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
