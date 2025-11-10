@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ClipboardCopy, ClipboardCheck, Settings, FileText, List, SlidersHorizontal, CheckSquare } from 'lucide-react';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
+import { Separator } from './ui/separator';
 
 interface ListGeneratorToolProps {
   allProperties: Property[];
@@ -102,7 +103,9 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
         return;
     }
 
-    const propertiesToInclude = allProperties.filter(p => selectedProperties.includes(p.id));
+    const propertiesToInclude = allProperties
+      .filter(p => selectedProperties.includes(p.id))
+      .sort((a, b) => b.size_value - a.size_value); // Sort by size descending
 
     let listString = `*${profile.agencyName}*\n`;
     listString += `*Date:* ${new Date().toLocaleDateString('en-GB')}\n\n`;
@@ -167,80 +170,84 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
           Generate a shareable list of available properties for other dealers.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Column 1: Filters & Options */}
-        <div className="md:col-span-1 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" />Step 1: Filters & Options</h3>
-            <div className="p-4 border rounded-lg space-y-4 bg-muted/30">
-                <div>
-                    <Label htmlFor="area-filter">Filter by Area</Label>
-                    <form onSubmit={handleFilterProperties} className="flex gap-2 mt-2">
-                        <Input 
-                            id="area-filter"
-                            value={areaFilter}
-                            onChange={(e) => setAreaFilter(e.target.value)}
-                            placeholder="e.g., DHA, Bahria"
-                        />
-                        <Button type="submit">Filter</Button>
-                    </form>
-                </div>
-                <div>
-                    <Label>Fields to Include</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                    {(Object.keys(fieldLabels) as SelectableField[]).map((field) => (
-                        <div key={field} className="flex items-center space-x-2">
-                        <Checkbox
-                            id={`field-${field}`}
-                            checked={selectedFields.includes(field)}
-                            onCheckedChange={() => handleFieldChange(field)}
-                        />
-                        <Label htmlFor={`field-${field}`} className="text-sm font-normal">
-                            {fieldLabels[field]}
-                        </Label>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Column 1: Filters & Options */}
+            <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" />Step 1: Filters & Options</h3>
+                <div className="p-4 border rounded-lg space-y-4 bg-muted/30 h-full">
+                    <div>
+                        <Label htmlFor="area-filter">Filter by Area</Label>
+                        <form onSubmit={handleFilterProperties} className="flex gap-2 mt-2">
+                            <Input 
+                                id="area-filter"
+                                value={areaFilter}
+                                onChange={(e) => setAreaFilter(e.target.value)}
+                                placeholder="e.g., DHA, Bahria"
+                            />
+                            <Button type="submit">Filter</Button>
+                        </form>
+                    </div>
+                    <div>
+                        <Label>Fields to Include</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                        {(Object.keys(fieldLabels) as SelectableField[]).map((field) => (
+                            <div key={field} className="flex items-center space-x-2">
+                            <Checkbox
+                                id={`field-${field}`}
+                                checked={selectedFields.includes(field)}
+                                onCheckedChange={() => handleFieldChange(field)}
+                            />
+                            <Label htmlFor={`field-${field}`} className="text-sm font-normal">
+                                {fieldLabels[field]}
+                            </Label>
+                            </div>
+                        ))}
                         </div>
-                    ))}
                     </div>
                 </div>
             </div>
-        </div>
 
-        {/* Column 2: Select Properties */}
-        <div className="md:col-span-1 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2"><CheckSquare className="h-5 w-5" />Step 2: Select Properties</h3>
-            <ScrollArea className="h-80 border rounded-lg p-4 bg-muted/30">
-                {filteredProperties.length > 0 ? (
-                    <div className="space-y-2">
-                        <div className="flex items-center space-x-2 pb-2 border-b">
-                             <Checkbox
-                                id="select-all"
-                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                                checked={selectedProperties.length === filteredProperties.length && filteredProperties.length > 0}
-                            />
-                            <Label htmlFor="select-all" className="font-semibold">Select All</Label>
-                        </div>
-                        {filteredProperties.map(prop => (
-                            <div key={prop.id} className="flex items-center space-x-2">
-                                <Checkbox 
-                                    id={prop.id}
-                                    checked={selectedProperties.includes(prop.id)}
-                                    onCheckedChange={() => handlePropertySelection(prop.id)}
+            {/* Column 2: Select Properties */}
+            <div className="space-y-4">
+                <h3 className="font-semibold flex items-center gap-2"><CheckSquare className="h-5 w-5" />Step 2: Select Properties</h3>
+                <ScrollArea className="h-80 border rounded-lg p-4 bg-muted/30">
+                    {filteredProperties.length > 0 ? (
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2 pb-2 border-b">
+                                <Checkbox
+                                    id="select-all"
+                                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                    checked={selectedProperties.length === filteredProperties.length && filteredProperties.length > 0}
                                 />
-                                <Label htmlFor={prop.id} className="text-sm font-normal cursor-pointer">
-                                    {prop.auto_title}
-                                </Label>
+                                <Label htmlFor="select-all" className="font-semibold">Select All</Label>
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        {areaFilter ? 'No properties found for this area.' : 'Filter by area to see properties.'}
-                    </div>
-                )}
-            </ScrollArea>
+                            {filteredProperties.map(prop => (
+                                <div key={prop.id} className="flex items-center space-x-2">
+                                    <Checkbox 
+                                        id={prop.id}
+                                        checked={selectedProperties.includes(prop.id)}
+                                        onCheckedChange={() => handlePropertySelection(prop.id)}
+                                    />
+                                    <Label htmlFor={prop.id} className="text-sm font-normal cursor-pointer">
+                                        {prop.auto_title}
+                                    </Label>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                            {areaFilter ? 'No properties found for this area.' : 'Filter by area to see properties.'}
+                        </div>
+                    )}
+                </ScrollArea>
+            </div>
         </div>
         
-        {/* Column 3: Generated List */}
-        <div className="md:col-span-1 space-y-4">
+        <Separator />
+        
+        {/* Generated List Section */}
+        <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2"><FileText className="h-5 w-5" />Step 3: Generate & Copy List</h3>
             <div className="space-y-2">
                 <Textarea
@@ -265,4 +272,3 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
     </Card>
   );
 }
-
