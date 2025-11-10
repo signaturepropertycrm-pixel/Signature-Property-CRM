@@ -20,7 +20,8 @@ const plans = [
             'Core CRM Features',
             'Standard Support'
         ],
-        cta: 'Get Started',
+        cta: 'Current Plan',
+        isCurrent: true,
         isPopular: false,
     },
     {
@@ -41,15 +42,15 @@ const plans = [
     {
         name: 'Premium',
         price: { monthly: 15000, yearly: 150000 },
-        description: 'For large teams requiring advanced features and unlimited scale.',
+        description: 'For large teams requiring advanced features and scale.',
         features: [
-            'Unlimited Properties',
-            'Unlimited Buyers',
+            'Up to 5,000 Properties',
+            'Up to 5,000 Buyers',
             'Unlimited Team Members',
             'All Standard Features',
-            'Video Recording & Sharing',
-            'Dedicated Account Manager',
-            '24/7 Priority Support'
+            'Video Recording & Sharing Links',
+            'List Generator Tool',
+            'Dedicated Account Manager'
         ],
         cta: 'Upgrade Now',
         isPopular: false,
@@ -59,6 +60,7 @@ const plans = [
         price: { custom: true },
         description: 'Custom solutions for large-scale operations with specific needs.',
         features: [
+            'Unlimited Properties & Buyers',
             'All Premium Features',
             'Custom Integrations',
             'On-Premise Deployment Option',
@@ -128,8 +130,8 @@ export default function UpgradePage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className={cn("w-full", plan.isPopular && 'glowing-btn')} variant={plan.isPopular ? 'default' : 'outline'}>
-                {plan.cta} <ArrowRight className="ml-2 h-4 w-4" />
+              <Button className={cn("w-full", plan.isPopular && 'glowing-btn')} variant={plan.isCurrent ? 'outline' : (plan.isPopular ? 'default' : 'outline')} disabled={plan.isCurrent}>
+                {plan.cta} {!plan.isCurrent && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
             </CardFooter>
           </Card>
