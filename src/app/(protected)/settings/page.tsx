@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import Image from 'next/image';
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
@@ -47,14 +49,21 @@ export default function SettingsPage() {
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
   const [mounted, setMounted] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(profile.avatar || '');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
     setLocalProfile(profile);
-    setAvatarUrl(profile.avatar || '');
   }, [profile]);
+
+  useEffect(() => {
+    if (!isAvatarDialogOpen) {
+      setAvatarPreview(null);
+      setAvatarFile(null);
+    }
+  }, [isAvatarDialogOpen]);
 
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,13 +88,27 @@ export default function SettingsPage() {
     });
   };
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAvatarSave = () => {
-    setProfile({ ...profile, avatar: avatarUrl });
-    toast({
-        title: "Profile Picture Updated",
-        description: "Your new avatar has been saved."
-    });
-    setIsAvatarDialogOpen(false);
+    if (avatarPreview) {
+      setProfile({ ...profile, avatar: avatarPreview });
+      toast({
+          title: "Profile Picture Updated",
+          description: "Your new avatar has been saved."
+      });
+      setIsAvatarDialogOpen(false);
+    }
   }
   
   if (!mounted) {
@@ -309,23 +332,28 @@ export default function SettingsPage() {
             <DialogHeader>
                 <DialogTitle>Change Profile Picture</DialogTitle>
                 <DialogDescription>
-                    Paste an image URL below to update your profile picture.
+                    Upload an image from your computer to update your profile picture.
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+                {avatarPreview && (
+                  <div className="flex justify-center">
+                    <Image src={avatarPreview} alt="Avatar preview" width={128} height={128} className="rounded-full aspect-square object-cover" />
+                  </div>
+                )}
                 <div className="grid gap-2">
-                    <Label htmlFor="avatar-url">Image URL</Label>
+                    <Label htmlFor="avatar-upload">Choose Image</Label>
                     <Input 
-                        id="avatar-url"
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
-                        placeholder="https://example.com/your-image.png"
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/png, image/jpeg, image/gif"
+                        onChange={handleAvatarFileChange}
                     />
                 </div>
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAvatarSave}>Save Changes</Button>
+                <Button onClick={handleAvatarSave} disabled={!avatarFile}>Save Changes</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
