@@ -1,13 +1,12 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { teamMembers } from '@/lib/data';
+import { teamMembers as initialTeamMembers } from '@/lib/data';
 import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { User } from '@/lib/types';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import {
@@ -16,6 +15,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 
 const roleVariant = {
@@ -36,24 +37,64 @@ const StatItem = ({ icon, value, label }: { icon: React.ElementType, value: numb
 
 
 export default function TeamPage() {
+    const [teamMembers, setTeamMembers] = useState<User[]>([]);
     const [selectedMember, setSelectedMember] = useState<User | null>(null);
+    const [memberToEdit, setMemberToEdit] = useState<User | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+    const { toast } = useToast();
 
-    const adminAvatar = PlaceHolderImages.find(p => p.id === 'avatar-admin');
-    const agentAvatar = PlaceHolderImages.find(p => p.id === 'avatar-agent');
-    const viewerAvatar = PlaceHolderImages.find(p => p.id === 'avatar-viewer');
-
-    const getAvatar = (role: 'Admin' | 'Agent' | 'Viewer') => {
-        switch (role) {
-            case 'Admin': return adminAvatar;
-            case 'Agent': return agentAvatar;
-            case 'Viewer': return viewerAvatar;
+    useEffect(() => {
+        const savedTeamMembers = localStorage.getItem('teamMembers');
+        if (savedTeamMembers) {
+            setTeamMembers(JSON.parse(savedTeamMembers));
+        } else {
+            setTeamMembers(initialTeamMembers);
         }
-    }
+    }, []);
+
+    useEffect(() => {
+        if (teamMembers.length > 0) {
+            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
+        }
+    }, [teamMembers]);
+
+    useEffect(() => {
+        if (!isAddMemberOpen) {
+            setMemberToEdit(null);
+        }
+    }, [isAddMemberOpen]);
     
     const handleCardClick = (member: User) => {
         setSelectedMember(member);
         setIsDetailsOpen(true);
+    };
+
+    const handleAddMemberClick = () => {
+        setMemberToEdit(null);
+        setIsAddMemberOpen(true);
+    };
+
+    const handleEditMember = (member: User) => {
+        setMemberToEdit(member);
+        setIsAddMemberOpen(true);
+    };
+
+    const handleDeleteMember = (memberId: string) => {
+        setTeamMembers(prev => prev.filter(m => m.id !== memberId));
+        toast({
+            title: "Member Deleted",
+            description: "The team member has been removed.",
+            variant: "destructive"
+        });
+    };
+
+    const handleSaveMember = (member: User) => {
+        if (memberToEdit) {
+            setTeamMembers(prev => prev.map(m => m.id === member.id ? member : m));
+        } else {
+            setTeamMembers(prev => [...prev, { ...member, id: `TM-${prev.length + 1}` }]);
+        }
     };
 
 
@@ -65,7 +106,7 @@ export default function TeamPage() {
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Team</h1>
                     <p className="text-muted-foreground">Manage your team members.</p>
                 </div>
-                <Button className="glowing-btn"><UserPlus/> Add Team Member</Button>
+                <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Team Member</Button>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -80,10 +121,10 @@ export default function TeamPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                    <DropdownMenuItem onSelect={() => {}}>
+                                    <DropdownMenuItem onSelect={() => handleEditMember(member)}>
                                         <Edit /> Edit Member
                                     </DropdownMenuItem>
-                                     <DropdownMenuItem onSelect={() => {}} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                     <DropdownMenuItem onSelect={() => handleDeleteMember(member.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                         <Trash2 /> Delete Member
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -91,7 +132,7 @@ export default function TeamPage() {
                         </CardHeader>
                         <CardContent className="text-center flex-1">
                             <Avatar className="w-24 h-24 border-4 border-primary/20 mx-auto">
-                                <AvatarImage src={getAvatar(member.role)?.imageUrl} data-ai-hint={getAvatar(member.role)?.imageHint} />
+                                <AvatarImage src={member.avatar} data-ai-hint="person portrait" />
                                 <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
                             </Avatar>
                             <CardTitle className="font-headline mt-4">{member.name}</CardTitle>
@@ -115,6 +156,14 @@ export default function TeamPage() {
                 setIsOpen={setIsDetailsOpen}
             />
         )}
+        <AddTeamMemberDialog
+            isOpen={isAddMemberOpen}
+            setIsOpen={setIsAddMemberOpen}
+            memberToEdit={memberToEdit}
+            onSave={handleSaveMember}
+        />
     </>
   );
 }
+
+    

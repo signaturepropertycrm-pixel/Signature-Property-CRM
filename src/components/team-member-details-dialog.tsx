@@ -15,7 +15,6 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { HandCoins, Users, CalendarCheck, Phone, Mail, UserCog } from 'lucide-react';
 
 interface TeamMemberDetailsDialogProps {
@@ -45,17 +44,6 @@ export function TeamMemberDetailsDialog({
   isOpen,
   setIsOpen,
 }: TeamMemberDetailsDialogProps) {
-  const adminAvatar = PlaceHolderImages.find(p => p.id === 'avatar-admin');
-  const agentAvatar = PlaceHolderImages.find(p => p.id === 'avatar-agent');
-  const viewerAvatar = PlaceHolderImages.find(p => p.id === 'avatar-viewer');
-
-  const getAvatar = (role: 'Admin' | 'Agent' | 'Viewer') => {
-      switch (role) {
-          case 'Admin': return adminAvatar;
-          case 'Agent': return agentAvatar;
-          case 'Viewer': return viewerAvatar;
-      }
-  }
 
   if (!member) return null;
 
@@ -65,7 +53,7 @@ export function TeamMemberDetailsDialog({
         <DialogContent className="sm:max-w-xl">
           <DialogHeader className="text-center items-center">
              <Avatar className="w-28 h-28 border-4 border-primary/20">
-                <AvatarImage src={getAvatar(member.role)?.imageUrl} data-ai-hint={getAvatar(member.role)?.imageHint} />
+                <AvatarImage src={member.avatar} data-ai-hint="person portrait" />
                 <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
             </Avatar>
             <div className="flex items-baseline gap-2 justify-center pt-4">
@@ -117,3 +105,5 @@ export function TeamMemberDetailsDialog({
     </>
   );
 }
+
+    

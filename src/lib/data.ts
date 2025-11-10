@@ -1,6 +1,5 @@
 
 
-
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
@@ -140,7 +139,8 @@ export const buyers: Buyer[] = [
         budget_min_unit: 'Lacs',
         budget_max_amount: 1.2,
         budget_max_unit: 'Crore',
-        created_at: '2024-07-19T14:30:00Z'
+        created_at: '2024-07-19T14:30:00Z',
+        last_follow_up_note: 'Client asked for more pictures and a video tour. Sent them via WhatsApp. Will follow up on Saturday.'
     },
     {
         id: '3',
@@ -179,7 +179,7 @@ export const teamMembers: User[] = [
         email: 'admin@signaturecrm.test',
         phone: '+92 300 1112233',
         role: 'Admin',
-        avatar: '', // will be replaced by placeholder
+        avatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 5,
             activeBuyers: 12,
@@ -192,7 +192,7 @@ export const teamMembers: User[] = [
         email: 'ali.khan@signaturecrm.test',
         phone: '+92 321 4455667',
         role: 'Agent',
-        avatar: '',
+        avatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 8,
             activeBuyers: 25,
@@ -205,7 +205,7 @@ export const teamMembers: User[] = [
         email: 'fatima.ahmed@signaturecrm.test',
         phone: '+92 333 7788990',
         role: 'Agent',
-        avatar: '',
+        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
         stats: {
             propertiesSold: 12,
             activeBuyers: 18,
@@ -216,7 +216,7 @@ export const teamMembers: User[] = [
         id: '4',
         name: 'Sana Javed',
         role: 'Viewer',
-        avatar: '',
+        avatar: 'https://images.unsplash.com/photo-1554151228-14d9def656e4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080',
     }
 ];
 
@@ -232,17 +232,6 @@ export const followUps: FollowUp[] = [
         status: 'Scheduled',
         notes: 'Client asked for more pictures and a video tour. Sent them via WhatsApp. Will follow up on Saturday.'
     },
-    {
-        id: '2',
-        buyerId: '1',
-        buyerName: 'Ahmed Hassan',
-        buyerPhone: '+92 301 2345678',
-        propertyInterest: 'P-2: 10 Marla Plot in DHA Phase 6',
-        lastContactDate: '2024-05-22T15:00:00Z',
-        nextReminder: '2024-05-24T15:00:00Z',
-        status: 'Scheduled',
-        notes: 'Negotiating on price. Client is firm on 2.4 Crore. Need to discuss with the owner.'
-    }
 ];
 
 const now = new Date();
@@ -309,3 +298,5 @@ export const appointments: Appointment[] = [
         notes: 'Family emergency. Will reschedule next week.'
     }
 ];
+
+    
