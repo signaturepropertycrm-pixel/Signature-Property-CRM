@@ -1,14 +1,16 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { followUps as initialFollowUps, buyers as initialBuyers } from '@/lib/data';
+import { followUps as initialFollowUps, buyers as initialBuyers, appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { FollowUp, Buyer } from '@/lib/types';
+import { FollowUp, Buyer, Appointment, AppointmentContactType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
+import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
+import { AddFollowUpDialog } from '@/components/add-follow-up-dialog'; // Re-using for status change
 
 
 const statusConfig = {
@@ -20,25 +22,37 @@ const statusConfig = {
 export default function FollowUpsPage() {
   const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
   const [buyersData, setBuyersData] = useState<Buyer[]>([]);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(initialAppointments);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
+  const [buyerForStatusUpdate, setBuyerForStatusUpdate] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const savedFollowUps = localStorage.getItem('followUps');
-    if (savedFollowUps) {
-      setFollowUpsData(JSON.parse(savedFollowUps));
-    } else {
-      setFollowUpsData(initialFollowUps);
-    }
+    if (savedFollowUps) setFollowUpsData(JSON.parse(savedFollowUps)); else setFollowUpsData(initialFollowUps);
     
     const savedBuyers = localStorage.getItem('buyers');
-    if (savedBuyers) {
-      setBuyersData(JSON.parse(savedBuyers));
-    } else {
-      setBuyersData(initialBuyers);
-    }
+    if (savedBuyers) setBuyersData(JSON.parse(savedBuyers)); else setBuyersData(initialBuyers);
+
+    const savedAppointments = localStorage.getItem('appointments');
+    if (savedAppointments) setAppointmentsData(JSON.parse(savedAppointments)); else setAppointmentsData(initialAppointments);
   }, []);
+
+  useEffect(() => {
+      if (buyersData.length > 0) localStorage.setItem('buyers', JSON.stringify(buyersData));
+  }, [buyersData]);
+
+  useEffect(() => {
+      if (followUpsData.length > 0) localStorage.setItem('followUps', JSON.stringify(followUpsData));
+  }, [followUpsData]);
+
+  useEffect(() => {
+      if (appointmentsData.length > 0) localStorage.setItem('appointments', JSON.stringify(appointmentsData));
+  }, [appointmentsData]);
   
   const handlePhoneClick = (phone?: string) => {
     if (phone) {
@@ -69,9 +83,8 @@ export default function FollowUpsPage() {
   };
 
   const handleWhatsAppClick = (e: React.MouseEvent, phone?: string) => {
-      e.stopPropagation(); // Prevent card click event
+      e.stopPropagation(); 
       if (phone) {
-        // Remove +, spaces, and leading zeros from the number, then prepend country code if missing
         let sanitizedPhone = phone.replace(/\s+/g, '').replace(/^\+|^00/, '');
         if (!sanitizedPhone.startsWith('92')) {
             sanitizedPhone = `92${sanitizedPhone.replace(/^0/, '')}`;
@@ -84,6 +97,61 @@ export default function FollowUpsPage() {
             variant: "destructive",
         });
       }
+  };
+
+  const handleSetAppointment = (e: React.MouseEvent, followUp: FollowUp) => {
+      e.stopPropagation();
+      const buyer = buyersData.find(b => b.id === followUp.buyerId);
+      if (buyer) {
+          setAppointmentDetails({
+              contactType: 'Buyer',
+              contactName: buyer.name,
+              contactSerialNo: buyer.serial_no,
+              message: `Follow-up regarding interest in ${buyer.area_preference || 'general properties'}.`, 
+          });
+          setIsAppointmentOpen(true);
+      }
+  };
+
+  const handleSaveAppointment = (appointment: Appointment) => {
+      setAppointmentsData(prev => [appointment, ...prev]);
+  };
+  
+  const handleOpenStatusUpdate = (e: React.MouseEvent, followUp: FollowUp) => {
+      e.stopPropagation();
+      const buyer = buyersData.find(b => b.id === followUp.buyerId);
+      if (buyer) {
+          setBuyerForStatusUpdate(buyer);
+          setIsStatusUpdateOpen(true);
+      }
+  };
+
+  const handleSaveFollowUp = (buyerId: string, notes: string, nextReminder: string) => {
+        const buyer = buyersData.find(b => b.id === buyerId);
+        if (!buyer) return;
+
+        const newFollowUp: FollowUp = {
+            id: `FU-${followUpsData.length + 1}`,
+            buyerId: buyer.id,
+            buyerName: buyer.name,
+            buyerPhone: buyer.phone,
+            propertyInterest: buyer.area_preference || 'General',
+            lastContactDate: new Date().toISOString(),
+            nextReminder: nextReminder,
+            status: 'Scheduled',
+            notes: notes,
+        };
+        
+        setFollowUpsData(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
+        setBuyersData(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
+        
+        toast({
+            title: "Follow-up Scheduled",
+            description: `A follow-up has been created for ${buyer.name}.`
+        });
+
+        setIsStatusUpdateOpen(false);
+        setBuyerForStatusUpdate(null);
   };
 
 
@@ -122,8 +190,8 @@ export default function FollowUpsPage() {
                 <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); handlePhoneClick(followUp.buyerPhone); }}><Phone /></Button>
                   <Button variant="outline" size="icon" onClick={(e) => handleWhatsAppClick(e, followUp.buyerPhone)}><MessageSquare /></Button>
-                  <Button variant="outline" size="icon" onClick={(e) => e.stopPropagation()}><CalendarPlus /></Button>
-                  <Button size="icon" onClick={(e) => e.stopPropagation()}><CheckCircle /></Button>
+                  <Button variant="outline" size="icon" onClick={(e) => handleOpenStatusUpdate(e, followUp)}><CalendarPlus /></Button>
+                  <Button size="icon" onClick={(e) => handleSetAppointment(e, followUp)}><CheckCircle /></Button>
                 </CardFooter>
               </Card>
             ))
@@ -136,6 +204,25 @@ export default function FollowUpsPage() {
           isOpen={isDetailsOpen}
           setIsOpen={setIsDetailsOpen}
         />
+      )}
+      {appointmentDetails && (
+          <SetAppointmentDialog
+              isOpen={isAppointmentOpen}
+              setIsOpen={setIsAppointmentOpen}
+              onSave={handleSaveAppointment}
+              appointmentDetails={appointmentDetails}
+          />
+      )}
+      {buyerForStatusUpdate && (
+          <AddFollowUpDialog
+              isOpen={isStatusUpdateOpen}
+              setIsOpen={setIsStatusUpdateOpen}
+              buyer={buyerForStatusUpdate}
+              onSave={handleSaveFollowUp}
+              title="Update Status & Follow-up"
+              description={`Update status or schedule a new follow-up for ${buyerForStatusUpdate.name}.`}
+              isStatusUpdateMode={true}
+          />
       )}
     </>
   );
