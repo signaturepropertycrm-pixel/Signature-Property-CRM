@@ -121,13 +121,13 @@ export default function TeamPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                     <DropdownMenuItem onSelect={() => handleViewDetails(member)}>
+                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleViewDetails(member); }}>
                                         <Eye /> View Details
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleEditMember(member)}>
+                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEditMember(member); }}>
                                         <Edit /> Edit Member
                                     </DropdownMenuItem>
-                                     <DropdownMenuItem onSelect={() => handleDeleteMember(member.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDeleteMember(member.id); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                         <Trash2 /> Delete Member
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
