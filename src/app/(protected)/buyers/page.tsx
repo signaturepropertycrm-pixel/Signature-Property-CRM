@@ -184,6 +184,7 @@ function BuyersPageContent() {
             id: `FU-${followUps.length + 1}`,
             buyerId: buyer.id,
             buyerName: buyer.name,
+            buyerPhone: buyer.phone,
             propertyInterest: buyer.area_preference || 'General',
             lastContactDate: new Date().toISOString(),
             nextReminder: nextReminder,

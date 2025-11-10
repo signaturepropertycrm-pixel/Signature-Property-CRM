@@ -97,6 +97,7 @@ export type FollowUp = {
     id: string;
     buyerId: string;
     buyerName: string;
+    buyerPhone?: string;
     propertyInterest: string;
     lastContactDate: string;
     nextReminder: string;

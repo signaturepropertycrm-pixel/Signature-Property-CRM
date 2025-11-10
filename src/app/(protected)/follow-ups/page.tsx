@@ -4,11 +4,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { followUps as initialFollowUps } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useEffect, useState } from 'react';
 import { FollowUp } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 
 const statusConfig = {
@@ -19,6 +18,7 @@ const statusConfig = {
 
 export default function FollowUpsPage() {
   const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const savedFollowUps = localStorage.getItem('followUps');
@@ -28,6 +28,20 @@ export default function FollowUpsPage() {
       setFollowUpsData(initialFollowUps);
     }
   }, []);
+  
+  const handlePhoneClick = (phone?: string) => {
+    if (phone) {
+        toast({
+            title: "Buyer's Phone Number",
+            description: phone,
+        });
+    } else {
+        toast({
+            title: "Phone Number Not Available",
+            variant: "destructive",
+        });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -61,7 +75,7 @@ export default function FollowUpsPage() {
                 <p className="text-sm border-t pt-3">{followUp.notes}</p>
               </CardContent>
               <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" size="icon"><Phone /></Button>
+                <Button variant="outline" size="icon" onClick={() => handlePhoneClick(followUp.buyerPhone)}><Phone /></Button>
                 <Button variant="outline" size="icon"><MessageSquare /></Button>
                 <Button variant="outline" size="icon"><CalendarPlus /></Button>
                 <Button size="icon"><CheckCircle /></Button>
@@ -73,5 +87,3 @@ export default function FollowUpsPage() {
     </div>
   );
 }
-
-    
