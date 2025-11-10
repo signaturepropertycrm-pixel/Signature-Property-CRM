@@ -2,11 +2,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { UserRole } from '@/lib/types';
 
 export interface ProfileData {
   agencyName: string;
   ownerName: string;
   phone: string;
+  role: UserRole;
 }
 
 interface ProfileContextType {
@@ -20,6 +22,7 @@ const defaultProfile: ProfileData = {
     agencyName: 'Signature Properties',
     ownerName: 'Demo Admin',
     phone: '+92 300 1234567',
+    role: 'Admin', // Default role is Admin
 };
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
@@ -29,7 +32,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       const savedProfile = localStorage.getItem('app-profile');
       if (savedProfile) {
-        setProfileState(JSON.parse(savedProfile));
+        // Ensure role is part of the loaded profile, otherwise set default
+        const parsedProfile = JSON.parse(savedProfile);
+        if (!parsedProfile.role) {
+            parsedProfile.role = 'Admin';
+        }
+        setProfileState(parsedProfile);
       }
     } catch (error) {
         console.error("Failed to parse profile from localStorage", error);

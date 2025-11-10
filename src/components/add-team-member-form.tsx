@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import type { User, UserRole } from '@/lib/types';
 
-const userRoles: UserRole[] = ['Admin', 'Agent', 'Viewer'];
+const userRoles: UserRole[] = ['Admin', 'Agent', 'Editor'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),

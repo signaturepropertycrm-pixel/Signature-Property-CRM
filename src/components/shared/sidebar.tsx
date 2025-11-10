@@ -38,18 +38,19 @@ import {
 } from '../ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { buyerStatuses } from '@/lib/data';
+import { useProfile } from '@/context/profile-context';
 
 const menuItems = [
-  { href: '/team', label: 'Team', icon: <UserCog /> },
-  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
-  { href: '/appointments', label: 'Appointments', icon: <Calendar /> },
-  { href: '/activities', label: 'Activities', icon: <History /> },
-  { href: '/trash', label: 'Trash', icon: <Trash2 /> },
+  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent', 'Editor'] },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent', 'Editor'] },
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor'] },
+  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor'] },
 ];
 
 const bottomMenuItems = [
-  { href: '/settings', label: 'Settings', icon: <Settings /> },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket /> },
+  { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
 ];
 
 const buyerStatusLinks = [
@@ -67,15 +68,16 @@ const propertyStatusLinks: {label: string, status: string}[] = [
 export function AppSidebar() {
   const pathname = usePathname();
   const isMobile = useIsMobile();
+  const { profile } = useProfile();
   const [isBuyersOpen, setIsBuyersOpen] = useState(pathname.startsWith('/buyers'));
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(pathname.startsWith('/properties'));
 
   const mobileNavItems = [
-      { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> },
-      { href: '/properties', label: 'Properties', icon: <Building2 /> },
-      { href: '/buyers', label: 'Buyers', icon: <Users /> },
-      { href: '/team', label: 'Team', icon: <UserCog /> },
-      { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded /> },
+      { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Editor'] },
+      { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent', 'Editor'] },
+      { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent', 'Editor'] },
+      { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+      { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent', 'Editor'] },
   ];
 
 
@@ -83,7 +85,7 @@ export function AppSidebar() {
     return (
       <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-card/80 backdrop-blur-md">
         <div className="grid h-16 grid-cols-5">
-          {mobileNavItems.map((item) => (
+          {mobileNavItems.filter(item => item.roles.includes(profile.role)).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -227,7 +229,7 @@ export function AppSidebar() {
                 </CollapsibleContent>
              </Collapsible>
 
-            {menuItems.map((item) => (
+            {menuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
               <SidebarMenuItem key={item.href} className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -254,7 +256,7 @@ export function AppSidebar() {
 
         <SidebarFooter>
           <SidebarMenu>
-            {bottomMenuItems.map((item) => (
+            {bottomMenuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
                <SidebarMenuItem key={item.href} className="relative">
                  <Tooltip>
                    <TooltipTrigger asChild>

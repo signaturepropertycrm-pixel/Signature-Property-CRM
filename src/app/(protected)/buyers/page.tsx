@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
+import { useProfile } from '@/context/profile-context';
 
 
 const statusVariant = {
@@ -66,6 +67,7 @@ function BuyersPageContent() {
     const isMobile = useIsMobile();
     const router = useRouter();
     const pathname = usePathname();
+    const { profile } = useProfile();
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
     const { toast } = useToast();
@@ -635,7 +637,7 @@ function BuyersPageContent() {
         </div>
       </div>
 
-      {pathname.startsWith('/buyers') && (
+      {pathname.startsWith('/buyers') && (profile.role === 'Admin' || profile.role === 'Editor') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
            <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />

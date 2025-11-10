@@ -1,5 +1,6 @@
 
 
+
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
@@ -213,7 +214,7 @@ export const teamMembers: User[] = [
         id: '4',
         name: 'Sana Javed',
         email: 'sana.javed@signaturecrm.test',
-        role: 'Viewer',
+        role: 'Editor',
     }
 ];
 
