@@ -35,10 +35,10 @@ import {
   PlusCircle,
   CalendarPlus,
 } from 'lucide-react';
-import { properties as initialProperties } from '@/lib/data';
+import { properties as initialProperties, appointments as initialAppointments } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment } from '@/lib/types';
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -252,6 +252,11 @@ function PropertiesPageContent() {
     setIsAppointmentOpen(true);
   };
   
+  const handleSaveAppointment = (appointment: Appointment) => {
+    const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    localStorage.setItem('appointments', JSON.stringify([appointment, ...savedAppointments]));
+  };
+
   const handleUnmarkRecorded = (prop: Property) => {
     setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
   };
@@ -654,7 +659,7 @@ function PropertiesPageContent() {
         <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
             setIsOpen={setIsAppointmentOpen}
-            onSave={() => {}}
+            onSave={handleSaveAppointment}
             appointmentDetails={appointmentDetails}
         />
       )}

@@ -3,22 +3,37 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { appointments } from '@/lib/data';
+import { appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 
 
 export default function AppointmentsPage() {
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(appointments);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
+
+  useEffect(() => {
+    const savedAppointments = localStorage.getItem('appointments');
+    if (savedAppointments) {
+        setAppointmentsData(JSON.parse(savedAppointments));
+    } else {
+        setAppointmentsData(initialAppointments);
+    }
+  }, []);
+
+  useEffect(() => {
+    if(appointmentsData.length > 0) {
+        localStorage.setItem('appointments', JSON.stringify(appointmentsData));
+    }
+  }, [appointmentsData]);
 
 
   const handleSaveAppointment = (appointment: Appointment) => {

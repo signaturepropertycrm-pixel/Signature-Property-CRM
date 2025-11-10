@@ -4,13 +4,13 @@ import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps } from '@/lib/data';
+import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps, appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, FollowUp } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, FollowUp, Appointment } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -141,6 +141,11 @@ function BuyersPageContent() {
             message: `Regarding buyer's interest in ${buyer.area_preference || 'general properties'}.`, 
         });
         setIsAppointmentOpen(true);
+    };
+
+    const handleSaveAppointment = (appointment: Appointment) => {
+        const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+        localStorage.setItem('appointments', JSON.stringify([appointment, ...savedAppointments]));
     };
     
     const handleDelete = (buyerId: string) => {
@@ -661,7 +666,7 @@ function BuyersPageContent() {
             <SetAppointmentDialog 
                 isOpen={isAppointmentOpen}
                 setIsOpen={setIsAppointmentOpen}
-                onSave={() => {}}
+                onSave={handleSaveAppointment}
                 appointmentDetails={appointmentDetails}
             />
         )}
