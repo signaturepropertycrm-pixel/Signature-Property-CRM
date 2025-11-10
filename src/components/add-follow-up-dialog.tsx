@@ -17,19 +17,27 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Buyer } from '@/lib/types';
 import { useEffect } from 'react';
+import { Input } from './ui/input';
 
 interface AddFollowUpDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   buyer: Buyer;
-  onSave: (buyerId: string, notes: string) => void;
+  onSave: (buyerId: string, notes: string, nextReminder: string) => void;
 }
 
 const formSchema = z.object({
   notes: z.string().min(1, 'Follow-up notes are required.'),
+  nextReminder: z.string().optional(),
 });
 
 type FollowUpFormValues = z.infer<typeof formSchema>;
+
+const getDefaultDate = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 3);
+    return date.toISOString().split('T')[0];
+}
 
 export function AddFollowUpDialog({
   isOpen,
@@ -41,17 +49,18 @@ export function AddFollowUpDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
         notes: buyer.last_follow_up_note || '',
+        nextReminder: getDefaultDate()
     }
   });
 
   useEffect(() => {
     if (buyer) {
-        form.reset({ notes: buyer.last_follow_up_note || '' });
+        form.reset({ notes: buyer.last_follow_up_note || '', nextReminder: getDefaultDate() });
     }
   }, [buyer, form]);
 
   const onSubmit = (data: FollowUpFormValues) => {
-    onSave(buyer.id, data.notes);
+    onSave(buyer.id, data.notes, data.nextReminder || getDefaultDate());
     form.reset();
   };
 
@@ -79,6 +88,19 @@ export function AddFollowUpDialog({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="nextReminder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Next Reminder Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
                 Cancel
@@ -91,5 +113,3 @@ export function AddFollowUpDialog({
     </Dialog>
   );
 }
-
-    

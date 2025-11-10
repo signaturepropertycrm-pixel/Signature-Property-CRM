@@ -176,7 +176,7 @@ function BuyersPageContent() {
         }
     };
     
-     const handleSaveFollowUp = (buyerId: string, notes: string) => {
+     const handleSaveFollowUp = (buyerId: string, notes: string, nextReminder: string) => {
         const buyer = buyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
@@ -186,7 +186,7 @@ function BuyersPageContent() {
             buyerName: buyer.name,
             propertyInterest: buyer.area_preference || 'General',
             lastContactDate: new Date().toISOString(),
-            nextReminder: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), // default 3 days
+            nextReminder: nextReminder,
             status: 'Scheduled',
             notes: notes,
         };
@@ -683,5 +683,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
