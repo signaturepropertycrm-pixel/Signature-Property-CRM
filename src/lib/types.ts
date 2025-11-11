@@ -1,8 +1,3 @@
-
-
-
-
-
 export type UserRole = 'Admin' | 'Agent' | 'Editor';
 
 export type User = {

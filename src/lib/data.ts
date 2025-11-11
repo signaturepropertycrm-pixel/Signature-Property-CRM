@@ -1,7 +1,3 @@
-
-
-
-
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
