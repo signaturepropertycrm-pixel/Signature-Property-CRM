@@ -1,3 +1,4 @@
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,7 @@ function BuyersPageContent() {
         if (!buyer) return;
 
         const newFollowUp: FollowUp = {
-            id: `FU-${followUps.length + 1}`,
+            id: `FU-${Date.now()}`,
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
@@ -212,7 +213,10 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        setFollowUps(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
+        const updatedFollowUps = [...followUps.filter(fu => fu.buyerId !== buyerId), newFollowUp];
+        setFollowUps(updatedFollowUps);
+        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+
         setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
         toast({
@@ -713,3 +717,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
