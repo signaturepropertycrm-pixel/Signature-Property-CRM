@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Sun, User, MessageSquare } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
@@ -83,7 +83,10 @@ export function AppHeader({
                 Profile
             </DropdownMenuItem>
             {profile.role === 'Admin' && (
-              <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
+                  <Settings />
+                  Settings
+              </DropdownMenuItem>
             )}
             {profile.role === 'Admin' && (
               <DropdownMenuItem onClick={() => router.push('/support')}>
