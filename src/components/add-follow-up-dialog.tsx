@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -33,9 +32,26 @@ interface AddFollowUpDialogProps {
 }
 
 const formSchema = z.object({
-  notes: z.string().min(1, 'Follow-up notes are required.'),
+  notes: z.string().optional(),
   nextReminder: z.string().optional(),
   status: z.custom<BuyerStatus>().optional(),
+}).refine(data => {
+    if (data.status === 'Follow Up') {
+        return !!data.notes && data.notes.length > 0;
+    }
+    return true;
+}, {
+    message: "Follow-up notes are required.",
+    path: ['notes']
+}).refine(data => {
+    if (data.status === 'Follow Up') {
+        return !!data.nextReminder;
+    }
+    return true;
+},
+{
+    message: "Reminder date is required.",
+    path: ['nextReminder']
 });
 
 type FollowUpFormValues = z.infer<typeof formSchema>;
@@ -51,7 +67,7 @@ export function AddFollowUpDialog({
   setIsOpen,
   buyer,
   onSave,
-  title = "Schedule Follow-up",
+  title = "Update Status & Follow-up",
   description,
   isStatusUpdateMode = false
 }: AddFollowUpDialogProps) {
@@ -75,19 +91,22 @@ export function AddFollowUpDialog({
 
   const onSubmit = (data: FollowUpFormValues) => {
     if (data.status === 'Follow Up') {
-        onSave(buyer.id, data.notes, data.nextReminder || getDefaultDate());
+        if (!data.notes || !data.nextReminder) return; // Should be caught by zod, but for safety
+        onSave(buyer.id, data.notes, data.nextReminder);
     } else {
         // Just update the status if it's not 'Follow Up'
         const savedBuyers = JSON.parse(localStorage.getItem('buyers') || '[]');
         const updatedBuyers = savedBuyers.map((b: Buyer) => 
-            b.id === buyer.id ? { ...b, status: data.status, last_follow_up_note: data.notes } : b
+            b.id === buyer.id ? { ...b, status: data.status, last_follow_up_note: data.notes || '' } : b
         );
         localStorage.setItem('buyers', JSON.stringify(updatedBuyers));
         
         // Remove from follow-ups if status changes from 'Follow Up'
         const savedFollowUps = JSON.parse(localStorage.getItem('followUps') || '[]');
-        const updatedFollowUps = savedFollowUps.filter((fu: any) => fu.buyerId !== buyer.id);
-        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+        if (buyer.status === 'Follow Up') {
+            const updatedFollowUps = savedFollowUps.filter((fu: any) => fu.buyerId !== buyer.id);
+            localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+        }
 
         toast({
             title: "Buyer Status Updated",
@@ -107,7 +126,7 @@ export function AddFollowUpDialog({
         <DialogHeader>
           <DialogTitle className="font-headline">{title}</DialogTitle>
           <DialogDescription>
-            {description || `Add notes for following up with ${buyer.name}.`}
+            {description || `Update status or schedule a new follow-up for ${buyer.name}.`}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
