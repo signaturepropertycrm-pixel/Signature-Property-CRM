@@ -16,12 +16,12 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 export default function FollowUpsPage() {
   const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
   const [buyersData, setBuyersData] = useState<Buyer[]>([]);
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(initialAppointments);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
 
@@ -133,7 +133,7 @@ export default function FollowUpsPage() {
         if (!buyer) return;
 
         const newFollowUp: FollowUp = {
-            id: `FU-${followUpsData.length + 1}`,
+            id: `FU-${Date.now()}`,
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
@@ -226,3 +226,5 @@ export default function FollowUpsPage() {
     </>
   );
 }
+
+    
