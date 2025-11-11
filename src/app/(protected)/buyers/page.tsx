@@ -37,7 +37,8 @@ const statusVariant = {
     'Visited Property': 'secondary',
     'Deal Closed': 'default',
     'Hot Lead': 'default',
-    'Cold Lead': 'secondary'
+    'Cold Lead': 'secondary',
+    'Investor': 'default',
 } as const;
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
@@ -292,12 +293,6 @@ function BuyersPageContent() {
                             <div className="font-medium">{buyer.name}</div>
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                {buyer.buyer_type && (
-                                    <Badge variant="secondary" className="flex items-center gap-1">
-                                        <UserCheck className="h-3 w-3" />
-                                        {buyer.buyer_type}
-                                    </Badge>
-                                )}
                                 <span>{buyer.phone}</span>
                             </div>
                         </TableCell>
@@ -315,12 +310,13 @@ function BuyersPageContent() {
                         </TableCell>
                         <TableCell>
                             <Badge 
-                                variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
+                                variant={statusVariant[buyer.status]} 
                                 className={
                                     buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                                     buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                                     buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : 
+                                    buyer.status === 'Investor' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
                                 }
                             >
                                 {buyer.status}
@@ -389,21 +385,16 @@ function BuyersPageContent() {
                                 <span className="font-medium text-lg">{buyer.name}</span>
                                 <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                    {buyer.buyer_type && (
-                                        <Badge variant="secondary" className="flex items-center gap-1">
-                                            <UserCheck className="h-3 w-3" />
-                                            {buyer.buyer_type}
-                                        </Badge>
-                                    )}
                                 </div>
                             </div>
                            <Badge 
-                                variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
+                                variant={statusVariant[buyer.status]} 
                                 className={
                                     `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                                     buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                                     buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
+                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' :
+                                    buyer.status === 'Investor' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`
                                 }
                             >
                                 {buyer.status}
@@ -702,5 +693,7 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
 
     

@@ -69,9 +69,9 @@ export type BuyerStatus =
   | 'Visited Property'
   | 'Deal Closed'
   | 'Hot Lead'
-  | 'Cold Lead';
+  | 'Cold Lead'
+  | 'Investor';
 
-export type BuyerType = 'End User' | 'Investor';
 
 export type Buyer = {
     id: string;
@@ -80,7 +80,6 @@ export type Buyer = {
     phone: string;
     email?: string;
     status: BuyerStatus;
-    buyer_type?: BuyerType;
     area_preference?: string;
     property_type_preference?: PropertyType;
     budget_min_amount?: number;
@@ -127,3 +126,5 @@ export type Appointment = {
     status: AppointmentStatus;
     notes?: string;
 }
+
+    

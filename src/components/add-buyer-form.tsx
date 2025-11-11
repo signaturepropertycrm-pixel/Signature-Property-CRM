@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -23,16 +24,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
-import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit, BuyerType } from '@/lib/types';
+import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
+import { buyerStatuses } from '@/lib/data';
 
-const buyerStatuses: BuyerStatus[] = [
-    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
-    'Pending Response', 'Need More Info', 'Visited Property',
-    'Deal Closed', 'Hot Lead', 'Cold Lead'
-];
-const buyerTypes: BuyerType[] = ['End User', 'Investor'];
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
@@ -45,7 +41,6 @@ const formSchema = z.object({
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(buyerStatuses).default('New'),
-  buyer_type: z.enum(buyerTypes).default('End User'),
   area_preference: z.string().optional(),
   property_type_preference: z.string().optional(),
   size_min_value: z.coerce.number().optional(),
@@ -87,7 +82,6 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
             size_max_value: buyerToEdit.size_max_value,
             budget_min_amount: buyerToEdit.budget_min_amount,
             budget_max_amount: buyerToEdit.budget_max_amount,
-            buyer_type: buyerToEdit.buyer_type || 'End User',
         };
     }
     return {
@@ -99,7 +93,6 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         property_type_preference: '',
         notes: '',
         status: 'New',
-        buyer_type: 'End User',
         serial_no: `B-${totalBuyers + 1}`,
         size_min_unit: 'Marla',
         size_max_unit: 'Marla',
@@ -210,26 +203,6 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         <FormControl>
                             <Input type="email" {...field} placeholder="buyer@example.com" />
                         </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField
-                    control={form.control}
-                    name="buyer_type"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Buyer Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {buyerTypes.map(type => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -369,3 +342,5 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
     </Form>
   );
 }
+
+    
