@@ -1,3 +1,4 @@
+
 export type UserRole = 'Admin' | 'Agent' | 'Editor';
 
 export type User = {
@@ -69,8 +70,7 @@ export type BuyerStatus =
   | 'Visited Property'
   | 'Deal Closed'
   | 'Hot Lead'
-  | 'Cold Lead'
-  | 'Investor';
+  | 'Cold Lead';
 
 
 export type Buyer = {
@@ -80,6 +80,7 @@ export type Buyer = {
     phone: string;
     email?: string;
     status: BuyerStatus;
+    is_investor?: boolean;
     area_preference?: string;
     property_type_preference?: PropertyType;
     budget_min_amount?: number;

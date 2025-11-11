@@ -28,6 +28,7 @@ import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/li
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { buyerStatuses } from '@/lib/data';
+import { Checkbox } from './ui/checkbox';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
@@ -41,6 +42,7 @@ const formSchema = z.object({
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(buyerStatuses).default('New'),
+  is_investor: z.boolean().optional().default(false),
   area_preference: z.string().optional(),
   property_type_preference: z.string().optional(),
   size_min_value: z.coerce.number().optional(),
@@ -82,6 +84,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
             size_max_value: buyerToEdit.size_max_value,
             budget_min_amount: buyerToEdit.budget_min_amount,
             budget_max_amount: buyerToEdit.budget_max_amount,
+            is_investor: buyerToEdit.is_investor || false,
         };
     }
     return {
@@ -93,6 +96,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         property_type_preference: '',
         notes: '',
         status: 'New',
+        is_investor: false,
         serial_no: `B-${totalBuyers + 1}`,
         size_min_unit: 'Marla',
         size_max_unit: 'Marla',
@@ -297,26 +301,47 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Status & Notes</h4>
 
-                <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                        {buyerStatuses.map(status => (
-                            <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {buyerStatuses.map(status => (
+                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="is_investor"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-start space-x-3 space-y-0 rounded-md border p-3 shadow-sm h-10 mt-8 bg-background">
+                            <FormControl>
+                                <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                Mark as Investor
+                                </FormLabel>
+                            </div>
+                            </FormItem>
+                        )}
+                    />
+                </div>
                 <FormField
                 control={form.control}
                 name="notes"

@@ -38,7 +38,6 @@ const statusVariant = {
     'Deal Closed': 'default',
     'Hot Lead': 'default',
     'Cold Lead': 'secondary',
-    'Investor': 'default',
 } as const;
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
@@ -309,18 +308,22 @@ function BuyersPageContent() {
                             </div>
                         </TableCell>
                         <TableCell>
-                            <Badge 
-                                variant={statusVariant[buyer.status]} 
-                                className={
-                                    buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : 
-                                    buyer.status === 'Investor' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''
-                                }
-                            >
-                                {buyer.status}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                                <Badge 
+                                    variant={statusVariant[buyer.status]} 
+                                    className={
+                                        buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
+                                    }
+                                >
+                                    {buyer.status}
+                                </Badge>
+                                {buyer.is_investor && (
+                                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
+                                )}
+                            </div>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
                                 <DropdownMenu>
@@ -387,18 +390,22 @@ function BuyersPageContent() {
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                 </div>
                             </div>
-                           <Badge 
-                                variant={statusVariant[buyer.status]} 
-                                className={
-                                    `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                    buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                    buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                    buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' :
-                                    buyer.status === 'Investor' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`
-                                }
-                            >
-                                {buyer.status}
-                            </Badge>
+                           <div className="flex flex-col items-end gap-2">
+                                <Badge 
+                                    variant={statusVariant[buyer.status]} 
+                                    className={
+                                        `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
+                                    }
+                                >
+                                    {buyer.status}
+                                </Badge>
+                                {buyer.is_investor && (
+                                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
+                                )}
+                           </div>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">

@@ -102,7 +102,7 @@ export const properties: Property[] = [
 export const buyerStatuses: BuyerStatus[] = [
     'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
     'Pending Response', 'Need More Info', 'Visited Property',
-    'Deal Closed', 'Hot Lead', 'Cold Lead', 'Investor'
+    'Deal Closed', 'Hot Lead', 'Cold Lead'
 ];
 
 
@@ -114,7 +114,8 @@ export const buyers: Buyer[] = [
         phone: '+92 301 2345678',
         area_preference: 'DHA, Gulberg',
         property_type_preference: 'House',
-        status: 'Investor',
+        status: 'Hot Lead',
+        is_investor: true,
         budget_min_amount: 2,
         budget_min_unit: 'Crore',
         budget_max_amount: 2.5,
@@ -133,6 +134,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Bahria Town',
         property_type_preference: 'Flat',
         status: 'Follow Up',
+        is_investor: false,
         budget_min_amount: 90,
         budget_min_unit: 'Lacs',
         budget_max_amount: 1.2,
@@ -148,6 +150,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Johar Town',
         property_type_preference: 'Commercial',
         status: 'New',
+        is_investor: true,
         budget_min_amount: 10,
         budget_min_unit: 'Crore',
         budget_max_amount: 15,
@@ -162,6 +165,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Harbanspura',
         property_type_preference: 'House',
         status: 'Not Interested',
+        is_investor: false,
         budget_min_amount: 70,
         budget_min_unit: 'Lacs',
         budget_max_amount: 90,

@@ -14,7 +14,7 @@ import { Buyer, PriceUnit, SizeUnit } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, Bookmark, CalendarDays } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 
@@ -96,17 +96,22 @@ export function BuyerDetailsDialog({
                     </div>
                 </DialogDescription>
               </div>
-               <Badge 
-                    variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
-                    className={
-                        `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
-                    }
-                >
-                    {buyer.status}
-                </Badge>
+               <div className="flex items-center gap-2">
+                {buyer.is_investor && (
+                    <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
+                )}
+                <Badge 
+                        variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
+                        className={
+                            `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                            buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                            buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
+                            buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
+                        }
+                    >
+                        {buyer.status}
+                    </Badge>
+               </div>
             </div>
           </DialogHeader>
           <ScrollArea className="max-h-[65vh] pr-6">
