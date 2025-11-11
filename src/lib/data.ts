@@ -1,6 +1,7 @@
 
 
 
+
 import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus } from './types';
 
 export const properties: Property[] = [
@@ -118,6 +119,7 @@ export const buyers: Buyer[] = [
         area_preference: 'DHA, Gulberg',
         property_type_preference: 'House',
         status: 'Hot Lead',
+        buyer_type: 'Investor',
         budget_min_amount: 2,
         budget_min_unit: 'Crore',
         budget_max_amount: 2.5,
@@ -136,6 +138,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Bahria Town',
         property_type_preference: 'Flat',
         status: 'Follow Up',
+        buyer_type: 'End User',
         budget_min_amount: 90,
         budget_min_unit: 'Lacs',
         budget_max_amount: 1.2,
@@ -151,6 +154,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Johar Town',
         property_type_preference: 'Commercial',
         status: 'New',
+        buyer_type: 'Investor',
         budget_min_amount: 10,
         budget_min_unit: 'Crore',
         budget_max_amount: 15,
@@ -165,6 +169,7 @@ export const buyers: Buyer[] = [
         area_preference: 'Harbanspura',
         property_type_preference: 'House',
         status: 'Not Interested',
+        buyer_type: 'End User',
         budget_min_amount: 70,
         budget_min_unit: 'Lacs',
         budget_max_amount: 90,

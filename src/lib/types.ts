@@ -2,6 +2,7 @@
 
 
 
+
 export type UserRole = 'Admin' | 'Agent' | 'Editor';
 
 export type User = {
@@ -75,6 +76,8 @@ export type BuyerStatus =
   | 'Hot Lead'
   | 'Cold Lead';
 
+export type BuyerType = 'End User' | 'Investor';
+
 export type Buyer = {
     id: string;
     serial_no: string;
@@ -82,6 +85,7 @@ export type Buyer = {
     phone: string;
     email?: string;
     status: BuyerStatus;
+    buyer_type?: BuyerType;
     area_preference?: string;
     property_type_preference?: PropertyType;
     budget_min_amount?: number;
