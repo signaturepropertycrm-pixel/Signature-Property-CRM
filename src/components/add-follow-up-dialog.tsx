@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Buyer, BuyerStatus } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Input } from './ui/input';
 import { buyerStatuses } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -26,9 +26,6 @@ interface AddFollowUpDialogProps {
   setIsOpen: (open: boolean) => void;
   buyer: Buyer;
   onSave: (buyerId: string, notes: string, nextReminder: string) => void;
-  title?: string;
-  description?: string;
-  isStatusUpdateMode?: boolean;
 }
 
 const formSchema = z.object({
@@ -67,9 +64,6 @@ export function AddFollowUpDialog({
   setIsOpen,
   buyer,
   onSave,
-  title = "Update Status & Follow-up",
-  description,
-  isStatusUpdateMode = false
 }: AddFollowUpDialogProps) {
   const { toast } = useToast();
   const form = useForm<FollowUpFormValues>({
@@ -85,9 +79,13 @@ export function AddFollowUpDialog({
 
   useEffect(() => {
     if (buyer) {
-        form.reset({ notes: buyer.last_follow_up_note || '', nextReminder: getDefaultDate(), status: buyer.status });
+        form.reset({ 
+            notes: buyer.last_follow_up_note || '', 
+            nextReminder: getDefaultDate(), 
+            status: buyer.status 
+        });
     }
-  }, [buyer, form]);
+  }, [buyer, form, isOpen]);
 
   const onSubmit = (data: FollowUpFormValues) => {
     if (data.status === 'Follow Up') {
@@ -95,6 +93,7 @@ export function AddFollowUpDialog({
         onSave(buyer.id, data.notes, data.nextReminder);
     } else {
         // Just update the status if it's not 'Follow Up'
+        // This will trigger the 'storage' event listener on other pages
         const savedBuyers = JSON.parse(localStorage.getItem('buyers') || '[]');
         const updatedBuyers = savedBuyers.map((b: Buyer) => 
             b.id === buyer.id ? { ...b, status: data.status, last_follow_up_note: data.notes || '' } : b
@@ -102,8 +101,8 @@ export function AddFollowUpDialog({
         localStorage.setItem('buyers', JSON.stringify(updatedBuyers));
         
         // Remove from follow-ups if status changes from 'Follow Up'
-        const savedFollowUps = JSON.parse(localStorage.getItem('followUps') || '[]');
         if (buyer.status === 'Follow Up') {
+            const savedFollowUps = JSON.parse(localStorage.getItem('followUps') || '[]');
             const updatedFollowUps = savedFollowUps.filter((fu: any) => fu.buyerId !== buyer.id);
             localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
         }
@@ -112,47 +111,45 @@ export function AddFollowUpDialog({
             title: "Buyer Status Updated",
             description: `${buyer.name}'s status has been changed to ${data.status}.`
         });
-
-        // This is a bit of a hack to force a re-render on the follow-ups page
+        
+        // Dispatch a storage event to trigger re-renders on other pages
         window.dispatchEvent(new Event('storage'));
     }
     setIsOpen(false);
-    form.reset();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-headline">{title}</DialogTitle>
+          <DialogTitle className="font-headline">Update Status & Follow-up</DialogTitle>
           <DialogDescription>
-            {description || `Update status or schedule a new follow-up for ${buyer.name}.`}
+            {`Update status or schedule a new follow-up for ${buyer.name}.`}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-             {isStatusUpdateMode && (
-                <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Update Status</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {buyerStatuses.map(status => (
-                                        <SelectItem key={status} value={status}>{status}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            )}
+            
+            <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Update Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {buyerStatuses.map(status => (
+                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
             
             {(watchedStatus === 'Follow Up') && (
               <>

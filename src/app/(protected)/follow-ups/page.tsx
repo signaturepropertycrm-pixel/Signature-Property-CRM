@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { FollowUp, Buyer, Appointment, AppointmentContactType } from '@/lib/types';
+import { FollowUp, Buyer, Appointment, AppointmentContactType, BuyerStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { AddFollowUpDialog } from '@/components/add-follow-up-dialog'; // Re-using for status change
+import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 
 
 export default function FollowUpsPage() {
@@ -18,22 +18,29 @@ export default function FollowUpsPage() {
   const [buyersData, setBuyersData] = useState<Buyer[]>([]);
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(initialAppointments);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
-  const [buyerForStatusUpdate, setBuyerForStatusUpdate] = useState<Buyer | null>(null);
+  const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const loadData = () => {
     const savedFollowUps = localStorage.getItem('followUps');
-    if (savedFollowUps) setFollowUpsData(JSON.parse(savedFollowUps)); else setFollowUpsData(initialFollowUps);
+    setFollowUpsData(savedFollowUps ? JSON.parse(savedFollowUps) : initialFollowUps);
     
     const savedBuyers = localStorage.getItem('buyers');
-    if (savedBuyers) setBuyersData(JSON.parse(savedBuyers)); else setBuyersData(initialBuyers);
+    setBuyersData(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
 
     const savedAppointments = localStorage.getItem('appointments');
-    if (savedAppointments) setAppointmentsData(JSON.parse(savedAppointments)); else setAppointmentsData(initialAppointments);
+    setAppointmentsData(savedAppointments ? JSON.parse(savedAppointments) : initialAppointments);
+  };
+  
+  useEffect(() => {
+    loadData();
+    const handleStorageChange = () => loadData();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   useEffect(() => {
@@ -41,7 +48,8 @@ export default function FollowUpsPage() {
   }, [buyersData]);
 
   useEffect(() => {
-      if (followUpsData.length > 0) localStorage.setItem('followUps', JSON.stringify(followUpsData));
+      // Allow saving an empty array to clear follow-ups
+      localStorage.setItem('followUps', JSON.stringify(followUpsData));
   }, [followUpsData]);
 
   useEffect(() => {
@@ -115,8 +123,8 @@ export default function FollowUpsPage() {
       e.stopPropagation();
       const buyer = buyersData.find(b => b.id === followUp.buyerId);
       if (buyer) {
-          setBuyerForStatusUpdate(buyer);
-          setIsStatusUpdateOpen(true);
+          setBuyerForFollowUp(buyer);
+          setIsFollowUpOpen(true);
       }
   };
 
@@ -144,8 +152,8 @@ export default function FollowUpsPage() {
             description: `A follow-up has been created for ${buyer.name}.`
         });
 
-        setIsStatusUpdateOpen(false);
-        setBuyerForStatusUpdate(null);
+        setIsFollowUpOpen(false);
+        setBuyerForFollowUp(null);
   };
 
 
@@ -207,15 +215,12 @@ export default function FollowUpsPage() {
               appointmentDetails={appointmentDetails}
           />
       )}
-      {buyerForStatusUpdate && (
+      {buyerForFollowUp && (
           <AddFollowUpDialog
-              isOpen={isStatusUpdateOpen}
-              setIsOpen={setIsStatusUpdateOpen}
-              buyer={buyerForStatusUpdate}
+              isOpen={isFollowUpOpen}
+              setIsOpen={setIsFollowUpOpen}
+              buyer={buyerForFollowUp}
               onSave={handleSaveFollowUp}
-              title="Update Status & Follow-up"
-              description={`Update status or schedule a new follow-up for ${buyerForStatusUpdate.name}.`}
-              isStatusUpdateMode={true}
           />
       )}
     </>

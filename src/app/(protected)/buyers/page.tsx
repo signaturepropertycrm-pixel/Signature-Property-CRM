@@ -1,4 +1,3 @@
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -77,8 +76,8 @@ function BuyersPageContent() {
 
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
-    const [buyers, setBuyers] = useState<Buyer[]>(initialBuyers);
-    const [followUps, setFollowUps] = useState<FollowUp[]>(initialFollowUps);
+    const [buyers, setBuyers] = useState<Buyer[]>([]);
+    const [followUps, setFollowUps] = useState<FollowUp[]>([]);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -90,12 +89,21 @@ function BuyersPageContent() {
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
 
-    useEffect(() => {
+    const loadData = () => {
         const savedBuyers = localStorage.getItem('buyers');
-        if (savedBuyers) setBuyers(JSON.parse(savedBuyers)); else setBuyers(initialBuyers);
+        setBuyers(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
 
         const savedFollowUps = localStorage.getItem('followUps');
-        if (savedFollowUps) setFollowUps(JSON.parse(savedFollowUps)); else setFollowUps(initialFollowUps);
+        setFollowUps(savedFollowUps ? JSON.parse(savedFollowUps) : initialFollowUps);
+    };
+
+    useEffect(() => {
+        loadData();
+        
+        const handleStorageChange = () => loadData();
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     useEffect(() => {
@@ -168,18 +176,23 @@ function BuyersPageContent() {
     };
 
     const handleStatusChange = (buyerId: string, newStatus: BuyerStatus) => {
-         if (newStatus === 'Follow Up') {
-            const buyerToUpdate = buyers.find(b => b.id === buyerId);
-            if (buyerToUpdate) {
-                setBuyerForFollowUp(buyerToUpdate);
-                setIsFollowUpOpen(true);
-            }
+        const buyerToUpdate = buyers.find(b => b.id === buyerId);
+        if (!buyerToUpdate) return;
+        
+        if (newStatus === 'Follow Up') {
+            setBuyerForFollowUp(buyerToUpdate);
+            setIsFollowUpOpen(true);
         } else {
-            setBuyers(prevBuyers => 
-                prevBuyers.map(buyer => 
-                    buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
-                )
+            const updatedBuyers = buyers.map(buyer => 
+                buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
             );
+            setBuyers(updatedBuyers);
+
+            // If status changed from 'Follow Up', remove from followUps
+            if (buyerToUpdate.status === 'Follow Up') {
+                const updatedFollowUps = followUps.filter(fu => fu.buyerId !== buyerId);
+                setFollowUps(updatedFollowUps);
+            }
         }
     };
     
@@ -199,7 +212,7 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        setFollowUps(prev => [...prev, newFollowUp]);
+        setFollowUps(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
         setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
         toast({
@@ -700,7 +713,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
-
-    
