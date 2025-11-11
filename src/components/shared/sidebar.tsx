@@ -266,15 +266,12 @@ export function AppSidebar() {
                                  </Link>
                              </SidebarMenuItem>
                              <SidebarMenuItem>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                         <SidebarMenuButton size="sm" disabled className="w-full justify-between rounded-full text-xs cursor-not-allowed">
-                                             Post Generator
-                                             <Badge variant="destructive" className="scale-75">Coming Soon</Badge>
-                                         </SidebarMenuButton>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="right" align="center">This feature is under development.</TooltipContent>
-                                </Tooltip>
+                                <Link href="/tools/post-generator">
+                                    <SidebarMenuButton size="sm" isActive={pathname === '/tools/post-generator'} className="w-full justify-between rounded-full text-xs">
+                                        Post Generator
+                                        <Badge variant="destructive" className="scale-75">Coming Soon</Badge>
+                                    </SidebarMenuButton>
+                                </Link>
                              </SidebarMenuItem>
                         </SidebarMenu>
                     </div>
