@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps, appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -290,8 +290,14 @@ function BuyersPageContent() {
                     <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
                         <TableCell>
                             <div className="font-medium">{buyer.name}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                {buyer.buyer_type && (
+                                    <Badge variant="secondary" className="flex items-center gap-1">
+                                        <UserCheck className="h-3 w-3" />
+                                        {buyer.buyer_type}
+                                    </Badge>
+                                )}
                                 <span>{buyer.phone}</span>
                             </div>
                         </TableCell>
@@ -381,9 +387,14 @@ function BuyersPageContent() {
                         <CardTitle className="flex justify-between items-start">
                             <div>
                                 <span className="font-medium text-lg">{buyer.name}</span>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                                <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                    <span>{buyer.phone}</span>
+                                    {buyer.buyer_type && (
+                                        <Badge variant="secondary" className="flex items-center gap-1">
+                                            <UserCheck className="h-3 w-3" />
+                                            {buyer.buyer_type}
+                                        </Badge>
+                                    )}
                                 </div>
                             </div>
                            <Badge 
@@ -691,3 +702,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
