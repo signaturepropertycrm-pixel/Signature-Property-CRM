@@ -29,6 +29,7 @@ import {
   Trash2,
   MessageSquare,
   ClipboardList,
+  Badge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -43,7 +44,6 @@ import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 
 const menuItems = [
-  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Agent', 'Editor'] },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent', 'Editor'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent', 'Editor'] },
@@ -75,6 +75,8 @@ export function AppSidebar() {
   const { profile } = useProfile();
   const [isBuyersOpen, setIsBuyersOpen] = useState(pathname.startsWith('/buyers'));
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(pathname.startsWith('/properties'));
+  const [isToolsOpen, setIsToolsOpen] = useState(pathname.startsWith('/tools'));
+
 
   const mobileNavItems = [
       { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Editor'] },
@@ -228,6 +230,52 @@ export function AppSidebar() {
                                      </SidebarMenuItem>
                                 );
                             })}
+                        </SidebarMenu>
+                    </div>
+                </CollapsibleContent>
+             </Collapsible>
+             
+              {/* Tools Collapsible Menu */}
+             <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen}>
+                 <SidebarMenuItem className="relative">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <CollapsibleTrigger asChild>
+                                 <SidebarMenuButton
+                                    isActive={pathname.startsWith('/tools')}
+                                    className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                                >
+                                    <ClipboardList/>
+                                    <span className="flex-1 truncate">Tools</span>
+                                    <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isToolsOpen && "rotate-180")} />
+                                </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" align="center">Tools</TooltipContent>
+                    </Tooltip>
+                    {pathname.startsWith('/tools') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+                 </SidebarMenuItem>
+                <CollapsibleContent asChild>
+                    <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
+                        <SidebarMenu className="pl-7">
+                             <SidebarMenuItem>
+                                 <Link href="/tools">
+                                     <SidebarMenuButton size="sm" isActive={pathname === '/tools'} className="w-full justify-start rounded-full text-xs">
+                                         List Generator
+                                     </SidebarMenuButton>
+                                 </Link>
+                             </SidebarMenuItem>
+                             <SidebarMenuItem>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                         <SidebarMenuButton size="sm" disabled className="w-full justify-between rounded-full text-xs cursor-not-allowed">
+                                             Post Generator
+                                             <Badge variant="destructive" className="scale-75">Coming Soon</Badge>
+                                         </SidebarMenuButton>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" align="center">This feature is under development.</TooltipContent>
+                                </Tooltip>
+                             </SidebarMenuItem>
                         </SidebarMenu>
                     </div>
                 </CollapsibleContent>
