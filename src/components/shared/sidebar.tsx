@@ -52,7 +52,7 @@ const menuItems = [
 ];
 
 const bottomMenuItems = [
-  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent', 'Editor'] },
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
 ];

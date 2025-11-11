@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -81,11 +82,15 @@ export function AppHeader({
                 <User />
                 Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/support')}>
-                <MessageSquare />
-                Support
-            </DropdownMenuItem>
+            {profile.role === 'Admin' && (
+              <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+            )}
+            {profile.role === 'Admin' && (
+              <DropdownMenuItem onClick={() => router.push('/support')}>
+                  <MessageSquare />
+                  Support
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/login')}>
                 <LogOut />

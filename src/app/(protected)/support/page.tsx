@@ -16,24 +16,24 @@ import { SubmitTicketForm } from '@/components/submit-ticket-form';
 
 const faqs = [
   {
-    question: 'How do I add a new property?',
+    question: 'How do I manage team members?',
     answer:
-      "To add a new property, navigate to the 'Properties' page from the sidebar and click the 'Add Property' button. Fill in the required details in the form that appears and click 'Save Property'.",
+      "As an Admin, you can add, edit, or delete team members from the 'Team' page. You can also assign different roles (Admin, Editor, Agent) to control their access levels.",
   },
   {
-    question: 'How can I change my password?',
+    question: "How can I upgrade or change my subscription plan?",
     answer:
-      "You can change your password by going to the 'Settings' page. Under the 'Security' section, you'll find fields to enter your current and new passwords. Click 'Update Password' to save the changes.",
+      "You can view and change your subscription plan by navigating to the 'Upgrade Plan' page from the sidebar menu. Here you can compare all available plans and choose the one that best fits your agency's needs.",
   },
   {
-    question: 'What is the difference between an Agent and an Editor?',
+    question: 'Where can I see all system activities?',
     answer:
-      'An Agent can view all data like properties and buyers but cannot add new ones. An Editor has more permissions; they can add and edit properties and buyers, and also access the Activities and Trash pages.',
+      "The 'Activities' page provides a complete log of all major actions taken within the system, such as adding properties, updating buyer statuses, and more. This page is accessible to Admins and Editors.",
   },
   {
-    question: "I can't see the 'Team' or 'Settings' pages. Why?",
+    question: "How do I restore a deleted property or buyer?",
     answer:
-      "Access to 'Team' and 'Settings' pages is restricted to users with the 'Admin' role. If you need access, please contact your system administrator.",
+      "Deleted items are moved to the 'Trash' page. From there, you can either restore them to their original state or delete them permanently. Access to the Trash is available for Admins and Editors.",
   },
 ];
 
