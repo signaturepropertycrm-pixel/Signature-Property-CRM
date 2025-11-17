@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 const roleVariant = {
     Admin: 'default',
     Agent: 'secondary',
-    Viewer: 'outline',
+    Editor: 'outline',
 } as const;
 
 const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value: number, label: string }) => (

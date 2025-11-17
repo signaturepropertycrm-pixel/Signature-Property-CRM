@@ -35,7 +35,7 @@ const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: stri
 const roleVariant = {
     Admin: 'default',
     Agent: 'secondary',
-    Viewer: 'outline',
+    Editor: 'outline',
 } as const;
 
 export function TeamMemberDetailsDialog({
