@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Property } from '@/lib/types';
+import { Property, PropertyType } from '@/lib/types';
 import { useProfile } from '@/context/profile-context';
 import { useToast } from '@/hooks/use-toast';
 import { ClipboardCopy, ClipboardCheck, Settings, FileText, List, SlidersHorizontal, CheckSquare } from 'lucide-react';
@@ -48,9 +48,15 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
   const [selectedFields, setSelectedFields] = useState<SelectableField[]>([
     'serial_no',
     'area',
+    'address',
     'size',
     'demand',
     'property_type',
+    'status',
+    'road_size_ft',
+    'storey',
+    'utilities',
+    'documents'
   ]);
   const [areaFilter, setAreaFilter] = useState('');
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
@@ -105,60 +111,55 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
         return;
     }
 
-    const propertiesToInclude = allProperties
-      .filter(p => selectedProperties.includes(p.id))
-      .sort((a, b) => b.size_value - a.size_value); // Sort by size descending
+    const propertiesToInclude = allProperties.filter(p => selectedProperties.includes(p.id));
 
-    let listString = `*${profile.agencyName}*\n`;
-    listString += `*Date:* ${new Date().toLocaleDateString('en-GB')}\n\n`;
+    // Group properties by type
+    const groupedProperties = propertiesToInclude.reduce((acc, property) => {
+        const type = property.property_type.toUpperCase() as PropertyType | 'OTHER';
+        if (!acc[type]) {
+            acc[type] = [];
+        }
+        acc[type].push(property);
+        return acc;
+    }, {} as Record<string, Property[]>);
 
-    propertiesToInclude.forEach((p, index) => {
-      listString += `*${index + 1}).*\n`;
-      
-      if (selectedFields.includes('serial_no')) {
-          listString += `*Serial:* ${p.serial_no}\n`;
-      }
-      if (selectedFields.includes('property_type')) {
-        listString += `*Type:* ${p.property_type}\n`;
-      }
-      if (selectedFields.includes('size')) {
-        listString += `*Size:* ${p.size_value} ${p.size_unit}\n`;
-      }
-       if (selectedFields.includes('storey')) {
-        listString += `*Storey:* ${p.storey || 'N/A'}\n`;
-      }
-      if (selectedFields.includes('area')) {
-        listString += `*Area:* ${p.area}\n`;
-      }
-      if (selectedFields.includes('address')) {
-        listString += `*Address:* ${p.address}\n`;
-      }
-       if (selectedFields.includes('road_size_ft')) {
-        listString += `*Road:* ${p.road_size_ft ? `${p.road_size_ft} ft` : 'N/A'}\n`;
-      }
-      if (selectedFields.includes('demand')) {
-        listString += `*Demand:* ${p.demand_amount} ${p.demand_unit}\n`;
-      }
-      if (selectedFields.includes('status')) {
-        listString += `*Status:* ${p.status}\n`;
-      }
-      if (selectedFields.includes('utilities')) {
-        const utils = [
-            p.meters?.electricity && 'Electricity',
-            p.meters?.gas && 'Gas',
-            p.meters?.water && 'Water'
-        ].filter(Boolean).join(', ') || 'N/A';
-        listString += `*Utilities:* ${utils}\n`;
-      }
-      if (selectedFields.includes('documents')) {
-        listString += `*Documents:* ${p.documents || 'N/A'}\n`;
-      }
-      listString += '\n';
-    });
+    let listString = `*${profile.agencyName}*\n\n`;
 
-    setGeneratedList(listString);
+    // Iterate over grouped properties
+    for (const type in groupedProperties) {
+        listString += `*${type}S*\n`; // e.g., *HOUSES*
+        
+        groupedProperties[type]
+            .sort((a, b) => b.size_value - a.size_value) // Sort within group
+            .forEach((p, index) => {
+                listString += `*${index + 1}).*\n`;
+                
+                if (selectedFields.includes('serial_no')) listString += `*Serial:* ${p.serial_no}\n`;
+                if (selectedFields.includes('property_type')) listString += `*Type:* ${p.property_type}\n`;
+                if (selectedFields.includes('size')) listString += `*Size:* ${p.size_value} ${p.size_unit}\n`;
+                if (selectedFields.includes('storey')) listString += `*Storey:* ${p.storey || 'N/A'}\n`;
+                if (selectedFields.includes('area')) listString += `*Area:* ${p.area}\n`;
+                if (selectedFields.includes('address')) listString += `*Address:* ${p.address}\n`;
+                if (selectedFields.includes('road_size_ft')) listString += `*Road:* ${p.road_size_ft ? `${p.road_size_ft} ft` : 'N/A'}\n`;
+                if (selectedFields.includes('demand')) listString += `*Demand:* ${p.demand_amount} ${p.demand_unit}\n`;
+                if (selectedFields.includes('status')) listString += `*Status:* ${p.status}\n`;
+                if (selectedFields.includes('utilities')) {
+                    const utils = [
+                        p.meters?.electricity && 'Electricity',
+                        p.meters?.gas && 'Gas',
+                        p.meters?.water && 'Water'
+                    ].filter(Boolean).join(', ') || 'N/A';
+                    listString += `*Utilities:* ${utils}\n`;
+                }
+                if (selectedFields.includes('documents')) listString += `*Documents:* ${p.documents || 'N/A'}\n`;
+
+                listString += '\n';
+            });
+    }
+
+    setGeneratedList(listString.trim());
     setCopied(false);
-  };
+};
 
   const handleCopy = () => {
     if (generatedList) {
