@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle } from 'lucide-react';
+import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
@@ -75,6 +75,79 @@ export default function AppointmentsPage() {
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
 
+  const buyerAppointments = appointmentsData.filter(a => a.contactType === 'Buyer');
+  const ownerAppointments = appointmentsData.filter(a => a.contactType === 'Owner');
+
+  const renderAppointmentCard = (appt: Appointment) => {
+    const currentStatus = statusConfig[appt.status];
+    return(
+        <Card key={appt.id} className="hover:shadow-primary/10 transition-shadow flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div className="flex items-center gap-3">
+                    <div className={`flex items-center justify-center rounded-full h-10 w-10 ${appt.contactType === 'Buyer' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300'}`}>
+                        {appt.contactType === 'Buyer' ? <Briefcase className="h-5 w-5" /> : <Building className="h-5 w-5" />}
+                    </div>
+                    <CardTitle className="text-base font-semibold font-headline">
+                        {appt.contactName}
+                    </CardTitle>
+                </div>
+            <Badge 
+                variant={currentStatus.variant} 
+                className={`capitalize ${appt.status === 'Completed' ? 'bg-green-600' : ''}`}
+            >
+                {currentStatus.icon && <currentStatus.icon className="mr-1 h-3 w-3" />}
+                {appt.status}
+            </Badge>
+            </CardHeader>
+            <CardContent className="space-y-3 flex-1">
+            <div className="flex items-start text-sm min-h-[40px]">
+                <MessageSquare className="mr-2 mt-1 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">{appt.notes ? `[${appt.status}]: ${appt.notes}` : appt.message}</p>
+            </div>
+            <div className="flex items-center text-sm pt-3 border-t">
+                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{new Date(appt.date).toLocaleDateString()}</span>
+                <Clock className="ml-4 mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{appt.time}</span>
+            </div>
+            <div className="flex items-center text-sm pt-2 border-t border-dashed">
+                <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Agent:</span>
+                <span className="ml-2 font-medium">{appt.agentName}</span>
+            </div>
+            </CardContent>
+             <CardFooter className="flex justify-end border-t pt-4">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button aria-haspopup="true" size="sm" variant="ghost">
+                        Actions
+                        <MoreHorizontal className="ml-2 h-4 w-4" />
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="glass-card">
+                        <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
+                            <Check />
+                            Mark as Completed
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Cancelled')}>
+                            <XCircle />
+                            Mark as Cancelled
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleReschedule(appt)}>
+                            <Edit />
+                            Reschedule
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleDeleteAppointment(appt.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                            <Trash2 />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </CardFooter>
+        </Card>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
@@ -93,77 +166,36 @@ export default function AppointmentsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {appointmentsData.map((appt) => {
-            const currentStatus = statusConfig[appt.status];
-            return(
-                <Card key={appt.id} className="hover:shadow-primary/10 transition-shadow flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <div className="flex items-center gap-3">
-                            <div className={`flex items-center justify-center rounded-full h-10 w-10 ${appt.contactType === 'Buyer' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300'}`}>
-                                {appt.contactType === 'Buyer' ? <Briefcase className="h-5 w-5" /> : <Building className="h-5 w-5" />}
-                            </div>
-                            <CardTitle className="text-base font-semibold font-headline">
-                                {appt.contactName}
-                            </CardTitle>
-                        </div>
-                    <Badge 
-                        variant={currentStatus.variant} 
-                        className={`capitalize ${appt.status === 'Completed' ? 'bg-green-600' : ''}`}
-                    >
-                        {currentStatus.icon && <currentStatus.icon className="mr-1 h-3 w-3" />}
-                        {appt.status}
-                    </Badge>
-                    </CardHeader>
-                    <CardContent className="space-y-3 flex-1">
-                    <div className="flex items-start text-sm min-h-[40px]">
-                        <MessageSquare className="mr-2 mt-1 h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">{appt.notes ? `[${appt.status}]: ${appt.notes}` : appt.message}</p>
+        <div className="space-y-8">
+            {/* Buyer Appointments */}
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Users className="text-primary"/> Buyer Appointments</h2>
+                {buyerAppointments.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {buyerAppointments.map(renderAppointmentCard)}
                     </div>
-                    <div className="flex items-center text-sm pt-3 border-t">
-                        <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(appt.date).toLocaleDateString()}</span>
-                        <Clock className="ml-4 mr-2 h-4 w-4 text-muted-foreground" />
-                        <span>{appt.time}</span>
+                ) : (
+                    <Card className="flex items-center justify-center h-32">
+                        <p className="text-muted-foreground">No buyer appointments scheduled.</p>
+                    </Card>
+                )}
+            </div>
+
+            {/* Owner Appointments */}
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Building className="text-primary"/> Owner Appointments</h2>
+                {ownerAppointments.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {ownerAppointments.map(renderAppointmentCard)}
                     </div>
-                    <div className="flex items-center text-sm pt-2 border-t border-dashed">
-                        <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Agent:</span>
-                        <span className="ml-2 font-medium">{appt.agentName}</span>
-                    </div>
-                    </CardContent>
-                     <CardFooter className="flex justify-end border-t pt-4">
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="sm" variant="ghost">
-                                Actions
-                                <MoreHorizontal className="ml-2 h-4 w-4" />
-                            </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="glass-card">
-                                <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
-                                    <Check />
-                                    Mark as Completed
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Cancelled')}>
-                                    <XCircle />
-                                    Mark as Cancelled
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleReschedule(appt)}>
-                                    <Edit />
-                                    Reschedule
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleDeleteAppointment(appt.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                    <Trash2 />
-                                    Delete
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </CardFooter>
-                </Card>
-            )
-        })}
-      </div>
+                ) : (
+                     <Card className="flex items-center justify-center h-32">
+                        <p className="text-muted-foreground">No owner appointments scheduled.</p>
+                    </Card>
+                )}
+            </div>
+        </div>
+
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
             setIsOpen={setIsAppointmentOpen}
