@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -39,6 +38,9 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Download, Upload, Server } from 'lucide-react';
+
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
@@ -51,6 +53,7 @@ export default function SettingsPage() {
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
 
   // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
@@ -110,6 +113,95 @@ export default function SettingsPage() {
       setIsAvatarDialogOpen(false);
     }
   }
+
+  const handleBackup = () => {
+    try {
+        const backupData = {
+            properties: JSON.parse(localStorage.getItem('properties') || '[]'),
+            buyers: JSON.parse(localStorage.getItem('buyers') || '[]'),
+            appointments: JSON.parse(localStorage.getItem('appointments') || '[]'),
+            followUps: JSON.parse(localStorage.getItem('followUps') || '[]'),
+            teamMembers: JSON.parse(localStorage.getItem('teamMembers') || '[]'),
+            profile: JSON.parse(localStorage.getItem('app-profile') || '{}'),
+        };
+
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `signaturecrm-backup-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast({
+            title: "Backup Successful",
+            description: "Your data has been downloaded."
+        });
+
+    } catch (error) {
+        console.error("Backup failed:", error);
+        toast({
+            title: "Backup Failed",
+            description: "Could not create a backup. Please check console for errors.",
+            variant: "destructive",
+        });
+    }
+  };
+
+  const handleRestore = () => {
+    if (!restoreFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please choose a backup file to restore.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const backupData = JSON.parse(event.target?.result as string);
+
+        // Basic validation
+        const requiredKeys = ['properties', 'buyers', 'appointments', 'followUps'];
+        const missingKeys = requiredKeys.filter(key => !(key in backupData));
+        if (missingKeys.length > 0) {
+            throw new Error(`Backup file is missing required data: ${missingKeys.join(', ')}`);
+        }
+        
+        localStorage.setItem('properties', JSON.stringify(backupData.properties || []));
+        localStorage.setItem('buyers', JSON.stringify(backupData.buyers || []));
+        localStorage.setItem('appointments', JSON.stringify(backupData.appointments || []));
+        localStorage.setItem('followUps', JSON.stringify(backupData.followUps || []));
+        localStorage.setItem('teamMembers', JSON.stringify(backupData.teamMembers || []));
+        localStorage.setItem('app-profile', JSON.stringify(backupData.profile || {}));
+
+
+        toast({
+          title: 'Restore Successful',
+          description: 'Your data has been restored. Please reload the page to see the changes.',
+        });
+
+      } catch (error: any) {
+        console.error('Restore failed:', error);
+        toast({
+          title: 'Restore Failed',
+          description: error.message || 'The backup file is invalid or corrupted.',
+          variant: 'destructive',
+        });
+      } finally {
+        setRestoreFile(null);
+        // Reset the file input
+        const fileInput = document.getElementById('restore-upload') as HTMLInputElement;
+        if(fileInput) fileInput.value = '';
+      }
+    };
+    reader.readAsText(restoreFile);
+  };
   
   if (!mounted) {
     return null; // or a loading spinner
@@ -326,6 +418,68 @@ export default function SettingsPage() {
             </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Server /> Backup &amp; Restore</CardTitle>
+            <CardDescription>
+                Download a full backup of your data or restore it from a file.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div>
+                <h3 className="font-semibold mb-2">Download Backup</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Download all your properties, buyers, appointments and follow-ups into a single JSON file. Keep it safe!
+                </p>
+                <Button onClick={handleBackup}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Full Backup
+                </Button>
+            </div>
+            <Separator />
+             <div>
+                <h3 className="font-semibold mb-2">Restore from Backup</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    Restore your data from a previously downloaded backup file. This will overwrite all current data.
+                </p>
+                 <div className="flex flex-col sm:flex-row gap-4">
+                    <Input 
+                        id="restore-upload"
+                        type="file"
+                        accept=".json"
+                        onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
+                        className="max-w-xs"
+                    />
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="destructive" disabled={!restoreFile}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Restore Backup
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. Restoring from a backup will
+                            <span className="font-bold text-destructive"> permanently overwrite all existing data </span> 
+                            in the application, including properties, buyers, and appointments.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRestore}>
+                            Yes, Overwrite and Restore
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
+
     </div>
     <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
         <DialogContent>
