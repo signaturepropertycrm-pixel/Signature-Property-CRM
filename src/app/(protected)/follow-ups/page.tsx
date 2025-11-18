@@ -38,7 +38,11 @@ export default function FollowUpsPage() {
   
   useEffect(() => {
     loadData();
-    const handleStorageChange = () => loadData();
+    const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'buyers' || event.key === 'followUps' || event.key === 'appointments') {
+            loadData();
+        }
+    };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
@@ -48,7 +52,6 @@ export default function FollowUpsPage() {
   }, [buyersData]);
 
   useEffect(() => {
-      // Allow saving an empty array to clear follow-ups
       localStorage.setItem('followUps', JSON.stringify(followUpsData));
   }, [followUpsData]);
 
@@ -144,7 +147,10 @@ export default function FollowUpsPage() {
             notes: notes,
         };
         
-        setFollowUpsData(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
+        const updatedFollowUps = [...followUpsData.filter(fu => fu.buyerId !== buyerId), newFollowUp];
+        setFollowUpsData(updatedFollowUps);
+        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+        
         setBuyersData(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
         toast({

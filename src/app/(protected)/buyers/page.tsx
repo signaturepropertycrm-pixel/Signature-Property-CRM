@@ -101,7 +101,11 @@ function BuyersPageContent() {
     useEffect(() => {
         loadData();
         
-        const handleStorageChange = () => loadData();
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === 'buyers' || event.key === 'followUps') {
+                loadData();
+            }
+        };
 
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
@@ -112,7 +116,6 @@ function BuyersPageContent() {
     }, [buyers]);
     
     useEffect(() => {
-        // Allow saving even if it's empty to clear data
         localStorage.setItem('followUps', JSON.stringify(followUps));
     }, [followUps]);
 
@@ -214,7 +217,9 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        setFollowUps(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
+        const updatedFollowUps = [...followUps.filter(fu => fu.buyerId !== buyerId), newFollowUp];
+        setFollowUps(updatedFollowUps);
+        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
         
         setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
