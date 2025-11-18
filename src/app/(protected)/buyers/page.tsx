@@ -217,8 +217,7 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        // This is the critical fix: update the follow-ups state
-        setFollowUps(prevFollowUps => [...prevFollowUps.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
+        setFollowUps(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
         
         setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
@@ -720,12 +719,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
-
-    
-
-    
-
 
     
