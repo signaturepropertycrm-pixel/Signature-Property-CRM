@@ -49,9 +49,6 @@ const menuItems = [
 ];
 
 const bottomMenuItems = [
-  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor'] },
-  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
@@ -347,28 +344,6 @@ export function AppSidebar() {
                 </CollapsibleContent>
              </Collapsible>
              
-            {profile.role === 'Admin' && (
-              <SidebarMenuItem className="relative">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href="/team">
-                      <SidebarMenuButton
-                          isActive={pathname === '/team'}
-                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                      >
-                          <UserCog />
-                          <span className="flex-1 truncate">Team</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="center">
-                    Team
-                  </TooltipContent>
-                </Tooltip>
-                 {pathname === '/team' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-              </SidebarMenuItem>
-            )}
-
             {menuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
               <SidebarMenuItem key={item.href} className="relative">
                 <Tooltip>
