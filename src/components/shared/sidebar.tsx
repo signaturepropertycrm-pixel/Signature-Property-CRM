@@ -239,6 +239,26 @@ export function AppSidebar() {
                     </div>
                 </CollapsibleContent>
              </Collapsible>
+
+            {profile.role === 'Admin' && (
+              <SidebarMenuItem className="relative">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/team">
+                      <SidebarMenuButton
+                        isActive={pathname === '/team'}
+                        className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                      >
+                        <UserCog />
+                        <span className="flex-1 truncate">Team</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">Team</TooltipContent>
+                </Tooltip>
+                {pathname === '/team' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+              </SidebarMenuItem>
+            )}
              
               {/* Tools Collapsible Menu */}
              <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen}>
@@ -303,46 +323,45 @@ export function AppSidebar() {
                 {pathname === '/follow-ups' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
             </SidebarMenuItem>
 
-            {/* Appointments Collapsible Menu */}
-             <Collapsible open={isAppointmentsOpen} onOpenChange={setIsAppointmentsOpen}>
-                 <SidebarMenuItem className="relative">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <CollapsibleTrigger asChild>
-                                 <SidebarMenuButton
-                                    isActive={pathname.startsWith('/appointments')}
-                                    className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                                >
-                                    <Calendar/>
-                                    <span className="flex-1 truncate">Appointments</span>
-                                    <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isAppointmentsOpen && "rotate-180")} />
-                                </SidebarMenuButton>
-                            </CollapsibleTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" align="center">Appointments</TooltipContent>
-                    </Tooltip>
-                    {pathname.startsWith('/appointments') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-                 </SidebarMenuItem>
+            <Collapsible open={isAppointmentsOpen} onOpenChange={setIsAppointmentsOpen}>
+                <SidebarMenuItem className="relative">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <CollapsibleTrigger asChild>
+                            <SidebarMenuButton
+                                isActive={pathname.startsWith('/appointments')}
+                                className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                            >
+                                <Calendar/>
+                                <span className="flex-1 truncate">Appointments</span>
+                                <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", isAppointmentsOpen && "rotate-180")} />
+                            </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" align="center">Appointments</TooltipContent>
+                </Tooltip>
+                {pathname.startsWith('/appointments') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+                </SidebarMenuItem>
                 <CollapsibleContent asChild>
-                    <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
-                        <SidebarMenu className="pl-7">
-                            {appointmentStatusLinks.map(({label, type}) => {
-                                const href = type === 'All' ? '/appointments' : `/appointments?type=${encodeURIComponent(type)}`;
-                                const isActive = type === 'All' ? pathname === '/appointments' : pathname.includes(`type=${encodeURIComponent(type)}`);
-                                return (
-                                     <SidebarMenuItem key={type}>
-                                         <Link href={href}>
-                                             <SidebarMenuButton size="sm" isActive={isActive} className="w-full justify-start rounded-full text-xs">
-                                                 {label}
-                                             </SidebarMenuButton>
-                                         </Link>
-                                     </SidebarMenuItem>
-                                );
-                            })}
-                        </SidebarMenu>
-                    </div>
+                <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
+                    <SidebarMenu className="pl-7">
+                        {appointmentStatusLinks.map(({label, type}) => {
+                            const href = type === 'All' ? '/appointments' : `/appointments?type=${encodeURIComponent(type)}`;
+                            const isActive = type === 'All' ? pathname === '/appointments' : pathname.includes(`type=${encodeURIComponent(type)}`);
+                            return (
+                                    <SidebarMenuItem key={type}>
+                                        <Link href={href}>
+                                            <SidebarMenuButton size="sm" isActive={isActive} className="w-full justify-start rounded-full text-xs">
+                                                {label}
+                                            </SidebarMenuButton>
+                                        </Link>
+                                    </SidebarMenuItem>
+                            );
+                        })}
+                    </SidebarMenu>
+                </div>
                 </CollapsibleContent>
-             </Collapsible>
+            </Collapsible>
              
             {menuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
               <SidebarMenuItem key={item.href} className="relative">
@@ -392,3 +411,4 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
+
