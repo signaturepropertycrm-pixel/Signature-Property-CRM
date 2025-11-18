@@ -44,7 +44,6 @@ import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 
 const menuItems = [
-  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor'] },
 ];
@@ -284,46 +283,26 @@ export function AppSidebar() {
                 </CollapsibleContent>
              </Collapsible>
 
-            {menuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
-              <SidebarMenuItem key={item.href} className="relative">
+            <SidebarMenuItem className="relative">
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link href={item.href}>
-                      <SidebarMenuButton
-                          isActive={pathname === item.href}
-                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                      >
-                          {item.icon}
-                          <span className="flex-1 truncate">{item.label}</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="center">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-                 {pathname === item.href && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-              </SidebarMenuItem>
-            ))}
-             <SidebarMenuItem className="relative">
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                    <TooltipTrigger asChild>
                     <Link href="/follow-ups">
-                      <SidebarMenuButton
-                          isActive={pathname === '/follow-ups'}
-                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                      >
-                          <PhoneForwarded />
-                          <span className="flex-1 truncate">Follow-ups</span>
-                      </SidebarMenuButton>
+                        <SidebarMenuButton
+                            isActive={pathname === '/follow-ups'}
+                            className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                        >
+                            <PhoneForwarded />
+                            <span className="flex-1 truncate">Follow-ups</span>
+                        </SidebarMenuButton>
                     </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" align="center">
+                    </TooltipTrigger>
+                    <TooltipContent side="right" align="center">
                     Follow-ups
-                  </TooltipContent>
+                    </TooltipContent>
                 </Tooltip>
-                 {pathname === '/follow-ups' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-              </SidebarMenuItem>
+                {pathname === '/follow-ups' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+            </SidebarMenuItem>
+
             {/* Appointments Collapsible Menu */}
              <Collapsible open={isAppointmentsOpen} onOpenChange={setIsAppointmentsOpen}>
                  <SidebarMenuItem className="relative">
@@ -364,6 +343,50 @@ export function AppSidebar() {
                     </div>
                 </CollapsibleContent>
              </Collapsible>
+             
+            {profile.roles.includes('Admin') && (
+              <SidebarMenuItem className="relative">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/team">
+                      <SidebarMenuButton
+                          isActive={pathname === '/team'}
+                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                      >
+                          <UserCog />
+                          <span className="flex-1 truncate">Team</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    Team
+                  </TooltipContent>
+                </Tooltip>
+                 {pathname === '/team' && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+              </SidebarMenuItem>
+            )}
+
+            {menuItems.filter(item => item.roles.includes(profile.role)).map((item) => (
+              <SidebarMenuItem key={item.href} className="relative">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href={item.href}>
+                      <SidebarMenuButton
+                          isActive={pathname === item.href}
+                          className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                      >
+                          {item.icon}
+                          <span className="flex-1 truncate">{item.label}</span>
+                      </SidebarMenuButton>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+                 {pathname === item.href && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
 
