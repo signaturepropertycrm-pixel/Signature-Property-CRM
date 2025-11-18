@@ -7,13 +7,17 @@ import { appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
+import { useSearchParams } from 'next/navigation';
 
 
-export default function AppointmentsPage() {
+function AppointmentsPageContent() {
+  const searchParams = useSearchParams();
+  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
+
   const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
@@ -74,6 +78,10 @@ export default function AppointmentsPage() {
     Completed: { variant: 'default', icon: Check },
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
+
+  const filteredAppointments = typeFilter 
+    ? appointmentsData.filter(a => a.contactType === typeFilter)
+    : appointmentsData;
 
   const buyerAppointments = appointmentsData.filter(a => a.contactType === 'Buyer');
   const ownerAppointments = appointmentsData.filter(a => a.contactType === 'Owner');
@@ -148,6 +156,21 @@ export default function AppointmentsPage() {
     );
   }
 
+  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
+     <div>
+        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
+        {appointments.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {appointments.map(renderAppointmentCard)}
+            </div>
+        ) : (
+            <Card className="flex items-center justify-center h-32">
+                <p className="text-muted-foreground">No {title.toLowerCase()} scheduled.</p>
+            </Card>
+        )}
+    </div>
+  );
+
 
   return (
     <div className="space-y-6">
@@ -157,7 +180,7 @@ export default function AppointmentsPage() {
             Appointments
           </h1>
           <p className="text-muted-foreground">
-            Manage your upcoming appointments.
+            {typeFilter ? `Showing ${typeFilter} appointments.` : 'Manage your upcoming appointments.'}
           </p>
         </div>
         <Button className="glowing-btn" onClick={() => { setAppointmentToEdit(null); setIsAppointmentOpen(true); }}>
@@ -167,33 +190,8 @@ export default function AppointmentsPage() {
       </div>
 
         <div className="space-y-8">
-            {/* Buyer Appointments */}
-            <div>
-                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Users className="text-primary"/> Buyer Appointments</h2>
-                {buyerAppointments.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {buyerAppointments.map(renderAppointmentCard)}
-                    </div>
-                ) : (
-                    <Card className="flex items-center justify-center h-32">
-                        <p className="text-muted-foreground">No buyer appointments scheduled.</p>
-                    </Card>
-                )}
-            </div>
-
-            {/* Owner Appointments */}
-            <div>
-                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Building className="text-primary"/> Owner Appointments</h2>
-                {ownerAppointments.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {ownerAppointments.map(renderAppointmentCard)}
-                    </div>
-                ) : (
-                     <Card className="flex items-center justify-center h-32">
-                        <p className="text-muted-foreground">No owner appointments scheduled.</p>
-                    </Card>
-                )}
-            </div>
+            {(!typeFilter || typeFilter === 'Buyer') && renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
+            {(!typeFilter || typeFilter === 'Owner') && renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
         </div>
 
        <SetAppointmentDialog 
@@ -214,3 +212,12 @@ export default function AppointmentsPage() {
     </div>
   );
 }
+
+export default function AppointmentsPage() {
+    return (
+        <Suspense fallback={<div>Loading appointments...</div>}>
+            <AppointmentsPageContent />
+        </Suspense>
+    );
+}
+
