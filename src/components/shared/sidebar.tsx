@@ -49,6 +49,9 @@ const menuItems = [
 ];
 
 const bottomMenuItems = [
+  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor'] },
+  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
@@ -344,7 +347,7 @@ export function AppSidebar() {
                 </CollapsibleContent>
              </Collapsible>
              
-            {profile.roles.includes('Admin') && (
+            {profile.role === 'Admin' && (
               <SidebarMenuItem className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
