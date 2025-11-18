@@ -207,8 +207,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-1">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Monthly Revenue</CardTitle>
             <CardDescription>Revenue from properties sold over the last 6 months.</CardDescription>
@@ -225,20 +225,6 @@ export default function DashboardPage() {
                   />
                   <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
               </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle>Buyers by Status</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center h-80">
-            <ChartContainer config={buyersChartConfig} className="mx-auto aspect-square h-full">
-              <PieChart>
-                  <Tooltip content={<ChartTooltipContent nameKey="name" hideLabel />} />
-                  <Pie data={buyersStatusData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} strokeWidth={2} />
-                  <ChartLegend content={<ChartLegendContent nameKey="name" />} />
-              </PieChart>
             </ChartContainer>
           </CardContent>
         </Card>
