@@ -217,9 +217,8 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        const updatedFollowUps = [...followUps.filter(fu => fu.buyerId !== buyerId), newFollowUp];
-        setFollowUps(updatedFollowUps);
-        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+        // This is the critical fix: update the follow-ups state
+        setFollowUps(prevFollowUps => [...prevFollowUps.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
         
         setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
@@ -725,5 +724,8 @@ export default function BuyersPage() {
     
 
     
+
+    
+
 
     

@@ -147,15 +147,13 @@ export default function FollowUpsPage() {
             notes: notes,
         };
         
-        const updatedFollowUps = [...followUpsData.filter(fu => fu.buyerId !== buyerId), newFollowUp];
-        setFollowUpsData(updatedFollowUps);
-        localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
+        setFollowUpsData(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
         
         setBuyersData(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
         
         toast({
-            title: "Follow-up Scheduled",
-            description: `A follow-up has been created for ${buyer.name}.`
+            title: "Follow-up Updated",
+            description: `A new follow-up has been scheduled for ${buyer.name}.`
         });
 
         setIsFollowUpOpen(false);
@@ -232,3 +230,5 @@ export default function FollowUpsPage() {
     </>
   );
 }
+
+    
