@@ -21,7 +21,7 @@ export default function FollowUpsPage() {
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [isFollowUpOpen, setIsFollowUpOpen] useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
 
@@ -226,5 +226,3 @@ export default function FollowUpsPage() {
     </>
   );
 }
-
-    
