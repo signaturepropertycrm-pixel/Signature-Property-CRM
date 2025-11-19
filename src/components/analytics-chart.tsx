@@ -60,7 +60,7 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
         <CardDescription>A quick overview of lead statuses.</CardDescription>
       </CardHeader>
       <CardContent className="h-[400px] w-full pt-6">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="90%">
           <PieChart>
             <Pie
               data={data}
@@ -96,6 +96,7 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
                 layout="horizontal"
                 verticalAlign="bottom"
                 align="center"
+                wrapperStyle={{ bottom: 10 }}
                 formatter={(value, entry) => {
                     const { color } = entry;
                     const item = data.find(d => d.name === value);
