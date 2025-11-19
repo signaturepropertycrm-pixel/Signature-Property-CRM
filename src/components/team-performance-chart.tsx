@@ -20,18 +20,24 @@ const demoData = [
 export const TeamPerformanceChart = ({ teamMembers }: { teamMembers: User[] }) => {
 
   const data = useMemo(() => {
+    // If teamMembers is empty or not provided, return demo data immediately.
+    if (!teamMembers || teamMembers.length === 0) {
+      return demoData;
+    }
+
     const realData = teamMembers
       .filter(member => member.role === 'Agent' || member.role === 'Admin')
       .map(member => ({
         name: member.name.split(' ')[0], // Use first name
         value: member.stats?.propertiesSold || 0,
       }));
-
-    if (realData.every(d => d.value === 0)) {
-        return demoData;
-    }
     
-    return realData.filter(d => d.value > 0);
+    // Check if any agent has sold any property.
+    const hasSales = realData.some(d => d.value > 0);
+
+    // If no sales have been made, use demo data. Otherwise, use real data.
+    return hasSales ? realData.filter(d => d.value > 0) : demoData;
+
   }, [teamMembers]);
 
   return (
