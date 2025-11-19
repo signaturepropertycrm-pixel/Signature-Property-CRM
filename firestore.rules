@@ -1,0 +1,181 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for most data, with admin overrides for specific collections.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles. Only the user themselves can read or write their profile.
+ * - /users/{userId}/properties/{propertyId}: Stores properties created by each user. Only the creating user can manage their properties.
+ * - /users/{userId}/buyers/{buyerId}: Stores buyer information created by each user. Only the creating user can manage their buyers.
+ * - /users/{userId}/appointments/{appointmentId}: Stores appointment data related to users (agents).
+ * - /users/{userId}/followUps/{followUpId}: Stores follow-up actions assigned to users.
+ * - /transactions/{transactionId}: Stores transaction data. Only admins can manage transactions.
+ * - /activityLogs/{activityLogId}: Stores activity logs. Only admins can read activity logs.
+ * - /roles_admin/{userId}: Indicates admin privileges. The existence of a document grants admin privileges to the corresponding user.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed for privacy.
+ * - Admin role is checked via the existence of a document in the `/roles_admin/{userId}` collection.
+ * - Data validation is relaxed in this prototyping phase.
+ *
+ * Denormalization for Authorization:
+ * - The `properties`, `buyers`, `appointments` and `followUps` subcollections under `/users/{userId}` include the `createdBy` and other user ID fields. This eliminates the need for `get()` calls in security rules to check parent document properties, enabling atomic operations.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the current user is signed in.
+     * @example isSignedIn() == true if request.auth != null
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the current user is the owner of the document.
+     * @param {string} userId - The user ID to compare against the request's auth UID.
+     * @example isOwner("someUserId") == (request.auth.uid == "someUserId")
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the current user is the owner of the existing document.
+     * @param {string} userId - The user ID to compare against the request's auth UID.
+     * @example isExistingOwner("someUserId") == (isOwner("someUserId") && resource != null)
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the current user has admin privileges.
+     * @example isAdmin() == exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Allows access only to the user who owns the resource.
+     * @path /users/{userId}
+     * @allow (get) User with ID 'user123' requests their own profile.
+     * @deny (get) User with ID 'user456' requests profile of 'user123'.
+     * @principle Enforces document ownership for reads and writes.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not allowed.
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows access only to the user who owns the property.
+     * @path /users/{userId}/properties/{propertyId}
+     * @allow (create) User 'user123' creates a new property under their profile with createdBy: 'user123'.
+     * @deny (update) User 'user456' attempts to update a property under 'user123' profile.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/properties/{propertyId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows access only to the user who owns the buyer record.
+     * @path /users/{userId}/buyers/{buyerId}
+     * @allow (create) User 'user123' creates a new buyer record under their profile.
+     * @deny (delete) User 'user456' attempts to delete a buyer record under 'user123' profile.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/buyers/{buyerId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows access only to the user (agent) associated with the appointment or to admins.
+     * @path /users/{userId}/appointments/{appointmentId}
+     * @allow (get) Agent 'agent123' retrieves an appointment associated with their ID.
+     * @deny (update) User 'user456' attempts to update an appointment under 'agent123' profile without being an admin.
+     * @principle Enforces document ownership or admin privileges for writes.
+     */
+    match /users/{userId}/appointments/{appointmentId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Allows access only to the user assigned to the follow-up.
+     * @path /users/{userId}/followUps/{followUpId}
+     * @allow (get) Agent 'agent123' retrieves a follow-up assigned to them.
+     * @deny (delete) User 'user456' attempts to delete a follow-up assigned to 'agent123'.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/followUps/{followUpId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows access only to admins for managing transactions.
+     * @path /transactions/{transactionId}
+     * @allow (create) Admin creates a new transaction.
+     * @deny (update) Non-admin attempts to update a transaction.
+     * @principle Restricts transaction management to admins.
+     */
+    match /transactions/{transactionId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() && resource != null;
+      allow delete: if isAdmin() && resource != null;
+    }
+
+    /**
+     * @description Allows access only to admins for reading activity logs.
+     * @path /activityLogs/{activityLogId}
+     * @allow (get) Admin retrieves an activity log.
+     * @deny (create) Non-admin attempts to create an activity log (should be created by backend).
+     * @principle Restricts activity log access to admins.
+     */
+    match /activityLogs/{activityLogId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+        /**
+     * @description Allows only admins to create a role
+     * @path /roles_admin/{userId}
+     * @allow (create) if the user is an admin
+     * @deny (create) if the user is not an admin
+     * @principle Only admins can create a role
+     */
+    match /roles_admin/{userId} {
+        allow get: if isAdmin();
+        allow list: if isAdmin();
+        allow create: if isAdmin();
+        allow update: if false;
+        allow delete: if isAdmin();
+    }
+  }
+}

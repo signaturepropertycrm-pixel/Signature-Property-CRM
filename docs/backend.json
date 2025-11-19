@@ -1,0 +1,639 @@
+{
+  "entities": {
+    "Property": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Property",
+      "type": "object",
+      "description": "Represents a real estate property.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Property entity."
+        },
+        "serialNo": {
+          "type": "string",
+          "description": "Unique serial number for the property (auto-generated)."
+        },
+        "autoTitle": {
+          "type": "string",
+          "description": "Automatically generated title for the property (e.g., '5 Marla House in Harbanspura')."
+        },
+        "ownerNumber": {
+          "type": "string",
+          "description": "Owner's phone number."
+        },
+        "city": {
+          "type": "string",
+          "description": "City where the property is located."
+        },
+        "area": {
+          "type": "string",
+          "description": "Area or neighborhood of the property."
+        },
+        "address": {
+          "type": "string",
+          "description": "Full address of the property."
+        },
+        "propertyType": {
+          "type": "string",
+          "description": "Type of property (e.g., House, Plot, Flat)."
+        },
+        "sizeValue": {
+          "type": "number",
+          "description": "Numeric value of the property size."
+        },
+        "sizeUnit": {
+          "type": "string",
+          "description": "Unit of measurement for the property size (e.g., Marla, SqFt)."
+        },
+        "roadSizeFt": {
+          "type": "number",
+          "description": "Road size in feet."
+        },
+        "storey": {
+          "type": "string",
+          "description": "Number of storeys in the property."
+        },
+        "meters": {
+          "type": "string",
+          "description": "JSON object indicating meter availability (electricity, gas, water)."
+        },
+        "potentialRentAmount": {
+          "type": "number",
+          "description": "Potential rental income amount."
+        },
+        "potentialRentUnit": {
+          "type": "string",
+          "description": "Unit for the potential rental income (e.g., Thousand, Lacs)."
+        },
+        "frontFt": {
+          "type": "number",
+          "description": "Frontage of the property in feet."
+        },
+        "lengthFt": {
+          "type": "number",
+          "description": "Length of the property in feet."
+        },
+        "demandAmount": {
+          "type": "number",
+          "description": "Asking price for the property."
+        },
+        "demandUnit": {
+          "type": "string",
+          "description": "Unit for the asking price (e.g., Lacs, Crore)."
+        },
+        "documents": {
+          "type": "string",
+          "description": "Text field for document names related to the property."
+        },
+        "isRecorded": {
+          "type": "boolean",
+          "description": "Indicates if the property has been recorded."
+        },
+        "recordingLinks": {
+          "type": "string",
+          "description": "JSON object containing links to recordings (e.g., TikTok, YouTube)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the property (e.g., Available, Reserved, Sold)."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Property) User ID of the user who created the property."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the property was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Date and time when the property was last updated.",
+          "format": "date-time"
+        },
+        "soldAt": {
+          "type": "string",
+          "description": "Date and time when the property was sold.",
+          "format": "date-time"
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Reference to Buyer. (Relationship: Buyer 1:N Property) ID of the buyer who purchased the property."
+        },
+        "tags": {
+          "type": "string",
+          "description": "JSON object containing tags associated with the property."
+        },
+        "customFields": {
+          "type": "string",
+          "description": "JSON object containing custom fields for the property."
+        }
+      },
+      "required": [
+        "id",
+        "serialNo",
+        "autoTitle",
+        "ownerNumber",
+        "city",
+        "area",
+        "address",
+        "propertyType",
+        "sizeValue",
+        "sizeUnit",
+        "demandAmount",
+        "demandUnit",
+        "status",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "Buyer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Buyer",
+      "type": "object",
+      "description": "Represents a potential buyer of real estate.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Buyer entity."
+        },
+        "serialNo": {
+          "type": "string",
+          "description": "Unique serial number for the buyer (auto-generated)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the buyer."
+        },
+        "number": {
+          "type": "string",
+          "description": "Phone number of the buyer."
+        },
+        "budgetMinAmount": {
+          "type": "number",
+          "description": "Minimum budget amount of the buyer."
+        },
+        "budgetMaxAmount": {
+          "type": "number",
+          "description": "Maximum budget amount of the buyer."
+        },
+        "budgetUnit": {
+          "type": "string",
+          "description": "Unit for the buyer's budget (e.g., Lacs, Crore)."
+        },
+        "propertyTypePreferences": {
+          "type": "string",
+          "description": "JSON object containing the buyer's preferred property types."
+        },
+        "sizeMin": {
+          "type": "number",
+          "description": "Minimum size preference of the buyer."
+        },
+        "sizeMax": {
+          "type": "number",
+          "description": "Maximum size preference of the buyer."
+        },
+        "sizeUnit": {
+          "type": "string",
+          "description": "Unit of measurement for the buyer's size preference (e.g., Marla, SqFt)."
+        },
+        "areasPreferred": {
+          "type": "string",
+          "description": "Text field or array containing the buyer's preferred areas."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the buyer (e.g., Interested, Not Interested, Follow Up)."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Buyer) ID of the agent assigned to the buyer."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Buyer) ID of the user who created the buyer record."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the buyer record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Date and time when the buyer record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "serialNo",
+        "name",
+        "number",
+        "budgetMinAmount",
+        "budgetMaxAmount",
+        "budgetUnit",
+        "status",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "passwordHash": {
+          "type": "string",
+          "description": "Hashed password of the user.  Note:  Do not store plain text passwords."
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user (e.g., Admin, Agent, Viewer)."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the user."
+        },
+        "avatar": {
+          "type": "string",
+          "description": "URL or path to the user's avatar image."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the user account was created.",
+          "format": "date-time"
+        },
+        "permissions": {
+          "type": "string",
+          "description": "JSON object containing user-specific permissions."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "passwordHash",
+        "role",
+        "createdAt"
+      ]
+    },
+    "Appointment": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Appointment",
+      "type": "object",
+      "description": "Represents a scheduled appointment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Appointment entity."
+        },
+        "propertyId": {
+          "type": "string",
+          "description": "Reference to Property. (Relationship: Property 1:N Appointment) ID of the property associated with the appointment."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Reference to Buyer. (Relationship: Buyer 1:N Appointment) ID of the buyer associated with the appointment."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Appointment) ID of the agent associated with the appointment."
+        },
+        "scheduledAt": {
+          "type": "string",
+          "description": "Date and time when the appointment is scheduled.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the appointment (e.g., Scheduled, Completed, Missed)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes or comments about the appointment."
+        }
+      },
+      "required": [
+        "id",
+        "propertyId",
+        "buyerId",
+        "agentId",
+        "scheduledAt",
+        "status"
+      ]
+    },
+    "FollowUp": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FollowUp",
+      "type": "object",
+      "description": "Represents a follow-up action for a buyer.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FollowUp entity."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Reference to Buyer. (Relationship: Buyer 1:N FollowUp) ID of the buyer being followed up with."
+        },
+        "propertyId": {
+          "type": "string",
+          "description": "Reference to Property. (Relationship: Property 1:N FollowUp) ID of the property associated with the follow-up (nullable)."
+        },
+        "nextFollowupAt": {
+          "type": "string",
+          "description": "Date and time for the next follow-up action.",
+          "format": "date-time"
+        },
+        "lastContactedAt": {
+          "type": "string",
+          "description": "Date and time when the buyer was last contacted.",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Notes or comments about the follow-up."
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N FollowUp) ID of the agent assigned to perform the follow-up."
+        }
+      },
+      "required": [
+        "id",
+        "buyerId",
+        "nextFollowupAt"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a sales transaction.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Transaction entity."
+        },
+        "propertyId": {
+          "type": "string",
+          "description": "Reference to Property. (Relationship: Property 1:N Transaction) ID of the property sold in the transaction."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Reference to Buyer. (Relationship: Buyer 1:N Transaction) ID of the buyer who purchased the property."
+        },
+        "agentId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Transaction) ID of the agent involved in the transaction."
+        },
+        "salePriceAmount": {
+          "type": "number",
+          "description": "Amount of the sale price."
+        },
+        "salePriceUnit": {
+          "type": "string",
+          "description": "Unit for the sale price (e.g., Lacs, Crore)."
+        },
+        "commissionAmount": {
+          "type": "number",
+          "description": "Amount of the commission earned."
+        },
+        "commissionUnit": {
+          "type": "string",
+          "description": "Unit for the commission amount (e.g., Lacs, Crore)."
+        },
+        "saleDate": {
+          "type": "string",
+          "description": "Date of the sale.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "propertyId",
+        "buyerId",
+        "agentId",
+        "salePriceAmount",
+        "salePriceUnit",
+        "commissionAmount",
+        "commissionUnit",
+        "saleDate"
+      ]
+    },
+    "ActivityLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ActivityLog",
+      "type": "object",
+      "description": "Represents an activity log entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the ActivityLog entity."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of activity (e.g., create, update, delete)."
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "ID of the entity that the activity is related to (e.g., Property ID, Buyer ID)."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ActivityLog) ID of the user who performed the activity."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Amount associated with the activity (if applicable)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Date and time when the activity occurred.",
+          "format": "date-time"
+        },
+        "meta": {
+          "type": "string",
+          "description": "JSON object containing additional metadata about the activity."
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "referenceId",
+        "userId",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  Top-level collection for user data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/properties/{propertyId}",
+        "definition": {
+          "entityName": "Property",
+          "schema": {
+            "$ref": "#/backend/entities/Property"
+          },
+          "description": "Stores real estate properties created by users. Includes denormalized 'createdBy' field (userId) for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who created the property."
+            },
+            {
+              "name": "propertyId",
+              "description": "The unique identifier of the property."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/buyers/{buyerId}",
+        "definition": {
+          "entityName": "Buyer",
+          "schema": {
+            "$ref": "#/backend/entities/Buyer"
+          },
+          "description": "Stores potential buyer information. Includes denormalized 'createdBy' field (userId) for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who created the buyer record."
+            },
+            {
+              "name": "buyerId",
+              "description": "The unique identifier of the buyer."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/appointments/{appointmentId}",
+        "definition": {
+          "entityName": "Appointment",
+          "schema": {
+            "$ref": "#/backend/entities/Appointment"
+          },
+          "description": "Stores appointment schedules. Includes denormalized 'agentId' and 'buyerId' for authorization independence. Accessible to agent and admin.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user (agent) associated with the appointment."
+            },
+            {
+              "name": "appointmentId",
+              "description": "The unique identifier of the appointment."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/followUps/{followUpId}",
+        "definition": {
+          "entityName": "FollowUp",
+          "schema": {
+            "$ref": "#/backend/entities/FollowUp"
+          },
+          "description": "Stores follow-up actions for buyers. Includes denormalized 'assignedTo' field for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user assigned to the follow-up."
+            },
+            {
+              "name": "followUpId",
+              "description": "The unique identifier of the follow-up action."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores sales transactions.  Accessible to admin.",
+          "params": [
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/activityLogs/{activityLogId}",
+        "definition": {
+          "entityName": "ActivityLog",
+          "schema": {
+            "$ref": "#/backend/entities/ActivityLog"
+          },
+          "description": "Stores activity logs for auditing purposes.  Accessible to admin.",
+          "params": [
+            {
+              "name": "activityLogId",
+              "description": "The unique identifier of the activity log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "roles_admin",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Indicates admin privileges. Existence of document grants admin role.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user with admin privileges."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support a real estate CRM application focusing on properties, buyers, team management, and related functionalities. The design prioritizes security, scalability, and ease of debugging, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). \n\nAuthorization Independence is achieved through denormalization. For example, the `properties` subcollection under `/users/{userId}` includes the `members` map which defines the roles of different users. This eliminates the need for `get()` calls in security rules to check parent document properties, enabling atomic operations.\n\nStructural Segregation is applied by using dedicated collections for different data types, each with homogeneous security requirements. For example, properties created by different users are segregated under their respective user document, enhancing security and simplifying rules.\n\nAccess Modeling uses hierarchical paths for user-owned data. Properties, Buyers, FollowUps, and Appointments are stored under each user's document, establishing clear ownership and simplifying security rules. Membership Maps (`members` field) are utilized for collaborative data access, allowing multiple users to have specific roles (e.g., Admin, Agent, Viewer) within a property or buyer record. Global roles are managed through the `/roles_admin/{uid}` collection, where the existence of a document indicates admin privileges.\n\nQAPs (Rules are not Filters) are supported by structural segregation and the membership model. List operations can be secured based on the path and the `members` map, ensuring that only authorized users can access the data without filtering based on document content.\n\nExplicit State Modeling is encouraged by using a dedicated `status` field in entities like `Property` and `Buyer`, rather than relying on multiple booleans or timestamps to infer the state. This makes the data model more predictable and easier to reason about.\n\nRadical Consistency is maintained through strict naming conventions for fields (e.g., always using `ownerId` for ownership) and descriptive wildcards (e.g., `{propertyId}` instead of `{id}`)."
+  }
+}
