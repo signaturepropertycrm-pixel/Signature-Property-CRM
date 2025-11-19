@@ -20,14 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Appointment, AppointmentContactType } from '@/lib/types';
-import { useEffect } from 'react';
+import { Appointment, AppointmentContactType, User } from '@/lib/types';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Textarea } from './ui/textarea';
-import { teamMembers } from '@/lib/data';
 
 interface SetAppointmentDialogProps {
   isOpen: boolean;
@@ -55,9 +54,6 @@ const formSchema = z.object({
 
 type AppointmentFormValues = z.infer<typeof formSchema>;
 
-const agentNames = teamMembers.filter(m => m.role === 'Agent' || m.role === 'Admin').map(m => m.name);
-
-
 export function SetAppointmentDialog({
   isOpen,
   setIsOpen,
@@ -66,6 +62,17 @@ export function SetAppointmentDialog({
   appointmentToEdit,
 }: SetAppointmentDialogProps) {
   const { toast } = useToast();
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+
+  useEffect(() => {
+      const savedTeamMembers = localStorage.getItem('teamMembers');
+      if (savedTeamMembers) {
+          setTeamMembers(JSON.parse(savedTeamMembers));
+      }
+  }, []);
+  
+  const agentNames = teamMembers.filter(m => m.role === 'Agent' || m.role === 'Admin').map(m => m.name);
+
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(formSchema),
   });

@@ -3,7 +3,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { activities } from '@/lib/data';
+import { activities as initialActivities } from '@/lib/data';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FilePlus,
@@ -14,6 +14,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { Activity } from '@/lib/types';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -27,9 +28,13 @@ const getActionIcon = (action: string) => {
 
 export default function ActivitiesPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     setIsMounted(true);
+    // In a real app, you'd fetch this from a server or have a more robust local storage strategy
+    const savedActivities = localStorage.getItem('activities');
+    setActivities(savedActivities ? JSON.parse(savedActivities) : initialActivities);
   }, []);
 
   return (
@@ -46,6 +51,7 @@ export default function ActivitiesPage() {
       <Card>
         <CardContent className="p-0">
           <div className="flow-root">
+          {activities.length > 0 ? (
             <ul className="divide-y divide-border">
               {activities.map((activity, activityIdx) => (
                 <li key={activity.id} className="relative p-6 hover:bg-accent/50 transition-colors">
@@ -82,6 +88,11 @@ export default function ActivitiesPage() {
                 </li>
               ))}
             </ul>
+            ) : (
+                <div className="text-center py-20 text-muted-foreground">
+                    No activities recorded yet.
+                </div>
+            )}
           </div>
         </CardContent>
       </Card>

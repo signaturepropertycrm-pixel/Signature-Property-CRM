@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -41,7 +41,7 @@ import {
 import { formatCurrency } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { Calculator } from 'lucide-react';
-import { teamMembers } from '@/lib/data';
+import { User } from '@/lib/types';
 import { add } from 'date-fns';
 
 const dealStatuses = ['In Negotiation', 'Finalized', 'Closed'] as const;
@@ -68,6 +68,14 @@ type DealSummary = {
 export function DealTrackerTool() {
   const { currency } = useCurrency();
   const [dealSummary, setDealSummary] = useState<DealSummary | null>(null);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+
+  useEffect(() => {
+      const savedTeamMembers = localStorage.getItem('teamMembers');
+      if (savedTeamMembers) {
+          setTeamMembers(JSON.parse(savedTeamMembers));
+      }
+  }, []);
 
   const form = useForm<DealFormValues>({
     resolver: zodResolver(formSchema),

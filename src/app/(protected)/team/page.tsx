@@ -48,14 +48,12 @@ export default function TeamPage() {
         if (savedTeamMembers) {
             setTeamMembers(JSON.parse(savedTeamMembers));
         } else {
-            setTeamMembers(initialTeamMembers);
+            setTeamMembers(initialTeamMembers); // This will be an empty array
         }
     }, []);
 
     useEffect(() => {
-        if (teamMembers.length > 0) {
-            localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
-        }
+        localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
     }, [teamMembers]);
 
     useEffect(() => {
@@ -92,7 +90,7 @@ export default function TeamPage() {
         if (memberToEdit) {
             setTeamMembers(prev => prev.map(m => m.id === member.id ? member : m));
         } else {
-            setTeamMembers(prev => [...prev, { ...member, id: `TM-${prev.length + 1}` }]);
+            setTeamMembers(prev => [...prev, { ...member, id: `TM-${Date.now()}` }]);
         }
     };
 

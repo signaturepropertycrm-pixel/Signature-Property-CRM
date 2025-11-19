@@ -4,7 +4,7 @@ import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps, appointments as initialAppointments } from '@/lib/data';
+import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
@@ -112,7 +112,7 @@ function BuyersPageContent() {
     }, []);
 
     useEffect(() => {
-        if (buyers.length > 0) localStorage.setItem('buyers', JSON.stringify(buyers));
+        localStorage.setItem('buyers', JSON.stringify(buyers));
     }, [buyers]);
     
     useEffect(() => {

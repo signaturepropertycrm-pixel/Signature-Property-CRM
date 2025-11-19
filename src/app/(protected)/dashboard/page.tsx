@@ -56,19 +56,19 @@ export default function DashboardPage() {
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
   useEffect(() => {
-    const propertiesData = JSON.parse(localStorage.getItem('properties') || 'null') as Property[] || initialProperties;
+    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') as Property[];
     setProperties(propertiesData);
     
-    const buyersData = JSON.parse(localStorage.getItem('buyers') || 'null') as Buyer[] || initialBuyers;
+    const buyersData = JSON.parse(localStorage.getItem('buyers') || '[]') as Buyer[];
     setBuyers(buyersData);
 
-    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || 'null') as Appointment[] || initialAppointments;
+    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || '[]') as Appointment[];
     setAppointments(appointmentsData);
     
-    const followUpsData = JSON.parse(localStorage.getItem('followUps') || 'null') as FollowUp[] || initialFollowUps;
+    const followUpsData = JSON.parse(localStorage.getItem('followUps') || '[]') as FollowUp[];
     setFollowUps(followUpsData);
 
-    const teamMembersData = JSON.parse(localStorage.getItem('teamMembers') || 'null') as User[] || initialTeamMembers;
+    const teamMembersData = JSON.parse(localStorage.getItem('teamMembers') || '[]') as User[];
     setTeamMembers(teamMembersData);
 
     const lastMonth = subMonths(new Date(), 1);

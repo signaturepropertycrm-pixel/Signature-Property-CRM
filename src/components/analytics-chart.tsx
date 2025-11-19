@@ -31,6 +31,10 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 
 export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
   const data = useMemo(() => {
+    if (!buyers || buyers.length === 0) {
+      return demoData;
+    }
+
     const interested = buyers.filter(b => b.status === 'Interested').length;
     const hotLeads = buyers.filter(b => b.status === 'Hot Lead').length;
     const followUp = buyers.filter(b => b.status === 'Follow Up').length;

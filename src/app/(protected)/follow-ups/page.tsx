@@ -1,7 +1,7 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { followUps as initialFollowUps, buyers as initialBuyers, appointments as initialAppointments } from '@/lib/data';
+import { followUps as initialFollowUps, buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
@@ -14,9 +14,9 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 
 
 export default function FollowUpsPage() {
-  const [followUpsData, setFollowUpsData] = useState<FollowUp[]>(initialFollowUps);
-  const [buyersData, setBuyersData] = useState<Buyer[]>(initialBuyers);
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(initialAppointments);
+  const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
+  const [buyersData, setBuyersData] = useState<Buyer[]>([]);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function FollowUpsPage() {
     setBuyersData(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
 
     const savedAppointments = localStorage.getItem('appointments');
-    setAppointmentsData(savedAppointments ? JSON.parse(savedAppointments) : initialAppointments);
+    setAppointmentsData(savedAppointments ? JSON.parse(savedAppointments) : []);
   };
   
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function FollowUpsPage() {
   }, [followUpsData]);
 
   useEffect(() => {
-      if (appointmentsData.length > 0) localStorage.setItem('appointments', JSON.stringify(appointmentsData));
+      localStorage.setItem('appointments', JSON.stringify(appointmentsData));
   }, [appointmentsData]);
   
   const handlePhoneClick = (phone?: string) => {

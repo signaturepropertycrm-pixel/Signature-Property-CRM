@@ -27,15 +27,11 @@ export default function TrashPage() {
   }, []);
   
   useEffect(() => {
-     if (properties.length > 0) {
       localStorage.setItem('properties', JSON.stringify(properties));
-     }
   }, [properties]);
   
   useEffect(() => {
-      if (buyers.length > 0) {
-        localStorage.setItem('buyers', JSON.stringify(buyers));
-      }
+      localStorage.setItem('buyers', JSON.stringify(buyers));
   }, [buyers]);
 
   const deletedProperties = properties.filter(p => p.is_deleted);

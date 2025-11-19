@@ -32,6 +32,11 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().optional(),
   role: z.enum(userRoles).default('Agent'),
+  stats: z.object({
+      propertiesSold: z.number().default(0),
+      activeBuyers: z.number().default(0),
+      appointmentsToday: z.number().default(0),
+  }).optional()
 });
 
 type AddTeamMemberFormValues = z.infer<typeof formSchema>;
@@ -49,6 +54,7 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
             email: memberToEdit.email || '',
             phone: memberToEdit.phone || '',
             role: memberToEdit.role || 'Agent',
+            stats: memberToEdit.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
         };
     }
     return {
@@ -56,6 +62,7 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
         email: '',
         phone: '',
         role: 'Agent',
+        stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
     };
 };
 

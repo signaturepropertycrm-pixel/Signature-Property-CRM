@@ -30,7 +30,7 @@ function AppointmentsPageContent() {
         if (savedAppointments) {
             setAppointmentsData(JSON.parse(savedAppointments));
         } else {
-            setAppointmentsData(initialAppointments);
+            setAppointmentsData(initialAppointments); // This will be an empty array
         }
     };
     
@@ -50,9 +50,7 @@ function AppointmentsPageContent() {
   }, []);
 
   useEffect(() => {
-    if(appointmentsData.length > 0) {
-        localStorage.setItem('appointments', JSON.stringify(appointmentsData));
-    }
+    localStorage.setItem('appointments', JSON.stringify(appointmentsData));
   }, [appointmentsData]);
 
 

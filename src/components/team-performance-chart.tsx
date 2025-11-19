@@ -20,7 +20,6 @@ const demoData = [
 export const TeamPerformanceChart = ({ teamMembers }: { teamMembers: User[] }) => {
 
   const data = useMemo(() => {
-    // If teamMembers is empty or not provided, return demo data immediately.
     if (!teamMembers || teamMembers.length === 0) {
       return demoData;
     }
@@ -32,10 +31,8 @@ export const TeamPerformanceChart = ({ teamMembers }: { teamMembers: User[] }) =
         value: member.stats?.propertiesSold || 0,
       }));
     
-    // Check if any agent has sold any property.
     const hasSales = realData.some(d => d.value > 0);
 
-    // If no sales have been made, use demo data. Otherwise, use real data.
     return hasSales ? realData.filter(d => d.value > 0) : demoData;
 
   }, [teamMembers]);

@@ -35,7 +35,7 @@ import {
   PlusCircle,
   CalendarPlus,
 } from 'lucide-react';
-import { properties as initialProperties, appointments as initialAppointments } from '@/lib/data';
+import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment } from '@/lib/types';
@@ -133,15 +133,13 @@ function PropertiesPageContent() {
     if (savedProperties) {
       setProperties(JSON.parse(savedProperties));
     } else {
-      setProperties(initialProperties);
+      setProperties(initialProperties); // This will be an empty array
     }
   }, []);
 
   useEffect(() => {
     // Save properties to localStorage whenever they change
-    if (properties.length > 0) {
-        localStorage.setItem('properties', JSON.stringify(properties));
-    }
+    localStorage.setItem('properties', JSON.stringify(properties));
   }, [properties]);
 
   useEffect(() => {
