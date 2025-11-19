@@ -14,7 +14,7 @@ import {
   Cell,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, LineChart } from 'lucide-react';
 import { Property } from '@/lib/types';
 
 const colors = [
@@ -120,7 +120,10 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
       <CardHeader>
         <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="font-headline text-2xl font-bold">Performance Chart</CardTitle>
+              <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
+                <LineChart />
+                Performance Chart
+              </CardTitle>
               <CardDescription>A visual representation of year-over-year revenue growth.</CardDescription>
             </div>
           <div className="flex items-center gap-6 text-sm">
