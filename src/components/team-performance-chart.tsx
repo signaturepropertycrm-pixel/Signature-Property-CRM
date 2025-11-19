@@ -10,19 +10,32 @@ import { useMemo } from 'react';
 
 const COLORS = ['#2563eb', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
 
+const demoData = [
+  { name: 'Ali', value: 8 },
+  { name: 'Fatima', value: 12 },
+  { name: 'Admin', value: 5 },
+];
+
+
 export const TeamPerformanceChart = () => {
 
   const data = useMemo(() => {
-    return teamMembers
+    const realData = teamMembers
       .filter(member => member.role === 'Agent' || member.role === 'Admin')
       .map(member => ({
         name: member.name.split(' ')[0], // Use first name
-        value: member.stats?.propertiesSold || Math.floor(Math.random() * 10) + 1, // Use real data or random for demo
+        value: member.stats?.propertiesSold || 0,
       }));
+
+    if (realData.every(d => d.value === 0)) {
+        return demoData;
+    }
+    
+    return realData;
   }, []);
 
   return (
-    <Card className="shadow-lg col-span-1 lg:col-span-1">
+    <Card className="shadow-lg col-span-1">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
             <Users />

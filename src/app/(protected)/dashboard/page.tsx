@@ -74,7 +74,7 @@ export default function DashboardPage() {
     const completedLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Completed').length;
     const cancelledLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Cancelled').length;
 
-    const totalRevenue = propertiesData.filter((p: any) => p.status === 'Sold').reduce((acc: number, p: any) => acc + (p.sold_price || 0), 0);
+    const totalRevenue = propertiesData.filter((p: any) => p.status === 'Sold' && p.sold_price && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).reduce((acc: number, p: any) => acc + (p.sold_price || 0), 0);
 
     const updatedKpiData: KpiData[] = [
       {
@@ -187,7 +187,7 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         <PerformanceChart properties={properties} />
         <AnalyticsChart buyers={buyers} />
         <TeamPerformanceChart />

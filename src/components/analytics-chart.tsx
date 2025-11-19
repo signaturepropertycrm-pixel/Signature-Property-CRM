@@ -51,7 +51,7 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
-    <Card className="shadow-lg col-span-1 lg:col-span-1">
+    <Card className="shadow-lg col-span-1">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
           <TrendingUp />

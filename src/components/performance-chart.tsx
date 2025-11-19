@@ -114,7 +114,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
 
 
   return (
-    <Card className="shadow-lg col-span-1 lg:col-span-1">
+    <Card className="shadow-lg col-span-1">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="font-headline text-2xl font-bold">Performance Chart</CardTitle>
