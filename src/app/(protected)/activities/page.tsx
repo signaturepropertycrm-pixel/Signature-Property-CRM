@@ -46,14 +46,12 @@ export default function ActivitiesPage() {
                 <li key={activity.id} className="relative p-6 hover:bg-accent/50 transition-colors">
                   <div className="relative flex items-start gap-4">
                      <div className="absolute left-6 top-6 h-full w-px bg-border -translate-x-1/2" aria-hidden="true" />
-                     <div className="relative flex h-12 w-12 flex-none items-center justify-center bg-card">
-                        <span className="absolute -inset-1.5" />
-                        <Avatar className="h-12 w-12 border-2 border-primary/20">
-                            <AvatarImage src={activity.userAvatar} alt={activity.userName} />
-                            <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
-                        </Avatar>
+                     <div className="relative flex h-10 w-10 flex-none items-center justify-center bg-card rounded-full ring-1 ring-border">
+                       <div className="text-primary">
+                         {getActionIcon(activity.action)}
+                       </div>
                      </div>
-                    <div className="flex-auto">
+                    <div className="flex-auto pt-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold">{activity.userName}</span>
                         <span className="text-muted-foreground text-sm">{activity.action}</span>
