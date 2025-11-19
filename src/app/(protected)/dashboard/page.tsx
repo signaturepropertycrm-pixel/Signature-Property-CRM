@@ -36,6 +36,7 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
@@ -166,7 +167,12 @@ const agentPerformanceData = [
     { name: 'Ayesha Mir', sold: 9, fill: 'hsl(var(--chart-5))' },
 ];
 const agentChartConfig = {
-    sold: { label: 'Properties Sold' }
+    sold: { label: 'Properties Sold' },
+    'Ali Khan': { label: 'Ali Khan', color: 'hsl(var(--chart-1))'},
+    'Fatima Ahmed': { label: 'Fatima Ahmed', color: 'hsl(var(--chart-2))'},
+    'Sana Javed': { label: 'Sana Javed', color: 'hsl(var(--chart-3))'},
+    'Zain Malik': { label: 'Zain Malik', color: 'hsl(var(--chart-4))'},
+    'Ayesha Mir': { label: 'Ayesha Mir', color: 'hsl(var(--chart-5))'},
 }
 
 
@@ -181,6 +187,10 @@ export default function DashboardPage() {
       return kpi;
     });
   };
+  
+  const totalSold = React.useMemo(() => {
+    return agentPerformanceData.reduce((acc, curr) => acc + curr.sold, 0)
+  }, [])
 
   return (
     <div className="flex flex-col gap-8">
@@ -245,18 +255,43 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
            <CardContent className="h-80">
-              <ChartContainer config={agentChartConfig}>
-                <BarChart data={agentPerformanceData} layout="vertical" margin={{ left: 10, right: 30 }}>
-                    <CartesianGrid horizontal={false} />
-                    <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} tickMargin={8} width={80} />
-                    <XAxis dataKey="sold" type="number" hide />
-                    <Tooltip cursor={{fill: 'hsl(var(--accent))'}} content={<ChartTooltipContent hideLabel />} />
-                    <Bar dataKey="sold" layout="vertical" radius={5}>
-                        {agentPerformanceData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                    </Bar>
-                </BarChart>
+             <ChartContainer
+                config={agentChartConfig}
+                className="mx-auto aspect-square max-h-[350px]"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Pie
+                    data={agentPerformanceData}
+                    dataKey="sold"
+                    nameKey="name"
+                    innerRadius={60}
+                    strokeWidth={5}
+                  >
+                     {agentPerformanceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                   <ChartLegend
+                      content={
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                           {agentPerformanceData.map(agent => (
+                                <div key={agent.name} className="flex items-center gap-2 font-medium leading-none">
+                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: agent.fill }} />
+                                    <div className="leading-none">
+                                        <p>{agent.name}</p>
+                                        <p className="text-muted-foreground text-xs mt-1">({agent.sold} sold, {((agent.sold/totalSold)*100).toFixed(0)}%)</p>
+                                    </div>
+                                </div>
+                           ))}
+                        </div>
+                      }
+                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                    />
+                </PieChart>
               </ChartContainer>
           </CardContent>
         </Card>
