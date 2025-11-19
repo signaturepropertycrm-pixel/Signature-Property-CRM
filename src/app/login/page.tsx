@@ -42,13 +42,12 @@ export default function LoginPage() {
   const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isRoleLoading, setIsRoleLoading] = useState<string | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: 'demo_admin@signaturecrm.test',
-      password: 'DemoAdmin123',
+      email: '',
+      password: '',
       remember: false,
     },
   });
@@ -72,27 +71,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-  
-  const handleRoleLogin = async (role: 'Admin' | 'Agent' | 'Viewer') => {
-      let email = 'demo_admin@signaturecrm.test';
-      if (role === 'Agent') email = 'demo_agent@signaturecrm.test';
-      if (role === 'Viewer') email = 'demo_viewer@signaturecrm.test';
-
-      setIsRoleLoading(role);
-      try {
-          await signInWithEmailAndPassword(auth, email, 'DemoAdmin123');
-          router.push('/dashboard');
-      } catch (error: any) {
-           toast({
-              variant: 'destructive',
-              title: 'Login Failed',
-              description: 'Could not log in as ' + role,
-           });
-      } finally {
-          setIsRoleLoading(null);
-      }
-  }
-
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-violet-900 p-4 font-body">
@@ -145,6 +123,7 @@ export default function LoginPage() {
                           type="password"
                           className="bg-input/80"
                           {...field}
+                          placeholder="••••••••"
                         />
                       </FormControl>
                       <FormMessage />
@@ -199,27 +178,6 @@ export default function LoginPage() {
             </Form>
           </CardContent>
         </Card>
-        <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or login as
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button variant="outline" onClick={() => handleRoleLogin('Admin')} disabled={!!isRoleLoading} className="glass-card hover:bg-accent">
-                {isRoleLoading === 'Admin' ? <Loader2 className="animate-spin" /> : 'Admin'}
-            </Button>
-            <Button variant="outline" onClick={() => handleRoleLogin('Agent')} disabled={!!isRoleLoading} className="glass-card hover:bg-accent">
-                {isRoleLoading === 'Agent' ? <Loader2 className="animate-spin" /> : 'Agent'}
-            </Button>
-            <Button variant="outline" onClick={() => handleRoleLogin('Viewer')} disabled={!!isRoleLoading} className="glass-card hover:bg-accent">
-                {isRoleLoading === 'Viewer' ? <Loader2 className="animate-spin" /> : 'Viewer'}
-            </Button>
-          </div>
       </div>
     </div>
   );
