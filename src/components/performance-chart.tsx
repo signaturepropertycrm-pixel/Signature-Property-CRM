@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Property } from '@/lib/types';
 
@@ -72,8 +72,10 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
    const chartData = React.useMemo(() => {
     const soldProperties = properties.filter((p) => p.status === 'Sold' && p.sold_at && p.sold_price);
     
-    if (soldProperties.length === 0) {
-      return demoData;
+    const realDataExists = soldProperties.length > 0;
+
+    if (!realDataExists) {
+        return demoData;
     }
 
     const salesByYear: { [year: string]: number } = {};
@@ -117,7 +119,10 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
     <Card className="shadow-lg col-span-1">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="font-headline text-2xl font-bold">Performance Chart</CardTitle>
+            <div>
+              <CardTitle className="font-headline text-2xl font-bold">Performance Chart</CardTitle>
+              <CardDescription>A visual representation of year-over-year revenue growth.</CardDescription>
+            </div>
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <ArrowUp className="h-4 w-4 text-green-500" />
