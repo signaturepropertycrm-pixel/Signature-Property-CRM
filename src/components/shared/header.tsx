@@ -18,7 +18,7 @@ import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSq
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
 
 export function AppHeader({ 
@@ -34,11 +34,16 @@ export function AppHeader({
   const { setTheme, theme } = useTheme();
   const { profile } = useProfile();
   const auth = useAuth();
-  const ownerName = profile.ownerName;
-  const firstName = ownerName.split(' ')[0];
+  const { user } = useUser();
+
+  const displayName = user?.displayName || 'User';
+  const displayImage = user?.photoURL || profile.avatar;
+  const firstName = displayName.split(' ')[0];
   
   const handleLogout = async () => {
-    await signOut(auth);
+    if (auth) {
+        await signOut(auth);
+    }
     router.push('/login');
   };
 
@@ -76,10 +81,10 @@ export function AppHeader({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 rounded-full p-1 h-auto">
               <Avatar className="h-9 w-9 border-2 border-primary/50">
-                <AvatarImage src={profile.avatar} alt={profile.ownerName} />
-                <AvatarFallback>{ownerName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                <AvatarImage src={displayImage} alt={displayName} />
+                <AvatarFallback>{displayName.split(' ').map(n => n[0]).join('')}</AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline font-semibold">{ownerName}</span>
+              <span className="hidden sm:inline font-semibold">{displayName}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>

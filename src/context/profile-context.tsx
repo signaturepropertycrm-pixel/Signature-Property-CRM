@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/lib/types';
+import { useUser } from '@/firebase';
 
 export interface ProfileData {
   agencyName: string;
@@ -28,29 +29,32 @@ const defaultProfile: ProfileData = {
 };
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
-
-  useEffect(() => {
+  const { user } = useUser();
+  const [profile, setProfileState] = useState<ProfileData>(() => {
+    // Initialize from localStorage synchronously
     try {
       const savedProfile = localStorage.getItem('app-profile');
       if (savedProfile) {
-        // Ensure role is part of the loaded profile, otherwise set default
         const parsedProfile = JSON.parse(savedProfile);
-        if (!parsedProfile.role) {
-            parsedProfile.role = 'Admin';
-        }
-        if (!parsedProfile.avatar) {
-            parsedProfile.avatar = defaultProfile.avatar;
-        }
-        setProfileState(parsedProfile);
-      } else {
-        setProfileState(defaultProfile);
+        if (!parsedProfile.role) parsedProfile.role = 'Admin';
+        return parsedProfile;
       }
     } catch (error) {
-        console.error("Failed to parse profile from localStorage", error);
-        setProfileState(defaultProfile);
+      console.error("Failed to parse profile from localStorage", error);
     }
-  }, []);
+    return defaultProfile;
+  });
+
+  useEffect(() => {
+    // Update profile context when Firebase user changes
+    if (user) {
+      setProfileState(prevProfile => ({
+        ...prevProfile,
+        ownerName: user.displayName || prevProfile.ownerName,
+        avatar: user.photoURL || prevProfile.avatar,
+      }));
+    }
+  }, [user]);
 
   const setProfile = (newProfile: ProfileData) => {
     setProfileState(newProfile);
