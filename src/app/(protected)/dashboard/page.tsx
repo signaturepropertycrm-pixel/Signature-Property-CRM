@@ -135,30 +135,6 @@ const kpiData = [
   },
 ];
 
-const revenueData = [
-  { month: 'Jan', revenue: 4000000 },
-  { month: 'Feb', revenue: 3000000 },
-  { month: 'Mar', revenue: 5000000 },
-  { month: 'Apr', revenue: 4500000 },
-  { month: 'May', revenue: 6000000 },
-  { month: 'Jun', revenue: 7200000 },
-];
-
-const agentPerformanceData = [
-    { name: 'Ali Khan', sold: 5, fill: 'hsl(var(--chart-1))' },
-    { name: 'Fatima Ahmed', sold: 8, fill: 'hsl(var(--chart-2))' },
-    { name: 'Sana Javed', sold: 3, fill: 'hsl(var(--chart-3))' },
-    { name: 'Zain Malik', sold: 6, fill: 'hsl(var(--chart-4))' },
-    { name: 'Ayesha Mir', sold: 9, fill: 'hsl(var(--chart-5))' },
-];
-const agentChartConfig = {
-    sold: { label: 'Properties Sold' },
-    'Ali Khan': { label: 'Ali Khan', color: 'hsl(var(--chart-1))'},
-    'Fatima Ahmed': { label: 'Fatima Ahmed', color: 'hsl(var(--chart-2))'},
-    'Sana Javed': { label: 'Sana Javed', color: 'hsl(var(--chart-3))'},
-    'Zain Malik': { label: 'Zain Malik', color: 'hsl(var(--chart-4))'},
-    'Ayesha Mir': { label: 'Ayesha Mir', color: 'hsl(var(--chart-5))'},
-}
 
 
 export default function DashboardPage() {
@@ -173,10 +149,6 @@ export default function DashboardPage() {
     });
   };
   
-  const totalSold = React.useMemo(() => {
-    return agentPerformanceData.reduce((acc, curr) => acc + curr.sold, 0)
-  }, [])
-
   return (
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -200,77 +172,6 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-7">
-        <div className="lg:col-span-3">
-            <PerformanceChart />
-        </div>
-      
-        <Card className="lg:col-span-4">
-          <CardHeader className="flex flex-row items-center">
-            <div className="grid gap-2">
-              <CardTitle>Agent Performance</CardTitle>
-              <CardDescription>Top agents by properties sold this month.</CardDescription>
-            </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-              <Link href="/team">
-                View All
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-           <CardContent className="h-80">
-             <ChartContainer
-                config={agentChartConfig}
-                className="mx-auto aspect-square max-h-[350px]"
-              >
-                <PieChart>
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
-                  />
-                  <Pie
-                    data={agentPerformanceData}
-                    dataKey="sold"
-                    nameKey="name"
-                    innerRadius={60}
-                    strokeWidth={5}
-                  >
-                     <text
-                        x="50%"
-                        y="50%"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-foreground text-3xl font-bold"
-                      >
-                        {totalSold.toLocaleString()}
-                      </text>
-                     {agentPerformanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                   <ChartLegend
-                      content={<ChartLegendContent nameKey="name" className="flex-col gap-2 [&_.legend-item]:flex-wrap" />}
-                      className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                      formatter={(value, entry) => {
-                          const agent = agentPerformanceData.find(a => a.name === value);
-                          if (!agent) return null;
-                          return (
-                            <div className="flex items-center gap-2 font-medium leading-none w-full">
-                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: agent.fill }} />
-                                <div className="leading-none flex-1">
-                                    <p>{agent.name}</p>
-                                    <p className="text-muted-foreground text-xs mt-1">({agent.sold} sold, {((agent.sold/totalSold)*100).toFixed(0)}%)</p>
-                                </div>
-                            </div>
-                          )
-                       }}
-                    />
-                </PieChart>
-              </ChartContainer>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
