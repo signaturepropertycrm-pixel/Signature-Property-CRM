@@ -48,7 +48,7 @@ export default function FollowUpsPage() {
   }, []);
 
   useEffect(() => {
-      if (buyersData.length > 0) localStorage.setItem('buyers', JSON.stringify(buyersData));
+      localStorage.setItem('buyers', JSON.stringify(buyersData));
   }, [buyersData]);
 
   useEffect(() => {
