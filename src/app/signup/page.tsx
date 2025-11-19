@@ -13,7 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Home, Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,49 +24,62 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useAuth } from '@/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Please enter a valid email.'),
-  password: z.string().min(1, 'Password is required.'),
-  remember: z.boolean().default(false),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
 
-type LoginFormValues = z.infer<typeof formSchema>;
+type SignupFormValues = z.infer<typeof formSchema>;
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
-      remember: false,
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
       if (!auth) {
         throw new Error('Auth service is not available.');
       }
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      
+      // Update user's profile with their name
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: values.name,
+        });
+      }
+
+      toast({
+        title: 'Account Created!',
+        description: 'You have been successfully registered.',
+      });
       router.push('/dashboard');
+
     } catch (error: any) {
-      console.error('Login Error:', error);
+      console.error('Signup Error:', error);
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: 'Signup Failed',
         description:
-          error.code === 'auth/invalid-credential'
-            ? 'Incorrect email or password.'
+          error.code === 'auth/email-already-in-use'
+            ? 'This email address is already in use.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -86,17 +98,34 @@ export default function LoginPage() {
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Welcome back! Please sign in to continue.
+            Create an account to get started.
           </p>
         </div>
 
         <Card className="glass-card shadow-2xl hover:shadow-primary/20">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
+            <CardTitle>Create Account</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label>Name</Label>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Ali Khan"
+                          className="bg-input/80"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="email"
@@ -134,30 +163,6 @@ export default function LoginPage() {
                   )}
                 />
 
-                <div className="flex items-center justify-between text-sm">
-                  <FormField
-                    control={form.control}
-                    name="remember"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center gap-2 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <Label className="font-normal">Remember me</Label>
-                      </FormItem>
-                    )}
-                  />
-                  <Link
-                    href="#"
-                    className="font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot Password?
-                  </Link>
-                </div>
-
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-bold mt-4 glowing-btn"
@@ -166,15 +171,15 @@ export default function LoginPage() {
                   {isLoading && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Login
+                  Create Account
                 </Button>
                 <div className="mt-4 text-center text-sm">
-                  Don&apos;t have an account?{' '}
+                  Already have an account?{' '}
                   <Link
-                    href="/signup"
+                    href="/login"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
-                    Create an Account
+                    Login
                   </Link>
                 </div>
               </form>
