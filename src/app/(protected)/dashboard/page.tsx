@@ -32,7 +32,9 @@ import { subMonths, isWithinInterval } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
-import { Property } from '@/lib/types';
+import { Property, Buyer, Appointment, FollowUp } from '@/lib/types';
+import { AnalyticsChart } from '@/components/analytics-chart';
+import { TeamPerformanceChart } from '@/components/team-performance-chart';
 
 type KpiData = {
   id: string;
@@ -48,19 +50,27 @@ export default function DashboardPage() {
   const { currency } = useCurrency();
   const [kpiData, setKpiData] = useState<KpiData[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [buyers, setBuyers] = useState<Buyer[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
 
   useEffect(() => {
-    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') || initialProperties;
+    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') as Property[] || initialProperties;
     setProperties(propertiesData);
     
-    const buyers = JSON.parse(localStorage.getItem('buyers') || '[]') || initialBuyers;
-    const appointments = JSON.parse(localStorage.getItem('appointments') || '[]') || initialAppointments;
-    const followUps = JSON.parse(localStorage.getItem('followUps') || '[]') || initialFollowUps;
+    const buyersData = JSON.parse(localStorage.getItem('buyers') || '[]') as Buyer[] || initialBuyers;
+    setBuyers(buyersData);
+
+    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || '[]') as Appointment[] || initialAppointments;
+    setAppointments(appointmentsData);
+    
+    const followUpsData = JSON.parse(localStorage.getItem('followUps') || '[]') as FollowUp[] || initialFollowUps;
+    setFollowUps(followUpsData);
 
     const lastMonth = subMonths(new Date(), 1);
     const now = new Date();
 
-    const appointmentsLastMonth = appointments.filter((a: any) => isWithinInterval(new Date(a.date), { start: lastMonth, end: now }));
+    const appointmentsLastMonth = appointmentsData.filter((a: any) => isWithinInterval(new Date(a.date), { start: lastMonth, end: now }));
     const completedLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Completed').length;
     const cancelledLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Cancelled').length;
 
@@ -78,7 +88,7 @@ export default function DashboardPage() {
       {
         id: 'total-buyers',
         title: 'Total Buyers',
-        value: buyers.length.toString(),
+        value: buyersData.length.toString(),
         icon: Users,
         color: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
         change: '+8.5%',
@@ -102,7 +112,7 @@ export default function DashboardPage() {
        {
         id: 'interested-buyers',
         title: 'Interested Buyers',
-        value: buyers.filter((b: any) => b.status === 'Interested').length.toString(),
+        value: buyersData.filter((b: any) => b.status === 'Interested').length.toString(),
         icon: Star,
         color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
         change: '+10',
@@ -110,7 +120,7 @@ export default function DashboardPage() {
       {
         id: 'hot-leads',
         title: 'Hot Leads',
-        value: buyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
+        value: buyersData.filter((b: any) => b.status === 'Hot Lead').length.toString(),
         icon: Flame,
         color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
         change: '+3 this week',
@@ -118,10 +128,10 @@ export default function DashboardPage() {
       {
         id: 'follow-up-leads',
         title: 'Follow-up Leads',
-        value: followUps.length.toString(),
+        value: followUpsData.length.toString(),
         icon: PhoneForwarded,
         color: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300',
-        change: `${followUps.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
+        change: `${followUpsData.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
       },
        {
         id: 'appointments-month',
@@ -129,7 +139,7 @@ export default function DashboardPage() {
         value: appointmentsLastMonth.length.toString(),
         icon: CalendarDays,
         color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
-        change: `${appointments.filter((a: any) => a.status === 'Scheduled').length} upcoming`,
+        change: `${appointmentsData.filter((a: any) => a.status === 'Scheduled').length} upcoming`,
       },
        {
         id: 'completed-month',
@@ -177,8 +187,10 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <PerformanceChart properties={properties} />
+        <AnalyticsChart buyers={buyers} />
+        <TeamPerformanceChart />
       </div>
     </div>
   );

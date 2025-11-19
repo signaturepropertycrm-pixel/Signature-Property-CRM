@@ -25,6 +25,15 @@ const colors = [
     '#10b981',
 ];
 
+const demoData = [
+  { year: '2020', revenue: 15, cost: -5 },
+  { year: '2021', revenue: 25, cost: -8 },
+  { year: '2022', revenue: -10, cost: -3 },
+  { year: '2023', revenue: 40, cost: -12 },
+  { year: '2024', revenue: 30, cost: -10 },
+];
+
+
 const CustomTick = (props: any) => {
   const { x, y, payload, index } = props;
   const radius = 16;
@@ -69,8 +78,8 @@ const CustomBar = (props: any) => {
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
 
    const chartData = React.useMemo(() => {
-    if (!properties || properties.length === 0) {
-      return [];
+    if (!properties || properties.filter(p => p.status === 'Sold').length === 0) {
+      return demoData;
     }
 
     const salesByYear: { [year: string]: number } = {};
@@ -88,7 +97,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
     const years = Object.keys(salesByYear).sort();
     let previousYearRevenue = 0;
 
-    return years.map((year) => {
+    const realData = years.map((year) => {
       const revenue = salesByYear[year];
       const revenuePercentage =
         previousYearRevenue === 0
@@ -106,11 +115,14 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
         cost: parseFloat(costPercentage.toFixed(2)),
       };
     }).slice(-5); // take last 5 years
+
+    return realData.length > 0 ? realData : demoData;
+    
   }, [properties]);
 
 
   return (
-    <Card className="shadow-lg col-span-1 lg:col-span-2">
+    <Card className="shadow-lg col-span-1 lg:col-span-1">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="font-headline text-2xl font-bold">Performance Chart</CardTitle>
