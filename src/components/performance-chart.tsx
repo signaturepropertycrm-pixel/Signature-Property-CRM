@@ -15,14 +15,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUp, ArrowDown } from 'lucide-react';
-
-const data = [
-  { year: '2019', revenue: 25, cost: -12 },
-  { year: '2020', revenue: 30, cost: -18 },
-  { year: '2021', revenue: 35, cost: -10 },
-  { year: '2022', revenue: 38, cost: -15 },
-  { year: '2023', revenue: 42, cost: -11 },
-];
+import { Property } from '@/lib/types';
 
 const colors = [
     '#2563eb',
@@ -73,7 +66,49 @@ const CustomBar = (props: any) => {
     return <rect x={x} y={y} width={width} height={height} fill={fill} />;
 };
 
-export const PerformanceChart = () => {
+export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
+
+   const chartData = React.useMemo(() => {
+    if (!properties || properties.length === 0) {
+      return [];
+    }
+
+    const salesByYear: { [year: string]: number } = {};
+
+    properties
+      .filter((p) => p.status === 'Sold' && p.sold_at && p.sold_price)
+      .forEach((p) => {
+        const year = new Date(p.sold_at!).getFullYear().toString();
+        if (!salesByYear[year]) {
+          salesByYear[year] = 0;
+        }
+        salesByYear[year] += p.sold_price!;
+      });
+
+    const years = Object.keys(salesByYear).sort();
+    let previousYearRevenue = 0;
+
+    return years.map((year) => {
+      const revenue = salesByYear[year];
+      const revenuePercentage =
+        previousYearRevenue === 0
+          ? 0
+          : ((revenue - previousYearRevenue) / previousYearRevenue) * 100;
+      
+      previousYearRevenue = revenue;
+
+      // Using dummy cost data for now
+      const costPercentage = -(Math.random() * 15 + 5); 
+
+      return {
+        year: year,
+        revenue: parseFloat(revenuePercentage.toFixed(2)),
+        cost: parseFloat(costPercentage.toFixed(2)),
+      };
+    }).slice(-5); // take last 5 years
+  }, [properties]);
+
+
   return (
     <Card className="shadow-lg col-span-1 lg:col-span-2">
       <CardHeader>
@@ -94,7 +129,7 @@ export const PerformanceChart = () => {
       <CardContent className="h-[400px] w-full pt-6">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={chartData}
             margin={{
               top: 20,
               right: 30,
@@ -127,7 +162,7 @@ export const PerformanceChart = () => {
                     return (
                         <div className="bg-background/80 backdrop-blur-sm border p-3 rounded-lg shadow-lg">
                             <p className="font-bold text-lg mb-2">{`Year: ${revenue?.payload.year}`}</p>
-                            {revenue && <p className="text-green-500">{`Revenue: ${revenue.value}%`}</p>}
+                            {revenue && <p className="text-green-500">{`Revenue Growth: ${revenue.value}%`}</p>}
                             {cost && <p className="text-red-500">{`Cost: ${-cost.value}%`}</p>}
                         </div>
                     );
@@ -137,12 +172,12 @@ export const PerformanceChart = () => {
             />
             <ReferenceLine y={0} stroke="#a1a1aa" strokeWidth={2} />
             <Bar dataKey="revenue">
-               {data.map((entry, index) => (
+               {chartData.map((entry, index) => (
                     <Cell key={`cell-revenue-${index}`} fill={colors[index % colors.length]} />
                 ))}
             </Bar>
             <Bar dataKey="cost" shape={<CustomBar />}>
-                {data.map((entry, index) => (
+                {chartData.map((entry, index) => (
                     <Cell key={`cell-cost-${index}`} fill={colors[index % colors.length]} opacity={0.6} />
                 ))}
             </Bar>

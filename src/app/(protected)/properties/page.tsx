@@ -677,6 +677,7 @@ function PropertiesPageContent() {
             property={selectedProperty}
             isOpen={isSoldOpen}
             setIsOpen={setIsSoldOpen}
+            onUpdateProperty={handleUpdateProperty}
           />
           <RecordVideoDialog
             property={selectedProperty}

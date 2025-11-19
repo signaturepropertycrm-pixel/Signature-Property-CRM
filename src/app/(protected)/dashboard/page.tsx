@@ -27,33 +27,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Sector,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent
-} from '@/components/ui/chart';
 import { appointments as initialAppointments, properties as initialProperties, buyers as initialBuyers, followUps as initialFollowUps } from '@/lib/data';
 import { subMonths, isWithinInterval } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
+import { Property } from '@/lib/types';
 
 type KpiData = {
   id: string;
@@ -68,9 +47,12 @@ type KpiData = {
 export default function DashboardPage() {
   const { currency } = useCurrency();
   const [kpiData, setKpiData] = useState<KpiData[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
 
   useEffect(() => {
-    const properties = JSON.parse(localStorage.getItem('properties') || '[]') || initialProperties;
+    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') || initialProperties;
+    setProperties(propertiesData);
+    
     const buyers = JSON.parse(localStorage.getItem('buyers') || '[]') || initialBuyers;
     const appointments = JSON.parse(localStorage.getItem('appointments') || '[]') || initialAppointments;
     const followUps = JSON.parse(localStorage.getItem('followUps') || '[]') || initialFollowUps;
@@ -82,13 +64,13 @@ export default function DashboardPage() {
     const completedLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Completed').length;
     const cancelledLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Cancelled').length;
 
-    const totalRevenue = properties.filter((p: any) => p.status === 'Sold').reduce((acc: number, p: any) => acc + (p.soldPrice || 0), 12000000);
+    const totalRevenue = propertiesData.filter((p: any) => p.status === 'Sold').reduce((acc: number, p: any) => acc + (p.sold_price || 0), 0);
 
     const updatedKpiData: KpiData[] = [
       {
         id: 'total-properties',
         title: 'Total Properties',
-        value: properties.length.toString(),
+        value: propertiesData.length.toString(),
         icon: Building2,
         color: 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300',
         change: '+2.1%',
@@ -104,7 +86,7 @@ export default function DashboardPage() {
       {
         id: 'properties-sold',
         title: 'Properties Sold (Month)',
-        value: properties.filter((p: any) => p.status === 'Sold').length.toString(),
+        value: propertiesData.filter((p: any) => p.status === 'Sold' && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).length.toString(),
         icon: DollarSign,
         color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300',
         change: '+15%',
@@ -196,7 +178,7 @@ export default function DashboardPage() {
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-        <PerformanceChart />
+        <PerformanceChart properties={properties} />
       </div>
     </div>
   );

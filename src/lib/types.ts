@@ -57,6 +57,8 @@ export type Property = {
     other?: string;
   };
   is_deleted?: boolean;
+  sold_price?: number;
+  sold_at?: string;
 };
 
 export type BuyerStatus =
