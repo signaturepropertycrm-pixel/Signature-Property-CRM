@@ -128,4 +128,15 @@ export type Appointment = {
     notes?: string;
 }
 
+export type Activity = {
+    id: string;
+    userName: string;
+    userAvatar?: string;
+    action: string;
+    target: string;
+    targetType: 'Property' | 'Buyer' | 'Appointment' | 'User';
+    details?: any;
+    timestamp: string;
+};
+
     

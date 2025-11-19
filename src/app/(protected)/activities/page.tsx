@@ -1,27 +1,87 @@
 
 'use client';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { History } from 'lucide-react';
+import { activities } from '@/lib/data';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  FilePlus,
+  UserPlus,
+  Edit,
+  CheckCircle,
+  CalendarPlus,
+  ArrowRight,
+} from 'lucide-react';
+import React from 'react';
+
+const getActionIcon = (action: string) => {
+  if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
+  if (action.includes('added a new buyer')) return <UserPlus className="h-4 w-4" />;
+  if (action.includes('updated the status')) return <Edit className="h-4 w-4" />;
+  if (action.includes('marked a property as "Sold"')) return <CheckCircle className="h-4 w-4" />;
+  if (action.includes('scheduled an appointment')) return <CalendarPlus className="h-4 w-4" />;
+  return <Edit className="h-4 w-4" />;
+};
+
 
 export default function ActivitiesPage() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-        <Card className="max-w-md w-full">
-            <CardHeader>
-                <div className="flex justify-center mb-4">
-                    <History className="h-16 w-16 text-primary" />
-                </div>
-                <CardTitle className="text-3xl font-bold font-headline text-center">
-                    Coming Soon!
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">
-                    The Activities page is currently under development. Soon, you will be able to view a complete log of all major actions taken within the system right here!
-                </p>
-            </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">
+          Recent Activities
+        </h1>
+        <p className="text-muted-foreground">
+          A log of all major actions taken within the system.
+        </p>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="flow-root">
+            <ul className="divide-y divide-border">
+              {activities.map((activity, activityIdx) => (
+                <li key={activity.id} className="relative p-6 hover:bg-accent/50 transition-colors">
+                  <div className="relative flex items-start gap-4">
+                     <div className="absolute left-6 top-6 h-full w-px bg-border -translate-x-1/2" aria-hidden="true" />
+                     <div className="relative flex h-12 w-12 flex-none items-center justify-center bg-card">
+                        <span className="absolute -inset-1.5" />
+                        <Avatar className="h-12 w-12 border-2 border-primary/20">
+                            <AvatarImage src={activity.userAvatar} alt={activity.userName} />
+                            <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                     </div>
+                    <div className="flex-auto">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold">{activity.userName}</span>
+                        <span className="text-muted-foreground text-sm">{activity.action}</span>
+                      </div>
+                      <p className="font-semibold text-primary">{activity.target}</p>
+
+                      {activity.details && (
+                        <div className="mt-2 flex items-center gap-2 text-sm">
+                          <Badge variant="secondary">{activity.details.from}</Badge>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          <Badge variant="default">{activity.details.to}</Badge>
+                        </div>
+                      )}
+                      
+                       <time dateTime={activity.timestamp} className="block flex-none text-xs text-muted-foreground mt-2">
+                        {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                      </time>
+                    </div>
+                     <div className="absolute right-0 top-0 text-muted-foreground">
+                        <Badge variant="outline">{activity.targetType}</Badge>
+                     </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
