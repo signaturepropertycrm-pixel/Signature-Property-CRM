@@ -5,7 +5,7 @@ import { followUps as initialFollowUps, buyers as initialBuyers, appointments as
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { FollowUp, Buyer, Appointment, AppointmentContactType, BuyerStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
@@ -230,7 +230,3 @@ export default function FollowUpsPage() {
     </>
   );
 }
-
-    
-
-    
