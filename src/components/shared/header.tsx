@@ -18,6 +18,8 @@ import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSq
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 export function AppHeader({ 
   searchable,
@@ -31,8 +33,14 @@ export function AppHeader({
   const router = useRouter();
   const { setTheme, theme } = useTheme();
   const { profile } = useProfile();
+  const auth = useAuth();
   const ownerName = profile.ownerName;
   const firstName = ownerName.split(' ')[0];
+  
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
@@ -95,7 +103,7 @@ export function AppHeader({
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/login')}>
+            <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />
                 Logout
             </DropdownMenuItem>
