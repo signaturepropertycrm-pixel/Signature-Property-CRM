@@ -52,6 +52,7 @@ import { appointments } from '@/lib/data';
 import { subMonths, isWithinInterval } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
+import { PerformanceChart } from '@/components/performance-chart';
 
 const lastMonth = subMonths(new Date(), 1);
 const now = new Date();
@@ -143,22 +144,6 @@ const revenueData = [
   { month: 'Jun', revenue: 7200000 },
 ];
 
-const buyersStatusData = [
-    { name: 'Hot Lead', value: 18, fill: 'hsl(var(--chart-5))'},
-    { name: 'Interested', value: 42, fill: 'hsl(var(--chart-3))'},
-    { name: 'Follow Up', value: 25, fill: 'hsl(var(--chart-4))'},
-    { name: 'New', value: 55, fill: 'hsl(var(--chart-2))'},
-    { name: 'Cold Lead', value: 70, fill: 'hsl(var(--chart-1))'},
-];
-const buyersChartConfig = {
-    value: { label: 'Buyers' },
-    'Hot Lead': { label: 'Hot Lead', color: "hsl(var(--chart-5))"},
-    'Interested': { label: 'Interested', color: "hsl(var(--chart-3))"},
-    'Follow Up': { label: 'Follow Up', color: "hsl(var(--chart-4))"},
-    'New': { label: 'New', color: "hsl(var(--chart-2))"},
-    'Cold Lead': { label: 'Cold Lead', color: "hsl(var(--chart-1))"},
-}
-
 const agentPerformanceData = [
     { name: 'Ali Khan', sold: 5, fill: 'hsl(var(--chart-1))' },
     { name: 'Fatima Ahmed', sold: 8, fill: 'hsl(var(--chart-2))' },
@@ -217,31 +202,12 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-1">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Monthly Revenue</CardTitle>
-            <CardDescription>Revenue from properties sold over the last 6 months.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer config={{}} className="h-full w-full">
-              <LineChart data={revenueData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => formatCurrency(value, currency, { notation: 'compact' })} />
-                  <Tooltip
-                    cursor={{ strokeDasharray: '3 3' }}
-                    content={<ChartTooltipContent formatter={(value) => formatCurrency(Number(value), currency)} />}
-                  />
-                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: "hsl(var(--primary))" }} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="grid gap-4 lg:grid-cols-7">
+        <div className="lg:col-span-3">
+            <PerformanceChart />
+        </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-7">
+        <Card className="lg:col-span-4">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
               <CardTitle>Agent Performance</CardTitle>
