@@ -56,18 +56,21 @@ const CustomTick = (props: any) => {
 
 const CustomBar = (props: any) => {
     const { x, y, width, height, value, fill } = props;
-    const isPositive = value >= 0;
-
-    // Render nothing if value is 0
+  
     if (value === 0) return null;
   
-    if (isPositive) {
-      // Positive bar (Revenue)
-      return <rect x={x} y={y} width={width} height={height} fill={fill} />;
-    } else {
-      // Negative bar (Cost)
+    // For negative values, the bar grows downwards.
+    // Recharts provides `y` as the top of the bar and `height` as a positive value.
+    // To draw downwards from the zero line, we need to know where the zero line is.
+    // But since the component doesn't know about the y-axis, we make an assumption
+    // or adjust based on the value. If value is negative, y is the zero-line.
+    if (value < 0) {
       return <rect x={x} y={y} width={width} height={-height} fill={fill} />;
     }
+    
+    // For positive values, the bar grows upwards.
+    // `y` is the top of the bar, `height` is its height.
+    return <rect x={x} y={y} width={width} height={height} fill={fill} />;
 };
 
 export const PerformanceChart = () => {
