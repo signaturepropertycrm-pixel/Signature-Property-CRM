@@ -308,8 +308,8 @@ function BuyersPageContent() {
                 {filteredBuyers.map(buyer => (
                     <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
                         <TableCell>
-                            <div className="font-medium">{buyer.name}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
+                            <div className="font-bold font-headline text-base">{buyer.name}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                                 <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                 <span>{buyer.phone}</span>
                             </div>
@@ -404,8 +404,8 @@ function BuyersPageContent() {
                     <CardHeader>
                         <CardTitle className="flex justify-between items-start">
                             <div>
-                                <span className="font-medium text-lg">{buyer.name}</span>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="font-bold font-headline text-lg">{buyer.name}</span>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                                     <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
                                 </div>
                             </div>
