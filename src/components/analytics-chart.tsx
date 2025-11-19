@@ -41,16 +41,15 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
         { name: 'Follow-up', value: followUp, icon: PhoneForwarded },
     ];
     
-    // If all values are zero, show demo data
-    if (chartData.every(d => d.value === 0)) {
+    const totalRealValue = chartData.reduce((sum, item) => sum + item.value, 0);
+
+    if (totalRealValue === 0) {
         return demoData;
     }
     
     return chartData.filter(d => d.value > 0);
 
   }, [buyers]);
-
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
   return (
     <Card className="shadow-lg col-span-1">
