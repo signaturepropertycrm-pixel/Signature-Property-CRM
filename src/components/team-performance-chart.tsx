@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Pie, PieChart, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { teamMembers } from '@/lib/data';
+import { User } from '@/lib/types';
 import { Users } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -17,7 +17,7 @@ const demoData = [
 ];
 
 
-export const TeamPerformanceChart = () => {
+export const TeamPerformanceChart = ({ teamMembers }: { teamMembers: User[] }) => {
 
   const data = useMemo(() => {
     const realData = teamMembers
@@ -31,8 +31,8 @@ export const TeamPerformanceChart = () => {
         return demoData;
     }
     
-    return realData;
-  }, []);
+    return realData.filter(d => d.value > 0);
+  }, [teamMembers]);
 
   return (
     <Card className="shadow-lg col-span-1">

@@ -11,6 +11,12 @@ import { useMemo } from 'react';
 const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6'];
 const RADIAN = Math.PI / 180;
 
+const demoData = [
+    { name: 'Interested', value: 12, icon: Star },
+    { name: 'Hot Leads', value: 5, icon: Flame },
+    { name: 'Follow-up', value: 8, icon: PhoneForwarded },
+];
+
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -35,16 +41,12 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
         { name: 'Follow-up', value: followUp, icon: PhoneForwarded },
     ];
     
-    // If all values are zero, show some demo data
+    // If all values are zero, show demo data
     if (chartData.every(d => d.value === 0)) {
-        return [
-            { name: 'Interested', value: 12, icon: Star },
-            { name: 'Hot Leads', value: 5, icon: Flame },
-            { name: 'Follow-up', value: 8, icon: PhoneForwarded },
-        ];
+        return demoData;
     }
     
-    return chartData;
+    return chartData.filter(d => d.value > 0);
 
   }, [buyers]);
 

@@ -27,12 +27,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { appointments as initialAppointments, properties as initialProperties, buyers as initialBuyers, followUps as initialFollowUps } from '@/lib/data';
+import { appointments as initialAppointments, properties as initialProperties, buyers as initialBuyers, followUps as initialFollowUps, teamMembers as initialTeamMembers } from '@/lib/data';
 import { subMonths, isWithinInterval } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
-import { Property, Buyer, Appointment, FollowUp } from '@/lib/types';
+import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { TeamPerformanceChart } from '@/components/team-performance-chart';
 
@@ -53,19 +53,23 @@ export default function DashboardPage() {
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+  const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
   useEffect(() => {
-    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') as Property[] || initialProperties;
+    const propertiesData = JSON.parse(localStorage.getItem('properties') || 'null') as Property[] || initialProperties;
     setProperties(propertiesData);
     
-    const buyersData = JSON.parse(localStorage.getItem('buyers') || '[]') as Buyer[] || initialBuyers;
+    const buyersData = JSON.parse(localStorage.getItem('buyers') || 'null') as Buyer[] || initialBuyers;
     setBuyers(buyersData);
 
-    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || '[]') as Appointment[] || initialAppointments;
+    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || 'null') as Appointment[] || initialAppointments;
     setAppointments(appointmentsData);
     
-    const followUpsData = JSON.parse(localStorage.getItem('followUps') || '[]') as FollowUp[] || initialFollowUps;
+    const followUpsData = JSON.parse(localStorage.getItem('followUps') || 'null') as FollowUp[] || initialFollowUps;
     setFollowUps(followUpsData);
+
+    const teamMembersData = JSON.parse(localStorage.getItem('teamMembers') || 'null') as User[] || initialTeamMembers;
+    setTeamMembers(teamMembersData);
 
     const lastMonth = subMonths(new Date(), 1);
     const now = new Date();
@@ -74,7 +78,9 @@ export default function DashboardPage() {
     const completedLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Completed').length;
     const cancelledLastMonth = appointmentsLastMonth.filter((a: any) => a.status === 'Cancelled').length;
 
-    const totalRevenue = propertiesData.filter((p: any) => p.status === 'Sold' && p.sold_price && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).reduce((acc: number, p: any) => acc + (p.sold_price || 0), 0);
+    const totalRevenue = propertiesData.filter((p: any) => p.status === 'Sold' && p.sold_price && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).reduce((acc: number, p: any) => acc + (p.sold_price || 0), 0);
+    const soldThisMonth = propertiesData.filter((p: any) => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).length;
+
 
     const updatedKpiData: KpiData[] = [
       {
@@ -96,7 +102,7 @@ export default function DashboardPage() {
       {
         id: 'properties-sold',
         title: 'Properties Sold (Month)',
-        value: propertiesData.filter((p: any) => p.status === 'Sold' && isWithinInterval(new Date(p.sold_at), { start: lastMonth, end: now })).length.toString(),
+        value: soldThisMonth.toString(),
         icon: DollarSign,
         color: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300',
         change: '+15%',
@@ -190,7 +196,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-8">
         <PerformanceChart properties={properties} />
         <AnalyticsChart buyers={buyers} />
-        <TeamPerformanceChart />
+        <TeamPerformanceChart teamMembers={teamMembers} />
       </div>
     </div>
   );
