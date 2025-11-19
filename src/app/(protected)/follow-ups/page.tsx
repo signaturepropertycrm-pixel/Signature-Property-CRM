@@ -14,9 +14,9 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 
 
 export default function FollowUpsPage() {
-  const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
-  const [buyersData, setBuyersData] = useState<Buyer[]>([]);
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
+  const [followUpsData, setFollowUpsData] = useState<FollowUp[]>(initialFollowUps);
+  const [buyersData, setBuyersData] = useState<Buyer[]>(initialBuyers);
+  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>(initialAppointments);
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
