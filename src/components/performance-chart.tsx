@@ -36,19 +36,11 @@ const demoData = [
 
 const CustomTick = (props: any) => {
   const { x, y, payload, index } = props;
-  const radius = 16;
+  const radius = 12;
   return (
     <g transform={`translate(${x},${y})`}>
       <circle cx={0} cy={0} r={radius} fill={colors[index % colors.length]} />
-      <text
-        x={0}
-        y={0}
-        dy={4}
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="12px"
-        fontWeight="bold"
-      >
+       <text x={0} y={radius + 15} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12px">
         {payload.value}
       </text>
     </g>
@@ -146,7 +138,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
               top: 20,
               right: 30,
               left: 20,
-              bottom: 30,
+              bottom: 40,
             }}
             barGap={150}
           >
@@ -157,6 +149,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
               axisLine={false}
               tick={<CustomTick />}
               tickMargin={25}
+              interval={0}
             />
             <YAxis
               tickFormatter={(value) => `${value}%`}
