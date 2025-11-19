@@ -14,7 +14,7 @@ import {
   CalendarPlus,
   ArrowRight,
 } from 'lucide-react';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -27,6 +27,12 @@ const getActionIcon = (action: string) => {
 
 
 export default function ActivitiesPage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -67,7 +73,7 @@ export default function ActivitiesPage() {
                       )}
                       
                        <time dateTime={activity.timestamp} className="block flex-none text-xs text-muted-foreground mt-2">
-                        {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                        {isMounted ? formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true }) : null}
                       </time>
                     </div>
                      <div className="absolute right-0 top-0 text-muted-foreground">
