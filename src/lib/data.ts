@@ -234,8 +234,6 @@ export const followUps: FollowUp[] = [
 ];
 
 const now = new Date();
-const lastMonth = new Date();
-lastMonth.setMonth(now.getMonth() - 1);
 
 export const appointments: Appointment[] = [
     {
@@ -298,52 +296,53 @@ export const appointments: Appointment[] = [
     }
 ];
 
+const createActivityDate = (daysAgo: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() - daysAgo);
+    return date.toISOString();
+}
+
 export const activities: Activity[] = [
   {
     id: '1',
     userName: 'Demo Admin',
-    userAvatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?w=50&h=50&fit=crop',
     action: 'added a new property',
     target: '5 Marla House in Harbanspura',
     targetType: 'Property',
-    timestamp: new Date(now.setDate(now.getDate() - 1)).toISOString(),
+    timestamp: createActivityDate(1),
   },
   {
     id: '2',
     userName: 'Ali Khan',
-    userAvatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=50&h=50&fit=crop',
     action: 'added a new buyer',
     target: 'Ahmed Hassan',
     targetType: 'Buyer',
-    timestamp: new Date(now.setDate(now.getDate() - 2)).toISOString(),
+    timestamp: createActivityDate(2),
   },
   {
     id: '3',
     userName: 'Fatima Ahmed',
-    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=50&h=50&fit=crop',
     action: 'updated the status of buyer',
     target: 'Sana Iqbal',
     targetType: 'Buyer',
     details: { from: 'New', to: 'Contacted' },
-    timestamp: new Date(now.setDate(now.getDate() - 3)).toISOString(),
+    timestamp: createActivityDate(3),
   },
   {
     id: '4',
     userName: 'Demo Admin',
-    userAvatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?w=50&h=50&fit=crop',
     action: 'marked a property as "Sold"',
     target: '2 Bedroom Flat in Gulberg',
     targetType: 'Property',
-    timestamp: new Date(now.setDate(now.getDate() - 4)).toISOString(),
+    timestamp: createActivityDate(4),
   },
   {
     id: '5',
     userName: 'Ali Khan',
-    userAvatar: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=50&h=50&fit=crop',
     action: 'scheduled an appointment with',
     target: 'Ahmed Hassan',
     targetType: 'Appointment',
-    timestamp: new Date(now.setDate(now.getDate() - 5)).toISOString(),
+    timestamp: createActivityDate(5),
   },
 ];
     
