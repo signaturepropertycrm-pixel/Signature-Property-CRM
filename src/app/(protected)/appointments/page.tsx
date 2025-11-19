@@ -25,12 +25,28 @@ function AppointmentsPageContent() {
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
 
   useEffect(() => {
-    const savedAppointments = localStorage.getItem('appointments');
-    if (savedAppointments) {
-        setAppointmentsData(JSON.parse(savedAppointments));
-    } else {
-        setAppointmentsData(initialAppointments);
-    }
+    const loadAppointments = () => {
+        const savedAppointments = localStorage.getItem('appointments');
+        if (savedAppointments) {
+            setAppointmentsData(JSON.parse(savedAppointments));
+        } else {
+            setAppointmentsData(initialAppointments);
+        }
+    };
+    
+    loadAppointments();
+
+    const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'appointments') {
+            loadAppointments();
+        }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+        window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -221,3 +237,5 @@ export default function AppointmentsPage() {
     );
 }
 
+
+    
