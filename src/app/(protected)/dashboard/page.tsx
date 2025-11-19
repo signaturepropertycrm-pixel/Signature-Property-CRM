@@ -271,25 +271,35 @@ export default function DashboardPage() {
                     innerRadius={60}
                     strokeWidth={5}
                   >
+                     <text
+                        x="50%"
+                        y="50%"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-foreground text-3xl font-bold"
+                      >
+                        {totalSold.toLocaleString()}
+                      </text>
                      {agentPerformanceData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
                    <ChartLegend
-                      content={
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                           {agentPerformanceData.map(agent => (
-                                <div key={agent.name} className="flex items-center gap-2 font-medium leading-none">
-                                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: agent.fill }} />
-                                    <div className="leading-none">
-                                        <p>{agent.name}</p>
-                                        <p className="text-muted-foreground text-xs mt-1">({agent.sold} sold, {((agent.sold/totalSold)*100).toFixed(0)}%)</p>
-                                    </div>
+                      content={<ChartLegendContent nameKey="name" className="flex-col gap-2 [&_.legend-item]:flex-wrap" />}
+                      className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                      formatter={(value, entry) => {
+                          const agent = agentPerformanceData.find(a => a.name === value);
+                          if (!agent) return null;
+                          return (
+                            <div className="flex items-center gap-2 font-medium leading-none w-full">
+                                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: agent.fill }} />
+                                <div className="leading-none flex-1">
+                                    <p>{agent.name}</p>
+                                    <p className="text-muted-foreground text-xs mt-1">({agent.sold} sold, {((agent.sold/totalSold)*100).toFixed(0)}%)</p>
                                 </div>
-                           ))}
-                        </div>
-                      }
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+                            </div>
+                          )
+                       }}
                     />
                 </PieChart>
               </ChartContainer>
