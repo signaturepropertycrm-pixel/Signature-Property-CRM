@@ -46,11 +46,16 @@ export default function TeamPage() {
     const auth = useAuth();
     const router = useRouter();
     const { user: currentUser } = useUser();
-    const { profile } = useProfile();
+    const { profile, isLoading: isProfileLoading } = useProfile();
     
-    // This query fetches the list of team members for the currently logged-in Admin.
-    const teamMembersQuery = useMemoFirebase(() => (currentUser && profile.role === 'Admin') ? collection(firestore, 'users', currentUser.uid, 'teamMembers') : null, [currentUser, firestore, profile.role]);
-    const { data: teamMembers, isLoading } = useCollection<User>(teamMembersQuery);
+    // This query fetches the list of team members from the admin's subcollection.
+    const teamMembersQuery = useMemoFirebase(() => 
+        (currentUser && profile.role === 'Admin') 
+            ? collection(firestore, 'users', currentUser.uid, 'teamMembers') 
+            : null
+    , [currentUser, firestore, profile.role]);
+
+    const { data: teamMembersData, isLoading: isTeamLoading } = useCollection<User>(teamMembersQuery);
 
     const [selectedMember, setSelectedMember] = useState<User | null>(null);
     const [memberToEdit, setMemberToEdit] = useState<User | null>(null);
@@ -60,11 +65,10 @@ export default function TeamPage() {
     
     // Redirect if not admin
     useEffect(() => {
-        if (profile.role && profile.role !== 'Admin') {
+        if (!isProfileLoading && profile.role && profile.role !== 'Admin') {
             router.push('/dashboard');
         }
-    }, [profile, router]);
-
+    }, [profile, isProfileLoading, router]);
 
     useEffect(() => {
         if (!isAddMemberOpen) {
@@ -162,7 +166,6 @@ export default function TeamPage() {
             return;
         }
 
-        // We re-authenticate the admin to perform the secure action of creating a new user.
         const adminPassword = sessionStorage.getItem('fb-cred');
         if (!adminPassword || !currentUser.email) {
             toast({ title: 'Admin Authentication Error', description: 'Your session is invalid. Please log out and log in again to add new members.', variant: 'destructive' });
@@ -170,21 +173,16 @@ export default function TeamPage() {
         }
         
         try {
-            // Step 1: Re-authenticate the admin to perform secure actions.
             const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
             await signInWithCredential(auth, adminCredential);
 
-            // Step 2: Create the new user account.
             const newUserCredential = await createUserWithEmailAndPassword(auth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
 
-            // Step 3: Immediately sign the admin back in to restore their auth state.
             await signInWithCredential(auth, adminCredential);
             
-            // Step 4: Use a batch write to create all necessary Firestore documents atomically.
             const batch = writeBatch(firestore);
 
-            // Doc 1: The new user's main document in the top-level 'users' collection.
             const newUserDocRef = doc(firestore, 'users', newUID);
             batch.set(newUserDocRef, {
                 id: newUID,
@@ -192,12 +190,11 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id, // CRITICAL: Assign to the admin's agency
+                agency_id: profile.agency_id,
                 createdBy: currentUser.uid,
                 createdAt: serverTimestamp(),
             });
 
-            // Doc 2: The reference in the admin's 'teamMembers' subcollection for UI display.
             const teamMemberDocRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', newUID);
             batch.set(teamMemberDocRef, {
                 id: newUID,
@@ -205,16 +202,14 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id, // Also store agency_id here for consistency
-                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }, // Initial stats
+                agency_id: profile.agency_id,
+                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
             });
             
-            // Doc 3: The role document for security rules.
             const roleCollection = memberData.role === 'Editor' ? 'roles_editor' : 'roles_agent';
             const roleDocRef = doc(firestore, roleCollection, newUID);
-            batch.set(roleDocRef, { agency_id: profile.agency_id }); // Store agency_id for potential future rules
+            batch.set(roleDocRef, { agency_id: profile.agency_id });
 
-            // Commit all writes at once.
             await batch.commit();
             
             toast({ title: 'Member Added Successfully' });
@@ -233,9 +228,8 @@ export default function TeamPage() {
         }
     };
 
-
-     const allMembers = useMemo(() => {
-        if (!currentUser || !profile || !profile.ownerName) return [];
+    const allMembers = useMemo(() => {
+        if (!currentUser || isProfileLoading) return [];
 
         const adminAsMember: User = {
             id: currentUser.uid,
@@ -243,13 +237,16 @@ export default function TeamPage() {
             email: currentUser.email || '',
             role: 'Admin',
             agency_id: profile.agency_id,
-            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
+            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
         };
         
-        // Ensure teamMembers is an array before spreading
-        return teamMembers ? [adminAsMember, ...teamMembers] : [adminAsMember];
+        return teamMembersData ? [adminAsMember, ...teamMembersData] : [adminAsMember];
 
-    }, [currentUser, profile, teamMembers]);
+    }, [currentUser, profile, teamMembersData, isProfileLoading]);
+    
+    if (isProfileLoading) {
+        return <p>Loading...</p>;
+    }
     
     if (profile.role && profile.role !== 'Admin') {
         return (
@@ -266,7 +263,6 @@ export default function TeamPage() {
         );
     }
 
-
   return (
     <>
         <div className="space-y-6">
@@ -278,7 +274,7 @@ export default function TeamPage() {
                 {profile.role === 'Admin' && <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Member</Button>}
             </div>
 
-            {isLoading ? <p>Loading team members...</p> : (
+            {isTeamLoading ? <p>Loading team members...</p> : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {allMembers && allMembers.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow">
@@ -341,7 +337,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    
-
-    
