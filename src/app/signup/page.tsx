@@ -24,7 +24,8 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth, useFirestore, FirebaseClientProvider } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';

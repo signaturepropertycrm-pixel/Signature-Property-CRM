@@ -24,10 +24,11 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth, FirebaseClientProvider } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
