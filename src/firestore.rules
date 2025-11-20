@@ -17,9 +17,6 @@ service cloud.firestore {
     function getRole() {
       return request.auth.token.role;
     }
-    function getAgencyId() {
-      return request.auth.token.agency_id;
-    }
     function isAdmin() {
       return isSignedIn() && getRole() == 'Admin';
     }
@@ -32,7 +29,7 @@ service cloud.firestore {
 
     // Agency membership check
     function isMemberOfAgency(agencyId) {
-        return isSignedIn() && getAgencyId() == agencyId;
+        return isSignedIn() && request.auth.token.agency_id == agencyId;
     }
 
     // MAIN RULES
@@ -57,10 +54,24 @@ service cloud.firestore {
       // Only an Admin can delete a user document.
       allow delete: if isAdmin();
 
-      // TeamMembers Subcollection: Only the Admin (owner) of the agency can manage their team.
+      // TeamMembers Subcollection:
+      // - Any member of the agency can read the list of team members (for charts, etc.).
+      // - Only the Admin (owner) of the agency can write (add/edit/delete) team members.
       match /teamMembers/{memberId} {
-        allow read, write: if isAdmin() && isUser(userId);
+        allow read: if isMemberOfAgency(userId);
+        allow write: if isUser(userId) && isAdmin();
       }
+    }
+    
+    // Role documents for easy rule checking
+    match /roles_admin/{uid} {
+        allow read, write: if isAdmin();
+    }
+    match /roles_editor/{uid} {
+        allow read, write: if isAdmin();
+    }
+    match /roles_agent/{uid} {
+        allow read, write: if isAdmin();
     }
 
     // /properties/{propertyId}
@@ -105,8 +116,7 @@ service cloud.firestore {
     }
     
     // Admin-only collections
-    match /{collectionName}/{docId}
-    where collectionName in ['transactions'] {
+    match /transactions/{transactionId} {
       allow read, write: if isAdmin();
     }
   }
