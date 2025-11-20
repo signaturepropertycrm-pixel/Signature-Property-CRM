@@ -48,7 +48,6 @@ export default function TeamPage() {
     const { user: currentUser } = useUser();
     const { profile, isLoading: isProfileLoading } = useProfile();
     
-    // This query fetches the list of team members from the admin's subcollection.
     const teamMembersQuery = useMemoFirebase(() => 
         (currentUser && profile.role === 'Admin') 
             ? collection(firestore, 'users', currentUser.uid, 'teamMembers') 
@@ -63,7 +62,6 @@ export default function TeamPage() {
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { toast } = useToast();
     
-    // Redirect if not admin
     useEffect(() => {
         if (!isProfileLoading && profile.role && profile.role !== 'Admin') {
             router.push('/dashboard');
@@ -96,18 +94,12 @@ export default function TeamPage() {
         
         const batch = writeBatch(firestore);
         
-        // Reference to the member in the admin's subcollection
         const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberId);
-        
-        // Reference to the main user document
         const userDocRef = doc(firestore, 'users', memberId);
-
-        // Note: Deleting the Firebase Auth user requires admin SDK and is best done in a Cloud Function.
-        // For now, we will just delete the Firestore documents.
+        
         batch.delete(teamMemberRef);
         batch.delete(userDocRef);
-
-        // Also delete from role collections if they exist
+        
         const agentRoleRef = doc(firestore, 'roles_agent', memberId);
         const editorRoleRef = doc(firestore, 'roles_editor', memberId);
         batch.delete(agentRoleRef);
@@ -128,7 +120,6 @@ export default function TeamPage() {
             return;
         }
 
-        // --- EDIT LOGIC ---
         if (memberToEdit) {
              const batch = writeBatch(firestore);
             const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberToEdit.id);
@@ -139,7 +130,6 @@ export default function TeamPage() {
             batch.update(userDocRef, { role: memberData.role, name: memberData.name, phone: memberData.phone });
             batch.update(teamMemberRef, updatedData);
             
-            // Handle role change
             if (memberToEdit.role !== memberData.role) {
                 if (memberData.role === 'Agent') {
                     batch.set(doc(firestore, 'roles_agent', memberToEdit.id), { agency_id: profile.agency_id });
@@ -160,7 +150,6 @@ export default function TeamPage() {
             return;
         }
 
-        // --- CREATE LOGIC ---
         if (!memberData.email || !memberData.password) {
             toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive' });
             return;
@@ -173,13 +162,14 @@ export default function TeamPage() {
         }
         
         try {
+            const tempAuth = auth; // Create a temporary instance to avoid state issues
             const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
-            await signInWithCredential(auth, adminCredential);
+            await signInWithCredential(tempAuth, adminCredential);
 
-            const newUserCredential = await createUserWithEmailAndPassword(auth, memberData.email, memberData.password);
+            const newUserCredential = await createUserWithEmailAndPassword(tempAuth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
 
-            await signInWithCredential(auth, adminCredential);
+            await signInWithCredential(tempAuth, adminCredential);
             
             const batch = writeBatch(firestore);
 
@@ -229,7 +219,7 @@ export default function TeamPage() {
     };
 
     const allMembers = useMemo(() => {
-        if (!currentUser || isProfileLoading) return [];
+        if (!currentUser || isProfileLoading || !profile.agency_id) return [];
 
         const adminAsMember: User = {
             id: currentUser.uid,
@@ -244,8 +234,18 @@ export default function TeamPage() {
 
     }, [currentUser, profile, teamMembersData, isProfileLoading]);
     
-    if (isProfileLoading) {
-        return <p>Loading...</p>;
+    if (isProfileLoading || isTeamLoading) {
+        return (
+             <div className="space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight font-headline">Team</h1>
+                        <p className="text-muted-foreground">Manage your team members.</p>
+                    </div>
+                </div>
+                <p>Loading team members...</p>
+             </div>
+        );
     }
     
     if (profile.role && profile.role !== 'Admin') {
@@ -274,7 +274,6 @@ export default function TeamPage() {
                 {profile.role === 'Admin' && <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Member</Button>}
             </div>
 
-            {isTeamLoading ? <p>Loading team members...</p> : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {allMembers && allMembers.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow">
@@ -317,7 +316,6 @@ export default function TeamPage() {
                     </Card>
                 ))}
             </div>
-            )}
         </div>
         {selectedMember && (
             <TeamMemberDetailsDialog
