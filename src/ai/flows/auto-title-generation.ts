@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -12,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const AutoTitleInputSchema = z.object({
-  sizeValue: z.number().describe('The size value of the property.'),
+  sizeValue: z.coerce.number().describe('The size value of the property.'),
   sizeUnit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).describe('The unit of size for the property.'),
   propertyType: z.string().describe('The type of property (e.g., House, Plot).'),
   area: z.string().describe('The area or location of the property.'),
