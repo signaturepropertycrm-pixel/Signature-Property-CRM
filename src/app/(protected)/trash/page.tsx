@@ -11,7 +11,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Trash2, RotateCcw } from 'lucide-react';
 import type { Property, Buyer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 

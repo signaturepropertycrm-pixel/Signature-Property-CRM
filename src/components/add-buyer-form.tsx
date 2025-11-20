@@ -29,7 +29,7 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { buyerStatuses } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];

@@ -18,7 +18,8 @@ import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSq
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
 import { signOut } from 'firebase/auth';
 
 export function AppHeader({ 

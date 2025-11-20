@@ -65,7 +65,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 
@@ -273,7 +275,7 @@ function PropertiesPageContent() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'>) => {
-    if (!user) return;
+    if (!user || !profile.agency_id) return;
     const collectionRef = collection(firestore, 'users', user.uid, 'properties');
     
     const dataToSave = {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, Auth } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 
 // Define the shape of the hook's return value

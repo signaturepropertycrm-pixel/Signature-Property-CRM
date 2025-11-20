@@ -23,7 +23,9 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 
@@ -184,7 +186,7 @@ function BuyersPageContent() {
     };
     
      const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
-        if (!user || !buyers) return;
+        if (!user || !buyers || !profile.agency_id) return;
         const buyer = buyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
@@ -224,7 +226,7 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'>) => {
-        if (!user) return;
+        if (!user || !profile.agency_id) return;
         const collectionRef = collection(firestore, 'users', user.uid, 'buyers');
         
         const dataToSave = {

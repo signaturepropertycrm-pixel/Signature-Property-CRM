@@ -10,7 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 
@@ -109,7 +111,7 @@ export default function FollowUpsPage() {
   const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
         if (!user || !buyersData) return;
         const buyer = buyersData.find(b => b.id === buyerId);
-        if (!buyer) return;
+        if (!buyer || !buyer.agency_id) return;
 
         const newFollowUp: Omit<FollowUp, 'id'> = {
             buyerId: buyer.id,
@@ -120,6 +122,7 @@ export default function FollowUpsPage() {
             nextReminder: nextReminder,
             status: 'Scheduled',
             notes: notes,
+            agency_id: buyer.agency_id
         };
         
         const followUpsCollection = collection(firestore, 'users', user.uid, 'followUps');

@@ -42,7 +42,9 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 

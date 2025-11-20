@@ -14,7 +14,9 @@ import {
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Activity } from '@/lib/types';
-import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 const getActionIcon = (action: string) => {

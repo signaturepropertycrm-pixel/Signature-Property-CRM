@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useUser, useAuth } from '@/firebase';
+import { useFirestore, useAuth } from '@/firebase/provider';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
