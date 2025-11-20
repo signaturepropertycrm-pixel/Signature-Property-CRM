@@ -44,7 +44,7 @@ type AddTeamMemberFormValues = z.infer<typeof formSchema>;
 interface AddTeamMemberFormProps {
   setDialogOpen: (open: boolean) => void;
   memberToEdit?: User | null;
-  onSave: (member: User) => void;
+  onSave: (member: AddTeamMemberFormValues) => void;
 }
 
 const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMemberFormValues => {
@@ -80,13 +80,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
   }, [memberToEdit, reset]);
 
   function onSubmit(values: AddTeamMemberFormValues) {
-     const memberData = {
-        ...(memberToEdit || {}),
-        ...values,
-        id: memberToEdit?.id || '', // ID is handled in the parent page
-    } as User;
-    
-    onSave(memberData);
+    onSave(values);
     toast({
       title: memberToEdit ? 'Member Updated' : 'Member Added',
       description: `"${values.name}" has been successfully ${memberToEdit ? 'updated' : 'added'}.`,
@@ -104,7 +98,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="e.g. Ali Khan" />
+                <Input {...field} value={field.value || ''} placeholder="e.g. Ali Khan" />
               </FormControl>
               <FormMessage />
             </FormItem>

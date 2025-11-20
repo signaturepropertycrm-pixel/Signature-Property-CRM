@@ -79,14 +79,23 @@ export default function TeamPage() {
         });
     };
 
-    const handleSaveMember = async (member: Omit<User, 'id'>) => {
+    const handleSaveMember = async (member: Omit<User, 'id'> & { id?: string }) => {
         if (!user) return;
         const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
+        
+        const memberData = {
+          name: member.name,
+          email: member.email,
+          phone: member.phone,
+          role: member.role,
+          stats: member.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
+        };
+
         if (memberToEdit) {
-            await setDoc(doc(collectionRef, memberToEdit.id), member);
+            await setDoc(doc(collectionRef, memberToEdit.id), memberData);
             toast({ title: 'Member Updated' });
         } else {
-            await addDoc(collectionRef, member);
+            await addDoc(collectionRef, memberData);
             toast({ title: 'Member Added' });
         }
     };
