@@ -82,8 +82,7 @@ service cloud.firestore {
        * @principle Enforces document ownership for writes.
        */
       match /properties/{propertyId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
@@ -97,8 +96,7 @@ service cloud.firestore {
        * @principle Enforces document ownership for writes.
        */
       match /buyers/{buyerId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get, list: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
@@ -112,8 +110,7 @@ service cloud.firestore {
        * @principle Enforces document ownership for writes.
        */
       match /teamMembers/{memberId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get, list: if isOwner(userId);
         allow create: if isOwner(userId);
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
@@ -127,8 +124,7 @@ service cloud.firestore {
        * @principle Enforces document ownership or admin privileges for writes.
        */
       match /appointments/{appointmentId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
+        allow get, list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId) || isAdmin();
         allow update: if isExistingOwner(userId) || isAdmin();
         allow delete: if isExistingOwner(userId) || isAdmin();
@@ -142,11 +138,23 @@ service cloud.firestore {
        * @principle Enforces document ownership for writes.
        */
       match /followUps/{followUpId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
+        allow get, list: if isOwner(userId);
         allow create: if isOwner(userId);
         allow update: if isExistingOwner(userId);
         allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Allows access only to admins for reading activity logs. This is nested under users
+       * because activity logs are user-specific.
+       * @path /users/{userId}/activityLogs/{activityLogId}
+       * @principle Restricts activity log access to admins or the user themselves.
+       */
+      match /activityLogs/{activityLogId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if false;
+        allow delete: if false;
       }
     }
 
@@ -167,18 +175,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows access only to admins for reading activity logs.
+     * @description This collection is deprecated in favor of user-specific activity logs.
+     * Rules are set to deny all access for security.
      * @path /activityLogs/{activityLogId}
-     * @allow (get) Admin retrieves an activity log.
-     * @deny (create) Non-admin attempts to create an activity log (should be created by backend).
-     * @principle Restricts activity log access to admins.
      */
     match /activityLogs/{activityLogId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read, write: if false;
     }
 
         /**

@@ -32,6 +32,7 @@ export default function ActivitiesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
 
+  // Updated query to point to the user-specific activityLogs subcollection
   const activitiesQuery = user ? query(collection(firestore, 'users', user.uid, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null;
   const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
 
