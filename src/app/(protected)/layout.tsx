@@ -137,9 +137,11 @@ export default function ProtectedLayout({
   return (
     <FirebaseClientProvider>
       <CurrencyProvider>
-        <ProtectedLayoutContent>
-          {children}
-        </ProtectedLayoutContent>
+        <ProfileProvider>
+            <ProtectedLayoutContent>
+                {children}
+            </ProtectedLayoutContent>
+        </ProfileProvider>
       </CurrencyProvider>
     </FirebaseClientProvider>
   )
