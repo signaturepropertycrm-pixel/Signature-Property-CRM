@@ -44,15 +44,6 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the current user is the owner of the existing document.
-     * @param {string} userId - The user ID to compare against the request's auth UID.
-     * @example isExistingOwner("someUserId") == (isOwner("someUserId") && resource != null)
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
      * @description Checks if the current user has admin privileges.
      * @example isAdmin() == exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))
      */
@@ -68,90 +59,62 @@ service cloud.firestore {
      * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
       allow list: if false; // User listing is not allowed.
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
 
       /**
        * @description Allows access only to the user who owns the property.
        * @path /users/{userId}/properties/{propertyId}
-       * @allow (create) User 'user123' creates a new property under their profile with createdBy: 'user123'.
-       * @deny (update) User 'user456' attempts to update a property under 'user123' profile.
-       * @principle Enforces document ownership for writes.
        */
       match /properties/{propertyId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       /**
        * @description Allows access only to the user who owns the buyer record.
        * @path /users/{userId}/buyers/{buyerId}
-       * @allow (create) User 'user123' creates a new buyer record under their profile.
-       * @deny (delete) User 'user456' attempts to delete a buyer record under 'user123' profile.
-       * @principle Enforces document ownership for writes.
        */
       match /buyers/{buyerId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
       }
       
       /**
        * @description Allows access only to the user who owns the team member record.
        * @path /users/{userId}/teamMembers/{memberId}
-       * @allow (create) User 'user123' creates a new team member under their profile.
-       * @deny (delete) User 'user456' attempts to delete a team member under 'user123' profile.
-       * @principle Enforces document ownership for writes.
        */
       match /teamMembers/{memberId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       /**
        * @description Allows access only to the user (agent) associated with the appointment or to admins.
        * @path /users/{userId}/appointments/{appointmentId}
-       * @allow (get) Agent 'agent123' retrieves an appointment associated with their ID.
-       * @deny (update) User 'user456' attempts to update an appointment under 'agent123' profile without being an admin.
-       * @principle Enforces document ownership or admin privileges for writes.
        */
       match /appointments/{appointmentId} {
-        allow get, list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId) || isAdmin();
-        allow update: if isExistingOwner(userId) || isAdmin();
-        allow delete: if isExistingOwner(userId) || isAdmin();
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
       }
 
       /**
        * @description Allows access only to the user assigned to the follow-up.
        * @path /users/{userId}/followUps/{followUpId}
-       * @allow (get) Agent 'agent123' retrieves a follow-up assigned to them.
-       * @deny (delete) User 'user456' attempts to delete a follow-up assigned to 'agent123'.
-       * @principle Enforces document ownership for writes.
        */
       match /followUps/{followUpId} {
-        allow get, list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
       }
 
       /**
        * @description Allows access only to admins for reading activity logs. This is nested under users
        * because activity logs are user-specific.
        * @path /users/{userId}/activityLogs/{activityLogId}
-       * @principle Restricts activity log access to admins or the user themselves.
        */
       match /activityLogs/{activityLogId} {
-        allow get, list: if isOwner(userId) || isAdmin();
+        allow read: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId);
         allow update: if false;
         allow delete: if false;
@@ -162,16 +125,9 @@ service cloud.firestore {
     /**
      * @description Allows access only to admins for managing transactions.
      * @path /transactions/{transactionId}
-     * @allow (create) Admin creates a new transaction.
-     * @deny (update) Non-admin attempts to update a transaction.
-     * @principle Restricts transaction management to admins.
      */
     match /transactions/{transactionId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow read, write: if isAdmin();
     }
 
     /**
@@ -183,19 +139,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-        /**
+    /**
      * @description Allows only admins to create a role
      * @path /roles_admin/{userId}
-     * @allow (create) if the user is an admin
-     * @deny (create) if the user is not an admin
-     * @principle Only admins can create a role
      */
     match /roles_admin/{userId} {
-        allow get: if isAdmin();
-        allow list: if isAdmin();
-        allow create: if isAdmin();
-        allow update: if false;
-        allow delete: if isAdmin();
+        allow read, write: if isAdmin();
     }
   }
 }
