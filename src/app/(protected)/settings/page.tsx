@@ -40,7 +40,8 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Server, Eye, EyeOff } from 'lucide-react';
+import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { ResetAccountDialog } from '@/components/reset-account-dialog';
 
 
 export default function SettingsPage() {
@@ -52,6 +53,7 @@ export default function SettingsPage() {
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
   const [mounted, setMounted] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -235,7 +237,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-6">
              <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20 border-4 border-primary/20">
-                    <AvatarImage src={profile.avatar} alt={profile.ownerName} />
+                    <AvatarImage src={profile.avatar} />
                     <AvatarFallback>{profile.ownerName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -518,6 +520,26 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {profile.role === 'Admin' && (
+        <Card className="border-destructive">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle /> Danger Zone</CardTitle>
+                <CardDescription>
+                    These actions are irreversible. Please proceed with caution.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
+                    <div>
+                        <h3 className="font-bold">Reset Account</h3>
+                        <p className="text-sm text-destructive/80">Permanently delete all CRM data including properties, buyers, and appointments. Your user account will not be deleted.</p>
+                    </div>
+                    <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setIsResetDialogOpen(true)}>Reset Account</Button>
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
     </div>
     <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
         <DialogContent>
@@ -549,6 +571,8 @@ export default function SettingsPage() {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+    <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
     </>
   );
 }
