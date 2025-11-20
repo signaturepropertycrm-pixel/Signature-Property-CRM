@@ -75,20 +75,35 @@ interface AddPropertyFormProps {
   totalProperties: number;
 }
 
+const getNewPropertyDefaults = (totalProperties: number) => ({
+  serial_no: `P-${totalProperties + 1}`,
+  auto_title: '',
+  owner_number: '',
+  city: 'Lahore',
+  area: '',
+  address: '',
+  property_type: 'House' as const,
+  custom_property_type: '',
+  size_value: undefined,
+  size_unit: 'Marla' as const,
+  road_size_ft: undefined,
+  storey: '',
+  meters: { electricity: false, gas: false, water: false },
+  potential_rent_amount: undefined,
+  potential_rent_unit: 'Thousand' as const,
+  front_ft: undefined,
+  length_ft: undefined,
+  demand_amount: undefined,
+  demand_unit: 'Lacs' as const,
+  documents: '',
+});
+
+
 export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddPropertyFormProps) {
   const { toast } = useToast();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      city: 'Lahore',
-      property_type: 'House',
-      custom_property_type: '',
-      size_unit: 'Marla',
-      demand_unit: 'Lacs',
-      potential_rent_unit: 'Thousand',
-      meters: { electricity: false, gas: false, water: false },
-      serial_no: `P-${totalProperties + 1}`
-    },
+    defaultValues: getNewPropertyDefaults(totalProperties),
   });
 
   const { control, setValue, formState, reset } = form;
@@ -104,24 +119,10 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             ...propertyToEdit,
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
-            potential_rent_unit: propertyToEdit.potential_rent_unit || 'Thousand',
-            demand_unit: propertyToEdit.demand_unit,
-            road_size_ft: propertyToEdit.road_size_ft ?? undefined,
-            potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
-            front_ft: propertyToEdit.front_ft ?? undefined,
-            length_ft: propertyToEdit.length_ft ?? undefined,
+            potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
         });
     } else {
-      reset({
-        city: 'Lahore',
-        property_type: 'House',
-        custom_property_type: '',
-        size_unit: 'Marla',
-        demand_unit: 'Lacs',
-        potential_rent_unit: 'Thousand',
-        meters: { electricity: false, gas: false, water: false },
-        serial_no: `P-${totalProperties + 1}`
-      });
+      reset(getNewPropertyDefaults(totalProperties));
     }
   }, [propertyToEdit, totalProperties, reset]);
 
@@ -152,7 +153,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   function onSubmit(values: AddPropertyFormValues) {
      const finalValues = {
         ...values,
-        property_type: values.property_type === 'Other' ? values.custom_property_type : values.property_type,
+        property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
     };
 
     const propertyData = {
@@ -189,7 +190,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Serial No</FormLabel>
                     <FormControl>
-                      <Input {...field} readOnly className="bg-muted/50" />
+                      <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -321,7 +322,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                     <FormItem>
                       <FormLabel>Property Size</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="5" />
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="5" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -421,7 +422,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                     <FormItem>
                       <FormLabel>Demand</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="90" />
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="90" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
