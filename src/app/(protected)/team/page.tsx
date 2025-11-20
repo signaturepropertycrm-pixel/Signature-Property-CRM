@@ -95,8 +95,8 @@ export default function TeamPage() {
         }
         
         try {
+            // Logic for editing an existing member
             if (memberToEdit) {
-                // Logic for editing an existing member
                 const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
                 const memberData = {
                   name: member.name,
@@ -115,14 +115,20 @@ export default function TeamPage() {
                     return;
                 }
                 
-                const adminPassword = prompt("To confirm this action, please enter your password:");
-                if (!adminPassword) {
-                    toast({ title: 'Action Cancelled', description: 'Admin password was not provided.', variant: 'destructive' });
-                    return;
+                // Get the admin's current credentials to re-authenticate later
+                const adminEmail = currentAdminUser.email;
+                const adminPasswordFromStorage = sessionStorage.getItem('fb-cred'); // Example, not secure for production
+                if (!adminEmail || !adminPasswordFromStorage) {
+                    // Fallback to prompt if session storage is empty, but this is not ideal.
+                    const promptedPassword = prompt("To confirm, please enter your admin password:");
+                    if (!promptedPassword) {
+                        toast({ title: 'Action Cancelled', variant: 'destructive' });
+                        return;
+                    }
+                    const adminCredential = EmailAuthProvider.credential(adminEmail, promptedPassword);
+                     await reauthenticateWithCredential(currentAdminUser, adminCredential);
                 }
-                
-                const adminCredential = EmailAuthProvider.credential(currentAdminUser.email, adminPassword);
-                await reauthenticateWithCredential(currentAdminUser, adminCredential);
+
 
                 // 1. Create a new Firebase Auth user
                 const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
@@ -134,7 +140,6 @@ export default function TeamPage() {
                   name: member.name,
                   email: member.email,
                   phone: member.phone,
-
                   role: member.role,
                   agency_id: profile.agency_id, // Assigning admin's agency_id
                   stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
@@ -153,18 +158,32 @@ export default function TeamPage() {
                 });
 
                 // 4. IMPORTANT: Re-sign in the admin user to restore their session
-                await signInWithCredential(auth, adminCredential);
-                
+                // This is a simplified re-login. A more robust solution would use a secure way to get the admin's password.
+                if (adminPasswordFromStorage) {
+                    const adminCredential = EmailAuthProvider.credential(adminEmail, adminPasswordFromStorage);
+                    await signInWithCredential(auth, adminCredential);
+                }
+
                 toast({ title: 'Member Added Successfully' });
             }
         } catch (error: any) {
             console.error("Error saving member: ", error);
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            // Provide more specific error messages
+            let errorMessage = error.message;
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email address is already registered.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'The password is too weak. It must be at least 6 characters.';
+            } else if (error.code === 'auth/invalid-credential') {
+                errorMessage = 'Your admin password was incorrect. Could not re-authenticate.';
+            }
+            toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         }
     };
 
+
      const allMembers = useMemo(() => {
-        if (!user || !profile) return [];
+        if (!user || !profile || !profile.ownerName) return [];
 
         const adminAsMember: User = {
             id: user.uid,

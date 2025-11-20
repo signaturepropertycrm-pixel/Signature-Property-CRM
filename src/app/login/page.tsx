@@ -61,6 +61,8 @@ export default function LoginPage() {
         throw new Error('Auth service is not available.');
       }
       await signInWithEmailAndPassword(auth, values.email, values.password);
+      // Store password in session storage for re-authentication on member creation
+      sessionStorage.setItem('fb-cred', values.password);
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login Error:', error);
