@@ -79,22 +79,13 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   const { toast } = useToast();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: propertyToEdit ? {
-        ...propertyToEdit,
-        custom_property_type: propertyToEdit.property_type !== 'House' && propertyToEdit.property_type !== 'Plot' && propertyToEdit.property_type !== 'Flat' && propertyToEdit.property_type !== 'Shop' && propertyToEdit.property_type !== 'Commercial' && propertyToEdit.property_type !== 'Agricultural' ? propertyToEdit.property_type : '',
-        property_type: propertyToEdit.property_type === 'House' || propertyToEdit.property_type === 'Plot' || propertyToEdit.property_type === 'Flat' || propertyToEdit.property_type === 'Shop' || propertyToEdit.property_type === 'Commercial' || propertyToEdit.property_type === 'Agricultural' ? propertyToEdit.property_type : 'Other',
-        potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
-        demand_unit: propertyToEdit.demand_unit,
-        road_size_ft: propertyToEdit.road_size_ft ?? undefined,
-        potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
-        front_ft: propertyToEdit.front_ft ?? undefined,
-        length_ft: propertyToEdit.length_ft ?? undefined,
-    } : {
+    defaultValues: {
       city: 'Lahore',
       property_type: 'House',
       custom_property_type: '',
       size_unit: 'Marla',
       demand_unit: 'Lacs',
+      potential_rent_unit: 'Thousand',
       meters: { electricity: false, gas: false, water: false },
       serial_no: `P-${totalProperties + 1}`
     },
@@ -217,7 +208,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 <FormItem>
                   <FormLabel>Auto-Generated Title</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value || ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
+                    <Input {...field} value={field.value ?? ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -315,7 +306,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                         <FormItem>
                             <FormLabel>Custom Property Type</FormLabel>
                             <FormControl>
-                            <Input {...field} value={field.value || ''} placeholder="e.g., Penthouse" />
+                            <Input {...field} value={field.value ?? ''} placeholder="e.g., Penthouse" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

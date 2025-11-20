@@ -205,7 +205,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         <FormItem>
                         <FormLabel>Email (Optional)</FormLabel>
                         <FormControl>
-                            <Input type="email" {...field} placeholder="buyer@example.com" />
+                            <Input type="email" {...field} value={field.value ?? ''} placeholder="buyer@example.com" />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

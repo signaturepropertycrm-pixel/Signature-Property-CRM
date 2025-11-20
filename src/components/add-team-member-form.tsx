@@ -117,7 +117,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
             <FormItem>
               <FormLabel>Email (Optional)</FormLabel>
               <FormControl>
-                <Input type="email" {...field} placeholder="agent@example.com" />
+                <Input type="email" {...field} value={field.value || ''} placeholder="agent@example.com" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -130,7 +130,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
             <FormItem>
               <FormLabel>Phone (Optional)</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="+92 300 1234567" />
+                <Input {...field} value={field.value || ''} placeholder="+92 300 1234567" />
               </FormControl>
               <FormMessage />
             </FormItem>
