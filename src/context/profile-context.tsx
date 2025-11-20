@@ -86,7 +86,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isLoading = isAuthLoading || isProfileLoading;
+  // Corrected loading logic: The main loading state should primarily depend on authentication.
+  // Profile data loading can happen in the background without blocking the UI.
+  const isLoading = isAuthLoading;
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
