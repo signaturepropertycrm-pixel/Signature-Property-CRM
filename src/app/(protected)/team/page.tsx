@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
-import type { User } from '@/lib/types';
+import type { User, UserRole } from '@/lib/types';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import {
   DropdownMenu,
@@ -18,10 +18,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { useRouter } from 'next/navigation';
 
 const roleVariant = {
     Admin: 'default',
@@ -43,9 +44,10 @@ const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value
 export default function TeamPage() {
     const firestore = useFirestore();
     const auth = useAuth();
+    const router = useRouter();
     const { user } = useUser();
     const { profile } = useProfile();
-    const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
+    const teamMembersQuery = useMemoFirebase(() => (user && profile.role === 'Admin') ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore, profile.role]);
     const { data: teamMembers, isLoading } = useCollection<User>(teamMembersQuery);
 
     const [selectedMember, setSelectedMember] = useState<User | null>(null);
@@ -53,6 +55,14 @@ export default function TeamPage() {
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { toast } = useToast();
+    
+    // Redirect if not admin
+    useEffect(() => {
+        if (profile.role !== 'Admin') {
+            router.push('/dashboard');
+        }
+    }, [profile, router]);
+
 
     useEffect(() => {
         if (!isAddMemberOpen) {
@@ -78,9 +88,11 @@ export default function TeamPage() {
     const handleDeleteMember = async (memberId: string) => {
         if (!user) return;
         await deleteDoc(doc(firestore, 'users', user.uid, 'teamMembers', memberId));
+        // Note: This only removes them from the team list. It doesn't delete their auth account or user doc.
+        // A more robust implementation would disable or delete the user account.
         toast({
-            title: "Member Deleted",
-            description: "The team member has been removed.",
+            title: "Member Removed",
+            description: "The team member has been removed from your team list.",
             variant: "destructive"
         });
     };
@@ -102,6 +114,8 @@ export default function TeamPage() {
             };
             try {
                 await setDoc(memberRef, memberData, { merge: true });
+                // Also update the main user doc if role changes
+                await setDoc(doc(firestore, 'users', memberToEdit.id), { role: member.role }, { merge: true });
                 toast({ title: 'Member Updated Successfully' });
             } catch (error) {
                 console.error("Error updating member: ", error);
@@ -123,7 +137,7 @@ export default function TeamPage() {
         }
 
         const adminEmail = currentAdminUser.email;
-        const adminPassword = sessionStorage.getItem('fb-cred'); // Retrieve stored password
+        const adminPassword = sessionStorage.getItem('fb-cred'); 
 
         if (!adminPassword) {
             toast({ title: 'Admin session error', description: 'Could not verify admin credentials. Please re-login and try again.', variant: 'destructive' });
@@ -131,12 +145,27 @@ export default function TeamPage() {
         }
 
         try {
-            // 1. Create a new Firebase Auth user
+            // 1. Create new user in Auth
             const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
             const newMemberUser = newUserCredential.user;
 
-            // 2. Save new member's data to the admin's teamMembers subcollection
-            const memberData = {
+            const batch = writeBatch(firestore);
+
+            // 2. Create the main user document for the new member
+            const newUserDocRef = doc(firestore, "users", newMemberUser.uid);
+            batch.set(newUserDocRef, {
+                id: newMemberUser.uid,
+                name: member.name,
+                email: member.email,
+                role: member.role,
+                agency_id: profile.agency_id, // Link to the admin's agency
+                createdBy: user.uid, // Admin's UID
+                createdAt: serverTimestamp(),
+            });
+
+            // 3. Add the new member to the admin's teamMembers subcollection
+            const teamMemberDocRef = doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid);
+            batch.set(teamMemberDocRef, {
                 id: newMemberUser.uid,
                 name: member.name,
                 email: member.email,
@@ -144,19 +173,18 @@ export default function TeamPage() {
                 role: member.role,
                 agency_id: profile.agency_id,
                 stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
-            };
-            await setDoc(doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid), memberData);
-
-            // 3. Create a user doc for the new member so they can log in and have a profile
-            await setDoc(doc(firestore, "users", newMemberUser.uid), {
-                id: newMemberUser.uid,
-                name: member.name,
-                email: member.email,
-                role: member.role,
-                agency_id: profile.agency_id,
-                createdAt: new Date().toISOString(),
             });
+            
+            // 4. Create a role document for security rules
+            if (member.role === 'Editor') {
+                const editorRoleRef = doc(firestore, 'roles_editor', newMemberUser.uid);
+                batch.set(editorRoleRef, { createdBy: user.uid });
+            } else if (member.role === 'Agent') {
+                const agentRoleRef = doc(firestore, 'roles_agent', newMemberUser.uid);
+                batch.set(agentRoleRef, { createdBy: user.uid });
+            }
 
+            await batch.commit();
             toast({ title: 'Member Added Successfully' });
 
         } catch (error: any) {
@@ -169,8 +197,7 @@ export default function TeamPage() {
             }
             toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         } finally {
-            // 4. IMPORTANT: Re-sign in the admin user to restore their session
-            // This is necessary because createUserWithEmailAndPassword signs out the current user.
+            // 5. Re-sign in the admin user to restore their session
             try {
                 const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
                 await signInWithCredential(auth, adminCredential);
@@ -198,6 +225,21 @@ export default function TeamPage() {
         return [adminAsMember, ...(teamMembers || [])];
 
     }, [user, profile, teamMembers]);
+    
+    if (profile.role !== 'Admin') {
+        return (
+            <div className="flex h-full w-full items-center justify-center">
+                <Card className="max-w-md text-center">
+                    <CardHeader>
+                        <CardTitle>Access Denied</CardTitle>
+                        <CardDescription>
+                            This page is only accessible to the Admin.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
+    }
 
 
   return (
@@ -275,3 +317,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    

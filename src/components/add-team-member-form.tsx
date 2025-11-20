@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 import type { User, UserRole } from '@/lib/types';
 
-const userRoles: UserRole[] = ['Admin', 'Agent', 'Editor'];
+const userRoles: UserRole[] = ['Editor', 'Agent'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -181,3 +181,5 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
     </Form>
   );
 }
+
+    

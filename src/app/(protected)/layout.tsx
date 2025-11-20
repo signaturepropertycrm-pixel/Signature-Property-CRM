@@ -12,6 +12,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -51,18 +52,34 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return null; // or a redirect component
   }
 
-  // Check if user has the required role for the current page
-  if (profile.role !== 'Admin') {
-    if (pathname.startsWith('/team') || pathname.startsWith('/settings') || pathname.startsWith('/upgrade') || pathname.startsWith('/activities') || pathname.startsWith('/trash')) {
-        router.push('/dashboard');
-        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-    }
+  // Define restricted paths for each role
+  const adminOnlyPaths = ['/team', '/settings', '/upgrade'];
+  const editorForbiddenPaths = ['/team', '/settings', '/upgrade'];
+  const agentForbiddenPaths = ['/team', '/settings', 'upgrade', '/tools', '/analytics', '/trash', '/activities'];
+
+
+  let isAllowed = true;
+  let message = "This page is not accessible with your current role.";
+
+  if (profile.role === 'Editor' && editorForbiddenPaths.some(path => pathname.startsWith(path))) {
+      isAllowed = false;
+  } else if (profile.role === 'Agent' && agentForbiddenPaths.some(path => pathname.startsWith(path))) {
+      isAllowed = false;
   }
-  if (profile.role === 'Agent') {
-     if (pathname.startsWith('/tools') || pathname.startsWith('/analytics')) {
-        router.push('/dashboard');
-        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-    }
+  
+  if (!isAllowed) {
+      return (
+         <div className="flex h-screen w-full items-center justify-center p-4">
+            <Card className="max-w-md text-center">
+                <CardHeader>
+                    <CardTitle>Access Denied</CardTitle>
+                    <CardDescription>
+                        {message}
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+      )
   }
 
 
@@ -122,3 +139,5 @@ export default function ProtectedLayout({
     </FirebaseClientProvider>
   )
 }
+
+    

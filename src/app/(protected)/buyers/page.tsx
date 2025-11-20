@@ -365,7 +365,7 @@ function BuyersPageContent() {
                                         <Eye />
                                         View Details
                                     </DropdownMenuItem>
-                                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                                    {profile.role !== 'Agent' && (
                                         <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                             <Edit />
                                             Edit
@@ -484,7 +484,7 @@ function BuyersPageContent() {
                                     <Eye />
                                     View Details
                                 </DropdownMenuItem>
-                                {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                                {profile.role !== 'Agent' && (
                                     <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                         <Edit />
                                         Edit
@@ -685,7 +685,7 @@ function BuyersPageContent() {
         </div>
       </div>
 
-      {(profile.role === 'Admin' || profile.role === 'Editor') && (
+      {(profile.role === 'Admin' || profile.role === 'Editor' || profile.role === 'Agent') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
            <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />
@@ -739,3 +739,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
