@@ -24,7 +24,7 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, FirebaseClientProvider } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
@@ -40,7 +40,7 @@ const formSchema = z.object({
 
 type SignupFormValues = z.infer<typeof formSchema>;
 
-export default function SignupPage() {
+function SignupPageContent() {
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -253,4 +253,12 @@ export default function SignupPage() {
       </div>
     </div>
   );
+}
+
+export default function SignupPage() {
+    return (
+        <FirebaseClientProvider>
+            <SignupPageContent />
+        </FirebaseClientProvider>
+    );
 }

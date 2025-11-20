@@ -28,7 +28,7 @@ const defaultProfile: ProfileData = {
     agencyName: 'My Agency',
     ownerName: 'New User',
     phone: '',
-    role: 'Agent', // Default to the most restrictive role
+    role: 'Agent',
     avatar: '',
     user_id: '',
     agency_id: '',
@@ -38,7 +38,6 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
-  // Reference to the user's document in Firestore, memoized to prevent re-renders
   const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: firestoreProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
 
@@ -46,12 +45,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Try to load from localStorage first for faster initial UI render
     if (!isInitialized) {
         try {
             const savedProfile = localStorage.getItem('app-profile');
             if (savedProfile) {
-                setProfileState(JSON.parse(savedProfile));
+                const parsedProfile = JSON.parse(savedProfile);
+                setProfileState(parsedProfile);
             }
         } catch (error) {
             console.error("Failed to parse profile from localStorage", error);
@@ -61,21 +60,25 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [isInitialized]);
 
   useEffect(() => {
-    // Once Firestore data is loaded, it becomes the source of truth
     if (firestoreProfile) {
         const newProfileData: ProfileData = {
-            agencyName: firestoreProfile.agencyName || profile.agencyName, // Keep local agencyName if not in firestore
-            ownerName: firestoreProfile.name || 'User',
+            agencyName: firestoreProfile.agencyName || profile.agencyName || 'My Agency',
+            ownerName: firestoreProfile.name || user?.displayName || 'User',
             phone: firestoreProfile.phone || '',
-            role: firestoreProfile.role || profile.role || 'Agent',
+            // Important: Prioritize Firestore role, then local state, then default.
+            role: firestoreProfile.role || profile.role || 'Agent', 
             avatar: user?.photoURL || firestoreProfile.avatar || '',
             user_id: firestoreProfile.id,
             agency_id: firestoreProfile.agency_id,
         };
         setProfileState(newProfileData);
-        localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+        try {
+            localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+        } catch (error) {
+            console.error("Failed to save profile to localStorage", error);
+        }
     }
-  }, [firestoreProfile, user, profile.agencyName, profile.role]);
+  }, [firestoreProfile, user, profile.role, profile.agencyName]);
 
   const setProfile = (newProfile: ProfileData) => {
     setProfileState(newProfile);
@@ -86,15 +89,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const isLoading = isAuthLoading || isProfileLoading;
+  const isLoading = isAuthLoading || isProfileLoading || !isInitialized;
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
-      {isLoading ? (
-          <div className="flex h-screen w-full items-center justify-center">
-              <p>Loading Profile...</p>
-          </div>
-      ) : children}
+      {children}
     </ProfileContext.Provider>
   );
 }

@@ -115,7 +115,6 @@ export default function TeamPage() {
                     return;
                 }
 
-                // Get the admin's current credentials to re-authenticate later
                 const adminEmail = currentAdminUser.email;
                 const adminPassword = sessionStorage.getItem('fb-cred');
 
@@ -135,13 +134,12 @@ export default function TeamPage() {
                   email: member.email,
                   phone: member.phone,
                   role: member.role,
-                  agency_id: profile.agency_id, // Assigning admin's agency_id
+                  agency_id: profile.agency_id,
                   stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
                 };
-                const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
-                await setDoc(doc(collectionRef, newMemberUser.uid), memberData);
+                await setDoc(doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid), memberData);
 
-                // 3. Create a user doc for the new member so they can log in and have their own data space
+                // 3. Create a user doc for the new member so they can log in
                 await setDoc(doc(firestore, "users", newMemberUser.uid), {
                     id: newMemberUser.uid,
                     name: member.name,
@@ -159,8 +157,7 @@ export default function TeamPage() {
             }
         } catch (error: any) {
             console.error("Error saving member: ", error);
-            // Provide more specific error messages
-            let errorMessage = error.message;
+            let errorMessage = "An unexpected error occurred.";
             if (error.code === 'auth/email-already-in-use') {
                 errorMessage = 'This email address is already registered.';
             } else if (error.code === 'auth/weak-password') {
@@ -182,7 +179,7 @@ export default function TeamPage() {
             email: user.email || '',
             role: 'Admin',
             agency_id: profile.agency_id,
-            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
+            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
         };
         
         return [adminAsMember, ...(teamMembers || [])];

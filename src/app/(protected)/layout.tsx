@@ -10,6 +10,7 @@ import { CurrencyProvider } from '@/context/currency-context';
 import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -24,7 +25,7 @@ export const useSearch = () => React.useContext(SearchContext);
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const { isLoading: isProfileLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading } = useProfile();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -35,8 +36,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || isProfileLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <p>Loading...</p>
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading Your Workspace...</p>
+            </div>
         </div>
     );
   }
@@ -68,26 +72,30 @@ export default function ProtectedLayout({
 
 
   return (
-      <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-          <CurrencyProvider>
-          <SidebarProvider>
-              <AuthGuard>
-                <div className="flex h-screen w-full bg-background">
-                <AppSidebar />
-                <div className="flex flex-col flex-1 overflow-hidden">
-                    <AppHeader 
-                    searchable={isSearchable}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    />
-                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    {children}
-                    </main>
-                </div>
-                </div>
-              </AuthGuard>
-          </SidebarProvider>
-          </CurrencyProvider>
-      </SearchContext.Provider>
+    <FirebaseClientProvider>
+      <ProfileProvider>
+        <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+            <CurrencyProvider>
+            <SidebarProvider>
+                <AuthGuard>
+                  <div className="flex h-screen w-full bg-background">
+                  <AppSidebar />
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                      <AppHeader 
+                      searchable={isSearchable}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      />
+                      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                      {children}
+                      </main>
+                  </div>
+                  </div>
+                </AuthGuard>
+            </SidebarProvider>
+            </CurrencyProvider>
+        </SearchContext.Provider>
+      </ProfileProvider>
+    </FirebaseClientProvider>
   );
 }

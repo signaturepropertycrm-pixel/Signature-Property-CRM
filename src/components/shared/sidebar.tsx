@@ -49,9 +49,9 @@ const menuItems = [
 ];
 
 const bottomMenuItems = [
-  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin'] },
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin', 'Editor'] },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
 ];
 
 const buyerStatusLinks = [
