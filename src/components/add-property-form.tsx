@@ -113,7 +113,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             ...propertyToEdit,
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
-            potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
+            potential_rent_unit: propertyToEdit.potential_rent_unit || 'Thousand',
             demand_unit: propertyToEdit.demand_unit,
             road_size_ft: propertyToEdit.road_size_ft ?? undefined,
             potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
@@ -127,6 +127,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         custom_property_type: '',
         size_unit: 'Marla',
         demand_unit: 'Lacs',
+        potential_rent_unit: 'Thousand',
         meters: { electricity: false, gas: false, water: false },
         serial_no: `P-${totalProperties + 1}`
       });
@@ -216,7 +217,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 <FormItem>
                   <FormLabel>Auto-Generated Title</FormLabel>
                   <FormControl>
-                    <Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
+                    <Input {...field} value={field.value || ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -314,7 +315,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                         <FormItem>
                             <FormLabel>Custom Property Type</FormLabel>
                             <FormControl>
-                            <Input {...field} placeholder="e.g., Penthouse" />
+                            <Input {...field} value={field.value || ''} placeholder="e.g., Penthouse" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
