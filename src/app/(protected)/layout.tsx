@@ -5,12 +5,11 @@ import React, { useState } from 'react';
 import { AppSidebar } from '@/components/shared/sidebar';
 import { AppHeader } from '@/components/shared/header';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { CurrencyProvider } from '@/context/currency-context';
-import { useProfile, ProfileProvider } from '@/context/profile-context';
-import { useUser } from '@/firebase';
+import { useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
 import { useMemoFirebase } from '@/firebase/hooks';
 

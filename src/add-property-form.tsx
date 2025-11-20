@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import type { Property } from '@/lib/types';
-import { useUser } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
