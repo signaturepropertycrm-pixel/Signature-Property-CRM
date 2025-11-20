@@ -133,7 +133,7 @@ function PropertiesPageContent() {
     if (savedProperties) {
       setProperties(JSON.parse(savedProperties));
     } else {
-      setProperties(initialProperties); // This will be an empty array
+      setProperties(initialProperties);
     }
   }, []);
 
@@ -274,13 +274,15 @@ function PropertiesPageContent() {
   };
 
   const handleSaveProperty = (propertyData: Property) => {
-    if (propertyToEdit) {
-        // Update existing property
-        setProperties(properties.map(p => p.id === propertyData.id ? propertyData : p));
-    } else {
-        // Add new property
-        setProperties([...properties, propertyData]);
-    }
+    setProperties(prevProperties => {
+        if (propertyToEdit) {
+            // Update existing property
+            return prevProperties.map(p => p.id === propertyData.id ? propertyData : p);
+        } else {
+            // Add new property
+            return [...prevProperties, propertyData];
+        }
+    });
     setPropertyToEdit(null);
   };
 

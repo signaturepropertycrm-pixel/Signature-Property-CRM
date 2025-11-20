@@ -237,13 +237,15 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = (buyerData: Buyer) => {
-        if (buyerToEdit) {
-            // Update existing buyer
-            setBuyers(buyers.map(b => b.id === buyerData.id ? buyerData : b));
-        } else {
-            // Add new buyer
-            setBuyers([...buyers, buyerData]);
-        }
+        setBuyers(prevBuyers => {
+            if (buyerToEdit) {
+                // Update existing buyer
+                return prevBuyers.map(b => b.id === buyerData.id ? buyerData : b);
+            } else {
+                // Add new buyer
+                return [...prevBuyers, buyerData];
+            }
+        });
         setBuyerToEdit(null);
     };
 
@@ -728,3 +730,4 @@ export default function BuyersPage() {
     
 
     
+

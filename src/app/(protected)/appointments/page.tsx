@@ -30,7 +30,7 @@ function AppointmentsPageContent() {
         if (savedAppointments) {
             setAppointmentsData(JSON.parse(savedAppointments));
         } else {
-            setAppointmentsData(initialAppointments); // This will be an empty array
+            setAppointmentsData(initialAppointments);
         }
     };
     
@@ -55,14 +55,16 @@ function AppointmentsPageContent() {
 
 
   const handleSaveAppointment = (appointment: Appointment) => {
-    if (appointmentToEdit) {
-      // It's an update (reschedule)
-      setAppointmentsData(prev => prev.map(a => a.id === appointment.id ? appointment : a));
-      setAppointmentToEdit(null);
-    } else {
-      // It's a new appointment
-      setAppointmentsData(prev => [appointment, ...prev]);
-    }
+    setAppointmentsData(prev => {
+        if (appointmentToEdit) {
+            // It's an update (reschedule)
+            return prev.map(a => a.id === appointment.id ? appointment : a);
+        } else {
+            // It's a new appointment
+            return [appointment, ...prev];
+        }
+    });
+    setAppointmentToEdit(null);
   };
 
   const handleDeleteAppointment = (id: string) => {
