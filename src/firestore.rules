@@ -110,8 +110,8 @@ service cloud.firestore {
     match /{collectionName}/{docId}
     where collectionName in ['appointments', 'followUps', 'activityLogs'] {
        allow read, write: if isSignedIn() && (
-            (request.method == 'create' && isMemberOfAgency(request.resource.data.agency_id)) ||
-            (request.method != 'create' && isMemberOfAgency(resource.data.agency_id))
+            (request.method == 'create' && isMemberOfArray(request.resource.data.agency_id, ['Admin', 'Editor', 'Agent'])) ||
+            (request.method != 'create' && isMemberArray(resource.data.agency_id, ['Admin', 'Editor', 'Agent']))
         );
     }
     
@@ -121,3 +121,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -138,10 +138,10 @@ export default function TeamPage() {
             // Handle role change
             if (memberToEdit.role !== memberData.role) {
                 if (memberData.role === 'Agent') {
-                    batch.set(doc(firestore, 'roles_agent', memberToEdit.id), {});
+                    batch.set(doc(firestore, 'roles_agent', memberToEdit.id), { agency_id: profile.agency_id });
                     batch.delete(doc(firestore, 'roles_editor', memberToEdit.id));
                 } else if (memberData.role === 'Editor') {
-                    batch.set(doc(firestore, 'roles_editor', memberToEdit.id), {});
+                    batch.set(doc(firestore, 'roles_editor', memberToEdit.id), { agency_id: profile.agency_id });
                     batch.delete(doc(firestore, 'roles_agent', memberToEdit.id));
                 }
             }
@@ -341,5 +341,7 @@ export default function TeamPage() {
     </>
   );
 }
+
+    
 
     
