@@ -83,7 +83,7 @@ export default function TeamPage() {
     };
 
     const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
-        if (!user || !auth || !user.email) return;
+        if (!user || !auth || !user.email || !profile.agency_id) return;
         const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
         
         try {
