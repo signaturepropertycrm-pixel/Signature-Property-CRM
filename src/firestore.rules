@@ -80,7 +80,7 @@ service cloud.firestore {
         allow list: if isOwner(userId);
       }
       match /properties/{propertyId} {
-        allow read: if isOwner(userId); // read implies get and list
+        allow read: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update, delete: if isExistingOwner(userId);
       }
@@ -88,11 +88,11 @@ service cloud.firestore {
       /**
        * @description Rules for the buyers sub-collection.
        */
-      match /buyers {
+       match /buyers {
         allow list: if isOwner(userId);
       }
       match /buyers/{buyerId} {
-        allow read: if isOwner(userId); // read implies get and list
+        allow read: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update, delete: if isExistingOwner(userId);
       }
@@ -104,7 +104,7 @@ service cloud.firestore {
         allow list: if isOwner(userId);
       }
       match /teamMembers/{memberId} {
-        allow read: if isOwner(userId); // read implies get and list
+        allow read: if isOwner(userId);
         allow create: if isOwner(userId);
         allow update, delete: if isExistingOwner(userId);
       }
@@ -119,6 +119,9 @@ service cloud.firestore {
       /**
        * @description Rules for the followUps sub-collection.
        */
+      match /followUps {
+        allow list: if isOwner(userId);
+      }
       match /followUps/{followUpId} {
         allow read, write: if isOwner(userId);
       }
