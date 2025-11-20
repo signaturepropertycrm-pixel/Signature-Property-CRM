@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
-import type { User, UserRole } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import {
   DropdownMenu,
@@ -18,8 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { collection, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -110,9 +109,7 @@ export default function TeamPage() {
             const userDocRef = doc(firestore, 'users', memberToEdit.id);
             const batch = writeBatch(firestore);
             
-            // Update role in main user document
             batch.update(userDocRef, { role: member.role });
-            // Update details in admin's subcollection
             batch.update(memberRef, { name: member.name, phone: member.phone, role: member.role });
 
             try {
@@ -131,12 +128,24 @@ export default function TeamPage() {
             return;
         }
         
+        const adminPassword = sessionStorage.getItem('fb-cred');
+        if (!adminPassword || !currentUser.email) {
+            toast({ title: 'Authentication Error', description: 'Admin session is invalid. Please log in again.', variant: 'destructive' });
+            return;
+        }
+
         try {
-            // Step 1: Create the new user account in Firebase Auth
+            // Re-authenticate admin to perform secure actions
+            const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
+            await signInWithCredential(auth, adminCredential);
+
+            // Create new user in a temporary auth instance to avoid state conflicts
             const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
             const newUID = newUserCredential.user.uid;
 
-            // Step 2: Prepare a batch write to Firestore
+            // Re-sign in admin immediately to restore auth state
+            await signInWithCredential(auth, adminCredential);
+
             const batch = writeBatch(firestore);
             
             // Doc 1: The new user's main document in the top-level 'users' collection
@@ -145,6 +154,7 @@ export default function TeamPage() {
                 id: newUID,
                 name: member.name,
                 email: member.email,
+                phone: member.phone,
                 role: member.role,
                 agency_id: profile.agency_id, // CRITICAL: Assign to the admin's agency
                 createdBy: currentUser.uid,
@@ -168,19 +178,9 @@ export default function TeamPage() {
             const roleDocRef = doc(firestore, roleCollection, newUID);
             batch.set(roleDocRef, {});
 
-            // Step 3: Commit all writes at once
             await batch.commit();
             
             toast({ title: 'Member Added Successfully' });
-
-            // Step 4: Re-authenticate the admin to keep their session active
-            const adminPassword = sessionStorage.getItem('fb-cred');
-            if (currentUser.email && adminPassword) {
-                 const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
-                 await signInWithCredential(auth, adminCredential);
-            } else {
-                console.warn("Could not re-authenticate admin. Session might be lost on refresh.");
-            }
 
         } catch (error: any) {
             console.error("Error creating member: ", error);
@@ -189,14 +189,26 @@ export default function TeamPage() {
                 errorMessage = 'This email address is already registered.';
             } else if (error.code === 'auth/weak-password') {
                 errorMessage = 'The password is too weak. It must be at least 6 characters.';
+            } else if (error.code === 'auth/invalid-credential') {
+                 errorMessage = 'Your admin password in session is incorrect. Please log out and log in again.';
             }
             toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+            
+            // If creation failed, try to re-login admin to prevent session loss
+            if (currentUser.email && adminPassword) {
+                 try {
+                    const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
+                    await signInWithCredential(auth, adminCredential);
+                 } catch (reauthError) {
+                     console.error("Admin re-authentication failed after error:", reauthError);
+                 }
+            }
         }
     };
 
 
      const allMembers = useMemo(() => {
-        if (!currentUser || !profile || !profile.ownerName || !teamMembers) return [];
+        if (!currentUser || !profile || !profile.ownerName) return [];
 
         const adminAsMember: User = {
             id: currentUser.uid,
@@ -207,7 +219,7 @@ export default function TeamPage() {
             stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
         };
         
-        return [adminAsMember, ...teamMembers];
+        return teamMembers ? [adminAsMember, ...teamMembers] : [adminAsMember];
 
     }, [currentUser, profile, teamMembers]);
     
