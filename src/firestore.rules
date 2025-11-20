@@ -74,11 +74,14 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
 
       /**
-       * @description Rules for the properties sub-collection.
+       * @description Allows listing for the properties sub-collection.
        */
       match /properties {
          allow list: if isOwner(userId);
       }
+      /**
+       * @description Allows document-level access for the properties sub-collection.
+       */
       match /properties/{propertyId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
@@ -87,11 +90,14 @@ service cloud.firestore {
       }
 
       /**
-       * @description Rules for the buyers sub-collection.
+       * @description Allows listing for the buyers sub-collection.
        */
       match /buyers {
          allow list: if isOwner(userId);
       }
+      /**
+       * @description Allows document-level access for the buyers sub-collection.
+       */
       match /buyers/{buyerId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
@@ -100,28 +106,35 @@ service cloud.firestore {
       }
       
       /**
-       * @description Rules for the teamMembers sub-collection.
+       * @description Allows listing for the teamMembers sub-collection.
        */
       match /teamMembers {
         allow list: if isOwner(userId);
       }
+      /**
+       * @description Allows document-level access for the teamMembers sub-collection.
+       */
       match /teamMembers/{memberId} {
         allow read, write: if isOwner(userId);
       }
 
       /**
-       * @description Rules for the appointments sub-collection.
+       * @description Allows access only to the user (agent) associated with the appointment or to admins.
+       * @path /users/{userId}/appointments/{appointmentId}
        */
       match /appointments/{appointmentId} {
         allow read, write: if isOwner(userId) || isAdmin();
       }
 
       /**
-       * @description Rules for the followUps sub-collection.
+       * @description Allows listing for the followUps sub-collection.
        */
       match /followUps {
         allow list: if isOwner(userId);
       }
+      /**
+       * @description Allows document-level access for the followUps sub-collection.
+       */
       match /followUps/{followUpId} {
         allow read, write: if isOwner(userId);
       }
