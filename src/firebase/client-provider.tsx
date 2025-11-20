@@ -50,9 +50,7 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
       auth={firebaseServices.auth}
       firestore={firebaseServices.firestore}
     >
-      <ProfileProvider>
         {children}
-      </ProfileProvider>
     </FirebaseProvider>
   );
 }

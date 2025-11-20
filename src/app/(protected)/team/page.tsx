@@ -19,7 +19,7 @@ import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useRouter } from 'next/navigation';
@@ -115,6 +115,8 @@ export default function TeamPage() {
             return;
         }
 
+        const currentAuth = auth;
+
         if (memberToEdit) {
             const batch = writeBatch(firestore);
             const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
@@ -140,21 +142,10 @@ export default function TeamPage() {
             return;
         }
 
-        const adminPassword = sessionStorage.getItem('fb-cred');
-        if (!adminPassword || !currentUser.email) {
-            toast({ title: 'Admin Authentication Error', description: 'Your session is invalid. Please log out and log in again to add new members.', variant: 'destructive' });
-            return;
-        }
-        
         try {
-            const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
-            await signInWithCredential(auth, adminCredential);
-
-            const newUserCredential = await createUserWithEmailAndPassword(auth, memberData.email, memberData.password);
+            const newUserCredential = await createUserWithEmailAndPassword(currentAuth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
 
-            await signInWithCredential(auth, adminCredential);
-            
             const batch = writeBatch(firestore);
 
             const newUserDocRef = doc(firestore, 'users', newUID);
@@ -164,8 +155,7 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id,
-                createdBy: currentUser.uid,
+                agency_id: profile.agency_id, // Crucial: Assign the admin's agency ID
                 createdAt: serverTimestamp(),
             });
 
@@ -191,8 +181,6 @@ export default function TeamPage() {
                 errorMessage = 'This email address is already registered.';
             } else if (error.code === 'auth/weak-password') {
                 errorMessage = 'The password is too weak. It must be at least 6 characters.';
-            } else if (error.code === 'auth/invalid-credential') {
-                 errorMessage = 'Your admin password in session is incorrect. Please log out and log in again.';
             }
             toast({ title: 'Error Creating Member', description: errorMessage, variant: 'destructive' });
         }
@@ -214,7 +202,7 @@ export default function TeamPage() {
 
     }, [currentUser, profile, teamMembersData, isProfileLoading]);
     
-    if (isProfileLoading || isTeamLoading) {
+    if (isProfileLoading || (profile.role === 'Admin' && isTeamLoading)) {
         return (
              <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

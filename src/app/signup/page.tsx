@@ -30,7 +30,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useProfile } from '@/context/profile-context';
+import { ProfileProvider, useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -67,7 +67,6 @@ function SignupPageContent() {
         throw new Error('Auth or Firestore service is not available.');
       }
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      sessionStorage.setItem('fb-cred', values.password);
       
       const user = userCredential.user;
       if (user) {
@@ -275,7 +274,9 @@ function SignupPageContent() {
 export default function SignupPage() {
     return (
         <FirebaseClientProvider>
+          <ProfileProvider>
             <SignupPageContent />
+          </ProfileProvider>
         </FirebaseClientProvider>
     );
 }

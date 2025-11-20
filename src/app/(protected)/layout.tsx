@@ -48,7 +48,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
   
   if (!user || !profile.role) {
-    return null; // or a redirect component
+    // This can happen briefly between login and profile hydration
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+             <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Authenticating...</p>
+            </div>
+        </div>
+    );
   }
 
   // Define restricted paths for each role

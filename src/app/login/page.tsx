@@ -30,6 +30,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { ProfileProvider } from '@/context/profile-context';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
@@ -62,8 +63,6 @@ function LoginPageContent() {
         throw new Error('Auth service is not available.');
       }
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // Store password in session storage for re-authentication on member creation
-      sessionStorage.setItem('fb-cred', values.password);
       router.push('/dashboard');
     } catch (error: any) {
       console.error('Login Error:', error);
@@ -205,7 +204,9 @@ function LoginPageContent() {
 export default function LoginPage() {
     return (
         <FirebaseClientProvider>
+          <ProfileProvider>
             <LoginPageContent />
+          </ProfileProvider>
         </FirebaseClientProvider>
     );
 }
