@@ -42,11 +42,13 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
+import { useUser } from '@/firebase';
 
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
   const { profile, setProfile } = useProfile();
+  const { user } = useUser();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
@@ -275,7 +277,7 @@ export default function SettingsPage() {
                 <Input
                   id="email"
                   type="email"
-                  defaultValue="demo_admin@signaturecrm.test"
+                  value={user?.email || ''}
                   disabled
                   className="cursor-not-allowed bg-muted/50"
                 />

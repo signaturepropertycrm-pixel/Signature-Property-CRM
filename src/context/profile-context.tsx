@@ -21,11 +21,11 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 const defaultProfile: ProfileData = {
-    agencyName: 'Signature Properties',
-    ownerName: 'Demo Admin',
-    phone: '+92 300 1234567',
+    agencyName: 'My Agency',
+    ownerName: 'New User',
+    phone: '',
     role: 'Admin', // Default role is Admin
-    avatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIxODcyNzB8MA&ixlib=rb-4.1.0&q=80&w=1080'
+    avatar: ''
 };
 
 export function ProfileProvider({ children }: { children: ReactNode }) {

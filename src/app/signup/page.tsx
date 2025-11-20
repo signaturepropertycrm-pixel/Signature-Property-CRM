@@ -28,6 +28,7 @@ import { useAuth } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -42,6 +43,7 @@ export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
+  const { setProfile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -67,6 +69,14 @@ export default function SignupPage() {
       if (userCredential.user) {
         await updateProfile(userCredential.user, {
           displayName: values.name,
+        });
+
+        // Set the profile in context and localStorage
+        setProfile({
+            ownerName: values.name,
+            agencyName: values.agencyName,
+            phone: '', // Phone is empty by default
+            role: 'Admin' // New users are Admins
         });
       }
 
