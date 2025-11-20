@@ -35,7 +35,6 @@ import {
   PlusCircle,
   CalendarPlus,
 } from 'lucide-react';
-import { properties as initialProperties } from '@/lib/data';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment } from '@/lib/types';
@@ -66,6 +65,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
+
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -103,8 +105,11 @@ function PropertiesPageContent() {
   const { toast } = useToast();
   const { currency } = useCurrency();
 
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const { data: properties, isLoading } = useCollection<Property>(propertiesQuery);
 
-  const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -126,21 +131,6 @@ function PropertiesPageContent() {
     demandUnit: 'All'
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
-  
-  useEffect(() => {
-    // Load properties from localStorage on mount
-    const savedProperties = localStorage.getItem('properties');
-    if (savedProperties) {
-      setProperties(JSON.parse(savedProperties));
-    } else {
-      setProperties(initialProperties);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Save properties to localStorage whenever they change
-    localStorage.setItem('properties', JSON.stringify(properties));
-  }, [properties]);
 
   useEffect(() => {
     if (!isAddPropertyOpen) {
@@ -176,6 +166,7 @@ function PropertiesPageContent() {
   };
   
   const filteredProperties = useMemo(() => {
+    if (!properties) return [];
     let filtered = properties.filter(p => !p.is_deleted);
 
     // Status tab filter from URL (Sidebar or Mobile Tabs)
@@ -252,39 +243,56 @@ function PropertiesPageContent() {
     setIsAppointmentOpen(true);
   };
   
-  const handleSaveAppointment = (appointment: Appointment) => {
-    const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    localStorage.setItem('appointments', JSON.stringify([appointment, ...savedAppointments]));
+  const handleSaveAppointment = async (appointment: Appointment) => {
+      if (!user) return;
+      const collectionRef = collection(firestore, 'users', user.uid, 'appointments');
+      await addDoc(collectionRef, appointment);
   };
 
-  const handleUnmarkRecorded = (prop: Property) => {
-    setProperties(prev => prev.map(p => p.id === prop.id ? {...p, is_recorded: false, video_links: {}} : p));
+  const handleUnmarkRecorded = async (prop: Property) => {
+      if (!user) return;
+      const docRef = doc(firestore, 'users', user.uid, 'properties', prop.id);
+      await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
   };
 
-  const handleUpdateProperty = (updatedProperty: Property) => {
-    setProperties(prev => prev.map(p => p.id === updatedProperty.id ? updatedProperty : p));
+  const handleUpdateProperty = async (updatedProperty: Property) => {
+      if (!user) return;
+      const docRef = doc(firestore, 'users', user.uid, 'properties', updatedProperty.id);
+      await setDoc(docRef, updatedProperty, { merge: true });
   };
   
-  const handleDelete = (propertyId: string) => {
-    setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, is_deleted: true } : p));
+  const handleDelete = async (propertyId: string) => {
+    if (!user) return;
+    const docRef = doc(firestore, 'users', user.uid, 'properties', propertyId);
+    await setDoc(docRef, { is_deleted: true }, { merge: true });
     toast({
         title: "Property Moved to Trash",
         description: "You can restore it from the trash page.",
     });
   };
 
-  const handleSaveProperty = (propertyData: Property) => {
-    setProperties(prevProperties => {
-        if (propertyToEdit) {
-            // Update existing property
-            return prevProperties.map(p => p.id === propertyData.id ? propertyData : p);
-        } else {
-            // Add new property
-            return [...prevProperties, propertyData];
-        }
-    });
+  const handleSaveProperty = async (propertyData: Omit<Property, 'id'>) => {
+    if (!user) return;
+    const collectionRef = collection(firestore, 'users', user.uid, 'properties');
+    
+    const dataToSave = {
+        ...propertyData,
+        agency_id: profile.agency_id
+    };
+
+    if (propertyToEdit) {
+        // Update existing property
+        const docRef = doc(collectionRef, propertyToEdit.id);
+        await setDoc(docRef, dataToSave, { merge: true });
+        toast({ title: 'Property Updated' });
+    } else {
+        // Add new property
+        await addDoc(collectionRef, dataToSave);
+        toast({ title: 'Property Added' });
+    }
     setPropertyToEdit(null);
   };
+
 
   const handleTabChange = (value: string) => {
     const status = value as FilterTab;
@@ -292,7 +300,9 @@ function PropertiesPageContent() {
     router.push(url);
   };
   
-  const renderTable = () => (
+  const renderTable = () => {
+    if (isLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    return (
      <Table>
         <TableHeader>
           <TableRow>
@@ -357,33 +367,37 @@ function PropertiesPageContent() {
                       <Eye />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleEdit(prop)}>
-                      <Edit />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
-                      <CalendarPlus />
-                      Set Appointment
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
-                      <CheckCircle />
-                      Mark as Sold
-                    </DropdownMenuItem>
-                    {prop.is_recorded ? (
-                      <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
-                        <VideoOff />
-                        Unmark as Recorded
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                        <Video />
-                        Mark as Recorded
-                      </DropdownMenuItem>
+                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                        <>
+                            <DropdownMenuItem onSelect={() => handleEdit(prop)}>
+                                <Edit />
+                                Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
+                                <CalendarPlus />
+                                Set Appointment
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
+                                <CheckCircle />
+                                Mark as Sold
+                            </DropdownMenuItem>
+                            {prop.is_recorded ? (
+                            <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
+                                <VideoOff />
+                                Unmark as Recorded
+                            </DropdownMenuItem>
+                            ) : (
+                            <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                                <Video />
+                                Mark as Recorded
+                            </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                <Trash2 />
+                                Delete
+                            </DropdownMenuItem>
+                        </>
                     )}
-                    <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                      <Trash2 />
-                      Delete
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -391,9 +405,11 @@ function PropertiesPageContent() {
           ))}
         </TableBody>
       </Table>
-  );
+  )};
 
-  const renderCards = () => (
+  const renderCards = () => {
+    if (isLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    return (
     <div className="space-y-4">
         {filteredProperties.map((prop) => (
             <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
@@ -461,40 +477,44 @@ function PropertiesPageContent() {
                             <Eye />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleEdit(prop)}>
-                            <Edit />
-                            Edit
-                          </DropdownMenuItem>
-                           <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
-                            <CalendarPlus />
-                            Set Appointment
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
-                            <CheckCircle />
-                            Mark as Sold
-                          </DropdownMenuItem>
-                          {prop.is_recorded ? (
-                            <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
-                                <VideoOff />
-                                Unmark as Recorded
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                                <Video />
-                                Mark as Recorded
-                            </DropdownMenuItem>
+                          {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                            <>
+                                <DropdownMenuItem onSelect={() => handleEdit(prop)}>
+                                    <Edit />
+                                    Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
+                                    <CalendarPlus />
+                                    Set Appointment
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
+                                    <CheckCircle />
+                                    Mark as Sold
+                                </DropdownMenuItem>
+                                {prop.is_recorded ? (
+                                    <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
+                                        <VideoOff />
+                                        Unmark as Recorded
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
+                                        <Video />
+                                        Mark as Recorded
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                    <Trash2 />
+                                    Delete
+                                </DropdownMenuItem>
+                            </>
                           )}
-                          <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                            <Trash2 />
-                            Delete
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                 </CardFooter>
             </Card>
         ))}
     </div>
-  );
+  )};
 
   return (
     <>
@@ -509,109 +529,111 @@ function PropertiesPageContent() {
                 {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your properties.'}
               </p>
             </div>
-            <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-              <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="rounded-full">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filters
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium leading-none">Filters</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Refine your property search.
-                      </p>
-                    </div>
-                    <div className="grid gap-2">
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label htmlFor="area">Area</Label>
-                        <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
-                      </div>
-                       <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="propertyType">Type</Label>
-                          <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                              <SelectTrigger className="col-span-2 h-8">
-                                  <SelectValue placeholder="Property Type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="All">All</SelectItem>
-                                  <SelectItem value="House">House</SelectItem>
-                                  <SelectItem value="Plot">Plot</SelectItem>
-                                  <SelectItem value="Flat">Flat</SelectItem>
-                                  <SelectItem value="Shop">Shop</SelectItem>
-                                  <SelectItem value="Commercial">Commercial</SelectItem>
-                                  <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                  <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                          </Select>
-                      </div>
-                      <div className="grid grid-cols-3 items-center gap-4">
-                        <Label>Size</Label>
-                        <div className="col-span-2 grid grid-cols-2 gap-2">
-                          <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                          <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+            {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
+                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                    <PopoverTrigger asChild>
+                    <Button variant="outline" className="rounded-full">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Filters
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Filters</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Refine your property search.
+                        </p>
                         </div>
-                      </div>
-                       <div className="grid grid-cols-3 items-center gap-4">
-                        <Label></Label>
-                            <div className="col-span-2">
-                                <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
-                                    <SelectTrigger className="h-8">
-                                        <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="All">All Units</SelectItem>
-                                        <SelectItem value="Marla">Marla</SelectItem>
-                                        <SelectItem value="SqFt">SqFt</SelectItem>
-                                        <SelectItem value="Kanal">Kanal</SelectItem>
-                                        <SelectItem value="Acre">Acre</SelectItem>
-                                        <SelectItem value="Maraba">Maraba</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        <div className="grid gap-2">
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label htmlFor="area">Area</Label>
+                            <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label htmlFor="propertyType">Type</Label>
+                            <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                                <SelectTrigger className="col-span-2 h-8">
+                                    <SelectValue placeholder="Property Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">All</SelectItem>
+                                    <SelectItem value="House">House</SelectItem>
+                                    <SelectItem value="Plot">Plot</SelectItem>
+                                    <SelectItem value="Flat">Flat</SelectItem>
+                                    <SelectItem value="Shop">Shop</SelectItem>
+                                    <SelectItem value="Commercial">Commercial</SelectItem>
+                                    <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Size</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                            <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
                             </div>
                         </div>
-                       <div className="grid grid-cols-3 items-center gap-4">
-                        <Label>Demand</Label>
-                        <div className="col-span-2 grid grid-cols-2 gap-2">
-                          <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
-                          <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
-                        </div>
-                      </div>
-                       <div className="grid grid-cols-3 items-center gap-4">
+                        <div className="grid grid-cols-3 items-center gap-4">
                             <Label></Label>
-                            <div className="col-span-2">
-                                <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
-                                    <SelectTrigger className="h-8">
-                                        <SelectValue placeholder="Unit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="All">All Units</SelectItem>
-                                        <SelectItem value="Lacs">Lacs</SelectItem>
-                                        <SelectItem value="Crore">Crore</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="col-span-2">
+                                    <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue placeholder="Unit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Units</SelectItem>
+                                            <SelectItem value="Marla">Marla</SelectItem>
+                                            <SelectItem value="SqFt">SqFt</SelectItem>
+                                            <SelectItem value="Kanal">Kanal</SelectItem>
+                                            <SelectItem value="Acre">Acre</SelectItem>
+                                            <SelectItem value="Maraba">Maraba</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Demand</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                            <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
                             </div>
                         </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                                <Label></Label>
+                                <div className="col-span-2">
+                                    <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
+                                        <SelectTrigger className="h-8">
+                                            <SelectValue placeholder="Unit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Units</SelectItem>
+                                            <SelectItem value="Lacs">Lacs</SelectItem>
+                                            <SelectItem value="Crore">Crore</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                            <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                        </div>
                     </div>
-                     <div className="flex justify-end gap-2">
-                        <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                        <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
-                      </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-              <Button variant="outline" className="rounded-full">
-                <Upload className="mr-2 h-4 w-4" />
-                Import
-              </Button>
-              <Button variant="outline" className="rounded-full">
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-            </div>
+                    </PopoverContent>
+                </Popover>
+                <Button variant="outline" className="rounded-full">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import
+                </Button>
+                <Button variant="outline" className="rounded-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                </Button>
+                </div>
+            )}
           </div>
           
            {isMobile && (
@@ -653,7 +675,7 @@ function PropertiesPageContent() {
           isOpen={isAddPropertyOpen}
           setIsOpen={setIsAddPropertyOpen}
           propertyToEdit={propertyToEdit}
-          totalProperties={properties.length}
+          totalProperties={properties?.length || 0}
           onSave={handleSaveProperty}
       />
 

@@ -51,7 +51,7 @@ const menuItems = [
 const bottomMenuItems = [
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin', 'Editor'] },
 ];
 
 const buyerStatusLinks = [
@@ -260,13 +260,13 @@ export function AppSidebar() {
               </SidebarMenuItem>
             )}
              
-              {/* Tools Collapsible Menu */}
-             <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen}>
-                 <SidebarMenuItem className="relative">
+            {(profile.role === 'Admin' || profile.role === 'Editor') && (
+              <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen}>
+                  <SidebarMenuItem className="relative">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                             <CollapsibleTrigger asChild>
-                                 <SidebarMenuButton
+                              <CollapsibleTrigger asChild>
+                                  <SidebarMenuButton
                                     isActive={pathname.startsWith('/tools')}
                                     className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
                                 >
@@ -279,29 +279,30 @@ export function AppSidebar() {
                         <TooltipContent side="right" align="center">Tools</TooltipContent>
                     </Tooltip>
                     {pathname.startsWith('/tools') && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-                 </SidebarMenuItem>
+                  </SidebarMenuItem>
                 <CollapsibleContent asChild>
                     <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
                         <SidebarMenu className="pl-7">
-                             <SidebarMenuItem>
-                                 <Link href="/tools">
-                                     <SidebarMenuButton size="sm" isActive={pathname === '/tools'} className="w-full justify-start rounded-full text-xs">
-                                         List Generator
-                                     </SidebarMenuButton>
-                                 </Link>
-                             </SidebarMenuItem>
-                             <SidebarMenuItem>
+                              <SidebarMenuItem>
+                                  <Link href="/tools">
+                                      <SidebarMenuButton size="sm" isActive={pathname === '/tools'} className="w-full justify-start rounded-full text-xs">
+                                          List Generator
+                                      </SidebarMenuButton>
+                                  </Link>
+                              </SidebarMenuItem>
+                              <SidebarMenuItem>
                                 <Link href="/tools/post-generator">
                                     <SidebarMenuButton size="sm" isActive={pathname === '/tools/post-generator'} className="w-full justify-between rounded-full text-xs">
                                         Post Generator
                                         <Badge variant="destructive" className="scale-75">Coming Soon</Badge>
                                     </SidebarMenuButton>
                                 </Link>
-                             </SidebarMenuItem>
+                              </SidebarMenuItem>
                         </SidebarMenu>
                     </div>
                 </CollapsibleContent>
-             </Collapsible>
+              </Collapsible>
+            )}
 
             <SidebarMenuItem className="relative">
                 <Tooltip>
@@ -411,4 +412,3 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
-

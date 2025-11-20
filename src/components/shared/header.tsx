@@ -44,6 +44,8 @@ export function AppHeader({
     if (auth) {
         await signOut(auth);
     }
+    // Clear profile from local storage on logout
+    localStorage.removeItem('app-profile');
     router.push('/login');
   };
 
@@ -95,13 +97,13 @@ export function AppHeader({
                 <User />
                 Profile
             </DropdownMenuItem>
-            {profile.role === 'Admin' && (
+            {(profile.role === 'Admin') && (
               <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <Settings />
                   Settings
               </DropdownMenuItem>
             )}
-            {profile.role === 'Admin' && (
+            {(profile.role === 'Admin') && (
               <DropdownMenuItem onClick={() => router.push('/support')}>
                   <MessageSquare />
                   Support

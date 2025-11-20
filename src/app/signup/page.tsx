@@ -69,18 +69,23 @@ export default function SignupPage() {
       
       const user = userCredential.user;
       if (user) {
-        // Update user's profile with their name
+        // Update user's auth profile with their name
         await updateProfile(user, {
           displayName: values.name,
         });
 
-        // Create the user document in Firestore
         const userDocRef = doc(firestore, 'users', user.uid);
+        
+        // This user is the admin of their agency, so their agency_id is their own UID.
+        const agencyId = user.uid;
+
+        // Create the user document in Firestore for the admin user
         await setDoc(userDocRef, {
             id: user.uid,
             name: values.name,
             email: values.email,
             role: 'Admin', // New users are Admins
+            agency_id: agencyId, // The admin's agency is identified by their own UID
             createdAt: new Date().toISOString(),
         }, { merge: true });
 
@@ -89,7 +94,9 @@ export default function SignupPage() {
             ownerName: values.name,
             agencyName: values.agencyName,
             phone: '', // Phone is empty by default
-            role: 'Admin'
+            role: 'Admin',
+            user_id: user.uid,
+            agency_id: agencyId
         });
       }
 

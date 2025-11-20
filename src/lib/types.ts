@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Admin' | 'Agent' | 'Editor';
 
 export type User = {
@@ -7,6 +8,7 @@ export type User = {
   email?: string;
   phone?: string;
   role: UserRole;
+  agency_id: string; // The ID of the agency admin user
   permissions?: Record<string, boolean>;
   stats?: {
       propertiesSold: number;
@@ -49,6 +51,7 @@ export type Property = {
   is_recorded: boolean;
   created_at: string;
   created_by: string; // user id
+  agency_id: string;
   video_links?: {
     tiktok?: string;
     youtube?: string;
@@ -95,6 +98,8 @@ export type Buyer = {
     size_max_unit?: SizeUnit;
     notes?: string;
     created_at: string;
+    created_by: string;
+    agency_id: string;
     is_deleted?: boolean;
     last_follow_up_note?: string;
 };
@@ -111,6 +116,7 @@ export type FollowUp = {
     nextReminder: string;
     status: FollowUpStatus;
     notes: string;
+    agency_id: string;
 };
 
 export type AppointmentStatus = 'Scheduled' | 'Completed' | 'Cancelled';
@@ -128,6 +134,7 @@ export type Appointment = {
     message: string;
     status: AppointmentStatus;
     notes?: string;
+    agency_id: string;
 }
 
 export type Activity = {
@@ -139,6 +146,5 @@ export type Activity = {
     targetType: 'Property' | 'Buyer' | 'Appointment' | 'User';
     details?: any;
     timestamp: string;
+    agency_id: string;
 };
-
-    

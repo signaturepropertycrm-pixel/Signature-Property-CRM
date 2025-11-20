@@ -3,7 +3,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/lib/types';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export interface ProfileData {
   agencyName: string;
@@ -11,11 +12,14 @@ export interface ProfileData {
   phone: string;
   role: UserRole;
   avatar?: string;
+  user_id: string;
+  agency_id: string;
 }
 
 interface ProfileContextType {
   profile: ProfileData;
   setProfile: (profile: ProfileData) => void;
+  isLoading: boolean;
 }
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
@@ -24,37 +28,54 @@ const defaultProfile: ProfileData = {
     agencyName: 'My Agency',
     ownerName: 'New User',
     phone: '',
-    role: 'Admin', // Default role is Admin
-    avatar: ''
+    role: 'Agent', // Default to the most restrictive role
+    avatar: '',
+    user_id: '',
+    agency_id: '',
 };
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const { user } = useUser();
-  const [profile, setProfileState] = useState<ProfileData>(() => {
-    // Initialize from localStorage synchronously
-    try {
-      const savedProfile = localStorage.getItem('app-profile');
-      if (savedProfile) {
-        const parsedProfile = JSON.parse(savedProfile);
-        if (!parsedProfile.role) parsedProfile.role = 'Admin';
-        return parsedProfile;
-      }
-    } catch (error) {
-      console.error("Failed to parse profile from localStorage", error);
-    }
-    return defaultProfile;
-  });
+  const { user, isUserLoading: isAuthLoading } = useUser();
+  const firestore = useFirestore();
+
+  // Reference to the user's document in Firestore
+  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  const { data: firestoreProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
+
+  const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Update profile context when Firebase user changes
-    if (user) {
-      setProfileState(prevProfile => ({
-        ...prevProfile,
-        ownerName: user.displayName || prevProfile.ownerName,
-        avatar: user.photoURL || prevProfile.avatar,
-      }));
+    // Try to load from localStorage first for faster initial UI render
+    if (!isInitialized) {
+        try {
+            const savedProfile = localStorage.getItem('app-profile');
+            if (savedProfile) {
+                setProfileState(JSON.parse(savedProfile));
+            }
+        } catch (error) {
+            console.error("Failed to parse profile from localStorage", error);
+        }
+        setIsInitialized(true);
     }
-  }, [user]);
+  }, [isInitialized]);
+
+  useEffect(() => {
+    // Once Firestore data is loaded, it becomes the source of truth
+    if (firestoreProfile) {
+        const newProfileData: ProfileData = {
+            agencyName: firestoreProfile.agencyName || profile.agencyName, // Keep local agencyName if not in firestore
+            ownerName: firestoreProfile.name || 'User',
+            phone: firestoreProfile.phone || '',
+            role: firestoreProfile.role || 'Agent',
+            avatar: user?.photoURL || firestoreProfile.avatar || '',
+            user_id: firestoreProfile.id,
+            agency_id: firestoreProfile.agency_id,
+        };
+        setProfileState(newProfileData);
+        localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+    }
+  }, [firestoreProfile, user, profile.agencyName]);
 
   const setProfile = (newProfile: ProfileData) => {
     setProfileState(newProfile);
@@ -65,9 +86,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isLoading = isAuthLoading || isProfileLoading;
+
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
-      {children}
+    <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
+      {isLoading ? (
+          <div className="flex h-screen w-full items-center justify-center">
+              <p>Loading Profile...</p>
+          </div>
+      ) : children}
     </ProfileContext.Provider>
   );
 }

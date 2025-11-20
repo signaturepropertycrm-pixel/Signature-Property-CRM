@@ -7,7 +7,7 @@ import { AppHeader } from '@/components/shared/header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { CurrencyProvider } from '@/context/currency-context';
-import { ProfileProvider } from '@/context/profile-context';
+import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -24,6 +24,7 @@ export const useSearch = () => React.useContext(SearchContext);
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const { isLoading: isProfileLoading } = useProfile();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -32,13 +33,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user) {
-    // You can render a loading spinner here
+  if (isUserLoading || isProfileLoading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <p>Loading...</p>
         </div>
     );
+  }
+  
+  if (!user) {
+    return null; // or a redirect component
   }
 
   return <>{children}</>;
@@ -64,10 +68,10 @@ export default function ProtectedLayout({
 
 
   return (
-    <AuthGuard>
-        <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-            <CurrencyProvider>
-            <SidebarProvider>
+      <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+          <CurrencyProvider>
+          <SidebarProvider>
+              <AuthGuard>
                 <div className="flex h-screen w-full bg-background">
                 <AppSidebar />
                 <div className="flex flex-col flex-1 overflow-hidden">
@@ -81,9 +85,9 @@ export default function ProtectedLayout({
                     </main>
                 </div>
                 </div>
-            </SidebarProvider>
-            </CurrencyProvider>
-        </SearchContext.Provider>
-    </AuthGuard>
+              </AuthGuard>
+          </SidebarProvider>
+          </CurrencyProvider>
+      </SearchContext.Provider>
   );
 }

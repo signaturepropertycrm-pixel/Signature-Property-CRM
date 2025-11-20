@@ -37,6 +37,23 @@ export const TeamPerformanceChart = ({ teamMembers }: { teamMembers: User[] }) =
 
   }, [teamMembers]);
 
+  if (!data || data.length === 0) {
+    return (
+        <Card className="shadow-lg col-span-1">
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
+                    <Users />
+                    Team Performance
+                </CardTitle>
+                <CardDescription>Properties sold by each agent.</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[400px] w-full pt-6 flex items-center justify-center">
+                <p className="text-muted-foreground">No sales data available to display chart.</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card className="shadow-lg col-span-1">
       <CardHeader>

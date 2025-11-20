@@ -29,15 +29,20 @@ const userRoles: UserRole[] = ['Admin', 'Agent', 'Editor'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long.').optional(),
   phone: z.string().optional(),
   role: z.enum(userRoles).default('Agent'),
-  stats: z.object({
-      propertiesSold: z.number().default(0),
-      activeBuyers: z.number().default(0),
-      appointmentsToday: z.number().default(0),
-  }).optional()
+}).refine(data => {
+    // Password is required only when creating a new user (not editing)
+    // We can infer this by checking if an email is provided (as we disable it for editing)
+    if (!data.email) return true; // if email is not there, we're likely editing
+    return !!data.password;
+}, {
+    message: "Password is required for new members.",
+    path: ["password"],
 });
+
 
 type AddTeamMemberFormValues = z.infer<typeof formSchema>;
 
@@ -54,7 +59,7 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
             email: memberToEdit.email || '',
             phone: memberToEdit.phone || '',
             role: memberToEdit.role || 'Agent',
-            stats: memberToEdit.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
+            password: '',
         };
     }
     return {
@@ -62,7 +67,7 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
         email: '',
         phone: '',
         role: 'Agent',
-        stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
+        password: '',
     };
 };
 
@@ -81,11 +86,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
 
   function onSubmit(values: AddTeamMemberFormValues) {
     onSave(values);
-    toast({
-      title: memberToEdit ? 'Member Updated' : 'Member Added',
-      description: `"${values.name}" has been successfully ${memberToEdit ? 'updated' : 'added'}.`,
-    });
-    setDialogOpen(false);
+    setDialogOpen(false); // The parent component handles toast
   }
 
   return (
@@ -109,14 +110,29 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email (Optional)</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" {...field} value={field.value ?? ''} placeholder="agent@example.com" />
+                <Input type="email" {...field} value={field.value ?? ''} placeholder="agent@example.com" disabled={!!memberToEdit} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        {!memberToEdit && (
+             <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                        <Input type="password" {...field} value={field.value ?? ''} placeholder="••••••••" />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+        )}
         <FormField
           control={form.control}
           name="phone"

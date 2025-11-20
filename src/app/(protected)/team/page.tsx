@@ -15,9 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
-
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { useProfile } from '@/context/profile-context';
 
 const roleVariant = {
     Admin: 'default',
@@ -38,7 +39,9 @@ const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value
 
 export default function TeamPage() {
     const firestore = useFirestore();
+    const auth = useAuth();
     const { user } = useUser();
+    const { profile } = useProfile();
     const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
     const { data: teamMembers, isLoading } = useCollection<User>(teamMembersQuery);
 
@@ -79,24 +82,82 @@ export default function TeamPage() {
         });
     };
 
-    const handleSaveMember = async (member: Omit<User, 'id'> & { id?: string }) => {
-        if (!user) return;
+    const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
+        if (!user || !auth || !user.email || !user.email) return;
         const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
         
-        const memberData = {
-          name: member.name,
-          email: member.email,
-          phone: member.phone,
-          role: member.role,
-          stats: member.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
-        };
+        // Storing current user's credentials to re-login
+        const adminEmail = user.email;
+        const adminPassword = prompt("Please enter your (admin) password to confirm this action:");
 
-        if (memberToEdit) {
-            await setDoc(doc(collectionRef, memberToEdit.id), memberData);
-            toast({ title: 'Member Updated' });
-        } else {
-            await addDoc(collectionRef, memberData);
-            toast({ title: 'Member Added' });
+        if (!adminPassword) {
+            toast({ title: "Action Cancelled", description: "Password was not provided.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            if (memberToEdit) {
+                // Editing an existing member
+                const memberData = {
+                  name: member.name,
+                  email: member.email,
+                  phone: member.phone,
+                  role: member.role,
+                  agency_id: profile.agency_id
+                };
+                await setDoc(doc(collectionRef, memberToEdit.id), memberData, { merge: true });
+                toast({ title: 'Member Updated' });
+
+            } else {
+                // Creating a new member
+                if (!member.email || !member.password) {
+                    toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive'});
+                    return;
+                }
+                
+                // 1. Create a new Firebase Auth user
+                const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
+                const newMemberUser = newUserCredential.user;
+
+                // 2. Save new member's data to the admin's teamMembers subcollection
+                const memberData = {
+                  id: newMemberUser.uid,
+                  name: member.name,
+                  email: member.email,
+                  phone: member.phone,
+                  role: member.role,
+                  agency_id: profile.agency_id, // Assigning admin's agency_id
+                  stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
+                };
+                await setDoc(doc(collectionRef, newMemberUser.uid), memberData);
+
+                // 3. Create a user doc for the new member so they can log in and have their own data space
+                await setDoc(doc(firestore, "users", newMemberUser.uid), {
+                    id: newMemberUser.uid,
+                    name: member.name,
+                    email: member.email,
+                    role: member.role,
+                    agency_id: profile.agency_id,
+                    createdAt: new Date().toISOString(),
+                });
+
+                toast({ title: 'Member Added Successfully' });
+            }
+        } catch (error: any) {
+            console.error("Error saving member: ", error);
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        } finally {
+            // Re-authenticate the admin to keep their session active
+            if (adminEmail && adminPassword) {
+                try {
+                    await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+                } catch (reauthError) {
+                    console.error("Admin re-authentication failed: ", reauthError);
+                    toast({ title: 'Session Warning', description: 'Could not re-authenticate your session. Please log in again.', variant: 'destructive' });
+                    // Optionally force logout
+                    // signOut(auth);
+                }
+            }
         }
     };
 
