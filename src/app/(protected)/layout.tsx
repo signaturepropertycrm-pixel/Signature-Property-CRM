@@ -7,7 +7,7 @@ import { AppHeader } from '@/components/shared/header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { CurrencyProvider } from '@/context/currency-context';
-import { ProfileProvider, useProfile } from '@/context/profile-context';
+import { useProfile, ProfileProvider } from '@/context/profile-context';
 import { FirebaseClientProvider, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -49,15 +49,25 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     return null; // or a redirect component
   }
 
+  // Check if user has the required role for the current page
+  if (profile.role !== 'Admin') {
+    if (pathname.startsWith('/team') || pathname.startsWith('/settings') || pathname.startsWith('/upgrade') || pathname.startsWith('/activities') || pathname.startsWith('/trash')) {
+        router.push('/dashboard');
+        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    }
+  }
+  if (profile.role === 'Agent') {
+     if (pathname.startsWith('/tools') || pathname.startsWith('/analytics')) {
+        router.push('/dashboard');
+        return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    }
+  }
+
+
   return <>{children}</>;
 }
 
-
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const pathname = usePathname();
@@ -68,34 +78,47 @@ export default function ProtectedLayout({
     if (!isSearchable) {
       setSearchQuery('');
     }
-  }, [isSearchable]);
+  }, [isSearchable, pathname]);
 
 
   return (
+    <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+        <SidebarProvider>
+            <AuthGuard>
+              <div className="flex h-screen w-full bg-background">
+              <AppSidebar />
+              <div className="flex flex-col flex-1 overflow-hidden">
+                  <AppHeader 
+                  searchable={isSearchable}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  />
+                  <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                  {children}
+                  </main>
+              </div>
+              </div>
+            </AuthGuard>
+        </SidebarProvider>
+    </SearchContext.Provider>
+  );
+}
+
+
+export default function ProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
     <FirebaseClientProvider>
       <ProfileProvider>
-        <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-            <CurrencyProvider>
-            <SidebarProvider>
-                <AuthGuard>
-                  <div className="flex h-screen w-full bg-background">
-                  <AppSidebar />
-                  <div className="flex flex-col flex-1 overflow-hidden">
-                      <AppHeader 
-                      searchable={isSearchable}
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      />
-                      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                      {children}
-                      </main>
-                  </div>
-                  </div>
-                </AuthGuard>
-            </SidebarProvider>
-            </CurrencyProvider>
-        </SearchContext.Provider>
+        <CurrencyProvider>
+          <ProtectedLayoutContent>
+            {children}
+          </ProtectedLayoutContent>
+        </CurrencyProvider>
       </ProfileProvider>
     </FirebaseClientProvider>
-  );
+  )
 }
