@@ -173,10 +173,6 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
 
     onSave(propertyData);
 
-    toast({
-      title: propertyToEdit ? 'Property Updated!' : 'Property Added!',
-      description: `Property "${finalValues.auto_title}" has been successfully ${propertyToEdit ? 'updated' : 'added'}.`,
-    });
     setDialogOpen(false);
   }
   

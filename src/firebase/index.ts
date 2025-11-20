@@ -1,7 +1,6 @@
 
 'use client';
 
-export * from './provider';
 export * from './non-blocking-updates';
 export * from './non-blocking-login';
 // Errors and emitter are imported directly where needed to avoid cycles.
