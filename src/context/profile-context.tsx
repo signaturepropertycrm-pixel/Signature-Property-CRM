@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/lib/types';
-import { useUser, useFirestore, useDoc } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
 export interface ProfileData {
@@ -38,8 +38,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
-  // Reference to the user's document in Firestore
-  const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+  // Reference to the user's document in Firestore, memoized to prevent re-renders
+  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: firestoreProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
 
   const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
@@ -86,9 +86,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Corrected loading logic: The main loading state should primarily depend on authentication.
-  // Profile data loading can happen in the background without blocking the UI.
-  const isLoading = isAuthLoading;
+  const isLoading = isAuthLoading || isProfileLoading;
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
