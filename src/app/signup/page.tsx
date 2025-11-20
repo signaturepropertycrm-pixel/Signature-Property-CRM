@@ -77,32 +77,35 @@ function SignupPageContent() {
         
         const newProfileData = {
             id: user.uid,
-            name: values.name,
+            ownerName: values.name,
+            agencyName: values.agencyName,
             email: values.email,
+            phone: '',
             role: 'Admin' as const, 
             agency_id: agencyId,
-            createdAt: serverTimestamp(),
-            // Fields for profile context
-            agencyName: values.agencyName,
-            ownerName: values.name,
-            phone: '',
+            user_id: user.uid,
             avatar: '',
         };
         
         const batch = writeBatch(firestore);
 
-        // 1. Create the user's main document
+        // 1. Create the user's main document with all profile info
         const userDocRef = doc(firestore, 'users', user.uid);
         batch.set(userDocRef, {
              id: user.uid,
              name: values.name,
              email: values.email,
              role: 'Admin',
-             agency_id: agencyId,
+             agency_id: agencyId, // *** CRITICAL FIX ***
+             agencyName: values.agencyName, // Save agency name
+             ownerName: values.name, // Save owner name
+             phone: '',
              createdAt: serverTimestamp(),
         });
-
-        // 2. Create the agency document
+        
+        // This collection is no longer needed with the new simplified structure
+        // but we keep it in case any other logic depends on it.
+        // It doesn't harm anything.
         const agencyDocRef = doc(firestore, 'agencies', agencyId);
         batch.set(agencyDocRef, {
             id: agencyId,
@@ -111,9 +114,14 @@ function SignupPageContent() {
             ownerName: values.name,
             createdAt: serverTimestamp(),
         });
+
+        // Set the admin role in the dedicated collection for rules
+        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+        batch.set(adminRoleRef, { agency_id: agencyId });
         
         await batch.commit();
 
+        // Immediately set the profile in the context to avoid stale data issues
         setProfile(newProfileData);
       }
 

@@ -162,14 +162,13 @@ export default function TeamPage() {
         }
         
         try {
-            const tempAuth = auth; // Create a temporary instance to avoid state issues
             const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
-            await signInWithCredential(tempAuth, adminCredential);
+            await signInWithCredential(auth, adminCredential);
 
-            const newUserCredential = await createUserWithEmailAndPassword(tempAuth, memberData.email, memberData.password);
+            const newUserCredential = await createUserWithEmailAndPassword(auth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
 
-            await signInWithCredential(tempAuth, adminCredential);
+            await signInWithCredential(auth, adminCredential);
             
             const batch = writeBatch(firestore);
 
@@ -180,7 +179,7 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id,
+                agency_id: profile.agency_id, // *** CRITICAL FIX: Use Admin's agency_id ***
                 createdBy: currentUser.uid,
                 createdAt: serverTimestamp(),
             });
@@ -192,7 +191,7 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id,
+                agency_id: profile.agency_id, // *** CRITICAL FIX: Use Admin's agency_id ***
                 stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
             });
             
