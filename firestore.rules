@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -11,33 +12,37 @@ service cloud.firestore {
 
     // ====== agencies (EXACT collection name) ======
     match /agencies/{agencyId} {
-      allow get: if isOwner(agencyId);
+      allow get: if isOwner(agencyId) || isAgent() || isEditor();
       allow list: if isOwner(agencyId);   // <-- OPEN GATE – own agency
       allow create: if isOwner(agencyId);
       allow update: if isExistingOwner(agencyId);
       allow delete: if isExistingOwner(agencyId);
 
       // ===== sub-collections =====
-      match /teamMembers {
-        allow read, list, write: if isOwner(agencyId);
+      match /teamMembers/{memberId} {
+        allow read, list: if isOwner(agencyId) || isAgent() || isEditor();
+        allow write: if isOwner(agencyId);
       }
       match /properties/{propertyId} {
-        allow read, list: if isOwner(agencyId);
-        allow create: if isOwner(agencyId) && !isAgent();
-        allow update, delete: if isExistingOwner(agencyId);
+        allow read, list: if isOwner(agencyId) || isAgent() || isEditor();
+        allow create: if isOwner(agencyId) || isEditor();
+        allow update, delete: if isOwner(agencyId) || isEditor();
       }
       match /buyers/{buyerId} {
-        allow read, list: if isOwner(agencyId);
-        allow create: if isOwner(agencyId);
-        allow update: if isExistingOwner(agencyId) &&
-                      !(isAgent() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['name','email','phone']));
-        allow delete: if isExistingOwner(agencyId);
+        allow read, list, create: if isOwner(agencyId) || isAgent() || isEditor();
+        allow update: if isOwner(agencyId) || isEditor() || (isAgent() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note', 'is_deleted']));
+        allow delete: if isOwner(agencyId) || isEditor();
       }
       match /followUps/{followUpId} {
-        allow read, list, write: if isOwner(agencyId);
+        allow read, list, write: if isOwner(agencyId) || isAgent() || isEditor();
       }
       match /appointments/{appointmentId} {
-        allow read, list, write: if isOwner(agencyId) || isAdmin();
+        allow read, list, write: if isOwner(agencyId) || isAgent() || isEditor();
+      }
+       match /activityLogs/{activityLogId} {
+        allow read: if isOwner(agencyId) || isEditor();
+        allow create: if isOwner(agencyId) || isEditor() || isAgent();
+        allow update, delete: if false; 
       }
     }
 
@@ -58,11 +63,6 @@ service cloud.firestore {
     // ===== admin-only =====
     match /transactions/{transactionId} {
       allow read, write: if isAdmin();
-    }
-
-    // deny deprecated top-level activityLogs
-    match /activityLogs/{activityLogId} {
-      allow read, write: if false;
     }
   }
 }
