@@ -54,3 +54,4 @@ export function useUser(): UserAuthHookResult {
 
   return { user, isUserLoading, userError };
 }
+

@@ -17,7 +17,8 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { useUser, useAuth } from '@/firebase';
+import { useUser } from '@/firebase/auth/use-user';
+import { useAuth } from '@/firebase/provider';
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
@@ -109,7 +110,7 @@ export function ResetAccountDialog({
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Warning!</AlertTitle>
             <AlertDescription>
-                You are about to delete all CRM data, including properties, buyers, appointments, and team members. This action cannot be undone.
+                You are about to delete all CRM data, including properties, buyers, and appointments. This action cannot be undone.
             </AlertDescription>
         </Alert>
 
