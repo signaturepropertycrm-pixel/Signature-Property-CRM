@@ -55,21 +55,30 @@ export default function DashboardPage() {
   const [teamMembers, setTeamMembers] = useState<User[]>([]);
 
   useEffect(() => {
-    const propertiesData = JSON.parse(localStorage.getItem('properties') || '[]') as Property[];
-    setProperties(propertiesData);
-    
-    const buyersData = JSON.parse(localStorage.getItem('buyers') || '[]') as Buyer[];
-    setBuyers(buyersData);
+    const loadData = () => {
+        try {
+            setProperties(JSON.parse(localStorage.getItem('properties') || '[]'));
+            setBuyers(JSON.parse(localStorage.getItem('buyers') || '[]'));
+            setAppointments(JSON.parse(localStorage.getItem('appointments') || '[]'));
+            setFollowUps(JSON.parse(localStorage.getItem('followUps') || '[]'));
+            setTeamMembers(JSON.parse(localStorage.getItem('teamMembers') || '[]'));
+        } catch (e) {
+            console.error("Failed to parse data from localStorage", e);
+        }
+    };
+    loadData();
 
-    const appointmentsData = JSON.parse(localStorage.getItem('appointments') || '[]') as Appointment[];
-    setAppointments(appointmentsData);
-    
-    const followUpsData = JSON.parse(localStorage.getItem('followUps') || '[]') as FollowUp[];
-    setFollowUps(followUpsData);
+    const handleStorageChange = (e: StorageEvent) => {
+        if (['properties', 'buyers', 'appointments', 'followUps', 'teamMembers'].includes(e.key || '')) {
+            loadData();
+        }
+    };
 
-    const teamMembersData = JSON.parse(localStorage.getItem('teamMembers') || '[]') as User[];
-    setTeamMembers(teamMembersData);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
+  useEffect(() => {
     const now = new Date();
     const last30Days = subDays(now, 30);
     
@@ -77,22 +86,25 @@ export default function DashboardPage() {
         if (previous === 0) {
             return current > 0 ? `+${current}` : 'No change';
         }
+        if (current === 0 && previous === 0) {
+          return 'No change';
+        }
         const percentageChange = ((current - previous) / previous) * 100;
         return percentageChange > 0 ? `+${percentageChange.toFixed(1)}%` : `${percentageChange.toFixed(1)}%`;
     }
 
-    const propertiesInLast30Days = propertiesData.filter(p => isWithinInterval(new Date(p.created_at), { start: last30Days, end: now })).length;
-    const previousPropertiesCount = propertiesData.length - propertiesInLast30Days;
+    const propertiesInLast30Days = properties.filter(p => p.created_at && isWithinInterval(new Date(p.created_at), { start: last30Days, end: now })).length;
+    const previousPropertiesCount = properties.length - propertiesInLast30Days;
     
-    const buyersInLast30Days = buyersData.filter(b => isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length;
-    const previousBuyersCount = buyersData.length - buyersInLast30Days;
+    const buyersInLast30Days = buyers.filter(b => b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length;
+    const previousBuyersCount = buyers.length - buyersInLast30Days;
     
-    const soldInLast30Days = propertiesData.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: last30Days, end: now }));
-    const totalSoldCount = propertiesData.filter(p => p.status === 'Sold').length;
+    const soldInLast30Days = properties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: last30Days, end: now }));
+    const totalSoldCount = properties.filter(p => p.status === 'Sold').length;
     const previousSoldCount = totalSoldCount - soldInLast30Days.length;
     
     const revenueInLast30Days = soldInLast30Days.reduce((acc, p) => acc + (p.sold_price || 0), 0);
-    const totalRevenue = propertiesData.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
+    const totalRevenue = properties.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
     const previousRevenue = totalRevenue - revenueInLast30Days;
 
 
@@ -100,18 +112,18 @@ export default function DashboardPage() {
       {
         id: 'total-properties',
         title: 'Total Properties',
-        value: propertiesData.length.toString(),
+        value: properties.length.toString(),
         icon: Building2,
         color: 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300',
-        change: getChange(propertiesData.length, previousPropertiesCount),
+        change: getChange(properties.length, previousPropertiesCount),
       },
       {
         id: 'total-buyers',
         title: 'Total Buyers',
-        value: buyersData.length.toString(),
+        value: buyers.length.toString(),
         icon: Users,
         color: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
-        change: getChange(buyersData.length, previousBuyersCount),
+        change: getChange(buyers.length, previousBuyersCount),
       },
       {
         id: 'properties-sold',
@@ -132,39 +144,39 @@ export default function DashboardPage() {
        {
         id: 'interested-buyers',
         title: 'Interested Buyers',
-        value: buyersData.filter((b: any) => b.status === 'Interested').length.toString(),
+        value: buyers.filter((b: any) => b.status === 'Interested').length.toString(),
         icon: Star,
         color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
-        change: `${buyersData.filter(b => b.status === 'Interested' && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${buyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'hot-leads',
         title: 'Hot Leads',
-        value: buyersData.filter((b: any) => b.status === 'Hot Lead').length.toString(),
+        value: buyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
         icon: Flame,
         color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
-        change: `${buyersData.filter(b => b.status === 'Hot Lead' && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${buyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'follow-up-leads',
         title: 'Follow-up Leads',
-        value: followUpsData.length.toString(),
+        value: followUps.length.toString(),
         icon: PhoneForwarded,
         color: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300',
-        change: `${followUpsData.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
+        change: `${followUps.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
       },
        {
         id: 'appointments-month',
         title: 'Appointments (30d)',
-        value: appointmentsData.filter((a: any) => isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: appointments.filter((a: any) => a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CalendarDays,
         color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
-        change: `${appointmentsData.filter((a: any) => a.status === 'Scheduled' && new Date(a.date) >= now).length} upcoming`,
+        change: `${appointments.filter((a: any) => a.status === 'Scheduled' && a.date && new Date(a.date) >= now).length} upcoming`,
       },
        {
         id: 'completed-month',
         title: 'Completed (30d)',
-        value: appointmentsData.filter((a: any) => a.status === 'Completed' && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: appointments.filter((a: any) => a.status === 'Completed' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CheckCheck,
         color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
         change: 'Keep it up!',
@@ -172,7 +184,7 @@ export default function DashboardPage() {
         {
         id: 'cancelled-month',
         title: 'Cancelled (30d)',
-        value: appointmentsData.filter((a: any) => a.status === 'Cancelled' && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: appointments.filter((a: any) => a.status === 'Cancelled' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: XCircle,
         color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300',
         change: 'Review reasons',
