@@ -47,6 +47,8 @@ export default function TeamPage() {
     const router = useRouter();
     const { user: currentUser } = useUser();
     const { profile } = useProfile();
+    
+    // This query fetches the list of team members for the currently logged-in Admin.
     const teamMembersQuery = useMemoFirebase(() => (currentUser && profile.role === 'Admin') ? collection(firestore, 'users', currentUser.uid, 'teamMembers') : null, [currentUser, firestore, profile.role]);
     const { data: teamMembers, isLoading } = useCollection<User>(teamMembersQuery);
 
@@ -87,30 +89,62 @@ export default function TeamPage() {
 
     const handleDeleteMember = async (memberId: string) => {
         if (!currentUser) return;
-        await deleteDoc(doc(firestore, 'users', currentUser.uid, 'teamMembers', memberId));
-        // Note: This only removes the reference from the team list. 
-        // A cloud function should ideally handle deleting the actual auth user and their main user document.
+        
+        const batch = writeBatch(firestore);
+        
+        // Reference to the member in the admin's subcollection
+        const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberId);
+        
+        // Reference to the main user document
+        const userDocRef = doc(firestore, 'users', memberId);
+
+        // Note: Deleting the Firebase Auth user requires admin SDK and is best done in a Cloud Function.
+        // For now, we will just delete the Firestore documents.
+        batch.delete(teamMemberRef);
+        batch.delete(userDocRef);
+
+        // Also delete from role collections if they exist
+        const agentRoleRef = doc(firestore, 'roles_agent', memberId);
+        const editorRoleRef = doc(firestore, 'roles_editor', memberId);
+        batch.delete(agentRoleRef);
+        batch.delete(editorRoleRef);
+        
+        await batch.commit();
+
         toast({
             title: "Member Removed",
-            description: "The team member has been removed from your team list.",
+            description: "The team member has been removed from your team and their user document has been deleted.",
             variant: "destructive"
         });
     };
 
-    const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
+    const handleSaveMember = async (memberData: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
         if (!currentUser || !auth || !profile.agency_id) {
-            toast({ title: 'User or profile data not available.', variant: 'destructive' });
+            toast({ title: 'Admin user or profile data not available.', variant: 'destructive' });
             return;
         }
 
         // --- EDIT LOGIC ---
         if (memberToEdit) {
-            const memberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberToEdit.id);
+             const batch = writeBatch(firestore);
+            const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberToEdit.id);
             const userDocRef = doc(firestore, 'users', memberToEdit.id);
-            const batch = writeBatch(firestore);
             
-            batch.update(userDocRef, { role: member.role });
-            batch.update(memberRef, { name: member.name, phone: member.phone, role: member.role });
+            const updatedData = { name: memberData.name, phone: memberData.phone, role: memberData.role };
+
+            batch.update(userDocRef, { role: memberData.role, name: memberData.name, phone: memberData.phone });
+            batch.update(teamMemberRef, updatedData);
+            
+            // Handle role change
+            if (memberToEdit.role !== memberData.role) {
+                if (memberData.role === 'Agent') {
+                    batch.set(doc(firestore, 'roles_agent', memberToEdit.id), {});
+                    batch.delete(doc(firestore, 'roles_editor', memberToEdit.id));
+                } else if (memberData.role === 'Editor') {
+                    batch.set(doc(firestore, 'roles_editor', memberToEdit.id), {});
+                    batch.delete(doc(firestore, 'roles_agent', memberToEdit.id));
+                }
+            }
 
             try {
                 await batch.commit();
@@ -123,61 +157,64 @@ export default function TeamPage() {
         }
 
         // --- CREATE LOGIC ---
-        if (!member.email || !member.password) {
+        if (!memberData.email || !memberData.password) {
             toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive' });
             return;
         }
-        
+
+        // We re-authenticate the admin to perform the secure action of creating a new user.
         const adminPassword = sessionStorage.getItem('fb-cred');
         if (!adminPassword || !currentUser.email) {
-            toast({ title: 'Authentication Error', description: 'Admin session is invalid. Please log in again.', variant: 'destructive' });
+            toast({ title: 'Admin Authentication Error', description: 'Your session is invalid. Please log out and log in again to add new members.', variant: 'destructive' });
             return;
         }
-
+        
         try {
-            // Re-authenticate admin to perform secure actions
+            // Step 1: Re-authenticate the admin to perform secure actions.
             const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
             await signInWithCredential(auth, adminCredential);
 
-            // Create new user in a temporary auth instance to avoid state conflicts
-            const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
+            // Step 2: Create the new user account.
+            const newUserCredential = await createUserWithEmailAndPassword(auth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
 
-            // Re-sign in admin immediately to restore auth state
+            // Step 3: Immediately sign the admin back in to restore their auth state.
             await signInWithCredential(auth, adminCredential);
-
-            const batch = writeBatch(firestore);
             
-            // Doc 1: The new user's main document in the top-level 'users' collection
+            // Step 4: Use a batch write to create all necessary Firestore documents atomically.
+            const batch = writeBatch(firestore);
+
+            // Doc 1: The new user's main document in the top-level 'users' collection.
             const newUserDocRef = doc(firestore, 'users', newUID);
             batch.set(newUserDocRef, {
                 id: newUID,
-                name: member.name,
-                email: member.email,
-                phone: member.phone,
-                role: member.role,
+                name: memberData.name,
+                email: memberData.email,
+                phone: memberData.phone || '',
+                role: memberData.role,
                 agency_id: profile.agency_id, // CRITICAL: Assign to the admin's agency
                 createdBy: currentUser.uid,
                 createdAt: serverTimestamp(),
             });
 
-            // Doc 2: The reference in the admin's 'teamMembers' subcollection
+            // Doc 2: The reference in the admin's 'teamMembers' subcollection for UI display.
             const teamMemberDocRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', newUID);
             batch.set(teamMemberDocRef, {
                 id: newUID,
-                name: member.name,
-                email: member.email,
-                phone: member.phone,
-                role: member.role,
-                agency_id: profile.agency_id,
-                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
+                name: memberData.name,
+                email: memberData.email,
+                phone: memberData.phone || '',
+                role: memberData.role,
+                agency_id: profile.agency_id, // Also store agency_id here for consistency
+                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }, // Initial stats
             });
             
-            // Doc 3: The role document for security rules
-            const roleCollection = member.role === 'Editor' ? 'roles_editor' : 'roles_agent';
+            // Doc 3: The role document for security rules.
+            const roleCollection = memberData.role === 'Editor' ? 'roles_editor' : 'roles_agent';
             const roleDocRef = doc(firestore, roleCollection, newUID);
-            batch.set(roleDocRef, {});
+            batch.set(roleDocRef, { agency_id: profile.agency_id }); // Store agency_id for potential future rules
 
+            // Commit all writes at once.
             await batch.commit();
             
             toast({ title: 'Member Added Successfully' });
@@ -192,17 +229,7 @@ export default function TeamPage() {
             } else if (error.code === 'auth/invalid-credential') {
                  errorMessage = 'Your admin password in session is incorrect. Please log out and log in again.';
             }
-            toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
-            
-            // If creation failed, try to re-login admin to prevent session loss
-            if (currentUser.email && adminPassword) {
-                 try {
-                    const adminCredential = EmailAuthProvider.credential(currentUser.email, adminPassword);
-                    await signInWithCredential(auth, adminCredential);
-                 } catch (reauthError) {
-                     console.error("Admin re-authentication failed after error:", reauthError);
-                 }
-            }
+            toast({ title: 'Error Creating Member', description: errorMessage, variant: 'destructive' });
         }
     };
 
@@ -216,9 +243,10 @@ export default function TeamPage() {
             email: currentUser.email || '',
             role: 'Admin',
             agency_id: profile.agency_id,
-            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
+            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
         };
         
+        // Ensure teamMembers is an array before spreading
         return teamMembers ? [adminAsMember, ...teamMembers] : [adminAsMember];
 
     }, [currentUser, profile, teamMembers]);
@@ -313,3 +341,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    
