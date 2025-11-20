@@ -74,26 +74,31 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
 
       /**
-       * @description Allows access only to the user who owns the property.
-       * @path /users/{userId}/properties/{propertyId}
+       * @description Rules for the properties sub-collection.
        */
+      match /properties {
+        allow list: if isOwner(userId);
+      }
       match /properties/{propertyId} {
-        allow read: if isOwner(userId);
-        allow write: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
+        allow update, delete: if isExistingOwner(userId);
       }
 
       /**
-       * @description Allows access only to the user who owns the buyer record.
-       * @path /users/{userId}/buyers/{buyerId}
+       * @description Rules for the buyers sub-collection.
        */
+      match /buyers {
+        allow list: if isOwner(userId);
+      }
       match /buyers/{buyerId} {
-        allow read: if isOwner(userId);
-        allow write: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
+        allow update, delete: if isExistingOwner(userId);
       }
       
       /**
-       * @description Allows access only to the user who owns the team member record.
-       * @path /users/{userId}/teamMembers
+       * @description Rules for the teamMembers sub-collection.
        */
       match /teamMembers {
         allow list: if isOwner(userId);
@@ -101,35 +106,39 @@ service cloud.firestore {
       match /teamMembers/{memberId} {
         allow get: if isOwner(userId);
         allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+        allow update, delete: if isExistingOwner(userId);
       }
 
       /**
-       * @description Allows access only to the user (agent) associated with the appointment or to admins.
-       * @path /users/{userId}/appointments/{appointmentId}
+       * @description Rules for the appointments sub-collection.
        */
+      match /appointments {
+        allow list: if isOwner(userId) || isAdmin();
+      }
       match /appointments/{appointmentId} {
-        allow read: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId) || isAdmin();
         allow write: if isOwner(userId) || isAdmin();
       }
 
       /**
-       * @description Allows access only to the user assigned to the follow-up.
-       * @path /users/{userId}/followUps/{followUpId}
+       * @description Rules for the followUps sub-collection.
        */
+      match /followUps {
+        allow list: if isOwner(userId);
+      }
       match /followUps/{followUpId} {
-        allow read: if isOwner(userId);
+        allow get: if isOwner(userId);
         allow write: if isOwner(userId);
       }
 
       /**
-       * @description Allows access only to admins for reading activity logs. This is nested under users
-       * because activity logs are user-specific.
-       * @path /users/{userId}/activityLogs/{activityLogId}
+       * @description Rules for the activityLogs sub-collection.
        */
+      match /activityLogs {
+         allow list: if isOwner(userId) || isAdmin();
+      }
       match /activityLogs/{activityLogId} {
-        allow read: if isOwner(userId) || isAdmin();
+        allow get: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId);
         allow update: if false;
         allow delete: if false;
@@ -140,6 +149,9 @@ service cloud.firestore {
     /**
      * @description Allows access only to admins for managing transactions.
      * @path /transactions/{transactionId}
+     * @allow (create) Admin creates a new transaction.
+     * @deny (update) Non-admin attempts to update a transaction.
+     * @principle Restricts transaction management to admins.
      */
     match /transactions/{transactionId} {
       allow read, write: if isAdmin();
@@ -154,9 +166,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    /**
+        /**
      * @description Allows only admins to create a role
      * @path /roles_admin/{userId}
+     * @allow (create) if the user is an admin
+     * @deny (create) if the user is not an admin
+     * @principle Only admins can create a role
      */
     match /roles_admin/{userId} {
         allow read, write: if isAdmin();
