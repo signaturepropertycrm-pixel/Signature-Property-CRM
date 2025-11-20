@@ -24,8 +24,9 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/context/profile-context';
@@ -42,6 +43,7 @@ type SignupFormValues = z.infer<typeof formSchema>;
 export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const { setProfile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
@@ -60,23 +62,34 @@ export default function SignupPage() {
   const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
-      if (!auth) {
-        throw new Error('Auth service is not available.');
+      if (!auth || !firestore) {
+        throw new Error('Auth or Firestore service is not available.');
       }
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // Update user's profile with their name
-      if (userCredential.user) {
-        await updateProfile(userCredential.user, {
+      const user = userCredential.user;
+      if (user) {
+        // Update user's profile with their name
+        await updateProfile(user, {
           displayName: values.name,
         });
 
-        // Set the profile in context and localStorage
+        // Create the user document in Firestore
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+            id: user.uid,
+            name: values.name,
+            email: values.email,
+            role: 'Admin', // New users are Admins
+            createdAt: new Date().toISOString(),
+        }, { merge: true });
+
+        // Set the local profile in context and localStorage
         setProfile({
             ownerName: values.name,
             agencyName: values.agencyName,
             phone: '', // Phone is empty by default
-            role: 'Admin' // New users are Admins
+            role: 'Admin'
         });
       }
 
