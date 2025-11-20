@@ -80,7 +80,7 @@ service cloud.firestore {
         allow list: if isOwner(userId);
       }
       match /properties/{propertyId} {
-        allow get: if isOwner(userId);
+        allow read: if isOwner(userId); // read implies get and list
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update, delete: if isExistingOwner(userId);
       }
@@ -92,7 +92,7 @@ service cloud.firestore {
         allow list: if isOwner(userId);
       }
       match /buyers/{buyerId} {
-        allow get: if isOwner(userId);
+        allow read: if isOwner(userId); // read implies get and list
         allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
         allow update, delete: if isExistingOwner(userId);
       }
@@ -104,7 +104,7 @@ service cloud.firestore {
         allow list: if isOwner(userId);
       }
       match /teamMembers/{memberId} {
-        allow get: if isOwner(userId);
+        allow read: if isOwner(userId); // read implies get and list
         allow create: if isOwner(userId);
         allow update, delete: if isExistingOwner(userId);
       }
@@ -112,23 +112,15 @@ service cloud.firestore {
       /**
        * @description Rules for the appointments sub-collection.
        */
-      match /appointments {
-        allow list: if isOwner(userId) || isAdmin();
-      }
       match /appointments/{appointmentId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow write: if isOwner(userId) || isAdmin();
+        allow read, write: if isOwner(userId) || isAdmin();
       }
 
       /**
        * @description Rules for the followUps sub-collection.
        */
-      match /followUps {
-        allow list: if isOwner(userId);
-      }
       match /followUps/{followUpId} {
-        allow get: if isOwner(userId);
-        allow write: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
 
       /**
