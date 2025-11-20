@@ -17,7 +17,7 @@ import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 
 const roleVariant = {
@@ -83,21 +83,23 @@ export default function TeamPage() {
     };
 
     const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
-        if (!user || !auth || !user.email || !user.email) return;
+        if (!user || !auth || !user.email) return;
         const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
-        
-        // Storing current user's credentials to re-login
-        const adminEmail = user.email;
-        const adminPassword = prompt("Please enter your (admin) password to confirm this action:");
 
+        // Capture current admin credentials for re-login
+        const adminEmail = user.email;
+        const adminPassword = prompt("Please enter your admin password to confirm creating a new user:");
+        
         if (!adminPassword) {
-            toast({ title: "Action Cancelled", description: "Password was not provided.", variant: "destructive" });
+            toast({ title: "Action Cancelled", description: "Admin password was not provided.", variant: "destructive" });
             return;
         }
 
+        const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
+        
         try {
             if (memberToEdit) {
-                // Editing an existing member
+                // Editing an existing member - no auth changes needed, just Firestore update
                 const memberData = {
                   name: member.name,
                   email: member.email,
@@ -119,7 +121,10 @@ export default function TeamPage() {
                 const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
                 const newMemberUser = newUserCredential.user;
 
-                // 2. Save new member's data to the admin's teamMembers subcollection
+                // 2. Re-login as admin immediately to maintain session state
+                await signInWithCredential(auth, adminCredential);
+                
+                // 3. Save new member's data to the admin's teamMembers subcollection
                 const memberData = {
                   id: newMemberUser.uid,
                   name: member.name,
@@ -131,7 +136,7 @@ export default function TeamPage() {
                 };
                 await setDoc(doc(collectionRef, newMemberUser.uid), memberData);
 
-                // 3. Create a user doc for the new member so they can log in and have their own data space
+                // 4. Create a user doc for the new member so they can log in and have their own data space
                 await setDoc(doc(firestore, "users", newMemberUser.uid), {
                     id: newMemberUser.uid,
                     name: member.name,
@@ -145,17 +150,19 @@ export default function TeamPage() {
             }
         } catch (error: any) {
             console.error("Error saving member: ", error);
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        } finally {
-            // Re-authenticate the admin to keep their session active
-            if (adminEmail && adminPassword) {
+            // If re-authentication fails, it will also be caught here
+            if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+                 toast({ title: 'Admin Authentication Failed', description: 'Incorrect admin password. Action cancelled.', variant: 'destructive' });
+            } else {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            }
+
+            // Attempt to re-login admin even if the operation failed, to prevent being logged out
+            if (auth.currentUser?.email !== adminEmail) {
                 try {
-                    await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+                   await signInWithCredential(auth, adminCredential);
                 } catch (reauthError) {
-                    console.error("Admin re-authentication failed: ", reauthError);
-                    toast({ title: 'Session Warning', description: 'Could not re-authenticate your session. Please log in again.', variant: 'destructive' });
-                    // Optionally force logout
-                    // signOut(auth);
+                    console.error("Admin re-authentication failed after error: ", reauthError);
                 }
             }
         }
@@ -170,7 +177,7 @@ export default function TeamPage() {
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Team</h1>
                     <p className="text-muted-foreground">Manage your team members.</p>
                 </div>
-                <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Team Member</Button>
+                {profile.role === 'Admin' && <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Team Member</Button>}
             </div>
 
             {isLoading ? <p>Loading team members...</p> : (
@@ -179,24 +186,26 @@ export default function TeamPage() {
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
                         <CardHeader className="flex-row items-center justify-between">
                             <Badge variant={roleVariant[member.role]} className="capitalize">{member.role}</Badge>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full" onClick={(e) => e.stopPropagation()}>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="glass-card">
-                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleViewDetails(member); }}>
-                                        <Eye /> View Details
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEditMember(member); }}>
-                                        <Edit /> Edit Member
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDeleteMember(member.id); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                        <Trash2 /> Delete Member
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                             {profile.role === 'Admin' && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="rounded-full" onClick={(e) => e.stopPropagation()}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="glass-card">
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleViewDetails(member); }}>
+                                            <Eye /> View Details
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEditMember(member); }}>
+                                            <Edit /> Edit Member
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDeleteMember(member.id); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                            <Trash2 /> Delete Member
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                             )}
                         </CardHeader>
                         <CardContent className="text-center flex-1">
                             <CardTitle className="font-headline mt-4">{member.name}</CardTitle>
@@ -221,12 +230,14 @@ export default function TeamPage() {
                 setIsOpen={setIsDetailsOpen}
             />
         )}
-        <AddTeamMemberDialog
-            isOpen={isAddMemberOpen}
-            setIsOpen={setIsAddMemberOpen}
-            memberToEdit={memberToEdit}
-            onSave={handleSaveMember}
-        />
+         {profile.role === 'Admin' && (
+            <AddTeamMemberDialog
+                isOpen={isAddMemberOpen}
+                setIsOpen={setIsAddMemberOpen}
+                memberToEdit={memberToEdit}
+                onSave={handleSaveMember}
+            />
+         )}
     </>
   );
 }

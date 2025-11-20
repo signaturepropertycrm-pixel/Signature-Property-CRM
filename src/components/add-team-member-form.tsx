@@ -33,12 +33,12 @@ const formSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters long.').optional(),
   phone: z.string().optional(),
   role: z.enum(userRoles).default('Agent'),
-}).refine(data => {
-    // Password is required only when creating a new user (not editing)
-    // We can infer this by checking if an email is provided (as we disable it for editing)
-    if (!data.email) return true; // if email is not there, we're likely editing
-    return !!data.password;
-}, {
+});
+
+// Refine schema to make password required only when NOT editing a user
+const refinedSchema = (isEditing: boolean) => isEditing 
+? formSchema 
+: formSchema.refine(data => !!data.password, {
     message: "Password is required for new members.",
     path: ["password"],
 });
@@ -59,7 +59,6 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
             email: memberToEdit.email || '',
             phone: memberToEdit.phone || '',
             role: memberToEdit.role || 'Agent',
-            password: '',
         };
     }
     return {
@@ -73,8 +72,10 @@ const getInitialFormValues = (memberToEdit: User | null | undefined): AddTeamMem
 
 export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTeamMemberFormProps) {
   const { toast } = useToast();
+  const isEditing = !!memberToEdit;
+  
   const form = useForm<AddTeamMemberFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(refinedSchema(isEditing)),
     defaultValues: getInitialFormValues(memberToEdit)
   });
 
@@ -85,8 +86,12 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit, onSave }: AddTe
   }, [memberToEdit, reset]);
 
   function onSubmit(values: AddTeamMemberFormValues) {
+    // If editing, don't send an empty password field
+    if (isEditing) {
+        delete values.password;
+    }
     onSave(values);
-    setDialogOpen(false); // The parent component handles toast
+    setDialogOpen(false);
   }
 
   return (
