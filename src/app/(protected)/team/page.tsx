@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,8 +83,26 @@ export default function TeamPage() {
     };
 
     const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
-        if (!user || !auth || !user.email || !profile.agency_id) return;
-        const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
+        if (!user || !auth || !user.email || !profile.agency_id) {
+            toast({ title: 'User or profile data not available.', variant: 'destructive'});
+            return;
+        }
+        
+        // Temporarily store the current admin's session information
+        const adminUser = auth.currentUser;
+        if (!adminUser) {
+             toast({ title: 'Admin session lost. Please re-login.', variant: 'destructive'});
+             return;
+        }
+
+        // To re-authenticate the admin, we need their original sign-in credential.
+        // We'll prompt for the password as a secure way to get it.
+        const adminPassword = prompt("To confirm this action, please enter your password:");
+        if (!adminPassword) {
+            toast({ title: 'Action Cancelled', description: 'Password was not provided.', variant: 'destructive' });
+            return;
+        }
+        const adminCredential = EmailAuthProvider.credential(adminUser.email!, adminPassword);
         
         try {
             if (memberToEdit) {
@@ -120,6 +138,7 @@ export default function TeamPage() {
                   agency_id: profile.agency_id, // Assigning admin's agency_id
                   stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
                 };
+                const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
                 await setDoc(doc(collectionRef, newMemberUser.uid), memberData);
 
                 // 3. Create a user doc for the new member so they can log in and have their own data space
@@ -132,22 +151,39 @@ export default function TeamPage() {
                     createdAt: new Date().toISOString(),
                 });
 
-                // 4. Re-sign in the admin user to maintain the session state without password prompt
-                if (auth.currentUser && auth.currentUser.uid !== user.uid) {
-                    await auth.signOut(); // Sign out the newly created user
-                    // This is a simplified approach. A more robust solution might use custom tokens
-                    // but for client-side action, we rely on the user to manually log back in if the session is lost.
-                    // For now, we assume the onAuthStateChanged listener will handle the UI correctly.
-                    toast({ title: 'Member Added. Admin session maintained.' });
-                } else {
-                    toast({ title: 'Member Added Successfully' });
-                }
+                // 4. IMPORTANT: Re-sign in the admin user to restore their session
+                await signInWithCredential(auth, adminCredential);
+                
+                toast({ title: 'Member Added Successfully' });
             }
         } catch (error: any) {
             console.error("Error saving member: ", error);
+             // Attempt to re-sign in admin even if there was an error to prevent being logged out
+            try {
+                await signInWithCredential(auth, adminCredential);
+            } catch (reauthError) {
+                console.error("Failed to re-authenticate admin:", reauthError);
+                toast({ title: 'Critical Error', description: 'Admin session may be lost. Please re-login.', variant: 'destructive' });
+            }
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
+
+     const allMembers = useMemo(() => {
+        if (!user || !profile) return [];
+
+        const adminAsMember: User = {
+            id: user.uid,
+            name: profile.ownerName,
+            email: user.email || '',
+            role: 'Admin',
+            agency_id: profile.agency_id,
+            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
+        };
+        
+        return [adminAsMember, ...(teamMembers || [])];
+
+    }, [user, profile, teamMembers]);
 
 
   return (
@@ -163,11 +199,11 @@ export default function TeamPage() {
 
             {isLoading ? <p>Loading team members...</p> : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {teamMembers && teamMembers.map(member => (
+                {allMembers && allMembers.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
                         <CardHeader className="flex-row items-center justify-between">
                             <Badge variant={roleVariant[member.role]} className="capitalize">{member.role}</Badge>
-                             {profile.role === 'Admin' && (
+                             {profile.role === 'Admin' && member.role !== 'Admin' && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="rounded-full" onClick={(e) => e.stopPropagation()}>
