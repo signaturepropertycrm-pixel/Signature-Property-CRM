@@ -64,30 +64,26 @@ export default function ProtectedLayout({
 
 
   return (
-    <FirebaseClientProvider>
-        <AuthGuard>
-            <ProfileProvider>
-            <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
-                <CurrencyProvider>
-                <SidebarProvider>
-                    <div className="flex h-screen w-full bg-background">
-                    <AppSidebar />
-                    <div className="flex flex-col flex-1 overflow-hidden">
-                        <AppHeader 
-                        searchable={isSearchable}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        />
-                        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                        {children}
-                        </main>
-                    </div>
-                    </div>
-                </SidebarProvider>
-                </CurrencyProvider>
-            </SearchContext.Provider>
-            </ProfileProvider>
-        </AuthGuard>
-    </FirebaseClientProvider>
+    <AuthGuard>
+        <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+            <CurrencyProvider>
+            <SidebarProvider>
+                <div className="flex h-screen w-full bg-background">
+                <AppSidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <AppHeader 
+                    searchable={isSearchable}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    />
+                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                    {children}
+                    </main>
+                </div>
+                </div>
+            </SidebarProvider>
+            </CurrencyProvider>
+        </SearchContext.Provider>
+    </AuthGuard>
   );
 }

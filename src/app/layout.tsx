@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { ProfileProvider } from '@/context/profile-context';
 
 export const metadata: Metadata = {
   title: 'SignatureCRM',
@@ -29,7 +30,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <FirebaseClientProvider>
-            {children}
+            <ProfileProvider>
+              {children}
+            </ProfileProvider>
           </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
