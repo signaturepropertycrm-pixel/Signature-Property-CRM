@@ -58,7 +58,7 @@ export default function TeamPage() {
     
     // Redirect if not admin
     useEffect(() => {
-        if (profile.role !== 'Admin') {
+        if (profile.role && profile.role !== 'Admin') {
             router.push('/dashboard');
         }
     }, [profile, router]);
@@ -226,7 +226,7 @@ export default function TeamPage() {
 
     }, [user, profile, teamMembers]);
     
-    if (profile.role !== 'Admin') {
+    if (profile.role && profile.role !== 'Admin') {
         return (
             <div className="flex h-full w-full items-center justify-center">
                 <Card className="max-w-md text-center">
@@ -260,7 +260,6 @@ export default function TeamPage() {
                         <CardHeader className="flex-row items-start justify-between pb-2">
                              <div>
                                 <Badge variant={roleVariant[member.role] ?? 'secondary'} className="capitalize">{member.role}</Badge>
-                                <Badge variant="success" className="capitalize ml-2">Active</Badge>
                              </div>
                              {profile.role === 'Admin' && member.role !== 'Admin' && (
                                 <DropdownMenu>

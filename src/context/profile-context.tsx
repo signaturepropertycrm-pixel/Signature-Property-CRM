@@ -22,7 +22,7 @@ export interface ProfileData {
 
 interface ProfileContextType {
   profile: ProfileData;
-  setProfile: (profile: ProfileData) => void;
+  setProfile: (profile: Partial<ProfileData>) => void;
   isLoading: boolean;
 }
 
@@ -82,12 +82,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             console.error("Failed to save profile to localStorage", error);
         }
     }
-  }, [firestoreProfile, user, profile.role, profile.agencyName]);
+  }, [firestoreProfile, user]);
 
-  const setProfile = (newProfile: ProfileData) => {
-    setProfileState(newProfile);
+  const setProfile = (newProfile: Partial<ProfileData>) => {
+    const updatedProfile = { ...profile, ...newProfile };
+    setProfileState(updatedProfile);
     try {
-        localStorage.setItem('app-profile', JSON.stringify(newProfile));
+        localStorage.setItem('app-profile', JSON.stringify(updatedProfile));
     } catch (error) {
         console.error("Failed to save profile to localStorage", error);
     }

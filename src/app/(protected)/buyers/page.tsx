@@ -28,6 +28,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 
 
 const statusVariant = {
@@ -365,7 +366,7 @@ function BuyersPageContent() {
                                         <Eye />
                                         View Details
                                     </DropdownMenuItem>
-                                    {profile.role !== 'Agent' && (
+                                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
                                         <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                             <Edit />
                                             Edit
@@ -484,7 +485,7 @@ function BuyersPageContent() {
                                     <Eye />
                                     View Details
                                 </DropdownMenuItem>
-                                {profile.role !== 'Agent' && (
+                                {(profile.role === 'Admin' || profile.role === 'Editor') && (
                                     <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
                                         <Edit />
                                         Edit

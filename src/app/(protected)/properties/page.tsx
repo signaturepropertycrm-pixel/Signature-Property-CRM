@@ -379,7 +379,7 @@ function PropertiesPageContent() {
                         Mark as Sold
                     </DropdownMenuItem>
 
-                    {profile.role !== 'Agent' && (
+                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
                         <>
                             <DropdownMenuItem onSelect={() => handleEdit(prop)}>
                                 <Edit />
@@ -490,7 +490,7 @@ function PropertiesPageContent() {
                                 <CheckCircle />
                                 Mark as Sold
                             </DropdownMenuItem>
-                          {profile.role !== 'Agent' && (
+                          {(profile.role === 'Admin' || profile.role === 'Editor') && (
                             <>
                                 <DropdownMenuItem onSelect={() => handleEdit(prop)}>
                                     <Edit />
@@ -534,7 +534,7 @@ function PropertiesPageContent() {
                 {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your properties.'}
               </p>
             </div>
-            {profile.role !== 'Agent' && (
+            {(profile.role === 'Admin' || profile.role === 'Editor') && (
                 <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                 <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -667,7 +667,7 @@ function PropertiesPageContent() {
         </div>
       </TooltipProvider>
 
-      {pathname.startsWith('/properties') && profile.role !== 'Agent' && (
+      {(profile.role === 'Admin' || profile.role === 'Editor') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
             <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />

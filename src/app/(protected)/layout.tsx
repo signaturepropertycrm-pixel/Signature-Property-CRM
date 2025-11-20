@@ -7,7 +7,7 @@ import { AppHeader } from '@/components/shared/header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { usePathname, useRouter } from 'next/navigation';
 import { CurrencyProvider } from '@/context/currency-context';
-import { useProfile } from '@/context/profile-context';
+import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
@@ -55,7 +55,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   // Define restricted paths for each role
   const adminOnlyPaths = ['/team', '/settings', '/upgrade'];
   const editorForbiddenPaths = ['/team', '/settings', '/upgrade'];
-  const agentForbiddenPaths = ['/team', '/settings', 'upgrade', '/tools', '/analytics', '/trash', '/activities'];
+  const agentForbiddenPaths = ['/team', '/settings', '/upgrade', '/tools', '/trash', '/activities'];
 
 
   let isAllowed = true;
@@ -131,13 +131,13 @@ export default function ProtectedLayout({
 }) {
   return (
     <FirebaseClientProvider>
+      <ProfileProvider>
         <CurrencyProvider>
           <ProtectedLayoutContent>
             {children}
           </ProtectedLayoutContent>
         </CurrencyProvider>
+      </ProfileProvider>
     </FirebaseClientProvider>
   )
 }
-
-    

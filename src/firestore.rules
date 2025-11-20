@@ -12,12 +12,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    function isAgencyMember(agencyId) {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.agency_id == agencyId;
+    function isAgencyMember() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.agency_id == get(/databases/$(database)/documents/users/$(resource.id)).data.agency_id;
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.agency_id;
     }
     
     function isEditor() {
@@ -36,50 +36,40 @@ service cloud.firestore {
 
     // User-specific rules
     match /users/{userId} {
-      // Any signed-in user can create their own user document upon signup.
-      // Admin can create documents for new team members.
       allow create: if isOwner(userId) || isAdmin();
-      
-      // Users can read their own profile.
-      // Agency members (editors, agents) can read the profiles of other users within the same agency.
-      allow get: if isOwner(userId) || isAgencyMember(resource.data.agency_id);
-      
-      // Users can update their own profile.
-      allow update: if isOwner(userId);
-
-      // Listing all users is denied for privacy.
+      allow get: if isOwner(userId) || isAgencyMember();
+      allow update: if isOwner(userId) || isAdmin();
       allow list: if false;
-      allow delete: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
 
       // Properties Subcollection
       match /properties/{propertyId} {
         // Editors and Agents can read properties of their agency.
-        allow read: if isAgencyMember(resource.data.agency_id);
+        allow read: if isEditor() || isAgent();
         // Editors can create and update properties. Agents cannot.
-        allow write: if isEditor() && isAgencyMember(request.resource.data.agency_id);
+        allow write: if isEditor();
       }
 
       // Buyers Subcollection
       match /buyers/{buyerId} {
-        // Editors and Agents can read buyers of their agency.
-        allow read: if isAgencyMember(resource.data.agency_id);
-        // Editors can update buyers.
-        allow update: if isEditor() && isAgencyMember(request.resource.data.agency_id);
-        // Agents and Editors can create new buyers.
-        allow create: if (isEditor() || isAgent()) && isAgencyMember(request.resource.data.agency_id);
-         // Editors can delete buyers.
+        allow read: if isEditor() || isAgent();
+        // Agents can create new buyers.
+        allow create: if isAgent() || isEditor();
+        // Editors can update buyers. Agents can only update status.
+        allow update: if isEditor() || (isAgent() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note']));
+        // Editors can delete buyers.
         allow delete: if isEditor();
       }
 
       // Appointments, Follow-ups, Activities
       match /appointments/{appointmentId} {
-        allow read, write: if isAgencyMember(request.resource.data.agency_id);
+        allow read, write: if isEditor() || isAgent();
       }
       match /followUps/{followUpId} {
-        allow read, write: if isAgencyMember(request.resource.data.agency_id);
+        allow read, write: if isEditor() || isAgent();
       }
       match /activityLogs/{activityLogId} {
-        allow read, write: if isAgencyMember(request.resource.data.agency_id);
+        allow read, write: if isEditor() || isAgent();
       }
 
       // Team Members subcollection (only admin can access)
@@ -108,5 +98,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
