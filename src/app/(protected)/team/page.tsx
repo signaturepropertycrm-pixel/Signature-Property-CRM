@@ -17,7 +17,7 @@ import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 
 const roleVariant = {
@@ -83,30 +83,21 @@ export default function TeamPage() {
     };
 
     const handleSaveMember = async (member: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
-        if (!user || !auth || !user.email || !profile.agency_id) {
-            toast({ title: 'User or profile data not available.', variant: 'destructive'});
+        if (!user || !auth || !profile.agency_id) {
+            toast({ title: 'User or profile data not available.', variant: 'destructive' });
             return;
-        }
-        
-        // Temporarily store the current admin's session information
-        const adminUser = auth.currentUser;
-        if (!adminUser) {
-             toast({ title: 'Admin session lost. Please re-login.', variant: 'destructive'});
-             return;
         }
 
-        // To re-authenticate the admin, we need their original sign-in credential.
-        // We'll prompt for the password as a secure way to get it.
-        const adminPassword = prompt("To confirm this action, please enter your password:");
-        if (!adminPassword) {
-            toast({ title: 'Action Cancelled', description: 'Password was not provided.', variant: 'destructive' });
+        const currentAdminUser = auth.currentUser;
+        if (!currentAdminUser || !currentAdminUser.email) {
+            toast({ title: 'Admin session is invalid. Please re-login.', variant: 'destructive' });
             return;
         }
-        const adminCredential = EmailAuthProvider.credential(adminUser.email!, adminPassword);
         
         try {
             if (memberToEdit) {
-                // Editing an existing member - no auth changes needed, just Firestore update
+                // Logic for editing an existing member
+                const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
                 const memberData = {
                   name: member.name,
                   email: member.email,
@@ -118,12 +109,21 @@ export default function TeamPage() {
                 toast({ title: 'Member Updated' });
 
             } else {
-                // Creating a new member
+                // Logic for creating a new member
                 if (!member.email || !member.password) {
                     toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive'});
                     return;
                 }
                 
+                const adminPassword = prompt("To confirm this action, please enter your password:");
+                if (!adminPassword) {
+                    toast({ title: 'Action Cancelled', description: 'Admin password was not provided.', variant: 'destructive' });
+                    return;
+                }
+                
+                const adminCredential = EmailAuthProvider.credential(currentAdminUser.email, adminPassword);
+                await reauthenticateWithCredential(currentAdminUser, adminCredential);
+
                 // 1. Create a new Firebase Auth user
                 const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
                 const newMemberUser = newUserCredential.user;
@@ -134,6 +134,7 @@ export default function TeamPage() {
                   name: member.name,
                   email: member.email,
                   phone: member.phone,
+
                   role: member.role,
                   agency_id: profile.agency_id, // Assigning admin's agency_id
                   stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
@@ -158,13 +159,6 @@ export default function TeamPage() {
             }
         } catch (error: any) {
             console.error("Error saving member: ", error);
-             // Attempt to re-sign in admin even if there was an error to prevent being logged out
-            try {
-                await signInWithCredential(auth, adminCredential);
-            } catch (reauthError) {
-                console.error("Failed to re-authenticate admin:", reauthError);
-                toast({ title: 'Critical Error', description: 'Admin session may be lost. Please re-login.', variant: 'destructive' });
-            }
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
