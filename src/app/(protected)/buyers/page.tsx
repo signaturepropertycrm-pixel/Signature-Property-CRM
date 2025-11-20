@@ -23,8 +23,9 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 
 const statusVariant = {

@@ -11,9 +11,10 @@ import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams } from 'next/navigation';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 
 function AppointmentsPageContent() {

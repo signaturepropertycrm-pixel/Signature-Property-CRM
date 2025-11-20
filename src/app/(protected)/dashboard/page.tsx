@@ -34,8 +34,9 @@ import { PerformanceChart } from '@/components/performance-chart';
 import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { TeamPerformanceChart } from '@/components/team-performance-chart';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 type KpiData = {
   id: string;

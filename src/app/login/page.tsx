@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -25,7 +24,7 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase';
+import { useAuth, FirebaseClientProvider } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +37,7 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -199,4 +198,12 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export default function LoginPage() {
+    return (
+        <FirebaseClientProvider>
+            <LoginPageContent />
+        </FirebaseClientProvider>
+    );
 }

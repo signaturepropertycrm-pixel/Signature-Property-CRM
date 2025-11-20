@@ -29,7 +29,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useProfile } from '@/context/profile-context';
+import { ProfileProvider, useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -258,7 +258,9 @@ function SignupPageContent() {
 export default function SignupPage() {
     return (
         <FirebaseClientProvider>
+          <ProfileProvider>
             <SignupPageContent />
+          </ProfileProvider>
         </FirebaseClientProvider>
     );
 }

@@ -3,8 +3,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/lib/types';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 export interface ProfileData {
   agencyName: string;

@@ -10,8 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 
 export default function FollowUpsPage() {

@@ -15,10 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
+import { useCollection, useFirestore, useUser, useAuth } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 const roleVariant = {
     Admin: 'default',

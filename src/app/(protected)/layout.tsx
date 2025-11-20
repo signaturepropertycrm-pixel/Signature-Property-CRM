@@ -11,6 +11,7 @@ import { useProfile, ProfileProvider } from '@/context/profile-context';
 import { FirebaseClientProvider, useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -27,6 +28,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { profile, isLoading: isProfileLoading } = useProfile();
   const router = useRouter();
+  const pathname = usePathname();
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -112,13 +114,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <FirebaseClientProvider>
-      <ProfileProvider>
         <CurrencyProvider>
           <ProtectedLayoutContent>
             {children}
           </ProtectedLayoutContent>
         </CurrencyProvider>
-      </ProfileProvider>
     </FirebaseClientProvider>
   )
 }
