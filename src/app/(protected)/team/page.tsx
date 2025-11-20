@@ -198,7 +198,7 @@ export default function TeamPage() {
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Team</h1>
                     <p className="text-muted-foreground">Manage your team members.</p>
                 </div>
-                {profile.role === 'Admin' && <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Team Member</Button>}
+                {profile.role === 'Admin' && <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Member</Button>}
             </div>
 
             {isLoading ? <p>Loading team members...</p> : (
