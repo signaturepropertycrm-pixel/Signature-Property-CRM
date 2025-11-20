@@ -8,5 +8,4 @@ export { initializeApp, getApps, getApp } from 'firebase/app';
 export { getAuth } from 'firebase/auth';
 export { getFirestore } from 'firebase/firestore';
 
-export * from './provider';
 export * from './config';

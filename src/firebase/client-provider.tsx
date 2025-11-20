@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import React, { useMemo, type ReactNode } from 'react';
 import { FirebaseProvider } from '@/firebase/provider';
@@ -14,7 +14,7 @@ function initializeFirebase() {
   if (!getApps().length) {
     let firebaseApp;
     try {
-      firebaseApp = initializeApp();
+      firebaseApp = initializeApp(firebaseConfig);
     } catch (e) {
       if (process.env.NODE_ENV === "production") {
         console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
