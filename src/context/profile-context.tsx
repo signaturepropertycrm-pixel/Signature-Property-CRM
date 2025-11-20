@@ -67,7 +67,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             agencyName: firestoreProfile.agencyName || profile.agencyName, // Keep local agencyName if not in firestore
             ownerName: firestoreProfile.name || 'User',
             phone: firestoreProfile.phone || '',
-            role: firestoreProfile.role || 'Agent',
+            role: firestoreProfile.role || profile.role || 'Agent',
             avatar: user?.photoURL || firestoreProfile.avatar || '',
             user_id: firestoreProfile.id,
             agency_id: firestoreProfile.agency_id,
@@ -75,7 +75,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
     }
-  }, [firestoreProfile, user, profile.agencyName]);
+  }, [firestoreProfile, user, profile.agencyName, profile.role]);
 
   const setProfile = (newProfile: ProfileData) => {
     setProfileState(newProfile);
