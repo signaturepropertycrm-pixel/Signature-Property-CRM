@@ -62,7 +62,7 @@ service cloud.firestore {
 
       // TeamMembers Subcollection: Only the Admin (owner) of the agency can manage their team.
       match /teamMembers/{memberId} {
-        allow read, write: if isUser(userId) && isAdmin();
+        allow read, write: if isAdmin() && isUser(userId);
       }
     }
 
@@ -109,7 +109,7 @@ service cloud.firestore {
     
     // Admin-only collections
     match /{collectionName}/{docId}
-    where collectionName in ['transactions', 'roles_admin', 'roles_editor', 'roles_agent'] {
+    where collectionName in ['transactions'] {
       allow read, write: if isAdmin();
     }
   }
