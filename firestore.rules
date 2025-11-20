@@ -69,85 +69,57 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false; // User listing is not allowed.
-      allow create: if isOwner(userId) || isAdmin();
+      allow create: if (isOwner(userId) && request.resource.data.id == request.auth.uid) || isAdmin();
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
+      
+      /**
+       * @description Allows document-level access for the properties sub-collection.
+       */
+      match /properties/{propertyId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      /**
+       * @description Allows document-level access for the buyers sub-collection.
+       */
+      match /buyers/{buyerId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      /**
+       * @description Allows document-level access for the teamMembers sub-collection.
+       */
+      match /teamMembers/{memberId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      /**
+       * @description Allows access only to the user (agent) associated with the appointment or to admins.
+       * @path /users/{userId}/appointments/{appointmentId}
+       */
+      match /appointments/{appointmentId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+      
+      /**
+       * @description Allows document-level access for the followUps sub-collection.
+       */
+      match /followUps/{followUpId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      /**
+       * @description Rules for the activityLogs sub-collection.
+       */
+      match /activityLogs/{activityLogId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId);
+        allow update: if false;
+        allow delete: if false;
+      }
     }
 
-    /**
-     * @description Allows access only to the user who owns the property.
-     * @path /users/{userId}/properties/{propertyId}
-     * @allow (create) User 'user123' creates a new property under their profile with createdBy: 'user123'.
-     * @deny (update) User 'user456' attempts to update a property under 'user123' profile.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/properties/{propertyId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Allows access only to the user who owns the buyer record.
-     * @path /users/{userId}/buyers/{buyerId}
-     * @allow (create) User 'user123' creates a new buyer record under their profile.
-     * @deny (delete) User 'user456' attempts to delete a buyer record under 'user123' profile.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/buyers/{buyerId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-    
-    /**
-     * @description Allows access only to the user who owns the team member record.
-     * @path /users/{userId}/teamMembers/{memberId}
-     * @allow (create) User 'user123' creates a new team member under their profile.
-     * @deny (delete) User 'user456' attempts to delete a team member under 'user123' profile.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/teamMembers/{memberId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Allows access only to the user (agent) associated with the appointment or to admins.
-     * @path /users/{userId}/appointments/{appointmentId}
-     * @allow (get) Agent 'agent123' retrieves an appointment associated with their ID.
-     * @deny (update) User 'user456' attempts to update an appointment under 'agent123' profile without being an admin.
-     * @principle Enforces document ownership or admin privileges for writes.
-     */
-    match /users/{userId}/appointments/{appointmentId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) || isAdmin();
-      allow update: if isExistingOwner(userId) || isAdmin();
-      allow delete: if isExistingOwner(userId) || isAdmin();
-    }
-
-    /**
-     * @description Allows access only to the user assigned to the follow-up.
-     * @path /users/{userId}/followUps/{followUpId}
-     * @allow (get) Agent 'agent123' retrieves a follow-up assigned to them.
-     * @deny (delete) User 'user456' attempts to delete a follow-up assigned to 'agent123'.
-     * @principle Enforces document ownership for writes.
-     */
-    match /users/{userId}/followUps/{followUpId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
 
     /**
      * @description Allows access only to admins for managing transactions.
@@ -165,18 +137,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows access only to admins for reading activity logs.
+     * @description This collection is deprecated in favor of user-specific activity logs.
+     * Rules are set to deny all access for security.
      * @path /activityLogs/{activityLogId}
-     * @allow (get) Admin retrieves an activity log.
-     * @deny (create) Non-admin attempts to create an activity log (should be created by backend).
-     * @principle Restricts activity log access to admins.
      */
     match /activityLogs/{activityLogId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow read, write: if false;
     }
 
         /**
