@@ -109,26 +109,20 @@ export default function TeamPage() {
                 toast({ title: 'Member Updated' });
 
             } else {
-                // Logic for creating a new member
+                 // Logic for creating a new member
                 if (!member.email || !member.password) {
                     toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive'});
                     return;
                 }
-                
+
                 // Get the admin's current credentials to re-authenticate later
                 const adminEmail = currentAdminUser.email;
-                const adminPasswordFromStorage = sessionStorage.getItem('fb-cred'); // Example, not secure for production
-                if (!adminEmail || !adminPasswordFromStorage) {
-                    // Fallback to prompt if session storage is empty, but this is not ideal.
-                    const promptedPassword = prompt("To confirm, please enter your admin password:");
-                    if (!promptedPassword) {
-                        toast({ title: 'Action Cancelled', variant: 'destructive' });
-                        return;
-                    }
-                    const adminCredential = EmailAuthProvider.credential(adminEmail, promptedPassword);
-                     await reauthenticateWithCredential(currentAdminUser, adminCredential);
-                }
+                const adminPassword = sessionStorage.getItem('fb-cred');
 
+                if (!adminPassword) {
+                    toast({ title: 'Admin session error', description: 'Could not verify admin credentials. Please re-login and try again.', variant: 'destructive' });
+                    return;
+                }
 
                 // 1. Create a new Firebase Auth user
                 const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
@@ -158,11 +152,8 @@ export default function TeamPage() {
                 });
 
                 // 4. IMPORTANT: Re-sign in the admin user to restore their session
-                // This is a simplified re-login. A more robust solution would use a secure way to get the admin's password.
-                if (adminPasswordFromStorage) {
-                    const adminCredential = EmailAuthProvider.credential(adminEmail, adminPasswordFromStorage);
-                    await signInWithCredential(auth, adminCredential);
-                }
+                const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
+                await signInWithCredential(auth, adminCredential);
 
                 toast({ title: 'Member Added Successfully' });
             }
@@ -215,7 +206,7 @@ export default function TeamPage() {
                 {allMembers && allMembers.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
                         <CardHeader className="flex-row items-center justify-between">
-                            <Badge variant={roleVariant[member.role]} className="capitalize">{member.role}</Badge>
+                            <Badge variant={roleVariant[member.role] ?? 'secondary'} className="capitalize">{member.role}</Badge>
                              {profile.role === 'Admin' && member.role !== 'Admin' && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -271,3 +262,5 @@ export default function TeamPage() {
     </>
   );
 }
+
+    

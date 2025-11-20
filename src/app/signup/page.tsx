@@ -86,6 +86,7 @@ export default function SignupPage() {
             email: values.email,
             role: 'Admin', // New users are Admins
             agency_id: agencyId, // The admin's agency is identified by their own UID
+            agencyName: values.agencyName,
             createdAt: new Date().toISOString(),
         }, { merge: true });
 
@@ -252,3 +253,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
