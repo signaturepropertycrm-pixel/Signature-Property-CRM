@@ -91,84 +91,94 @@ export default function TeamPage() {
             return;
         }
 
+        // Logic for editing an existing member
+        if (memberToEdit) {
+            const memberRef = doc(firestore, 'users', user.uid, 'teamMembers', memberToEdit.id);
+            const memberData = {
+                name: member.name,
+                email: member.email,
+                phone: member.phone,
+                role: member.role,
+            };
+            try {
+                await setDoc(memberRef, memberData, { merge: true });
+                toast({ title: 'Member Updated Successfully' });
+            } catch (error) {
+                console.error("Error updating member: ", error);
+                toast({ title: 'Error', description: 'Could not update team member.', variant: 'destructive' });
+            }
+            return;
+        }
+
+        // Logic for creating a new member
+        if (!member.email || !member.password) {
+            toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive' });
+            return;
+        }
+
         const currentAdminUser = auth.currentUser;
         if (!currentAdminUser || !currentAdminUser.email) {
             toast({ title: 'Admin session is invalid. Please re-login.', variant: 'destructive' });
             return;
         }
-        
+
+        const adminEmail = currentAdminUser.email;
+        const adminPassword = sessionStorage.getItem('fb-cred'); // Retrieve stored password
+
+        if (!adminPassword) {
+            toast({ title: 'Admin session error', description: 'Could not verify admin credentials. Please re-login and try again.', variant: 'destructive' });
+            return;
+        }
+
         try {
-            // Logic for editing an existing member
-            if (memberToEdit) {
-                const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
-                const memberData = {
-                  name: member.name,
-                  email: member.email,
-                  phone: member.phone,
-                  role: member.role,
-                  agency_id: profile.agency_id
-                };
-                await setDoc(doc(collectionRef, memberToEdit.id), memberData, { merge: true });
-                toast({ title: 'Member Updated' });
+            // 1. Create a new Firebase Auth user
+            const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
+            const newMemberUser = newUserCredential.user;
 
-            } else {
-                 // Logic for creating a new member
-                if (!member.email || !member.password) {
-                    toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive'});
-                    return;
-                }
+            // 2. Save new member's data to the admin's teamMembers subcollection
+            const memberData = {
+                id: newMemberUser.uid,
+                name: member.name,
+                email: member.email,
+                phone: member.phone,
+                role: member.role,
+                agency_id: profile.agency_id,
+                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
+            };
+            await setDoc(doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid), memberData);
 
-                const adminEmail = currentAdminUser.email;
-                const adminPassword = sessionStorage.getItem('fb-cred');
+            // 3. Create a user doc for the new member so they can log in and have a profile
+            await setDoc(doc(firestore, "users", newMemberUser.uid), {
+                id: newMemberUser.uid,
+                name: member.name,
+                email: member.email,
+                role: member.role,
+                agency_id: profile.agency_id,
+                createdAt: new Date().toISOString(),
+            });
 
-                if (!adminPassword) {
-                    toast({ title: 'Admin session error', description: 'Could not verify admin credentials. Please re-login and try again.', variant: 'destructive' });
-                    return;
-                }
+            toast({ title: 'Member Added Successfully' });
 
-                // 1. Create a new Firebase Auth user
-                const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
-                const newMemberUser = newUserCredential.user;
-
-                // 2. Save new member's data to the admin's teamMembers subcollection
-                const memberData = {
-                  id: newMemberUser.uid,
-                  name: member.name,
-                  email: member.email,
-                  phone: member.phone,
-                  role: member.role,
-                  agency_id: profile.agency_id,
-                  stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
-                };
-                await setDoc(doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid), memberData);
-
-                // 3. Create a user doc for the new member so they can log in
-                await setDoc(doc(firestore, "users", newMemberUser.uid), {
-                    id: newMemberUser.uid,
-                    name: member.name,
-                    email: member.email,
-                    role: member.role,
-                    agency_id: profile.agency_id,
-                    createdAt: new Date().toISOString(),
-                });
-
-                // 4. IMPORTANT: Re-sign in the admin user to restore their session
-                const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
-                await signInWithCredential(auth, adminCredential);
-
-                toast({ title: 'Member Added Successfully' });
-            }
         } catch (error: any) {
-            console.error("Error saving member: ", error);
+            console.error("Error creating member: ", error);
             let errorMessage = "An unexpected error occurred.";
             if (error.code === 'auth/email-already-in-use') {
                 errorMessage = 'This email address is already registered.';
             } else if (error.code === 'auth/weak-password') {
                 errorMessage = 'The password is too weak. It must be at least 6 characters.';
-            } else if (error.code === 'auth/invalid-credential') {
-                errorMessage = 'Your admin password was incorrect. Could not re-authenticate.';
             }
             toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+        } finally {
+            // 4. IMPORTANT: Re-sign in the admin user to restore their session
+            // This is necessary because createUserWithEmailAndPassword signs out the current user.
+            try {
+                const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
+                await signInWithCredential(auth, adminCredential);
+            } catch (reauthError) {
+                console.error("Failed to re-authenticate admin:", reauthError);
+                toast({ title: 'Session Warning', description: 'Failed to restore your session. Please login again.', variant: 'destructive' });
+                router.push('/login'); // Force re-login
+            }
         }
     };
 
