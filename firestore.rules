@@ -7,6 +7,7 @@
  * - /users/{userId}/properties/{propertyId}: Stores properties created by each user. Only the creating user can manage their properties.
  * - /users/{userId}/buyers/{buyerId}: Stores buyer information created by each user. Only the creating user can manage their buyers.
  * - /users/{userId}/appointments/{appointmentId}: Stores appointment data related to users (agents).
+ * - /users/{userId}/teamMembers/{memberId}: Stores team member data for a user.
  * - /users/{userId}/followUps/{followUpId}: Stores follow-up actions assigned to users.
  * - /transactions/{transactionId}: Stores transaction data. Only admins can manage transactions.
  * - /activityLogs/{activityLogId}: Stores activity logs. Only admins can read activity logs.
@@ -101,6 +102,21 @@ service cloud.firestore {
       allow create: if isOwner(userId) && request.resource.data.createdBy == request.auth.uid;
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Allows access only to the user who owns the team member record.
+     * @path /users/{userId}/teamMembers/{memberId}
+     * @allow (create) User 'user123' creates a new team member under their profile.
+     * @deny (delete) User 'user456' attempts to delete a team member under 'user123' profile.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/teamMembers/{memberId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
     }
 
     /**
