@@ -15,7 +15,7 @@ interface AddTeamMemberDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   memberToEdit: User | null;
-  onSave: (member: User) => void;
+  onSave: (member: Omit<User, 'id'>) => void;
 }
 
 export function AddTeamMemberDialog({ isOpen, setIsOpen, memberToEdit, onSave }: AddTeamMemberDialogProps) {
@@ -37,5 +37,3 @@ export function AddTeamMemberDialog({ isOpen, setIsOpen, memberToEdit, onSave }:
     </Dialog>
   );
 }
-
-    

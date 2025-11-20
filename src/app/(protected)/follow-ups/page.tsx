@@ -1,22 +1,29 @@
 
 'use client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { followUps as initialFollowUps, buyers as initialBuyers } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { FollowUp, Buyer, Appointment, AppointmentContactType, BuyerStatus } from '@/lib/types';
+import { FollowUp, Buyer, Appointment, AppointmentContactType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 
 
 export default function FollowUpsPage() {
-  const [followUpsData, setFollowUpsData] = useState<FollowUp[]>([]);
-  const [buyersData, setBuyersData] = useState<Buyer[]>([]);
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+  const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+  
+  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const { data: buyersData, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+  
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -24,40 +31,6 @@ export default function FollowUpsPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
-
-  const loadData = () => {
-    const savedFollowUps = localStorage.getItem('followUps');
-    setFollowUpsData(savedFollowUps ? JSON.parse(savedFollowUps) : initialFollowUps);
-    
-    const savedBuyers = localStorage.getItem('buyers');
-    setBuyersData(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
-
-    const savedAppointments = localStorage.getItem('appointments');
-    setAppointmentsData(savedAppointments ? JSON.parse(savedAppointments) : []);
-  };
-  
-  useEffect(() => {
-    loadData();
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'buyers' || event.key === 'followUps' || event.key === 'appointments') {
-            loadData();
-        }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-      localStorage.setItem('buyers', JSON.stringify(buyersData));
-  }, [buyersData]);
-
-  useEffect(() => {
-      localStorage.setItem('followUps', JSON.stringify(followUpsData));
-  }, [followUpsData]);
-
-  useEffect(() => {
-      localStorage.setItem('appointments', JSON.stringify(appointmentsData));
-  }, [appointmentsData]);
   
   const handlePhoneClick = (phone?: string) => {
     if (phone) {
@@ -74,7 +47,7 @@ export default function FollowUpsPage() {
   };
 
   const handleCardClick = (buyerId: string) => {
-    const buyer = buyersData.find(b => b.id === buyerId);
+    const buyer = buyersData?.find(b => b.id === buyerId);
     if (buyer) {
       setSelectedBuyer(buyer);
       setIsDetailsOpen(true);
@@ -106,7 +79,7 @@ export default function FollowUpsPage() {
 
   const handleSetAppointment = (e: React.MouseEvent, followUp: FollowUp) => {
       e.stopPropagation();
-      const buyer = buyersData.find(b => b.id === followUp.buyerId);
+      const buyer = buyersData?.find(b => b.id === followUp.buyerId);
       if (buyer) {
           setAppointmentDetails({
               contactType: 'Buyer',
@@ -118,25 +91,26 @@ export default function FollowUpsPage() {
       }
   };
 
-  const handleSaveAppointment = (appointment: Appointment) => {
-      setAppointmentsData(prev => [appointment, ...prev]);
+  const handleSaveAppointment = async (appointment: Appointment) => {
+      if (!user) return;
+      await addDoc(collection(firestore, 'users', user.uid, 'appointments'), appointment);
   };
   
   const handleOpenStatusUpdate = (e: React.MouseEvent, followUp: FollowUp) => {
       e.stopPropagation();
-      const buyer = buyersData.find(b => b.id === followUp.buyerId);
+      const buyer = buyersData?.find(b => b.id === followUp.buyerId);
       if (buyer) {
           setBuyerForFollowUp(buyer);
           setIsFollowUpOpen(true);
       }
   };
 
-  const handleSaveFollowUp = (buyerId: string, notes: string, nextReminder: string) => {
+  const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
+        if (!user || !buyersData) return;
         const buyer = buyersData.find(b => b.id === buyerId);
         if (!buyer) return;
 
-        const newFollowUp: FollowUp = {
-            id: `FU-${Date.now()}`,
+        const newFollowUp: Omit<FollowUp, 'id'> = {
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
@@ -147,9 +121,13 @@ export default function FollowUpsPage() {
             notes: notes,
         };
         
-        setFollowUpsData(prev => [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp]);
-        
-        setBuyersData(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
+        const followUpsCollection = collection(firestore, 'users', user.uid, 'followUps');
+        const existingFollowUp = followUpsData?.find(fu => fu.buyerId === buyerId);
+        if (existingFollowUp) {
+            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp);
+        } else {
+            await addDoc(followUpsCollection, newFollowUp);
+        }
         
         toast({
             title: "Follow-up Updated",
@@ -170,7 +148,9 @@ export default function FollowUpsPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {followUpsData.length === 0 ? (
+          {isFollowUpsLoading ? (
+             <p className="text-muted-foreground col-span-full text-center py-10">Loading follow-ups...</p>
+          ) : !followUpsData || followUpsData.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-10">No follow-ups scheduled.</p>
           ) : (
             followUpsData.map((followUp) => (

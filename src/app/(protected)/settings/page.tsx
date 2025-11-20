@@ -42,13 +42,15 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection } from '@/firebase';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
 
 
 export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
   const { profile, setProfile } = useProfile();
   const { user } = useUser();
+  const firestore = useFirestore();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
@@ -63,8 +65,12 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const { data: properties } = useCollection(user ? collection(firestore, 'users', user.uid, 'properties') : null);
+  const { data: buyers } = useCollection(user ? collection(firestore, 'users', user.uid, 'buyers') : null);
+  const { data: appointments } = useCollection(user ? collection(firestore, 'users', user.uid, 'appointments') : null);
+  const { data: followUps } = useCollection(user ? collection(firestore, 'users', user.uid, 'followUps') : null);
+  const { data: teamMembers } = useCollection(user ? collection(firestore, 'users', user.uid, 'teamMembers') : null);
 
-  // useEffect only runs on the client, so now we can safely show the UI
   useEffect(() => {
     setMounted(true);
     setLocalProfile(profile);
@@ -126,12 +132,12 @@ export default function SettingsPage() {
   const handleBackup = () => {
     try {
         const backupData = {
-            properties: JSON.parse(localStorage.getItem('properties') || '[]'),
-            buyers: JSON.parse(localStorage.getItem('buyers') || '[]'),
-            appointments: JSON.parse(localStorage.getItem('appointments') || '[]'),
-            followUps: JSON.parse(localStorage.getItem('followUps') || '[]'),
-            teamMembers: JSON.parse(localStorage.getItem('teamMembers') || '[]'),
-            profile: JSON.parse(localStorage.getItem('app-profile') || '{}'),
+            properties: properties || [],
+            buyers: buyers || [],
+            appointments: appointments || [],
+            followUps: followUps || [],
+            teamMembers: teamMembers || [],
+            profile: profile || {},
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -161,39 +167,62 @@ export default function SettingsPage() {
   };
 
   const handleRestore = () => {
-    if (!restoreFile) {
+    if (!restoreFile || !user) {
       toast({
-        title: 'No file selected',
-        description: 'Please choose a backup file to restore.',
+        title: 'No file or user session',
+        description: 'Please choose a backup file and ensure you are logged in.',
         variant: 'destructive',
       });
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const backupData = JSON.parse(event.target?.result as string);
 
         // Basic validation
-        const requiredKeys = ['properties', 'buyers', 'appointments', 'followUps'];
+        const requiredKeys = ['properties', 'buyers'];
         const missingKeys = requiredKeys.filter(key => !(key in backupData));
         if (missingKeys.length > 0) {
             throw new Error(`Backup file is missing required data: ${missingKeys.join(', ')}`);
         }
         
-        localStorage.setItem('properties', JSON.stringify(backupData.properties || []));
-        localStorage.setItem('buyers', JSON.stringify(backupData.buyers || []));
-        localStorage.setItem('appointments', JSON.stringify(backupData.appointments || []));
-        localStorage.setItem('followUps', JSON.stringify(backupData.followUps || []));
-        localStorage.setItem('teamMembers', JSON.stringify(backupData.teamMembers || []));
-        localStorage.setItem('app-profile', JSON.stringify(backupData.profile || {}));
+        const batch = writeBatch(firestore);
 
+        const collectionsToRestore = {
+          properties: backupData.properties || [],
+          buyers: backupData.buyers || [],
+          appointments: backupData.appointments || [],
+          followUps: backupData.followUps || [],
+          teamMembers: backupData.teamMembers || [],
+        };
+        
+        for (const [collName, data] of Object.entries(collectionsToRestore)) {
+            const collRef = collection(firestore, 'users', user.uid, collName);
+            // Clear existing data in collection
+            const existingDocs = await getDocs(collRef);
+            existingDocs.forEach(doc => batch.delete(doc.ref));
+
+            // Add new data
+            (data as any[]).forEach(item => {
+                const docRef = collection(firestore, 'users', user.uid, collName).doc(item.id);
+                batch.set(docRef, item);
+            });
+        }
+        
+        await batch.commit();
+
+        if (backupData.profile) {
+            setProfile(backupData.profile);
+        }
 
         toast({
           title: 'Restore Successful',
-          description: 'Your data has been restored. Please reload the page to see the changes.',
+          description: 'Your data has been restored. The page will now reload.',
         });
+        
+        setTimeout(() => window.location.reload(), 2000);
 
       } catch (error: any) {
         console.error('Restore failed:', error);
@@ -204,7 +233,6 @@ export default function SettingsPage() {
         });
       } finally {
         setRestoreFile(null);
-        // Reset the file input
         const fileInput = document.getElementById('restore-upload') as HTMLInputElement;
         if(fileInput) fileInput.value = '';
       }
@@ -258,19 +286,19 @@ export default function SettingsPage() {
                 <Label htmlFor="agencyName">Agency Name</Label>
                 <Input
                   id="agencyName"
-                  value={localProfile.agencyName}
+                  value={localProfile.agencyName || ''}
                   onChange={handleProfileChange}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ownerName">Agency Owner Name</Label>
-                <Input id="ownerName" value={localProfile.ownerName} onChange={handleProfileChange} />
+                <Input id="ownerName" value={localProfile.ownerName || ''} onChange={handleProfileChange} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" value={localProfile.phone} onChange={handleProfileChange} />
+                <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Account Email</Label>
@@ -483,7 +511,7 @@ export default function SettingsPage() {
              <div>
                 <h3 className="font-semibold mb-2">Restore from Backup</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                    Restore your data from a previously downloaded backup file. This will overwrite all current data.
+                    Restore your data from a previously downloaded backup file. This will overwrite all current data in Firestore.
                 </p>
                  <div className="flex flex-col sm:flex-row gap-4">
                     <Input 
@@ -506,7 +534,7 @@ export default function SettingsPage() {
                           <AlertDialogDescription>
                             This action cannot be undone. Restoring from a backup will
                             <span className="font-bold text-destructive"> permanently overwrite all existing data </span> 
-                            in the application, including properties, buyers, and appointments.
+                            in the application with the data from this file.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

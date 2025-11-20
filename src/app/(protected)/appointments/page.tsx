@@ -3,72 +3,56 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { appointments as initialAppointments } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams } from 'next/navigation';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 
 function AppointmentsPageContent() {
   const searchParams = useSearchParams();
   const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
-  const [appointmentsData, setAppointmentsData] = useState<Appointment[]>([]);
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const appointmentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'appointments') : null, [user, firestore]);
+  const { data: appointmentsData, isLoading } = useCollection<Appointment>(appointmentsQuery);
+
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
 
-  useEffect(() => {
-    const loadAppointments = () => {
-        const savedAppointments = localStorage.getItem('appointments');
-        if (savedAppointments) {
-            setAppointmentsData(JSON.parse(savedAppointments));
-        } else {
-            setAppointmentsData(initialAppointments);
-        }
-    };
+  const handleSaveAppointment = async (appointment: Appointment) => {
+    if (!user) return;
+    const collectionRef = collection(firestore, 'users', user.uid, 'appointments');
     
-    loadAppointments();
-
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'appointments') {
-            loadAppointments();
-        }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('appointments', JSON.stringify(appointmentsData));
-  }, [appointmentsData]);
-
-
-  const handleSaveAppointment = (appointment: Appointment) => {
-    setAppointmentsData(prev => {
-        if (appointmentToEdit) {
-            // It's an update (reschedule)
-            return prev.map(a => a.id === appointment.id ? appointment : a);
-        } else {
-            // It's a new appointment
-            return [appointment, ...prev];
-        }
-    });
+    if (appointmentToEdit) {
+        // It's an update (reschedule)
+        const docRef = doc(collectionRef, appointment.id);
+        await setDoc(docRef, appointment, { merge: true });
+        toast({ title: 'Appointment Rescheduled', description: `Appointment with ${appointment.contactName} has been updated.` });
+    } else {
+        // It's a new appointment
+        await addDoc(collectionRef, { ...appointment, id: undefined });
+        toast({ title: 'Appointment Set', description: `Appointment with ${appointment.contactName} has been scheduled.` });
+    }
     setAppointmentToEdit(null);
   };
 
-  const handleDeleteAppointment = (id: string) => {
-    setAppointmentsData(prev => prev.filter(a => a.id !== id));
+  const handleDeleteAppointment = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(firestore, 'users', user.uid, 'appointments', id));
+    toast({ title: 'Appointment Deleted', variant: 'destructive' });
   };
   
   const handleReschedule = (appointment: Appointment) => {
@@ -81,12 +65,11 @@ function AppointmentsPageContent() {
       setNewStatus(status);
   };
 
-  const handleUpdateStatus = (appointmentId: string, status: AppointmentStatus, notes?: string) => {
-      setAppointmentsData(prev => prev.map(a => 
-          a.id === appointmentId 
-              ? { ...a, status, notes: notes || a.notes } 
-              : a
-      ));
+  const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
+      if (!user) return;
+      const docRef = doc(firestore, 'users', user.uid, 'appointments', appointmentId);
+      await setDoc(docRef, { status, notes: notes || '' }, { merge: true });
+      toast({ title: 'Appointment Updated', description: `Status has been changed to ${status}.` });
   };
 
   const statusConfig: { [key in AppointmentStatus]: { variant: 'default' | 'secondary' | 'destructive', icon?: React.ComponentType<{ className?: string }> } } = {
@@ -95,12 +78,16 @@ function AppointmentsPageContent() {
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
 
-  const filteredAppointments = typeFilter 
-    ? appointmentsData.filter(a => a.contactType === typeFilter)
-    : appointmentsData;
+  const filteredAppointments = useMemo(() => {
+    if (!appointmentsData) return [];
+    if (typeFilter) {
+      return appointmentsData.filter(a => a.contactType === typeFilter);
+    }
+    return appointmentsData;
+  }, [appointmentsData, typeFilter]);
 
-  const buyerAppointments = appointmentsData.filter(a => a.contactType === 'Buyer');
-  const ownerAppointments = appointmentsData.filter(a => a.contactType === 'Owner');
+  const buyerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Buyer'), [filteredAppointments]);
+  const ownerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Owner'), [filteredAppointments]);
 
   const renderAppointmentCard = (appt: Appointment) => {
     const currentStatus = statusConfig[appt.status];
@@ -175,7 +162,7 @@ function AppointmentsPageContent() {
   const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
      <div>
         <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
-        {appointments.length > 0 ? (
+        {isLoading ? <p className="text-muted-foreground">Loading...</p> : appointments.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {appointments.map(renderAppointmentCard)}
             </div>
@@ -236,6 +223,3 @@ export default function AppointmentsPage() {
         </Suspense>
     );
 }
-
-
-    

@@ -8,52 +8,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
-import { properties as initialProperties, buyers as initialBuyers } from '@/lib/data';
+import { Trash2, RotateCcw } from 'lucide-react';
 import type { Property, Buyer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
+
 
 export default function TrashPage() {
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [buyers, setBuyers] = useState<Buyer[]>([]);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
-  useEffect(() => {
-    const savedProperties = localStorage.getItem('properties');
-    setProperties(savedProperties ? JSON.parse(savedProperties) : initialProperties);
+  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
+  
+  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
 
-    const savedBuyers = localStorage.getItem('buyers');
-    setBuyers(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
-  }, []);
-  
-  useEffect(() => {
-      localStorage.setItem('properties', JSON.stringify(properties));
-  }, [properties]);
-  
-  useEffect(() => {
-      localStorage.setItem('buyers', JSON.stringify(buyers));
-  }, [buyers]);
 
-  const deletedProperties = properties.filter(p => p.is_deleted);
-  const deletedBuyers = buyers.filter(b => b.is_deleted);
+  const deletedProperties = properties?.filter(p => p.is_deleted) || [];
+  const deletedBuyers = buyers?.filter(b => b.is_deleted) || [];
   
-  const handleRestoreProperty = (id: string) => {
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, is_deleted: false } : p));
+  const handleRestoreProperty = async (id: string) => {
+    if (!user) return;
+    await setDoc(doc(firestore, 'users', user.uid, 'properties', id), { is_deleted: false }, { merge: true });
     toast({ title: 'Property Restored', description: 'The property has been successfully restored.' });
   };
   
-  const handlePermanentDeleteProperty = (id: string) => {
-    setProperties(prev => prev.filter(p => p.id !== id));
+  const handlePermanentDeleteProperty = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(firestore, 'users', user.uid, 'properties', id));
     toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
   };
   
-  const handleRestoreBuyer = (id: string) => {
-    setBuyers(prev => prev.map(b => b.id === id ? { ...b, is_deleted: false } : b));
+  const handleRestoreBuyer = async (id: string) => {
+    if (!user) return;
+    await setDoc(doc(firestore, 'users', user.uid, 'buyers', id), { is_deleted: false }, { merge: true });
     toast({ title: 'Buyer Restored', description: 'The buyer has been successfully restored.' });
   };
   
-  const handlePermanentDeleteBuyer = (id: string) => {
-    setBuyers(prev => prev.filter(b => b.id !== id));
+  const handlePermanentDeleteBuyer = async (id: string) => {
+    if (!user) return;
+    await deleteDoc(doc(firestore, 'users', user.uid, 'buyers', id));
     toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
   };
 
@@ -97,7 +94,8 @@ export default function TrashPage() {
               <CardTitle>Deleted Properties</CardTitle>
             </CardHeader>
             <CardContent>
-              {deletedProperties.length === 0 ? (
+              {pLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> : 
+              deletedProperties.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No deleted properties.</div>
               ) : (
                 <Table>
@@ -131,7 +129,8 @@ export default function TrashPage() {
               <CardTitle>Deleted Buyers</CardTitle>
             </CardHeader>
             <CardContent>
-               {deletedBuyers.length === 0 ? (
+               {bLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> :
+               deletedBuyers.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No deleted buyers.</div>
               ) : (
                 <Table>

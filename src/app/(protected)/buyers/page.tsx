@@ -4,7 +4,7 @@ import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buyers as initialBuyers, buyerStatuses, followUps as initialFollowUps } from '@/lib/data';
+import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
@@ -24,6 +24,8 @@ import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { useProfile } from '@/context/profile-context';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 
 
 const statusVariant = {
@@ -75,10 +77,16 @@ function BuyersPageContent() {
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
     const activeTab = statusFilterFromURL || 'All';
 
+    const firestore = useFirestore();
+    const { user } = useUser();
+
+    const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+    const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+    
+    const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+    const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
-    const [buyers, setBuyers] = useState<Buyer[]>([]);
-    const [followUps, setFollowUps] = useState<FollowUp[]>([]);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -89,35 +97,6 @@ function BuyersPageContent() {
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
-
-    const loadData = () => {
-        const savedBuyers = localStorage.getItem('buyers');
-        setBuyers(savedBuyers ? JSON.parse(savedBuyers) : initialBuyers);
-
-        const savedFollowUps = localStorage.getItem('followUps');
-        setFollowUps(savedFollowUps ? JSON.parse(savedFollowUps) : initialFollowUps);
-    };
-
-    useEffect(() => {
-        loadData();
-        
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === 'buyers' || event.key === 'followUps') {
-                loadData();
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('buyers', JSON.stringify(buyers));
-    }, [buyers]);
-    
-    useEffect(() => {
-        localStorage.setItem('followUps', JSON.stringify(followUps));
-    }, [followUps]);
 
     useEffect(() => {
         if (!isAddBuyerOpen) {
@@ -158,13 +137,15 @@ function BuyersPageContent() {
         setIsAppointmentOpen(true);
     };
 
-    const handleSaveAppointment = (appointment: Appointment) => {
-        const savedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        localStorage.setItem('appointments', JSON.stringify([appointment, ...savedAppointments]));
+    const handleSaveAppointment = async (appointment: Appointment) => {
+        if (!user) return;
+        await addDoc(collection(firestore, 'users', user.uid, 'appointments'), appointment);
     };
     
-    const handleDelete = (buyerId: string) => {
-        setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, is_deleted: true } : b));
+    const handleDelete = async (buyerId: string) => {
+        if(!user) return;
+        const docRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+        await setDoc(docRef, { is_deleted: true }, { merge: true });
         toast({
             title: "Buyer Moved to Trash",
             description: "You can restore them from the trash page.",
@@ -180,7 +161,8 @@ function BuyersPageContent() {
         setIsFilterPopoverOpen(false);
     };
 
-    const handleStatusChange = (buyerId: string, newStatus: BuyerStatus) => {
+    const handleStatusChange = async (buyerId: string, newStatus: BuyerStatus) => {
+        if (!user || !buyers) return;
         const buyerToUpdate = buyers.find(b => b.id === buyerId);
         if (!buyerToUpdate) return;
         
@@ -188,25 +170,25 @@ function BuyersPageContent() {
             setBuyerForFollowUp(buyerToUpdate);
             setIsFollowUpOpen(true);
         } else {
-            const updatedBuyers = buyers.map(buyer => 
-                buyer.id === buyerId ? { ...buyer, status: newStatus } : buyer
-            );
-            setBuyers(updatedBuyers);
+            const docRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+            await setDoc(docRef, { status: newStatus }, { merge: true });
 
             // If status changed from 'Follow Up', remove from followUps
-            if (buyerToUpdate.status === 'Follow Up') {
-                const updatedFollowUps = followUps.filter(fu => fu.buyerId !== buyerId);
-                setFollowUps(updatedFollowUps);
+            if (buyerToUpdate.status === 'Follow Up' && followUps) {
+                const followUpToDelete = followUps.find(fu => fu.buyerId === buyerId);
+                if (followUpToDelete) {
+                    await deleteDoc(doc(firestore, 'users', user.uid, 'followUps', followUpToDelete.id));
+                }
             }
         }
     };
     
-     const handleSaveFollowUp = (buyerId: string, notes: string, nextReminder: string) => {
+     const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
+        if (!user || !buyers) return;
         const buyer = buyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
-        const newFollowUp: FollowUp = {
-            id: `FU-${Date.now()}`,
+        const newFollowUp: Omit<FollowUp, 'id'> = {
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
@@ -217,14 +199,18 @@ function BuyersPageContent() {
             notes: notes,
         };
         
-        // Use functional updates to ensure we're working with the latest state
-        setFollowUps(prev => {
-            const updatedFollowUps = [...prev.filter(fu => fu.buyerId !== buyerId), newFollowUp];
-            localStorage.setItem('followUps', JSON.stringify(updatedFollowUps));
-            return updatedFollowUps;
-        });
-        
-        setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, status: 'Follow Up', last_follow_up_note: notes } : b));
+        const followUpsCollection = collection(firestore, 'users', user.uid, 'followUps');
+        const buyerDocRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+
+        // Check if a followup for this buyer already exists to update it, otherwise create a new one
+        const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
+        if (existingFollowUp) {
+            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp, { merge: true });
+        } else {
+            await addDoc(followUpsCollection, newFollowUp);
+        }
+
+        await setDoc(buyerDocRef, { status: 'Follow Up', last_follow_up_note: notes }, { merge: true });
         
         toast({
             title: "Follow-up Scheduled",
@@ -236,20 +222,25 @@ function BuyersPageContent() {
     };
 
 
-     const handleSaveBuyer = (buyerData: Buyer) => {
-        setBuyers(prevBuyers => {
-            if (buyerToEdit) {
-                // Update existing buyer
-                return prevBuyers.map(b => b.id === buyerData.id ? buyerData : b);
-            } else {
-                // Add new buyer
-                return [...prevBuyers, buyerData];
-            }
-        });
+     const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'>) => {
+        if (!user) return;
+        const collectionRef = collection(firestore, 'users', user.uid, 'buyers');
+        
+        if (buyerToEdit) {
+            // Update existing buyer
+            const docRef = doc(collectionRef, buyerToEdit.id);
+            await setDoc(docRef, buyerData, { merge: true });
+            toast({ title: 'Buyer Updated' });
+        } else {
+            // Add new buyer
+            await addDoc(collectionRef, buyerData);
+            toast({ title: 'Buyer Added' });
+        }
         setBuyerToEdit(null);
     };
 
     const filteredBuyers = useMemo(() => {
+        if (!buyers) return [];
         let filtered = buyers.filter(b => !b.is_deleted);
 
         // Status filter from URL (Sidebar or Mobile Tabs)
@@ -300,7 +291,9 @@ function BuyersPageContent() {
         router.push(url);
     };
     
-    const renderTable = () => (
+    const renderTable = () => {
+      if (isBuyersLoading) return <p className="p-4 text-center">Loading buyers...</p>
+      return (
         <Table>
             <TableHeader>
                 <TableRow>
@@ -402,9 +395,11 @@ function BuyersPageContent() {
                 ))}
             </TableBody>
         </Table>
-    );
+    )}
 
-    const renderCards = () => (
+    const renderCards = () => {
+      if (isBuyersLoading) return <p className="p-4 text-center">Loading buyers...</p>
+      return (
         <div className="space-y-4">
             {filteredBuyers.map(buyer => (
                 <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
@@ -514,7 +509,7 @@ function BuyersPageContent() {
                 </Card>
             ))}
         </div>
-    );
+    )};
 
   return (
     <>
@@ -684,7 +679,7 @@ function BuyersPageContent() {
        <AddBuyerDialog 
           isOpen={isAddBuyerOpen} 
           setIsOpen={setIsAddBuyerOpen} 
-          totalBuyers={buyers.length}
+          totalBuyers={buyers?.length || 0}
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
@@ -726,8 +721,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    
-
-    
-

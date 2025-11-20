@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -34,6 +34,8 @@ import { PerformanceChart } from '@/components/performance-chart';
 import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { TeamPerformanceChart } from '@/components/team-performance-chart';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 type KpiData = {
   id: string;
@@ -47,38 +49,22 @@ type KpiData = {
 
 export default function DashboardPage() {
   const { currency } = useCurrency();
-  const [kpiData, setKpiData] = useState<KpiData[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [buyers, setBuyers] = useState<Buyer[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
-  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const firestore = useFirestore();
+  const { user } = useUser();
+  
+  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const appointmentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'appointments') : null, [user, firestore]);
+  const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+  const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
 
-  useEffect(() => {
-    const loadData = () => {
-        try {
-            setProperties(JSON.parse(localStorage.getItem('properties') || '[]'));
-            setBuyers(JSON.parse(localStorage.getItem('buyers') || '[]'));
-            setAppointments(JSON.parse(localStorage.getItem('appointments') || '[]'));
-            setFollowUps(JSON.parse(localStorage.getItem('followUps') || '[]'));
-            setTeamMembers(JSON.parse(localStorage.getItem('teamMembers') || '[]'));
-        } catch (e) {
-            console.error("Failed to parse data from localStorage", e);
-        }
-    };
-    loadData();
+  const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
+  const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
+  const { data: appointments, isLoading: aLoading } = useCollection<Appointment>(appointmentsQuery);
+  const { data: followUps, isLoading: fLoading } = useCollection<FollowUp>(followUpsQuery);
+  const { data: teamMembers, isLoading: tLoading } = useCollection<User>(teamMembersQuery);
 
-    const handleStorageChange = (e: StorageEvent) => {
-        if (['properties', 'buyers', 'appointments', 'followUps', 'teamMembers'].includes(e.key || '')) {
-            loadData();
-        }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
+  const kpiData: KpiData[] = useMemo(() => {
     const now = new Date();
     const last30Days = subDays(now, 30);
     
@@ -92,38 +78,43 @@ export default function DashboardPage() {
         const percentageChange = ((current - previous) / previous) * 100;
         return percentageChange > 0 ? `+${percentageChange.toFixed(1)}%` : `${percentageChange.toFixed(1)}%`;
     }
+    
+    const safeProperties = properties || [];
+    const safeBuyers = buyers || [];
+    const safeAppointments = appointments || [];
+    const safeFollowUps = followUps || [];
 
-    const propertiesInLast30Days = properties.filter(p => p.created_at && isWithinInterval(new Date(p.created_at), { start: last30Days, end: now })).length;
-    const previousPropertiesCount = properties.length - propertiesInLast30Days;
+    const propertiesInLast30Days = safeProperties.filter(p => p.created_at && isWithinInterval(new Date(p.created_at), { start: last30Days, end: now })).length;
+    const previousPropertiesCount = safeProperties.length - propertiesInLast30Days;
     
-    const buyersInLast30Days = buyers.filter(b => b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length;
-    const previousBuyersCount = buyers.length - buyersInLast30Days;
+    const buyersInLast30Days = safeBuyers.filter(b => b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length;
+    const previousBuyersCount = safeBuyers.length - buyersInLast30Days;
     
-    const soldInLast30Days = properties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: last30Days, end: now }));
-    const totalSoldCount = properties.filter(p => p.status === 'Sold').length;
+    const soldInLast30Days = safeProperties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: last30Days, end: now }));
+    const totalSoldCount = safeProperties.filter(p => p.status === 'Sold').length;
     const previousSoldCount = totalSoldCount - soldInLast30Days.length;
     
     const revenueInLast30Days = soldInLast30Days.reduce((acc, p) => acc + (p.sold_price || 0), 0);
-    const totalRevenue = properties.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
+    const totalRevenue = safeProperties.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
     const previousRevenue = totalRevenue - revenueInLast30Days;
 
 
-    const updatedKpiData: KpiData[] = [
+    return [
       {
         id: 'total-properties',
         title: 'Total Properties',
-        value: properties.length.toString(),
+        value: safeProperties.length.toString(),
         icon: Building2,
         color: 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300',
-        change: getChange(properties.length, previousPropertiesCount),
+        change: getChange(propertiesInLast30Days, previousPropertiesCount),
       },
       {
         id: 'total-buyers',
         title: 'Total Buyers',
-        value: buyers.length.toString(),
+        value: safeBuyers.length.toString(),
         icon: Users,
         color: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
-        change: getChange(buyers.length, previousBuyersCount),
+        change: getChange(buyersInLast30Days, previousBuyersCount),
       },
       {
         id: 'properties-sold',
@@ -144,39 +135,39 @@ export default function DashboardPage() {
        {
         id: 'interested-buyers',
         title: 'Interested Buyers',
-        value: buyers.filter((b: any) => b.status === 'Interested').length.toString(),
+        value: safeBuyers.filter((b: any) => b.status === 'Interested').length.toString(),
         icon: Star,
         color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
-        change: `${buyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${safeBuyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'hot-leads',
         title: 'Hot Leads',
-        value: buyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
+        value: safeBuyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
         icon: Flame,
         color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
-        change: `${buyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${safeBuyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'follow-up-leads',
         title: 'Follow-up Leads',
-        value: followUps.length.toString(),
+        value: safeFollowUps.length.toString(),
         icon: PhoneForwarded,
         color: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300',
-        change: `${followUps.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
+        change: `${safeFollowUps.filter((f: any) => new Date(f.nextReminder) <= now).length} due`,
       },
        {
         id: 'appointments-month',
         title: 'Appointments (30d)',
-        value: appointments.filter((a: any) => a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CalendarDays,
         color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
-        change: `${appointments.filter((a: any) => a.status === 'Scheduled' && a.date && new Date(a.date) >= now).length} upcoming`,
+        change: `${safeAppointments.filter((a: any) => a.status === 'Scheduled' && a.date && new Date(a.date) >= now).length} upcoming`,
       },
        {
         id: 'completed-month',
         title: 'Completed (30d)',
-        value: appointments.filter((a: any) => a.status === 'Completed' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.status === 'Completed' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CheckCheck,
         color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
         change: 'Keep it up!',
@@ -184,45 +175,53 @@ export default function DashboardPage() {
         {
         id: 'cancelled-month',
         title: 'Cancelled (30d)',
-        value: appointments.filter((a: any) => a.status === 'Cancelled' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.status === 'Cancelled' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
         icon: XCircle,
         color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300',
         change: 'Review reasons',
       },
     ];
 
-    setKpiData(updatedKpiData);
-
   }, [currency, properties, buyers, appointments, followUps]);
   
+  const isLoading = pLoading || bLoading || aLoading || fLoading || tLoading;
+
   return (
     <div className="flex flex-col gap-8">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {kpiData.map((kpi) => (
-          <Card key={kpi.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-               <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
-                 <kpi.icon className="h-4 w-4" />
-               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{kpi.value}</div>
-              <p className={cn(
-                "text-xs text-muted-foreground",
-                kpi.change.startsWith('+') && "text-green-600",
-                kpi.change.startsWith('-') && "text-red-600"
-              )}>
-                {kpi.change}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+       {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <Card key={i} className="h-[108px] animate-pulse bg-muted/50" />
+            ))}
+        </div>
+       ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {kpiData.map((kpi) => (
+              <Card key={kpi.id}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+                   <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
+                     <kpi.icon className="h-4 w-4" />
+                   </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{kpi.value}</div>
+                  <p className={cn(
+                    "text-xs text-muted-foreground",
+                    kpi.change.startsWith('+') && "text-green-600",
+                    kpi.change.startsWith('-') && "text-red-600"
+                  )}>
+                    {kpi.change}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+       )}
       <div className="grid grid-cols-1 gap-8">
-        <PerformanceChart properties={properties} />
-        <AnalyticsChart buyers={buyers} />
-        <TeamPerformanceChart teamMembers={teamMembers} />
+        <PerformanceChart properties={properties || []} />
+        <AnalyticsChart buyers={buyers || []} />
+        <TeamPerformanceChart teamMembers={teamMembers || []} />
       </div>
     </div>
   );

@@ -3,7 +3,6 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { activities as initialActivities } from '@/lib/data';
 import { formatDistanceToNow } from 'date-fns';
 import {
   FilePlus,
@@ -15,6 +14,8 @@ import {
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Activity } from '@/lib/types';
+import { useCollection, useFirestore, useUser } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -28,14 +29,17 @@ const getActionIcon = (action: string) => {
 
 export default function ActivitiesPage() {
   const [isMounted, setIsMounted] = useState(false);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const firestore = useFirestore();
+  const { user } = useUser();
+
+  const activitiesQuery = user ? query(collection(firestore, 'users', user.uid, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null;
+  const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
 
   useEffect(() => {
     setIsMounted(true);
-    // In a real app, you'd fetch this from a server or have a more robust local storage strategy
-    const savedActivities = localStorage.getItem('activities');
-    setActivities(savedActivities ? JSON.parse(savedActivities) : initialActivities);
   }, []);
+
+  const sortedActivities = activities ? [...activities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) : [];
 
   return (
     <div className="space-y-6">
@@ -51,9 +55,14 @@ export default function ActivitiesPage() {
       <Card>
         <CardContent className="p-0">
           <div className="flow-root">
-          {activities.length > 0 ? (
+          {isLoading && <div className="text-center py-20 text-muted-foreground">Loading activities...</div>}
+          {!isLoading && (!sortedActivities || sortedActivities.length === 0) ? (
+                <div className="text-center py-20 text-muted-foreground">
+                    No activities recorded yet.
+                </div>
+            ) : (
             <ul className="divide-y divide-border">
-              {activities.map((activity, activityIdx) => (
+              {sortedActivities.map((activity) => (
                 <li key={activity.id} className="relative p-6 hover:bg-accent/50 transition-colors">
                   <div className="relative flex items-start gap-4">
                      <div className="absolute left-6 top-6 h-full w-px bg-border -translate-x-1/2" aria-hidden="true" />
@@ -88,10 +97,6 @@ export default function ActivitiesPage() {
                 </li>
               ))}
             </ul>
-            ) : (
-                <div className="text-center py-20 text-muted-foreground">
-                    No activities recorded yet.
-                </div>
             )}
           </div>
         </CardContent>

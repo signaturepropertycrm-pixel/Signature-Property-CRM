@@ -18,7 +18,7 @@ interface AddBuyerDialogProps {
     setIsOpen: (open: boolean) => void;
     totalBuyers: number;
     buyerToEdit?: Buyer | null;
-    onSave: (buyer: Buyer) => void;
+    onSave: (buyer: Omit<Buyer, 'id'>) => void;
 }
 
 export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerDialogProps) {
@@ -37,5 +37,3 @@ export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit, on
     </Dialog>
   );
 }
-
-    

@@ -18,7 +18,7 @@ import { useEffect } from 'react';
 interface AddPropertyDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    onSave: (property: Property) => void;
+    onSave: (property: Omit<Property, 'id'>) => void;
     propertyToEdit: Property | null;
     totalProperties: number;
 }

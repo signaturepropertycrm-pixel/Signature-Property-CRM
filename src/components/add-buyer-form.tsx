@@ -29,6 +29,7 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { buyerStatuses } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
+import { useUser } from '@/firebase';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
@@ -55,6 +56,7 @@ const formSchema = z.object({
   budget_max_unit: z.enum(priceUnits).optional(),
   notes: z.string().optional(),
   created_at: z.string().optional(),
+  created_by: z.string().optional(),
 });
 
 type AddBuyerFormValues = z.infer<typeof formSchema>;
@@ -63,10 +65,10 @@ interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
   totalBuyers: number;
   buyerToEdit?: Buyer | null;
-  onSave: (buyer: Buyer) => void;
+  onSave: (buyer: Omit<Buyer, 'id'>) => void;
 }
 
-const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined): AddBuyerFormValues => {
+const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string): AddBuyerFormValues => {
     if (buyerToEdit) {
         return {
             ...buyerToEdit,
@@ -88,7 +90,6 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         };
     }
     return {
-        id: `B-${totalBuyers + 1}`,
         name: '',
         phone: '',
         email: '',
@@ -107,37 +108,34 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         budget_min_amount: undefined,
         budget_max_amount: undefined,
         created_at: new Date().toISOString(),
+        created_by: userId || '',
     };
 };
 
 
 export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerFormProps) {
   const { toast } = useToast();
+  const { user } = useUser();
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit)
+    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit, user?.uid)
   });
 
   const { reset } = form;
 
   useEffect(() => {
-    reset(getInitialFormValues(totalBuyers, buyerToEdit));
-  }, [buyerToEdit, totalBuyers, reset]);
+    reset(getInitialFormValues(totalBuyers, buyerToEdit, user?.uid));
+  }, [buyerToEdit, totalBuyers, user, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
      const buyerData = {
-        ...buyerToEdit,
         ...values,
-        id: buyerToEdit?.id || `B-${totalBuyers + 1}`,
         serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
-    } as Buyer;
+        created_by: buyerToEdit?.created_by || user?.uid || '',
+    };
     onSave(buyerData);
-    toast({
-      title: buyerToEdit ? 'Buyer Updated' : 'Buyer Added',
-      description: `Buyer "${values.name}" has been successfully ${buyerToEdit ? 'updated' : 'added'}.`,
-    });
     setDialogOpen(false);
   }
 
@@ -236,7 +234,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Property Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ''}>
                             <FormControl>
                                 <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                             </FormControl>

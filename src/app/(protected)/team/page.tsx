@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { teamMembers as initialTeamMembers } from '@/lib/data';
 import { UserPlus, HandCoins, Users, CalendarCheck, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react';
 import type { User } from '@/lib/types';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
@@ -16,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 
 
 const roleVariant = {
@@ -36,25 +37,16 @@ const StatItem = ({ icon: Icon, value, label }: { icon: React.ElementType, value
 
 
 export default function TeamPage() {
-    const [teamMembers, setTeamMembers] = useState<User[]>([]);
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
+    const { data: teamMembers, isLoading } = useCollection<User>(teamMembersQuery);
+
     const [selectedMember, setSelectedMember] = useState<User | null>(null);
     const [memberToEdit, setMemberToEdit] = useState<User | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const { toast } = useToast();
-
-    useEffect(() => {
-        const savedTeamMembers = localStorage.getItem('teamMembers');
-        if (savedTeamMembers) {
-            setTeamMembers(JSON.parse(savedTeamMembers));
-        } else {
-            setTeamMembers(initialTeamMembers); // This will be an empty array
-        }
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('teamMembers', JSON.stringify(teamMembers));
-    }, [teamMembers]);
 
     useEffect(() => {
         if (!isAddMemberOpen) {
@@ -77,8 +69,9 @@ export default function TeamPage() {
         setIsAddMemberOpen(true);
     };
 
-    const handleDeleteMember = (memberId: string) => {
-        setTeamMembers(prev => prev.filter(m => m.id !== memberId));
+    const handleDeleteMember = async (memberId: string) => {
+        if (!user) return;
+        await deleteDoc(doc(firestore, 'users', user.uid, 'teamMembers', memberId));
         toast({
             title: "Member Deleted",
             description: "The team member has been removed.",
@@ -86,11 +79,15 @@ export default function TeamPage() {
         });
     };
 
-    const handleSaveMember = (member: User) => {
+    const handleSaveMember = async (member: Omit<User, 'id'>) => {
+        if (!user) return;
+        const collectionRef = collection(firestore, 'users', user.uid, 'teamMembers');
         if (memberToEdit) {
-            setTeamMembers(prev => prev.map(m => m.id === member.id ? member : m));
+            await setDoc(doc(collectionRef, memberToEdit.id), member);
+            toast({ title: 'Member Updated' });
         } else {
-            setTeamMembers(prev => [...prev, { ...member, id: `TM-${Date.now()}` }]);
+            await addDoc(collectionRef, member);
+            toast({ title: 'Member Added' });
         }
     };
 
@@ -106,8 +103,9 @@ export default function TeamPage() {
                 <Button className="glowing-btn" onClick={handleAddMemberClick}><UserPlus/> Add Team Member</Button>
             </div>
 
+            {isLoading ? <p>Loading team members...</p> : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {teamMembers.map(member => (
+                {teamMembers && teamMembers.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
                         <CardHeader className="flex-row items-center justify-between">
                             <Badge variant={roleVariant[member.role]} className="capitalize">{member.role}</Badge>
@@ -144,6 +142,7 @@ export default function TeamPage() {
                     </Card>
                 ))}
             </div>
+            )}
         </div>
         {selectedMember && (
             <TeamMemberDetailsDialog
