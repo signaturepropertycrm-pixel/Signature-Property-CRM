@@ -27,10 +27,10 @@ import {
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { ProfileProvider, useProfile } from '@/context/profile-context';
+import { useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -81,26 +81,24 @@ function SignupPageContent() {
         // This user is the admin of their agency, so their agency_id is their own UID.
         const agencyId = user.uid;
 
-        // Create the user document in Firestore for the admin user
-        await setDoc(userDocRef, {
+        const newProfileData = {
             id: user.uid,
             name: values.name,
             email: values.email,
-            role: 'Admin', // New users are Admins
-            agency_id: agencyId, // The admin's agency is identified by their own UID
+            role: 'Admin' as const, 
+            agency_id: agencyId, 
             agencyName: values.agencyName,
-            createdAt: new Date().toISOString(),
-        }, { merge: true });
+            createdAt: serverTimestamp(),
+            ownerName: values.name,
+            phone: '',
+            user_id: user.uid,
+        };
+
+        // Create the user document in Firestore for the admin user
+        await setDoc(userDocRef, newProfileData, { merge: true });
 
         // Set the local profile in context and localStorage
-        setProfile({
-            ownerName: values.name,
-            agencyName: values.agencyName,
-            phone: '', // Phone is empty by default
-            role: 'Admin',
-            user_id: user.uid,
-            agency_id: agencyId
-        });
+        setProfile(newProfileData);
       }
 
       toast({
