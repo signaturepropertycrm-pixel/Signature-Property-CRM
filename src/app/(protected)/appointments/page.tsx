@@ -12,11 +12,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams } from 'next/navigation';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { useProfile } from '@/context/profile-context';
 
 
 function AppointmentsPageContent() {
@@ -24,10 +24,10 @@ function AppointmentsPageContent() {
   const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { profile } = useProfile();
   const { toast } = useToast();
 
-  const appointmentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'appointments') : null, [user, firestore]);
+  const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const { data: appointmentsData, isLoading } = useCollection<Appointment>(appointmentsQuery);
 
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
@@ -36,8 +36,8 @@ function AppointmentsPageContent() {
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
 
   const handleSaveAppointment = async (appointment: Appointment) => {
-    if (!user) return;
-    const collectionRef = collection(firestore, 'users', user.uid, 'appointments');
+    if (!profile.agency_id) return;
+    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
     
     if (appointmentToEdit) {
         // It's an update (reschedule)
@@ -53,8 +53,8 @@ function AppointmentsPageContent() {
   };
 
   const handleDeleteAppointment = async (id: string) => {
-    if (!user) return;
-    await deleteDoc(doc(firestore, 'users', user.uid, 'appointments', id));
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'appointments', id));
     toast({ title: 'Appointment Deleted', variant: 'destructive' });
   };
   
@@ -69,8 +69,8 @@ function AppointmentsPageContent() {
   };
 
   const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
-      if (!user) return;
-      const docRef = doc(firestore, 'users', user.uid, 'appointments', appointmentId);
+      if (!profile.agency_id) return;
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'appointments', appointmentId);
       await setDoc(docRef, { status, notes: notes || '' }, { merge: true });
       toast({ title: 'Appointment Updated', description: `Status has been changed to ${status}.` });
   };

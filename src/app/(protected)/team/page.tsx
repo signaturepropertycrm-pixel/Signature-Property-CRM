@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, deleteDoc, writeBatch, serverTimestamp, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -96,9 +96,11 @@ export default function TeamPage() {
         
         const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
         const userDocRef = doc(firestore, 'users', member.id);
+        const roleIndicatorRef = doc(firestore, member.role === 'Agent' ? 'roles_agent' : 'roles_editor', member.id);
         
         batch.delete(teamMemberRef);
         batch.delete(userDocRef);
+        batch.delete(roleIndicatorRef);
         
         await batch.commit();
 
@@ -121,11 +123,18 @@ export default function TeamPage() {
             const batch = writeBatch(firestore);
             const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
             const userDocRef = doc(firestore, 'users', memberToEdit.id);
+            const oldRoleIndicatorRef = doc(firestore, memberToEdit.role === 'Agent' ? 'roles_agent' : 'roles_editor', memberToEdit.id);
+            const newRoleIndicatorRef = doc(firestore, memberData.role === 'Agent' ? 'roles_agent' : 'roles_editor', memberData.role);
             
             const updatedData = { name: memberData.name, phone: memberData.phone, role: memberData.role };
 
             batch.update(userDocRef, { role: memberData.role, name: memberData.name, phone: memberData.phone });
             batch.update(teamMemberRef, updatedData);
+
+            if(memberToEdit.role !== memberData.role){
+                batch.delete(oldRoleIndicatorRef);
+                batch.set(newRoleIndicatorRef, { uid: memberToEdit.id });
+            }
 
             try {
                 await batch.commit();
@@ -148,27 +157,32 @@ export default function TeamPage() {
 
             const batch = writeBatch(firestore);
 
+            // 1. Create user document
             const newUserDocRef = doc(firestore, 'users', newUID);
             batch.set(newUserDocRef, {
                 id: newUID,
                 name: memberData.name,
                 email: memberData.email,
-                phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id, // Crucial: Assign the admin's agency ID
+                agency_id: profile.agency_id,
                 createdAt: serverTimestamp(),
             });
 
+            // 2. Create team member document inside agency
             const teamMemberDocRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', newUID);
             batch.set(teamMemberDocRef, {
                 id: newUID,
                 name: memberData.name,
                 email: memberData.email,
-                phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id,
-                stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
+                createdBy: currentUser.uid,
+                createdAt: serverTimestamp(),
             });
+
+            // 3. Create role indicator document
+            const roleCollection = memberData.role === 'Agent' ? 'roles_agent' : 'roles_editor';
+            const roleIndicatorRef = doc(firestore, roleCollection, newUID);
+            batch.set(roleIndicatorRef, { uid: newUID });
             
             await batch.commit();
             
@@ -195,10 +209,15 @@ export default function TeamPage() {
             email: currentUser.email || '',
             role: 'Admin',
             agency_id: profile.agency_id,
-            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
+            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
         };
         
-        return teamMembersData ? [adminAsMember, ...teamMembersData] : [adminAsMember];
+        const otherMembers = teamMembersData?.map(member => ({
+            ...member,
+            stats: member.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
+        })) || [];
+        
+        return [adminAsMember, ...otherMembers];
 
     }, [currentUser, profile, teamMembersData, isProfileLoading]);
     

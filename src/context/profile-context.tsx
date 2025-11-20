@@ -42,18 +42,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
+  // This hook now correctly points to the user's own profile document
   const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: firestoreProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
+
+  // This will try to get the full agency document if the user is an admin
+  const agencyDocRef = useMemoFirebase(() => (firestoreProfile?.role === 'Admin' ? doc(firestore, 'agencies', firestoreProfile.agency_id) : null), [firestoreProfile, firestore]);
+  const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
+  
 
   const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Effect to load profile from localStorage on initial mount
   useEffect(() => {
     if (!isInitialized) {
         try {
             const savedProfile = localStorage.getItem('app-profile');
             if (savedProfile) {
                 const parsedProfile = JSON.parse(savedProfile);
+                // Ensure there's at least a default role if localStorage is somehow malformed
+                if (!parsedProfile.role) parsedProfile.role = 'Agent';
                 setProfileState(parsedProfile);
             }
         } catch (error) {
@@ -63,38 +72,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized]);
 
+  // Effect to update profile state when firestore data changes
   useEffect(() => {
     if (firestoreProfile) {
         const newProfileData: ProfileData = {
-            agencyName: firestoreProfile.agencyName || profile.agencyName || 'My Agency',
+            agencyName: agencyProfile?.name || profile.agencyName || 'My Agency',
             ownerName: firestoreProfile.name || user?.displayName || 'User',
             phone: firestoreProfile.phone || '',
-            // Important: Prioritize Firestore role, then local state, then default.
             role: firestoreProfile.role || profile.role || 'Agent', 
             avatar: user?.photoURL || firestoreProfile.avatar || '',
             user_id: firestoreProfile.id,
-            agency_id: firestoreProfile.agency_id,
+            agency_id: firestoreProfile.agency_id, // This is CRITICAL
         };
-        setProfileState(newProfileData);
+        
+        // Prevent setting state if data is identical to avoid loops
+        if (JSON.stringify(newProfileData) !== JSON.stringify(profile)) {
+            setProfileState(newProfileData);
+            try {
+                localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+            } catch (error) {
+                console.error("Failed to save profile to localStorage", error);
+            }
+        }
+    }
+  }, [firestoreProfile, agencyProfile, user, profile]);
+
+  const setProfile = (newProfile: Partial<ProfileData>) => {
+    setProfileState(prevProfile => {
+        const updatedProfile = { ...prevProfile, ...newProfile };
         try {
-            localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+            localStorage.setItem('app-profile', JSON.stringify(updatedProfile));
         } catch (error) {
             console.error("Failed to save profile to localStorage", error);
         }
-    }
-  }, [firestoreProfile, user]);
-
-  const setProfile = (newProfile: Partial<ProfileData>) => {
-    const updatedProfile = { ...profile, ...newProfile };
-    setProfileState(updatedProfile);
-    try {
-        localStorage.setItem('app-profile', JSON.stringify(updatedProfile));
-    } catch (error) {
-        console.error("Failed to save profile to localStorage", error);
-    }
+        return updatedProfile;
+    });
   };
 
-  const isLoading = isAuthLoading || isProfileLoading || !isInitialized;
+  const isLoading = isAuthLoading || isProfileLoading || isAgencyLoading || !isInitialized;
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>

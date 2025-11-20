@@ -12,21 +12,21 @@ import { Trash2, RotateCcw } from 'lucide-react';
 import type { Property, Buyer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { useProfile } from '@/context/profile-context';
 
 
 export default function TrashPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { profile } = useProfile();
 
-  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
   
-  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
 
 
@@ -34,26 +34,26 @@ export default function TrashPage() {
   const deletedBuyers = buyers?.filter(b => b.is_deleted) || [];
   
   const handleRestoreProperty = async (id: string) => {
-    if (!user) return;
-    await setDoc(doc(firestore, 'users', user.uid, 'properties', id), { is_deleted: false }, { merge: true });
+    if (!profile.agency_id) return;
+    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', id), { is_deleted: false }, { merge: true });
     toast({ title: 'Property Restored', description: 'The property has been successfully restored.' });
   };
   
   const handlePermanentDeleteProperty = async (id: string) => {
-    if (!user) return;
-    await deleteDoc(doc(firestore, 'users', user.uid, 'properties', id));
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', id));
     toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
   };
   
   const handleRestoreBuyer = async (id: string) => {
-    if (!user) return;
-    await setDoc(doc(firestore, 'users', user.uid, 'buyers', id), { is_deleted: false }, { merge: true });
+    if (!profile.agency_id) return;
+    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', id), { is_deleted: false }, { merge: true });
     toast({ title: 'Buyer Restored', description: 'The buyer has been successfully restored.' });
   };
   
   const handlePermanentDeleteBuyer = async (id: string) => {
-    if (!user) return;
-    await deleteDoc(doc(firestore, 'users', user.uid, 'buyers', id));
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', id));
     toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
   };
 

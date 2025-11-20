@@ -11,20 +11,20 @@ import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { useProfile } from '@/context/profile-context';
 
 
 export default function FollowUpsPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { profile } = useProfile();
 
-  const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+  const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
   const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
   
-  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: buyersData, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
   
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -95,8 +95,8 @@ export default function FollowUpsPage() {
   };
 
   const handleSaveAppointment = async (appointment: Appointment) => {
-      if (!user) return;
-      await addDoc(collection(firestore, 'users', user.uid, 'appointments'), appointment);
+      if (!profile.agency_id) return;
+      await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment);
   };
   
   const handleOpenStatusUpdate = (e: React.MouseEvent, followUp: FollowUp) => {
@@ -109,9 +109,9 @@ export default function FollowUpsPage() {
   };
 
   const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
-        if (!user || !buyersData) return;
+        if (!profile.agency_id || !buyersData) return;
         const buyer = buyersData.find(b => b.id === buyerId);
-        if (!buyer || !buyer.agency_id) return;
+        if (!buyer) return;
 
         const newFollowUp: Omit<FollowUp, 'id'> = {
             buyerId: buyer.id,
@@ -122,10 +122,10 @@ export default function FollowUpsPage() {
             nextReminder: nextReminder,
             status: 'Scheduled',
             notes: notes,
-            agency_id: buyer.agency_id
+            agency_id: profile.agency_id
         };
         
-        const followUpsCollection = collection(firestore, 'users', user.uid, 'followUps');
+        const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
         const existingFollowUp = followUpsData?.find(fu => fu.buyerId === buyerId);
         if (existingFollowUp) {
             await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp);

@@ -72,7 +72,7 @@ function SignupPageContent() {
       if (user) {
         await updateProfile(user, { displayName: values.name });
 
-        const agencyId = user.uid; // The first user (Admin) defines the agency.
+        const agencyId = user.uid; // The Admin's UID is the agency ID
         
         const newProfileData = {
             id: user.uid,
@@ -95,20 +95,17 @@ function SignupPageContent() {
              name: values.name,
              email: values.email,
              role: 'Admin',
-             agency_id: agencyId,
-             agencyName: values.agencyName,
-             ownerName: values.name,
-             phone: '',
+             agency_id: agencyId, // Critical: user belongs to their own agency
              createdAt: serverTimestamp(),
         });
         
-        // 2. Create the agency document
+        // 2. Create the agency document, owned by this user
         const agencyDocRef = doc(firestore, 'agencies', agencyId);
         batch.set(agencyDocRef, {
             id: agencyId,
             name: values.agencyName,
             ownerId: user.uid,
-            ownerName: values.name,
+            createdBy: user.uid, // Explicitly set createdBy
             createdAt: serverTimestamp(),
         });
         

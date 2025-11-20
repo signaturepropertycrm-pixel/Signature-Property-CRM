@@ -108,21 +108,21 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
         <SidebarProvider>
-            <AuthGuard>
-              <div className="flex h-screen w-full bg-background">
-              <AppSidebar />
-              <div className="flex flex-col flex-1 overflow-hidden">
-                  <AppHeader 
-                  searchable={isSearchable}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  />
-                  <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <div className="flex h-screen w-full bg-background">
+          <AppSidebar />
+          <div className="flex flex-col flex-1 overflow-hidden">
+              <AppHeader 
+              searchable={isSearchable}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              />
+              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                <AuthGuard>
                   {children}
-                  </main>
-              </div>
-              </div>
-            </AuthGuard>
+                </AuthGuard>
+              </main>
+          </div>
+          </div>
         </SidebarProvider>
     </SearchContext.Provider>
   );
@@ -136,13 +136,13 @@ export default function ProtectedLayout({
 }) {
   return (
     <FirebaseClientProvider>
-      <CurrencyProvider>
-        <ProfileProvider>
-            <ProtectedLayoutContent>
-                {children}
-            </ProtectedLayoutContent>
-        </ProfileProvider>
-      </CurrencyProvider>
+      <ProfileProvider>
+        <CurrencyProvider>
+              <ProtectedLayoutContent>
+                  {children}
+              </ProtectedLayoutContent>
+        </CurrencyProvider>
+      </ProfileProvider>
     </FirebaseClientProvider>
   )
 }

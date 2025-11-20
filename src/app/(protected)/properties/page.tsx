@@ -66,7 +66,6 @@ import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -109,8 +108,7 @@ function PropertiesPageContent() {
   const { currency } = useCurrency();
 
   const firestore = useFirestore();
-  const { user } = useUser();
-  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const { data: properties, isLoading } = useCollection<Property>(propertiesQuery);
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -247,26 +245,26 @@ function PropertiesPageContent() {
   };
   
   const handleSaveAppointment = async (appointment: Appointment) => {
-      if (!user) return;
-      const collectionRef = collection(firestore, 'users', user.uid, 'appointments');
+      if (!profile.agency_id) return;
+      const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
       await addDoc(collectionRef, appointment);
   };
 
   const handleUnmarkRecorded = async (prop: Property) => {
-      if (!user) return;
-      const docRef = doc(firestore, 'users', user.uid, 'properties', prop.id);
+      if (!profile.agency_id) return;
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
       await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-      if (!user) return;
-      const docRef = doc(firestore, 'users', user.uid, 'properties', updatedProperty.id);
+      if (!profile.agency_id) return;
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
       await setDoc(docRef, updatedProperty, { merge: true });
   };
   
   const handleDelete = async (propertyId: string) => {
-    if (!user) return;
-    const docRef = doc(firestore, 'users', user.uid, 'properties', propertyId);
+    if (!profile.agency_id) return;
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propertyId);
     await setDoc(docRef, { is_deleted: true }, { merge: true });
     toast({
         title: "Property Moved to Trash",
@@ -275,8 +273,8 @@ function PropertiesPageContent() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'>) => {
-    if (!user || !profile.agency_id) return;
-    const collectionRef = collection(firestore, 'users', user.uid, 'properties');
+    if (!profile.agency_id) return;
+    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
     
     const dataToSave = {
         ...propertyData,

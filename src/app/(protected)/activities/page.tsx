@@ -18,6 +18,8 @@ import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { useProfile } from '@/context/profile-context';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -32,10 +34,13 @@ const getActionIcon = (action: string) => {
 export default function ActivitiesPage() {
   const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { profile } = useProfile();
 
-  // Updated query to point to the user-specific activityLogs subcollection
-  const activitiesQuery = user ? query(collection(firestore, 'users', user.uid, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null;
+  // Updated query to point to the agency-specific activityLogs subcollection
+  const activitiesQuery = useMemoFirebase(() => 
+    profile.agency_id ? query(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null,
+    [firestore, profile.agency_id]
+  );
   const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
 
   useEffect(() => {

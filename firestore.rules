@@ -1,163 +1,68 @@
-/**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for most data, with admin overrides for specific collections.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles. Only the user themselves can read or write their profile.
- * - /users/{userId}/properties/{propertyId}: Stores properties created by each user. Only the creating user can manage their properties.
- * - /users/{userId}/buyers/{buyerId}: Stores buyer information created by each user. Only the creating user can manage their buyers.
- * - /users/{userId}/appointments/{appointmentId}: Stores appointment data related to users (agents).
- * - /users/{userId}/teamMembers/{memberId}: Stores team member data for a user.
- * - /users/{userId}/followUps/{followUpId}: Stores follow-up actions assigned to users.
- * - /transactions/{transactionId}: Stores transaction data. Only admins can manage transactions.
- * - /activityLogs/{activityLogId}: Stores activity logs. Only admins can read activity logs.
- * - /roles_admin/{userId}: Indicates admin privileges. The existence of a document grants admin privileges to the corresponding user.
- *
- * Key Security Decisions:
- * - User listing is disallowed for privacy.
- * - Admin role is checked via the existence of a document in the `/roles_admin/{userId}` collection.
- * - Data validation is relaxed in this prototyping phase.
- *
- * Denormalization for Authorization:
- * - The `properties`, `buyers`, `appointments` and `followUps` subcollections under `/users/{userId}` include the `createdBy` and other user ID fields. This eliminates the need for `get()` calls in security rules to check parent document properties, enabling atomic operations.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Checks if the current user is signed in.
-     * @example isSignedIn() == true if request.auth != null
-     */
-    function isSignedIn() {
-      return request.auth != null;
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isExistingOwner(userId) { return isOwner(userId) && resource != null; }
+    function isAdmin()  { return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));  }
+    function isAgent()  { return isSignedIn() && exists(/databases/$(database)/documents/roles_agent/$(request.auth.uid));  }
+    function isEditor() { return isSignedIn() && exists(/databases/$(database)/documents/roles_editor/$(request.auth.uid)); }
+
+    // ====== agencies (EXACT collection name) ======
+    match /agencies/{agencyId} {
+      allow get: if isOwner(agencyId);
+      allow list: if isOwner(agencyId);   // <-- OPEN GATE – own agency
+      allow create: if isOwner(agencyId);
+      allow update: if isExistingOwner(agencyId);
+      allow delete: if isExistingOwner(agencyId);
+
+      // ===== sub-collections =====
+      match /teamMembers {
+        allow read, list, write: if isOwner(agencyId);
+      }
+      match /properties/{propertyId} {
+        allow read, list: if isOwner(agencyId);
+        allow create: if isOwner(agencyId) && !isAgent();
+        allow update, delete: if isExistingOwner(agencyId);
+      }
+      match /buyers/{buyerId} {
+        allow read, list: if isOwner(agencyId);
+        allow create: if isOwner(agencyId);
+        allow update: if isExistingOwner(agencyId) &&
+                      !(isAgent() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['name','email','phone']));
+        allow delete: if isExistingOwner(agencyId);
+      }
+      match /followUps/{followUpId} {
+        allow read, list, write: if isOwner(agencyId);
+      }
+      match /appointments/{appointmentId} {
+        allow read, list, write: if isOwner(agencyId) || isAdmin();
+      }
     }
 
-    /**
-     * @description Checks if the current user is the owner of the document.
-     * @param {string} userId - The user ID to compare against the request's auth UID.
-     * @example isOwner("someUserId") == (request.auth.uid == "someUserId")
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the current user is the owner of the existing document.
-     * @param {string} userId - The user ID to compare against the request's auth UID.
-     * @example isExistingOwner("someUserId") == (isOwner("someUserId") && resource != null)
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Checks if the current user has admin privileges.
-     * @example isAdmin() == exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))
-     */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * @description Allows access only to the user who owns the resource or to an admin.
-     * @path /users/{userId}
-     * @allow (get) User with ID 'user123' requests their own profile.
-     * @deny (get) User with ID 'user456' requests profile of 'user123'.
-     * @principle Enforces document ownership for reads and writes, with admin creation override.
-     */
+    // ===== old /users (keep for legacy) =====
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false; // User listing is not allowed.
-      allow create: if (isOwner(userId) && request.resource.data.id == request.auth.uid) || isAdmin();
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
-      
-      /**
-       * @description Allows document-level access for the properties sub-collection.
-       */
-      match /properties/{propertyId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      /**
-       * @description Allows document-level access for the buyers sub-collection.
-       */
-      match /buyers/{buyerId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      /**
-       * @description Allows document-level access for the teamMembers sub-collection.
-       */
-      match /teamMembers/{memberId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      /**
-       * @description Allows access only to the user (agent) associated with the appointment or to admins.
-       * @path /users/{userId}/appointments/{appointmentId}
-       */
-      match /appointments/{appointmentId} {
-        allow read, write: if isOwner(userId) || isAdmin();
-      }
-      
-      /**
-       * @description Allows document-level access for the followUps sub-collection.
-       */
-      match /followUps/{followUpId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      /**
-       * @description Rules for the activityLogs sub-collection.
-       */
-      match /activityLogs/{activityLogId} {
-        allow get: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId);
-        allow update: if false;
-        allow delete: if false;
-      }
     }
 
+    // ===== role-indicator docs =====
+    match /roles_admin/{userId}  { allow read, write: if isAdmin(); }
+    match /roles_agent/{userId}  { allow read: if isAdmin() || isOwner(userId);  allow write: if isAdmin(); }
+    match /roles_editor/{userId} { allow read: if isAdmin() || isOwner(userId);  allow write: if isAdmin(); }
 
-    /**
-     * @description Allows access only to admins for managing transactions.
-     * @path /transactions/{transactionId}
-     * @allow (create) Admin creates a new transaction.
-     * @deny (update) Non-admin attempts to update a transaction.
-     * @principle Restricts transaction management to admins.
-     */
+    // ===== admin-only =====
     match /transactions/{transactionId} {
-      allow get: if isAdmin();
-      allow list: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if isAdmin() && resource != null;
-      allow delete: if isAdmin() && resource != null;
+      allow read, write: if isAdmin();
     }
 
-    /**
-     * @description This collection is deprecated in favor of user-specific activity logs.
-     * Rules are set to deny all access for security.
-     * @path /activityLogs/{activityLogId}
-     */
+    // deny deprecated top-level activityLogs
     match /activityLogs/{activityLogId} {
       allow read, write: if false;
-    }
-
-        /**
-     * @description Allows only admins to create a role
-     * @path /roles_admin/{userId}
-     * @allow (create) if the user is an admin
-     * @deny (create) if the user is not an admin
-     * @principle Only admins can create a role
-     */
-    match /roles_admin/{userId} {
-        allow get: if isAdmin();
-        allow list: if isAdmin();
-        allow create: if isAdmin();
-        allow update: if false;
-        allow delete: if isAdmin();
     }
   }
 }

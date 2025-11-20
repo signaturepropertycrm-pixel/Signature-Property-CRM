@@ -24,7 +24,6 @@ import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -81,12 +80,11 @@ function BuyersPageContent() {
     const activeTab = statusFilterFromURL || 'All';
 
     const firestore = useFirestore();
-    const { user } = useUser();
 
-    const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+    const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
     
-    const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+    const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
@@ -141,13 +139,13 @@ function BuyersPageContent() {
     };
 
     const handleSaveAppointment = async (appointment: Appointment) => {
-        if (!user) return;
-        await addDoc(collection(firestore, 'users', user.uid, 'appointments'), appointment);
+        if (!profile.agency_id) return;
+        await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment);
     };
     
     const handleDelete = async (buyerId: string) => {
-        if(!user) return;
-        const docRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+        if(!profile.agency_id) return;
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
         await setDoc(docRef, { is_deleted: true }, { merge: true });
         toast({
             title: "Buyer Moved to Trash",
@@ -165,7 +163,7 @@ function BuyersPageContent() {
     };
 
     const handleStatusChange = async (buyerId: string, newStatus: BuyerStatus) => {
-        if (!user || !buyers) return;
+        if (!profile.agency_id || !buyers) return;
         const buyerToUpdate = buyers.find(b => b.id === buyerId);
         if (!buyerToUpdate) return;
         
@@ -173,21 +171,21 @@ function BuyersPageContent() {
             setBuyerForFollowUp(buyerToUpdate);
             setIsFollowUpOpen(true);
         } else {
-            const docRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+            const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
             await setDoc(docRef, { status: newStatus }, { merge: true });
 
             // If status changed from 'Follow Up', remove from followUps
             if (buyerToUpdate.status === 'Follow Up' && followUps) {
                 const followUpToDelete = followUps.find(fu => fu.buyerId === buyerId);
                 if (followUpToDelete) {
-                    await deleteDoc(doc(firestore, 'users', user.uid, 'followUps', followUpToDelete.id));
+                    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'followUps', followUpToDelete.id));
                 }
             }
         }
     };
     
      const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
-        if (!user || !buyers || !profile.agency_id) return;
+        if (!profile.agency_id || !buyers) return;
         const buyer = buyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
@@ -203,8 +201,8 @@ function BuyersPageContent() {
             agency_id: profile.agency_id
         };
         
-        const followUpsCollection = collection(firestore, 'users', user.uid, 'followUps');
-        const buyerDocRef = doc(firestore, 'users', user.uid, 'buyers', buyerId);
+        const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
+        const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
 
         // Check if a followup for this buyer already exists to update it, otherwise create a new one
         const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
@@ -227,8 +225,8 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'>) => {
-        if (!user || !profile.agency_id) return;
-        const collectionRef = collection(firestore, 'users', user.uid, 'buyers');
+        if (!profile.agency_id) return;
+        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
         
         const dataToSave = {
             ...buyerData,

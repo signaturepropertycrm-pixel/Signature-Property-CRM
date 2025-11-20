@@ -35,10 +35,10 @@ import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { TeamPerformanceChart } from '@/components/team-performance-chart';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { useProfile } from '@/context/profile-context';
 
 type KpiData = {
   id: string;
@@ -53,13 +53,13 @@ type KpiData = {
 export default function DashboardPage() {
   const { currency } = useCurrency();
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { profile } = useProfile();
   
-  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
-  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
-  const appointmentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'appointments') : null, [user, firestore]);
-  const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
-  const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
+  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
+  const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
+  const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
 
   const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
   const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);

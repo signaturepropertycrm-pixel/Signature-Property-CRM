@@ -6,100 +6,109 @@ service cloud.firestore {
     // =================================
     // Helper Functions
     // =================================
-
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
     
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isEditor() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor' || isAdmin());
+    }
+
+    function isAgent() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Agent';
+    }
+    
+    function isMemberOfAgency(agencyId) {
+        return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.agency_id == agencyId;
+    }
+    
+    function getRole() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     // =================================
     // Collection Rules
     // =================================
 
-    /**
-     * Rules for the /users collection.
-     * - A user can read/write their own profile.
-     * - A user document can only be created if the user is creating their own record.
-     */
+    // Rules for the /users collection
     match /users/{userId} {
-      allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
+      // Any signed-in user can create their own document (on signup)
       allow create: if isSignedIn() && request.auth.uid == userId;
+      // Users can read or update their own profile. Admin can update any user profile in their agency.
+      allow read, update: if isSignedIn() && request.auth.uid == userId;
+      // Only admin can delete users (not fully implemented in UI, but good for security)
+      allow delete: if isAdmin();
+    }
+    
+    // Rules for top-level role indicator collections
+    match /roles_admin/{userId} {
+      allow read, write: if isAdmin() && request.auth.uid == userId;
+    }
+    match /roles_agent/{userId} {
+      allow read: if isMemberOfAgency(get(/databases/$(database)/documents/users/$(userId)).data.agency_id);
+      allow write: if isAdmin();
+    }
+    match /roles_editor/{userId} {
+      allow read: if isMemberOfAgency(get(/databases/$(database)/documents/users/$(userId)).data.agency_id);
+      allow write: if isAdmin();
     }
 
-    /**
-     * Rules for the /agencies collection and its sub-collections.
-     * This is the main data container for each agency.
-     */
+    // Rules for the /agencies collection and its sub-collections
     match /agencies/{agencyId} {
-      // Agency-level document access
+      // The agency owner can read/write their own agency document
       allow read, write: if isSignedIn() && request.auth.uid == resource.data.ownerId;
 
-      /**
-       * Generic rule for sub-collections within an agency.
-       * Access is granted based on the `agency_id` stored within a user's own profile.
-       * This requires a client-side fetch to get the user's profile first, but simplifies rules.
-       *
-       * This rule is NOT USED directly, but explains the logic. The specific sub-collection
-       * rules below are what grant access.
-       */
-      function isMemberOfRequestingAgency(uid) {
-        return get(/databases/$(database)/documents/users/$(uid)).data.agency_id == agencyId;
-      }
-      
-      function userRole(uid) {
-        return get(/databases/$(database)/documents/users/$(uid)).data.role;
+      // Rules for team members sub-collection
+      match /teamMembers/{memberId} {
+        // Any member of the agency can read the team list
+        allow read: if isMemberOfAgency(agencyId);
+        // Only the Admin of the agency can add, update, or delete team members
+        allow write: if isMemberOfAgency(agencyId) && getRole() == 'Admin';
       }
 
-      /**
-       * Sub-collection rules for properties.
-       * - Any member of the agency can read properties.
-       * - Only Admins or Editors of the agency can write (create, update, delete).
-       */
+      // Rules for properties sub-collection
       match /properties/{propertyId} {
-        allow read: if isMemberOfRequestingAgency(request.auth.uid);
-        allow write: if isMemberOfRequestingAgency(request.auth.uid) && (userRole(request.auth.uid) == 'Admin' || userRole(request.auth.uid) == 'Editor');
+        // Any member of the agency can read properties
+        allow read: if isMemberOfAgency(agencyId);
+        // Only Admin or Editor can create/delete properties
+        allow create, delete: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
+        // Admin/Editor can update everything. Agent can only update status-related fields.
+        allow update: if (isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor')) ||
+                      (isMemberOfAgency(agencyId) && getRole() == 'Agent' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sold_at', 'sold_price', 'is_recorded', 'video_links']));
       }
 
-      /**
-       * Sub-collection rules for buyers.
-       * - Any agency member can read/create buyers.
-       * - Admins/Editors can update/delete any buyer.
-       * - Agents can only update status/notes.
-       */
+      // Rules for buyers sub-collection
       match /buyers/{buyerId} {
-        allow read, create: if isMemberOfRequestingAgency(request.auth.uid);
-        allow update: if (isMemberOfRequestingAgency(request.auth.uid) && (userRole(request.auth.uid) == 'Admin' || userRole(request.auth.uid) == 'Editor'))
-                      || (isMemberOfRequestingAgency(request.auth.uid) && userRole(request.auth.uid) == 'Agent' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note']));
-        allow delete: if isMemberOfRequestingAgency(request.auth.uid) && (userRole(request.auth.uid) == 'Admin' || userRole(request.auth.uid) == 'Editor');
+        // Any agency member can read or create buyers
+        allow read, create: if isMemberOfAgency(agencyId);
+        // Admin/Editor can delete.
+        allow delete: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
+        // Admin/Editor can update everything. Agent can only update status and follow-up notes.
+        allow update: if (isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor')) ||
+                      (isMemberOfAgency(agencyId) && getRole() == 'Agent' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note', 'is_deleted']));
       }
 
-      /**
-       * Sub-collection rules for appointments, follow-ups, and activities.
-       * - All agency members can read and create these records.
-       * - Full write access is given to agency members for simplicity.
-       */
+      // Rules for appointments, follow-ups, activities
       match /appointments/{appointmentId} {
-        allow read, write: if isMemberOfRequestingAgency(request.auth.uid);
+        allow read, write: if isMemberOfAgency(agencyId);
       }
 
       match /followUps/{followUpId} {
-        allow read, write: if isMemberOfRequestingAgency(request.auth.uid);
+        allow read, write: if isMemberOfAgency(agencyId);
       }
       
       match /activityLogs/{activityLogId} {
-        allow read: if isMemberOfRequestingAgency(request.auth.uid) && (userRole(request.auth.uid) == 'Admin' || userRole(request.auth.uid) == 'Editor');
-        allow create: if isMemberOfRequestingAgency(request.auth.uid);
-        allow update, delete: if false;
-      }
-
-      /**
-       * Sub-collection rules for team members.
-       * - Only an Admin of the agency can read or write to the team members list.
-       */
-      match /teamMembers/{memberId} {
-        allow read, write: if isMemberOfRequestingAgency(request.auth.uid) && userRole(request.auth.uid) == 'Admin';
+        allow read: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
+        allow create: if isMemberOfAgency(agencyId);
+        allow update, delete: if false; // Logs should be immutable
       }
     }
   }
