@@ -76,31 +76,37 @@ service cloud.firestore {
       /**
        * @description Rules for the properties sub-collection.
        */
-      match /properties/{propertyId} {
-        allow read, write: if isOwner(userId);
-      }
       match /properties {
          allow list: if isOwner(userId);
+      }
+      match /properties/{propertyId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
 
       /**
        * @description Rules for the buyers sub-collection.
        */
-      match /buyers/{buyerId} {
-        allow read, write: if isOwner(userId);
-      }
       match /buyers {
          allow list: if isOwner(userId);
+      }
+      match /buyers/{buyerId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.created_by == request.auth.uid;
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
       
       /**
        * @description Rules for the teamMembers sub-collection.
        */
-      match /teamMembers/{memberId} {
-        allow read, write: if isOwner(userId);
-      }
       match /teamMembers {
         allow list: if isOwner(userId);
+      }
+      match /teamMembers/{memberId} {
+        allow read, write: if isOwner(userId);
       }
 
       /**
