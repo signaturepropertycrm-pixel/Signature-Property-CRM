@@ -43,7 +43,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
 export default function SettingsPage() {
@@ -250,6 +250,26 @@ export default function SettingsPage() {
     reader.readAsText(restoreFile);
   };
   
+  const handleCreateTestBuyer = async () => {
+    if (!user || !firestore) {
+      toast({ title: 'User not logged in', variant: 'destructive' });
+      return;
+    }
+    try {
+      await addDoc(collection(firestore, "users", "Axen7uu59GMpJp6JvBboRpHZP6E2", "buyers"), {
+        name: "Test Buyer",
+        phone: "+923001234567",
+        email: "test@example.com",
+        created_by: "Axen7uu59GMpJp6JvBboRpHZP6E2",
+        created_at: serverTimestamp()
+      });
+      toast({ title: 'Test Buyer Created', description: 'A dummy buyer document has been added to Firestore.' });
+    } catch (error: any) {
+      console.error("Failed to create test buyer:", error);
+      toast({ title: 'Error Creating Buyer', description: error.message, variant: 'destructive' });
+    }
+  };
+
   if (!mounted) {
     return null; // or a loading spinner
   }
@@ -569,12 +589,21 @@ export default function SettingsPage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
-                    <div>
-                        <h3 className="font-bold">Reset Account</h3>
-                        <p className="text-sm text-destructive/80">Permanently delete all CRM data including properties, buyers, and appointments. Your user account will not be deleted.</p>
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
+                        <div>
+                            <h3 className="font-bold">Reset Account</h3>
+                            <p className="text-sm text-destructive/80">Permanently delete all CRM data including properties, buyers, and appointments. Your user account will not be deleted.</p>
+                        </div>
+                        <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setIsResetDialogOpen(true)}>Reset Account</Button>
                     </div>
-                    <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setIsResetDialogOpen(true)}>Reset Account</Button>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-yellow-400/10">
+                        <div>
+                            <h3 className="font-bold">Create Test Buyer</h3>
+                            <p className="text-sm text-yellow-600/80">Add a single dummy buyer document to Firestore for testing purposes.</p>
+                        </div>
+                        <Button variant="outline" className="mt-2 sm:mt-0" onClick={handleCreateTestBuyer}>Create Test Data</Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
