@@ -42,7 +42,7 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, writeBatch } from 'firebase/firestore';
 
 
@@ -65,11 +65,21 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { data: properties } = useCollection(user ? collection(firestore, 'users', user.uid, 'properties') : null);
-  const { data: buyers } = useCollection(user ? collection(firestore, 'users', user.uid, 'buyers') : null);
-  const { data: appointments } = useCollection(user ? collection(firestore, 'users', user.uid, 'appointments') : null);
-  const { data: followUps } = useCollection(user ? collection(firestore, 'users', user.uid, 'followUps') : null);
-  const { data: teamMembers } = useCollection(user ? collection(firestore, 'users', user.uid, 'teamMembers') : null);
+  const propertiesQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'properties') : null, [user, firestore]);
+  const { data: properties } = useCollection(propertiesQuery);
+
+  const buyersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'buyers') : null, [user, firestore]);
+  const { data: buyers } = useCollection(buyersQuery);
+
+  const appointmentsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'appointments') : null, [user, firestore]);
+  const { data: appointments } = useCollection(appointmentsQuery);
+
+  const followUpsQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'followUps') : null, [user, firestore]);
+  const { data: followUps } = useCollection(followUpsQuery);
+
+  const teamMembersQuery = useMemoFirebase(() => user ? collection(firestore, 'users', user.uid, 'teamMembers') : null, [user, firestore]);
+  const { data: teamMembers } = useCollection(teamMembersQuery);
+
 
   useEffect(() => {
     setMounted(true);
