@@ -224,7 +224,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         <FormItem>
                         <FormLabel>Area Preference</FormLabel>
                         <FormControl>
-                            <Input {...field} placeholder="e.g. DHA, Bahria, Gulberg" />
+                            <Input {...field} value={field.value ?? ''} placeholder="e.g. DHA, Bahria, Gulberg" />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -349,7 +349,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                     <FormItem>
                     <FormLabel>Other Requirements / Notes</FormLabel>
                     <FormControl>
-                        <Textarea {...field} placeholder="Any specific requirements or notes..." />
+                        <Textarea {...field} value={field.value ?? ''} placeholder="Any specific requirements or notes..." />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -367,5 +367,3 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
     </Form>
   );
 }
-
-    

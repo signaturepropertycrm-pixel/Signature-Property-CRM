@@ -353,7 +353,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Front (ft)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} placeholder="25" />
+                      <Input type="number" {...field} value={field.value ?? ''} placeholder="25" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -366,7 +366,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Length (ft)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} placeholder="45" />
+                      <Input type="number" {...field} value={field.value ?? ''} placeholder="45" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -381,7 +381,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Road Size (ft)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} placeholder="20" />
+                      <Input type="number" {...field} value={field.value ?? ''} placeholder="20" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -394,7 +394,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Storey</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Single, Double, etc." />
+                      <Input {...field} value={field.value ?? ''} placeholder="Single, Double, etc." />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -448,7 +448,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                     <FormItem>
                       <FormLabel>Potential Rent</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="30" />
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="30" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -543,7 +543,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 <FormItem>
                   <FormLabel>Documents</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
+                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Registry, Fard, Transfer papers" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
