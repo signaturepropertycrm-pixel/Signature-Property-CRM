@@ -134,7 +134,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
       if (sizeValue && sizeUnit && finalPropertyType && area) {
         try {
           const { autoTitle } = await generateAutoTitle({
-            sizeValue,
+            sizeValue: Number(sizeValue),
             sizeUnit,
             propertyType: finalPropertyType,
             area,
