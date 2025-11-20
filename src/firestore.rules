@@ -1,4 +1,3 @@
-
 /**
  * @file Firestore Security Rules
  * @description This ruleset enforces a strict user-ownership model for most data, with admin overrides for specific collections.
@@ -44,6 +43,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Checks if the current user is the owner of the existing document.
+     * @param {string} userId - The user ID to compare against the request's auth UID.
+     * @example isExistingOwner("someUserId") == (isOwner("someUserId") && resource != null)
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
      * @description Checks if the current user has admin privileges.
      * @example isAdmin() == exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid))
      */
@@ -59,9 +67,11 @@ service cloud.firestore {
      * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow write: if isOwner(userId);
+      allow get: if isOwner(userId);
       allow list: if false; // User listing is not allowed.
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
 
       /**
        * @description Allows access only to the user who owns the property.
@@ -83,11 +93,16 @@ service cloud.firestore {
       
       /**
        * @description Allows access only to the user who owns the team member record.
-       * @path /users/{userId}/teamMembers/{memberId}
+       * @path /users/{userId}/teamMembers
        */
+      match /teamMembers {
+        allow list: if isOwner(userId);
+      }
       match /teamMembers/{memberId} {
-        allow read: if isOwner(userId);
-        allow write: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId);
+        allow update: if isExistingOwner(userId);
+        allow delete: if isExistingOwner(userId);
       }
 
       /**
