@@ -27,7 +27,7 @@ import {
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/context/profile-context';
@@ -71,33 +71,49 @@ function SignupPageContent() {
       
       const user = userCredential.user;
       if (user) {
-        // Update user's auth profile with their name
-        await updateProfile(user, {
-          displayName: values.name,
-        });
+        await updateProfile(user, { displayName: values.name });
 
-        const userDocRef = doc(firestore, 'users', user.uid);
+        const agencyId = user.uid; // The first user is the Admin, so their UID is the agency ID.
         
-        // This user is the admin of their agency, so their agency_id is their own UID.
-        const agencyId = user.uid;
-
         const newProfileData = {
             id: user.uid,
             name: values.name,
             email: values.email,
             role: 'Admin' as const, 
-            agency_id: agencyId, 
-            agencyName: values.agencyName,
+            agency_id: agencyId,
             createdAt: serverTimestamp(),
+            // Fields for profile context
+            agencyName: values.agencyName,
             ownerName: values.name,
             phone: '',
-            user_id: user.uid,
+            avatar: '',
         };
+        
+        const batch = writeBatch(firestore);
 
-        // Create the user document in Firestore for the admin user
-        await setDoc(userDocRef, newProfileData, { merge: true });
+        // 1. Create the user's main document
+        const userDocRef = doc(firestore, 'users', user.uid);
+        batch.set(userDocRef, {
+             id: user.uid,
+             name: values.name,
+             email: values.email,
+             role: 'Admin',
+             agency_id: agencyId,
+             createdAt: serverTimestamp(),
+        });
 
-        // Set the local profile in context and localStorage
+        // 2. Create the agency document
+        const agencyDocRef = doc(firestore, 'agencies', agencyId);
+        batch.set(agencyDocRef, {
+            id: agencyId,
+            name: values.agencyName,
+            ownerId: user.uid,
+            ownerName: values.name,
+            createdAt: serverTimestamp(),
+        });
+        
+        await batch.commit();
+
         setProfile(newProfileData);
       }
 
@@ -149,7 +165,7 @@ function SignupPageContent() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <Label>Name</Label>
+                      <Label>Your Name</Label>
                       <FormControl>
                         <Input
                           placeholder="e.g. Ali Khan"

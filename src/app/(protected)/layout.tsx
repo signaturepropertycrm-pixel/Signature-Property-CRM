@@ -11,7 +11,6 @@ import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
-import { useMemoFirebase } from '@/firebase/hooks';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // A simple React context to manage global search state
@@ -48,15 +47,13 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (!user) {
+  if (!user || !profile.role) {
     return null; // or a redirect component
   }
 
   // Define restricted paths for each role
-  const adminOnlyPaths = ['/team', '/settings', '/upgrade'];
   const editorForbiddenPaths = ['/team', '/settings', '/upgrade'];
   const agentForbiddenPaths = ['/team', '/settings', '/upgrade', '/tools', '/trash', '/activities'];
-
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
@@ -131,13 +128,11 @@ export default function ProtectedLayout({
 }) {
   return (
     <FirebaseClientProvider>
-      <ProfileProvider>
-        <CurrencyProvider>
-          <ProtectedLayoutContent>
-            {children}
-          </ProtectedLayoutContent>
-        </CurrencyProvider>
-      </ProfileProvider>
+      <CurrencyProvider>
+        <ProtectedLayoutContent>
+          {children}
+        </ProtectedLayoutContent>
+      </CurrencyProvider>
     </FirebaseClientProvider>
   )
 }
