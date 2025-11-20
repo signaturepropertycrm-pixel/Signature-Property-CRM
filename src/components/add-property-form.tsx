@@ -81,9 +81,10 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     resolver: zodResolver(formSchema),
     defaultValues: propertyToEdit ? {
         ...propertyToEdit,
+        custom_property_type: propertyToEdit.property_type !== 'House' && propertyToEdit.property_type !== 'Plot' && propertyToEdit.property_type !== 'Flat' && propertyToEdit.property_type !== 'Shop' && propertyToEdit.property_type !== 'Commercial' && propertyToEdit.property_type !== 'Agricultural' ? propertyToEdit.property_type : '',
+        property_type: propertyToEdit.property_type === 'House' || propertyToEdit.property_type === 'Plot' || propertyToEdit.property_type === 'Flat' || propertyToEdit.property_type === 'Shop' || propertyToEdit.property_type === 'Commercial' || propertyToEdit.property_type === 'Agricultural' ? propertyToEdit.property_type : 'Other',
         potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
         demand_unit: propertyToEdit.demand_unit,
-        // Ensure optional numeric fields are not undefined
         road_size_ft: propertyToEdit.road_size_ft ?? undefined,
         potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
         front_ft: propertyToEdit.front_ft ?? undefined,
@@ -91,6 +92,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     } : {
       city: 'Lahore',
       property_type: 'House',
+      custom_property_type: '',
       size_unit: 'Marla',
       demand_unit: 'Lacs',
       meters: { electricity: false, gas: false, water: false },
@@ -106,11 +108,13 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
 
    useEffect(() => {
     if (propertyToEdit) {
+        const isStandardType = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural'].includes(propertyToEdit.property_type);
         reset({
             ...propertyToEdit,
+            property_type: isStandardType ? propertyToEdit.property_type : 'Other',
+            custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
             demand_unit: propertyToEdit.demand_unit,
-            // Ensure optional numeric fields are not undefined on reset
             road_size_ft: propertyToEdit.road_size_ft ?? undefined,
             potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
             front_ft: propertyToEdit.front_ft ?? undefined,
@@ -120,6 +124,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
       reset({
         city: 'Lahore',
         property_type: 'House',
+        custom_property_type: '',
         size_unit: 'Marla',
         demand_unit: 'Lacs',
         meters: { electricity: false, gas: false, water: false },
@@ -283,7 +288,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Property Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
@@ -336,7 +341,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   render={({ field }) => (
                     <FormItem className="self-end">
                       <FormLabel className="sr-only">Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                         </FormControl>
@@ -436,7 +441,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   render={({ field }) => (
                     <FormItem className="self-end">
                       <FormLabel className="sr-only">Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue /></SelectTrigger>
                         </FormControl>
@@ -470,7 +475,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   render={({ field }) => (
                     <FormItem className="self-end">
                       <FormLabel className="sr-only">Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Unit" /></SelectTrigger>
                         </FormControl>
