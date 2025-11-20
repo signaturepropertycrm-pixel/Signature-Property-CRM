@@ -30,6 +30,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { buyerStatuses } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
 import { useUser } from '@/firebase/auth/use-user';
+import { useProfile } from '@/context/profile-context';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
@@ -68,7 +69,7 @@ interface AddBuyerFormProps {
   onSave: (buyer: Omit<Buyer, 'id'>) => void;
 }
 
-const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string): AddBuyerFormValues => {
+const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string, agencyId?: string): AddBuyerFormValues => {
     if (buyerToEdit) {
         return {
             ...buyerToEdit,
@@ -116,16 +117,17 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
 export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerFormProps) {
   const { toast } = useToast();
   const { user } = useUser();
+  const { profile } = useProfile();
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit, user?.uid)
+    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit, user?.uid, profile.agency_id)
   });
 
   const { reset } = form;
 
   useEffect(() => {
-    reset(getInitialFormValues(totalBuyers, buyerToEdit, user?.uid));
-  }, [buyerToEdit, totalBuyers, user, reset]);
+    reset(getInitialFormValues(totalBuyers, buyerToEdit, user?.uid, profile.agency_id));
+  }, [buyerToEdit, totalBuyers, user, profile.agency_id, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
      const buyerData = {
@@ -134,6 +136,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
         created_by: buyerToEdit?.created_by || user?.uid || '',
+        agency_id: buyerToEdit?.agency_id || profile.agency_id || '',
     };
     onSave(buyerData);
     setDialogOpen(false);

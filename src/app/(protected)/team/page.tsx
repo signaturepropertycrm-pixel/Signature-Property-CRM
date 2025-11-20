@@ -19,6 +19,7 @@ import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -88,8 +89,7 @@ export default function TeamPage() {
     const handleDeleteMember = async (memberId: string) => {
         if (!user) return;
         await deleteDoc(doc(firestore, 'users', user.uid, 'teamMembers', memberId));
-        // Note: This only removes them from the team list. It doesn't delete their auth account or user doc.
-        // A more robust implementation would disable or delete the user account.
+        // This only removes from the team list. A cloud function should handle deleting the actual auth user.
         toast({
             title: "Member Removed",
             description: "The team member has been removed from your team list.",
@@ -106,6 +106,7 @@ export default function TeamPage() {
         // Logic for editing an existing member
         if (memberToEdit) {
             const memberRef = doc(firestore, 'users', user.uid, 'teamMembers', memberToEdit.id);
+            const userDocRef = doc(firestore, 'users', memberToEdit.id);
             const memberData = {
                 name: member.name,
                 email: member.email,
@@ -113,9 +114,15 @@ export default function TeamPage() {
                 role: member.role,
             };
             try {
-                await setDoc(memberRef, memberData, { merge: true });
-                // Also update the main user doc if role changes
-                await setDoc(doc(firestore, 'users', memberToEdit.id), { role: member.role }, { merge: true });
+                const functions = getFunctions();
+                const setCustomClaims = httpsCallable(functions, 'setCustomUserClaims');
+                await setCustomClaims({ userId: memberToEdit.id, claims: { role: member.role, agency_id: profile.agency_id } });
+
+                const batch = writeBatch(firestore);
+                batch.set(memberRef, memberData, { merge: true });
+                batch.set(userDocRef, { role: member.role }, { merge: true });
+                await batch.commit();
+                
                 toast({ title: 'Member Updated Successfully' });
             } catch (error) {
                 console.error("Error updating member: ", error);
@@ -129,44 +136,35 @@ export default function TeamPage() {
             toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive' });
             return;
         }
-
-        const currentAdminUser = auth.currentUser;
-        if (!currentAdminUser || !currentAdminUser.email) {
-            toast({ title: 'Admin session is invalid. Please re-login.', variant: 'destructive' });
-            return;
-        }
-
-        const adminEmail = currentAdminUser.email;
-        const adminPassword = sessionStorage.getItem('fb-cred'); 
-
-        if (!adminPassword) {
-            toast({ title: 'Admin session error', description: 'Could not verify admin credentials. Please re-login and try again.', variant: 'destructive' });
-            return;
-        }
-
+        
         try {
-            // 1. Create new user in Auth
-            const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
-            const newMemberUser = newUserCredential.user;
+            const functions = getFunctions();
+            const createAndClaimUser = httpsCallable(functions, 'createAndClaimUser');
+
+            const result = await createAndClaimUser({
+                email: member.email,
+                password: member.password,
+                displayName: member.name,
+                claims: { role: member.role, agency_id: profile.agency_id }
+            });
+
+            const { uid } = (result.data as any);
 
             const batch = writeBatch(firestore);
-
-            // 2. Create the main user document for the new member
-            const newUserDocRef = doc(firestore, "users", newMemberUser.uid);
+            const newUserDocRef = doc(firestore, 'users', uid);
             batch.set(newUserDocRef, {
-                id: newMemberUser.uid,
+                id: uid,
                 name: member.name,
                 email: member.email,
                 role: member.role,
-                agency_id: profile.agency_id, // Link to the admin's agency
-                createdBy: user.uid, // Admin's UID
+                agency_id: profile.agency_id,
+                createdBy: user.uid,
                 createdAt: serverTimestamp(),
             });
 
-            // 3. Add the new member to the admin's teamMembers subcollection
-            const teamMemberDocRef = doc(firestore, 'users', user.uid, 'teamMembers', newMemberUser.uid);
+            const teamMemberDocRef = doc(firestore, 'users', user.uid, 'teamMembers', uid);
             batch.set(teamMemberDocRef, {
-                id: newMemberUser.uid,
+                id: uid,
                 name: member.name,
                 email: member.email,
                 phone: member.phone,
@@ -175,37 +173,18 @@ export default function TeamPage() {
                 stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
             });
             
-            // 4. Create a role document for security rules
-            if (member.role === 'Editor') {
-                const editorRoleRef = doc(firestore, 'roles_editor', newMemberUser.uid);
-                batch.set(editorRoleRef, { createdBy: user.uid });
-            } else if (member.role === 'Agent') {
-                const agentRoleRef = doc(firestore, 'roles_agent', newMemberUser.uid);
-                batch.set(agentRoleRef, { createdBy: user.uid });
-            }
-
             await batch.commit();
             toast({ title: 'Member Added Successfully' });
 
         } catch (error: any) {
             console.error("Error creating member: ", error);
             let errorMessage = "An unexpected error occurred.";
-            if (error.code === 'auth/email-already-in-use') {
+            if (error.message.includes('auth/email-already-exists')) {
                 errorMessage = 'This email address is already registered.';
-            } else if (error.code === 'auth/weak-password') {
+            } else if (error.message.includes('auth/weak-password')) {
                 errorMessage = 'The password is too weak. It must be at least 6 characters.';
             }
             toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
-        } finally {
-            // 5. Re-sign in the admin user to restore their session
-            try {
-                const adminCredential = EmailAuthProvider.credential(adminEmail, adminPassword);
-                await signInWithCredential(auth, adminCredential);
-            } catch (reauthError) {
-                console.error("Failed to re-authenticate admin:", reauthError);
-                toast({ title: 'Session Warning', description: 'Failed to restore your session. Please login again.', variant: 'destructive' });
-                router.push('/login'); // Force re-login
-            }
         }
     };
 
@@ -316,5 +295,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    
