@@ -83,6 +83,11 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         ...propertyToEdit,
         potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
         demand_unit: propertyToEdit.demand_unit,
+        // Ensure optional numeric fields are not undefined
+        road_size_ft: propertyToEdit.road_size_ft ?? undefined,
+        potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
+        front_ft: propertyToEdit.front_ft ?? undefined,
+        length_ft: propertyToEdit.length_ft ?? undefined,
     } : {
       city: 'Lahore',
       property_type: 'House',
@@ -105,6 +110,11 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             ...propertyToEdit,
             potential_rent_unit: propertyToEdit.potential_rent_unit || undefined,
             demand_unit: propertyToEdit.demand_unit,
+            // Ensure optional numeric fields are not undefined on reset
+            road_size_ft: propertyToEdit.road_size_ft ?? undefined,
+            potential_rent_amount: propertyToEdit.potential_rent_amount ?? undefined,
+            front_ft: propertyToEdit.front_ft ?? undefined,
+            length_ft: propertyToEdit.length_ft ?? undefined,
         });
     } else {
       reset({
