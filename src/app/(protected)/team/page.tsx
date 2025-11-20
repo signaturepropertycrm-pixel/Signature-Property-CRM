@@ -49,10 +49,10 @@ export default function TeamPage() {
     const { profile, isLoading: isProfileLoading } = useProfile();
     
     const teamMembersQuery = useMemoFirebase(() => 
-        (currentUser && profile.role === 'Admin') 
-            ? collection(firestore, 'users', currentUser.uid, 'teamMembers') 
+        (currentUser && profile.role === 'Admin' && profile.agency_id) 
+            ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') 
             : null
-    , [currentUser, firestore, profile.role]);
+    , [currentUser, firestore, profile.role, profile.agency_id]);
 
     const { data: teamMembersData, isLoading: isTeamLoading } = useCollection<User>(teamMembersQuery);
 
@@ -89,56 +89,41 @@ export default function TeamPage() {
         setIsAddMemberOpen(true);
     };
 
-    const handleDeleteMember = async (memberId: string) => {
-        if (!currentUser) return;
+    const handleDeleteMember = async (member: User) => {
+        if (!currentUser || !profile.agency_id) return;
         
         const batch = writeBatch(firestore);
         
-        const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberId);
-        const userDocRef = doc(firestore, 'users', memberId);
+        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
+        const userDocRef = doc(firestore, 'users', member.id);
         
         batch.delete(teamMemberRef);
         batch.delete(userDocRef);
-        
-        const agentRoleRef = doc(firestore, 'roles_agent', memberId);
-        const editorRoleRef = doc(firestore, 'roles_editor', memberId);
-        batch.delete(agentRoleRef);
-        batch.delete(editorRoleRef);
         
         await batch.commit();
 
         toast({
             title: "Member Removed",
-            description: "The team member has been removed from your team and their user document has been deleted.",
+            description: `${member.name} has been removed from your team.`,
             variant: "destructive"
         });
     };
 
-    const handleSaveMember = async (memberData: Omit<User, 'id' | 'agency_id'> & { id?: string, password?: string }) => {
+    const handleSaveMember = async (memberData: Omit<User, 'id'> & { id?: string, password?: string }) => {
         if (!currentUser || !auth || !profile.agency_id) {
             toast({ title: 'Admin user or profile data not available.', variant: 'destructive' });
             return;
         }
 
         if (memberToEdit) {
-             const batch = writeBatch(firestore);
-            const teamMemberRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', memberToEdit.id);
+            const batch = writeBatch(firestore);
+            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
             const userDocRef = doc(firestore, 'users', memberToEdit.id);
             
             const updatedData = { name: memberData.name, phone: memberData.phone, role: memberData.role };
 
             batch.update(userDocRef, { role: memberData.role, name: memberData.name, phone: memberData.phone });
             batch.update(teamMemberRef, updatedData);
-            
-            if (memberToEdit.role !== memberData.role) {
-                if (memberData.role === 'Agent') {
-                    batch.set(doc(firestore, 'roles_agent', memberToEdit.id), { agency_id: profile.agency_id });
-                    batch.delete(doc(firestore, 'roles_editor', memberToEdit.id));
-                } else if (memberData.role === 'Editor') {
-                    batch.set(doc(firestore, 'roles_editor', memberToEdit.id), { agency_id: profile.agency_id });
-                    batch.delete(doc(firestore, 'roles_agent', memberToEdit.id));
-                }
-            }
 
             try {
                 await batch.commit();
@@ -179,26 +164,22 @@ export default function TeamPage() {
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id, // *** CRITICAL FIX: Use Admin's agency_id ***
+                agency_id: profile.agency_id,
                 createdBy: currentUser.uid,
                 createdAt: serverTimestamp(),
             });
 
-            const teamMemberDocRef = doc(firestore, 'users', currentUser.uid, 'teamMembers', newUID);
+            const teamMemberDocRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', newUID);
             batch.set(teamMemberDocRef, {
                 id: newUID,
                 name: memberData.name,
                 email: memberData.email,
                 phone: memberData.phone || '',
                 role: memberData.role,
-                agency_id: profile.agency_id, // *** CRITICAL FIX: Use Admin's agency_id ***
+                agency_id: profile.agency_id,
                 stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 },
             });
             
-            const roleCollection = memberData.role === 'Editor' ? 'roles_editor' : 'roles_agent';
-            const roleDocRef = doc(firestore, roleCollection, newUID);
-            batch.set(roleDocRef, { agency_id: profile.agency_id });
-
             await batch.commit();
             
             toast({ title: 'Member Added Successfully' });
@@ -294,7 +275,7 @@ export default function TeamPage() {
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEditMember(member); }}>
                                             <Edit /> Edit Member
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDeleteMember(member.id); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDeleteMember(member); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                             <Trash2 /> Delete Member
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

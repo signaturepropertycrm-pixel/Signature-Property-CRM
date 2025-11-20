@@ -73,7 +73,7 @@ function SignupPageContent() {
       if (user) {
         await updateProfile(user, { displayName: values.name });
 
-        const agencyId = user.uid; // The first user is the Admin, so their UID is the agency ID.
+        const agencyId = user.uid; // The first user (Admin) defines the agency.
         
         const newProfileData = {
             id: user.uid,
@@ -96,16 +96,14 @@ function SignupPageContent() {
              name: values.name,
              email: values.email,
              role: 'Admin',
-             agency_id: agencyId, // *** CRITICAL FIX ***
-             agencyName: values.agencyName, // Save agency name
-             ownerName: values.name, // Save owner name
+             agency_id: agencyId,
+             agencyName: values.agencyName,
+             ownerName: values.name,
              phone: '',
              createdAt: serverTimestamp(),
         });
         
-        // This collection is no longer needed with the new simplified structure
-        // but we keep it in case any other logic depends on it.
-        // It doesn't harm anything.
+        // 2. Create the agency document
         const agencyDocRef = doc(firestore, 'agencies', agencyId);
         batch.set(agencyDocRef, {
             id: agencyId,
@@ -114,10 +112,6 @@ function SignupPageContent() {
             ownerName: values.name,
             createdAt: serverTimestamp(),
         });
-
-        // Set the admin role in the dedicated collection for rules
-        const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-        batch.set(adminRoleRef, { agency_id: agencyId });
         
         await batch.commit();
 

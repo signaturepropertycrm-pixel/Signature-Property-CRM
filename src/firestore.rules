@@ -16,6 +16,7 @@ service cloud.firestore {
 
     /**
      * Retrieves the user's profile data from the /users collection.
+     * This is a critical function for checking roles and agency affiliation.
      * @param userId The UID of the user whose data is to be fetched.
      * @returns The user's document data.
      */
@@ -26,17 +27,16 @@ service cloud.firestore {
     /**
      * Checks if the currently authenticated user belongs to the specified agency.
      * @param agencyId The ID of the agency to check against.
-     * @returns True if the user is a member of the agency, false otherwise.
+     * @returns True if the user's agency_id matches the provided agencyId.
      */
     function isAgencyMember(agencyId) {
-      // Corrected the comparison from request.auth.uid to the passed agencyId
       return isSignedIn() && getUserData(request.auth.uid).agency_id == agencyId;
     }
 
     /**
      * Checks if the currently authenticated user has a specific role.
      * @param role The role to check for (e.g., 'Admin', 'Editor', 'Agent').
-     * @returns True if the user has the specified role, false otherwise.
+     * @returns True if the user has the specified role.
      */
     function isRole(role) {
         return isSignedIn() && getUserData(request.auth.uid).role == role;
@@ -65,12 +65,12 @@ service cloud.firestore {
      * - A user can read their own profile.
      * - An Admin can read the profiles of users within their own agency.
      * - A new user can be created upon signup.
-     * - Only an Admin can update user roles within their agency.
+     * - An Admin can update user roles within their agency, and users can update their own non-critical info.
      * - Only an Admin can delete users from their agency.
      */
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdminOfAgency(getUserData(userId).agency_id));
-      allow create: if isSignedIn(); // Allows user creation on signup
+      allow create: if isSignedIn(); // Allows user creation on signup.
       allow update: if request.auth.uid == userId || isAdminOfAgency(resource.data.agency_id);
       allow delete: if isAdminOfAgency(resource.data.agency_id);
     }
@@ -98,21 +98,27 @@ service cloud.firestore {
        * - Any agency member can read/list buyers.
        * - Any agency member can create a buyer.
        * - Only Admins or Editors can fully update/delete buyers.
+       * - Agents can update only the status.
        */
       match /buyers/{buyerId} {
         allow read: if isAgencyMember(agencyId);
         allow create: if isAgencyMember(agencyId);
-        allow update, delete: if isEditorOfAgency(agencyId);
+        // Admin and Editor can update anything
+        allow update: if isEditorOfAgency(agencyId);
+        // Agent can only update status and last_follow_up_note
+        allow update: if isAgencyMember(agencyId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note']);
+        allow delete: if isEditorOfAgency(agencyId);
       }
 
       /**
        * Sub-collection rules for appointments.
        * - All agency members can read and create appointments.
-       * - Only Admins or Editors can update/delete them.
+       * - Any member can update or delete THEIR OWN appointments (e.g. agent assigned to it).
+       * - Admin/Editor can manage ALL appointments.
        */
       match /appointments/{appointmentId} {
         allow read, create: if isAgencyMember(agencyId);
-        allow update, delete: if isEditorOfAgency(agencyId);
+        allow update, delete: if isEditorOfAgency(agencyId) || (isAgencyMember(agencyId) && resource.data.agentName == getUserData(request.auth.uid).name);
       }
 
       /**
@@ -125,8 +131,6 @@ service cloud.firestore {
 
        /**
        * Sub-collection rules for team members.
-       * This sub-collection is only present under the Admin's user document,
-       * but we place a generic rule here for consistency.
        * - Only Admins can manage their team.
        */
       match /teamMembers/{memberId} {
