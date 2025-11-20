@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import type { Property } from '@/lib/types';
+import { useUser } from '@/firebase';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -70,12 +71,12 @@ type AddPropertyFormValues = z.infer<typeof formSchema>;
 
 interface AddPropertyFormProps {
   setDialogOpen: (open: boolean) => void;
-  onSave: (property: Property) => void;
+  onSave: (property: Omit<Property, 'id'>) => void;
   propertyToEdit?: Property | null;
   totalProperties: number;
 }
 
-const getNewPropertyDefaults = (totalProperties: number) => ({
+const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined) => ({
   serial_no: `P-${totalProperties + 1}`,
   auto_title: '',
   owner_number: '',
@@ -96,14 +97,16 @@ const getNewPropertyDefaults = (totalProperties: number) => ({
   demand_amount: undefined,
   demand_unit: 'Lacs' as const,
   documents: '',
+  created_at: new Date().toISOString(),
+  created_by: userId || '',
 });
 
 
 export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddPropertyFormProps) {
   const { toast } = useToast();
+  const { user } = useUser();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getNewPropertyDefaults(totalProperties),
   });
 
   const { control, setValue, formState, reset } = form;
@@ -120,11 +123,12 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
+            storey: propertyToEdit.storey || '',
         });
     } else {
-      reset(getNewPropertyDefaults(totalProperties));
+      reset(getNewPropertyDefaults(totalProperties, user?.uid));
     }
-  }, [propertyToEdit, totalProperties, reset]);
+  }, [propertyToEdit, totalProperties, reset, user]);
 
 
   useEffect(() => {
@@ -159,12 +163,13 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     const propertyData = {
         ...propertyToEdit,
         ...finalValues,
-        id: propertyToEdit?.id || `P-${totalProperties + 1}`,
+        id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),
+        created_by: propertyToEdit?.created_by || user?.uid || '',
         is_deleted: propertyToEdit?.is_deleted || false,
-    } as Property;
+    } as Omit<Property, 'id'> & { id?: string };
 
     onSave(propertyData);
 
