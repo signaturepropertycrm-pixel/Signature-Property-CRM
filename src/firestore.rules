@@ -40,20 +40,17 @@ service cloud.firestore {
     // /users/{userId}
     // This stores the primary profile for each user, including their role and agency affiliation.
     match /users/{userId} {
-      // Allow user creation if the user is creating their own document.
-      allow create: if isUser(userId);
       // An Admin can create any user document (needed for adding team members).
-      allow create: if isAdmin();
+      // A user can also create their own initial document upon signup.
+      allow create: if isUser(userId) || isAdmin();
       
       // A user can get their own document.
-      allow get: if isUser(userId);
       // An admin can get any user document.
-      allow get: if isAdmin();
+      allow get: if isUser(userId) || isAdmin();
       
       // A user can update their own document.
-      allow update: if isUser(userId);
       // An admin can update any user document.
-      allow update: if isAdmin();
+      allow update: if isUser(userId) || isAdmin();
       
       // Nobody can list all users.
       allow list: if false;
@@ -93,7 +90,7 @@ service cloud.firestore {
       allow update: if (isAdmin() || isEditor()) && isMemberOfAgency(resource.data.agency_id);
       allow update: if isAgent() && isMemberOfAgency(resource.data.agency_id) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'last_follow_up_note']);
 
-      // Only Admins and Editors can delete buyers.
+      // Only Admins or Editors can delete buyers.
       allow delete: if (isAdmin() || isEditor()) && isMemberOfAgency(resource.data.agency_id);
     }
     

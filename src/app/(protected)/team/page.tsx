@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useRouter } from 'next/navigation';
@@ -114,13 +113,11 @@ export default function TeamPage() {
                 role: member.role,
             };
             try {
-                const functions = getFunctions();
-                const setCustomClaims = httpsCallable(functions, 'setCustomUserClaims');
-                await setCustomClaims({ userId: memberToEdit.id, claims: { role: member.role, agency_id: profile.agency_id } });
-
+                // To update a user's role, we need to use custom claims via a Cloud Function
+                // This part is simplified for client-side only editing of other details
                 const batch = writeBatch(firestore);
                 batch.set(memberRef, memberData, { merge: true });
-                batch.set(userDocRef, { role: member.role }, { merge: true });
+                batch.set(userDocRef, { role: member.role }, { merge: true }); // Also update the role in the main user doc
                 await batch.commit();
                 
                 toast({ title: 'Member Updated Successfully' });
@@ -138,22 +135,26 @@ export default function TeamPage() {
         }
         
         try {
-            const functions = getFunctions();
-            const createAndClaimUser = httpsCallable(functions, 'createAndClaimUser');
+            // Create the new user account
+            const newUserCredential = await createUserWithEmailAndPassword(auth, member.email, member.password);
+            const newUID = newUserCredential.user.uid;
 
-            const result = await createAndClaimUser({
-                email: member.email,
-                password: member.password,
-                displayName: member.name,
-                claims: { role: member.role, agency_id: profile.agency_id }
-            });
+            // Immediately sign back in as the admin to continue operations
+            const adminPassword = sessionStorage.getItem('fb-cred');
+            if (user.email && adminPassword) {
+                const adminCredential = EmailAuthProvider.credential(user.email, adminPassword);
+                await signInWithCredential(auth, adminCredential);
+            } else {
+                 throw new Error("Admin session lost. Please log in again.");
+            }
 
-            const { uid } = (result.data as any);
-
+            // Now, as the admin again, write the necessary documents to Firestore
             const batch = writeBatch(firestore);
-            const newUserDocRef = doc(firestore, 'users', uid);
+            
+            // 1. Create the main user document for the new member
+            const newUserDocRef = doc(firestore, 'users', newUID);
             batch.set(newUserDocRef, {
-                id: uid,
+                id: newUID,
                 name: member.name,
                 email: member.email,
                 role: member.role,
@@ -162,9 +163,10 @@ export default function TeamPage() {
                 createdAt: serverTimestamp(),
             });
 
-            const teamMemberDocRef = doc(firestore, 'users', user.uid, 'teamMembers', uid);
+            // 2. Create the reference in the admin's team members subcollection
+            const teamMemberDocRef = doc(firestore, 'users', user.uid, 'teamMembers', newUID);
             batch.set(teamMemberDocRef, {
-                id: uid,
+                id: newUID,
                 name: member.name,
                 email: member.email,
                 phone: member.phone,
@@ -179,10 +181,12 @@ export default function TeamPage() {
         } catch (error: any) {
             console.error("Error creating member: ", error);
             let errorMessage = "An unexpected error occurred.";
-            if (error.message.includes('auth/email-already-exists')) {
+            if (error.code === 'auth/email-already-in-use') {
                 errorMessage = 'This email address is already registered.';
-            } else if (error.message.includes('auth/weak-password')) {
+            } else if (error.code === 'auth/weak-password') {
                 errorMessage = 'The password is too weak. It must be at least 6 characters.';
+            } else if (error.message.includes('Admin session lost')) {
+                errorMessage = error.message;
             }
             toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         }
@@ -190,7 +194,7 @@ export default function TeamPage() {
 
 
      const allMembers = useMemo(() => {
-        if (!user || !profile || !profile.ownerName) return [];
+        if (!user || !profile || !profile.ownerName || !teamMembers) return [];
 
         const adminAsMember: User = {
             id: user.uid,
@@ -201,7 +205,7 @@ export default function TeamPage() {
             stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
         };
         
-        return [adminAsMember, ...(teamMembers || [])];
+        return [adminAsMember, ...teamMembers];
 
     }, [user, profile, teamMembers]);
     
