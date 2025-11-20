@@ -17,7 +17,7 @@ import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { useProfile } from '@/context/profile-context';
 
 const roleVariant = {
@@ -204,13 +204,16 @@ export default function TeamPage() {
             {isLoading ? <p>Loading team members...</p> : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {allMembers && allMembers.map(member => (
-                    <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow cursor-pointer" onClick={() => handleViewDetails(member)}>
-                        <CardHeader className="flex-row items-center justify-between">
-                            <Badge variant={roleVariant[member.role] ?? 'secondary'} className="capitalize">{member.role}</Badge>
+                    <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow">
+                        <CardHeader className="flex-row items-start justify-between pb-2">
+                             <div>
+                                <Badge variant={roleVariant[member.role] ?? 'secondary'} className="capitalize">{member.role}</Badge>
+                                <Badge variant="success" className="capitalize ml-2">Active</Badge>
+                             </div>
                              {profile.role === 'Admin' && member.role !== 'Admin' && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="rounded-full" onClick={(e) => e.stopPropagation()}>
+                                        <Button variant="ghost" size="icon" className="rounded-full -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -228,7 +231,7 @@ export default function TeamPage() {
                                 </DropdownMenu>
                              )}
                         </CardHeader>
-                        <CardContent className="text-center flex-1">
+                        <CardContent className="text-center flex-1 cursor-pointer" onClick={() => handleViewDetails(member)}>
                             <CardTitle className="font-headline mt-4">{member.name}</CardTitle>
                             <CardDescription>{member.email || 'No email provided'}</CardDescription>
                         </CardContent>
@@ -262,5 +265,3 @@ export default function TeamPage() {
     </>
   );
 }
-
-    

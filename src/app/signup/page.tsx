@@ -66,6 +66,7 @@ export default function SignupPage() {
         throw new Error('Auth or Firestore service is not available.');
       }
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      sessionStorage.setItem('fb-cred', values.password);
       
       const user = userCredential.user;
       if (user) {
@@ -253,5 +254,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
