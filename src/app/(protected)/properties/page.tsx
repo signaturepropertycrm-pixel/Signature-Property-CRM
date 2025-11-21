@@ -34,6 +34,8 @@ import {
   VideoOff,
   PlusCircle,
   CalendarPlus,
+  Briefcase,
+  Home,
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
@@ -69,6 +71,7 @@ import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { Separator } from '@/components/ui/separator';
 
 
 function formatSize(value: number, unit: string) {
@@ -106,14 +109,16 @@ function PropertiesPageContent() {
   const activeTab = statusFilterFromURL || 'All';
   const { toast } = useToast();
   const { currency } = useCurrency();
-
   const firestore = useFirestore();
-  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: properties, isLoading } = useCollection<Property>(propertiesQuery);
 
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
-    null
-  );
+  // Data sources
+  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
+  
+  const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
+  const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
+
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
@@ -132,6 +137,14 @@ function PropertiesPageContent() {
     demandUnit: 'All'
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+
+  const allProperties = useMemo(() => {
+      const combined = [...(agencyProperties || []), ...(agentProperties || [])];
+      // Simple deduplication based on ID
+      const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
+      return unique;
+  }, [agencyProperties, agentProperties]);
+
 
   useEffect(() => {
     if (!isAddPropertyOpen) {
@@ -166,53 +179,39 @@ function PropertiesPageContent() {
     setIsFilterPopoverOpen(false);
   };
   
-  const filteredProperties = useMemo(() => {
+ const getFilteredProperties = (properties: Property[] | null) => {
     if (!properties) return [];
     let filtered = properties.filter(p => !p.is_deleted);
 
-    // Status tab filter from URL (Sidebar or Mobile Tabs)
     if (activeTab && (activeTab === 'Available' || activeTab === 'Sold')) {
         filtered = filtered.filter(p => p.status === activeTab);
     } else if (activeTab === 'Recorded') {
         filtered = filtered.filter(p => p.is_recorded);
     }
     
-    // Global search query from header
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         filtered = filtered.filter(prop => 
             prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
             prop.address.toLowerCase().includes(lowercasedQuery) ||
             prop.area.toLowerCase().includes(lowercasedQuery) ||
-            prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
-            String(prop.size_value).toLowerCase().includes(lowercasedQuery) ||
-            String(prop.demand_amount).toLowerCase().includes(lowercasedQuery)
+            prop.serial_no.toLowerCase().includes(lowercasedQuery)
         );
     }
     
-    // Advanced filters from popover
-    if (filters.area) {
-        filtered = filtered.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
-    }
-    if (filters.propertyType !== 'All') {
-        filtered = filtered.filter(p => p.property_type === filters.propertyType);
-    }
-    if (filters.minSize) {
-        filtered = filtered.filter(p => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    }
-    if (filters.maxSize) {
-        filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    }
-    if (filters.minDemand) {
-        filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
-    }
-    if (filters.maxDemand) {
-        filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
-    }
-
+    if (filters.area) filtered = filtered.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
+    if (filters.propertyType !== 'All') filtered = filtered.filter(p => p.property_type === filters.propertyType);
+    if (filters.minSize) filtered = filtered.filter(p => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.maxSize) filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.minDemand) filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
+    if (filters.maxDemand) filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
     return filtered;
-  }, [searchQuery, filters, activeTab, properties]);
+  };
+
+  const filteredAgentProperties = useMemo(() => getFilteredProperties(agentProperties), [searchQuery, filters, activeTab, agentProperties]);
+  const filteredAgencyProperties = useMemo(() => getFilteredProperties(agencyProperties), [searchQuery, filters, activeTab, agencyProperties]);
+
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -231,7 +230,7 @@ function PropertiesPageContent() {
   
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
-    setIsAddPropertyOpen(true); // Re-using add dialog for editing
+    setIsAddPropertyOpen(true);
   };
 
   const handleSetAppointment = (prop: Property) => {
@@ -251,20 +250,29 @@ function PropertiesPageContent() {
   };
 
   const handleUnmarkRecorded = async (prop: Property) => {
-      if (!profile.agency_id) return;
-      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
+      const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
+      const collectionId = prop.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+      if (!collectionId) return;
+
+      const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
       await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-      if (!profile.agency_id) return;
-      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
+      const collectionName = updatedProperty.created_by === profile.user_id ? 'agents' : 'agencies';
+      const collectionId = updatedProperty.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+       if (!collectionId) return;
+      
+      const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
       await setDoc(docRef, updatedProperty, { merge: true });
   };
   
-  const handleDelete = async (propertyId: string) => {
-    if (!profile.agency_id) return;
-    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propertyId);
+  const handleDelete = async (property: Property) => {
+    const collectionName = property.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = property.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+    
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
     await setDoc(docRef, { is_deleted: true }, { merge: true });
     toast({
         title: "Property Moved to Trash",
@@ -273,8 +281,12 @@ function PropertiesPageContent() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'>) => {
-    if (!profile.agency_id) return;
-    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
+    const isAgentAdding = profile.role === 'Agent' && !propertyToEdit;
+    const collectionName = isAgentAdding ? 'agents' : 'agencies';
+    const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
     
     const dataToSave = {
         ...propertyData,
@@ -282,12 +294,12 @@ function PropertiesPageContent() {
     };
 
     if (propertyToEdit) {
-        // Update existing property
-        const docRef = doc(collectionRef, propertyToEdit.id);
+        const editCollectionName = propertyToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
+        const editCollectionId = propertyToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        const docRef = doc(firestore, editCollectionName, editCollectionId, 'properties', propertyToEdit.id);
         await setDoc(docRef, dataToSave, { merge: true });
         toast({ title: 'Property Updated' });
     } else {
-        // Add new property
         await addDoc(collectionRef, dataToSave);
         toast({ title: 'Property Added' });
     }
@@ -301,8 +313,9 @@ function PropertiesPageContent() {
     router.push(url);
   };
   
-  const renderTable = () => {
-    if (isLoading) return <p className="p-4 text-center">Loading properties...</p>;
+  const renderTable = (properties: Property[], isAgentData: boolean) => {
+    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    if (properties.length === 0) return null;
     return (
      <Table>
         <TableHeader>
@@ -318,7 +331,7 @@ function PropertiesPageContent() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredProperties.map((prop) => (
+          {properties.map((prop) => (
             <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
               <TableCell>
                 <div className="flex items-center gap-2">
@@ -364,42 +377,23 @@ function PropertiesPageContent() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="glass-card">
-                      <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
-                      <Eye />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
-                        <CalendarPlus />
-                        Set Appointment
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
-                        <CheckCircle />
-                        Mark as Sold
-                    </DropdownMenuItem>
-
-                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                        <>
-                            <DropdownMenuItem onSelect={() => handleEdit(prop)}>
-                                <Edit />
-                                Edit
-                            </DropdownMenuItem>
-                           
-                            {prop.is_recorded ? (
-                            <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
-                                <VideoOff />
-                                Unmark as Recorded
-                            </DropdownMenuItem>
-                            ) : (
-                            <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                                <Video />
-                                Mark as Recorded
-                            </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                <Trash2 />
-                                Delete
-                            </DropdownMenuItem>
-                        </>
+                    <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye />View Details</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                    {(isAgentData || profile.role !== 'Agent') && (
+                        <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                    )}
+                    {(isAgentData) && (
+                        <DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>
+                    )}
+                    {(isAgentData) && (
+                        prop.is_recorded ? (
+                            <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}><Video />Mark as Recorded</DropdownMenuItem>
+                        )
+                    )}
+                    {(isAgentData || profile.role !== 'Agent') && (
+                        <DropdownMenuItem onSelect={() => handleDelete(prop)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -410,11 +404,12 @@ function PropertiesPageContent() {
       </Table>
   )};
 
-  const renderCards = () => {
-    if (isLoading) return <p className="p-4 text-center">Loading properties...</p>;
+  const renderCards = (properties: Property[], isAgentData: boolean) => {
+    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
+     if (properties.length === 0) return null;
     return (
     <div className="space-y-4">
-        {filteredProperties.map((prop) => (
+        {properties.map((prop) => (
             <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
                 <CardHeader>
                     <CardTitle className="flex justify-between items-start">
@@ -445,72 +440,20 @@ function PropertiesPageContent() {
                     </div>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                            <p className="text-muted-foreground">Type</p>
-                            <p className="font-medium">{prop.property_type}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                            <p className="text-muted-foreground">Size</p>
-                            <p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                            <p className="text-muted-foreground">Demand</p>
-                            <p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p>
-                        </div>
-                    </div>
+                    <div className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Type</p><p className="font-medium">{prop.property_type}</p></div></div>
+                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p></div></div>
+                    <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
                 </CardContent>
                  <CardFooter className="flex justify-end">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="glass-card">
-                          <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
-                            <Eye />
-                            View Details
-                          </DropdownMenuItem>
-                           <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}>
-                                <CalendarPlus />
-                                Set Appointment
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}>
-                                <CheckCircle />
-                                Mark as Sold
-                            </DropdownMenuItem>
-                          {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                            <>
-                                <DropdownMenuItem onSelect={() => handleEdit(prop)}>
-                                    <Edit />
-                                    Edit
-                                </DropdownMenuItem>
-                                {prop.is_recorded ? (
-                                    <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}>
-                                        <VideoOff />
-                                        Unmark as Recorded
-                                    </DropdownMenuItem>
-                                ) : (
-                                    <DropdownMenuItem onSelect={() => handleRecordVideo(prop)}>
-                                        <Video />
-                                        Mark as Recorded
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onSelect={() => handleDelete(prop.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                    <Trash2 />
-                                    Delete
-                                </DropdownMenuItem>
-                            </>
-                          )}
+                          <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye />View Details</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                          {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>)}
+                          {isAgentData && (<DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>)}
+                          {isAgentData && (prop.is_recorded ? (<DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>) : (<DropdownMenuItem onSelect={() => handleRecordVideo(prop)}><Video />Mark as Recorded</DropdownMenuItem>))}
+                          {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(prop)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                         </DropdownMenuContent>
                       </DropdownMenu>
                 </CardFooter>
@@ -519,122 +462,46 @@ function PropertiesPageContent() {
     </div>
   )};
 
+  const renderSection = (title: string, icon: React.ReactNode, properties: Property[], isAgentData: boolean, isLoading: boolean) => {
+    return (
+        <div>
+            <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
+            {isLoading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : properties.length === 0 ? (
+                <Card className="flex items-center justify-center h-24 border-dashed"><p className="text-muted-foreground">No properties in this section.</p></Card>
+            ) : (
+                isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>
+            )}
+        </div>
+    );
+  };
+
   return (
     <>
       <TooltipProvider>
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className='hidden md:block'>
-              <h1 className="text-3xl font-bold tracking-tight font-headline">
-                Properties
-              </h1>
-              <p className="text-muted-foreground">
-                {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your properties.'}
-              </p>
+              <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
+              <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
             </div>
             {(profile.role === 'Admin' || profile.role === 'Editor') && (
                 <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                    <PopoverTrigger asChild>
-                    <Button variant="outline" className="rounded-full">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Filters
-                    </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                    <div className="grid gap-4">
-                        <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Filters</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Refine your property search.
-                        </p>
-                        </div>
+                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}><PopoverTrigger asChild><Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button></PopoverTrigger><PopoverContent className="w-80">
+                    <div className="grid gap-4"><div className="space-y-2"><h4 className="font-medium leading-none">Filters</h4><p className="text-sm text-muted-foreground">Refine your property search.</p></div>
                         <div className="grid gap-2">
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <Label htmlFor="area">Area</Label>
-                            <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                        <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="area">Area</Label><Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" /></div>
+                        <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="propertyType">Type</Label><Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}><SelectTrigger className="col-span-2 h-8"><SelectValue placeholder="Property Type" /></SelectTrigger><SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="House">House</SelectItem><SelectItem value="Plot">Plot</SelectItem><SelectItem value="Flat">Flat</SelectItem><SelectItem value="Shop">Shop</SelectItem><SelectItem value="Commercial">Commercial</SelectItem><SelectItem value="Agricultural">Agricultural</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
+                        <div className="grid grid-cols-3 items-center gap-4"><Label>Size</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" /><Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" /></div></div>
+                        <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Marla">Marla</SelectItem><SelectItem value="SqFt">SqFt</SelectItem><SelectItem value="Kanal">Kanal</SelectItem><SelectItem value="Acre">Acre</SelectItem><SelectItem value="Maraba">Maraba</SelectItem></SelectContent></Select></div></div>
+                        <div className="grid grid-cols-3 items-center gap-4"><Label>Demand</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" /><Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" /></div></div>
+                        <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Lacs">Lacs</SelectItem><SelectItem value="Crore">Crore</SelectItem></SelectContent></Select></div></div>
                         </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <Label htmlFor="propertyType">Type</Label>
-                            <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                                <SelectTrigger className="col-span-2 h-8">
-                                    <SelectValue placeholder="Property Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="All">All</SelectItem>
-                                    <SelectItem value="House">House</SelectItem>
-                                    <SelectItem value="Plot">Plot</SelectItem>
-                                    <SelectItem value="Flat">Flat</SelectItem>
-                                    <SelectItem value="Shop">Shop</SelectItem>
-                                    <SelectItem value="Commercial">Commercial</SelectItem>
-                                    <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <Label>Size</Label>
-                            <div className="col-span-2 grid grid-cols-2 gap-2">
-                            <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                            <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <Label></Label>
-                                <div className="col-span-2">
-                                    <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
-                                        <SelectTrigger className="h-8">
-                                            <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="All">All Units</SelectItem>
-                                            <SelectItem value="Marla">Marla</SelectItem>
-                                            <SelectItem value="SqFt">SqFt</SelectItem>
-                                            <SelectItem value="Kanal">Kanal</SelectItem>
-                                            <SelectItem value="Acre">Acre</SelectItem>
-                                            <SelectItem value="Maraba">Maraba</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                            <Label>Demand</Label>
-                            <div className="col-span-2 grid grid-cols-2 gap-2">
-                            <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" />
-                            <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                                <Label></Label>
-                                <div className="col-span-2">
-                                    <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
-                                        <SelectTrigger className="h-8">
-                                            <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="All">All Units</SelectItem>
-                                            <SelectItem value="Lacs">Lacs</SelectItem>
-                                            <SelectItem value="Crore">Crore</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                            <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
-                        </div>
+                        <div className="flex justify-end gap-2"><Button variant="ghost" onClick={clearFilters}>Clear</Button><Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button></div>
                     </div>
                     </PopoverContent>
                 </Popover>
-                <Button variant="outline" className="rounded-full">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Import
-                </Button>
-                <Button variant="outline" className="rounded-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
+                <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
+                <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
                 </div>
             )}
           </div>
@@ -642,74 +509,43 @@ function PropertiesPageContent() {
            {isMobile && (
               <div className="w-full">
                 <Select value={activeTab} onValueChange={handleTabChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Filter by status..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {propertyStatusLinks.map(({label, status}) => (
-                        <SelectItem key={status} value={status}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
+                  <SelectContent>{propertyStatusLinks.map(({label, status}) => (<SelectItem key={status} value={status}>{label}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
           )}
 
-          <Card className="md:block hidden">
-            <CardContent className="p-0">
-              {renderTable()}
-            </CardContent>
-          </Card>
-          <div className="md:hidden">
-              {renderCards()}
-          </div>
+            <div className="space-y-8">
+                {profile.role === 'Agent' && renderSection("My Properties", <Briefcase />, filteredAgentProperties, true, isAgentLoading)}
+                {filteredAgencyProperties.length > 0 && <Separator />}
+                {renderSection("Agency Properties", <Home />, filteredAgencyProperties, false, isAgencyLoading)}
+            </div>
+
         </div>
       </TooltipProvider>
 
-      {(profile.role === 'Admin' || profile.role === 'Editor') && (
-        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
-            <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                <PlusCircle className="h-6 w-6" />
-                <span className="sr-only">Add Property</span>
-            </Button>
-        </div>
-      )}
+      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+        <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+            <PlusCircle className="h-6 w-6" />
+            <span className="sr-only">Add Property</span>
+        </Button>
+      </div>
 
       <AddPropertyDialog 
           isOpen={isAddPropertyOpen}
           setIsOpen={setIsAddPropertyOpen}
           propertyToEdit={propertyToEdit}
-          totalProperties={properties?.length || 0}
+          totalProperties={allProperties.length}
           onSave={handleSaveProperty}
       />
 
-      {appointmentDetails && (
-        <SetAppointmentDialog 
-            isOpen={isAppointmentOpen}
-            setIsOpen={setIsAppointmentOpen}
-            onSave={handleSaveAppointment}
-            appointmentDetails={appointmentDetails}
-        />
-      )}
+      {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
       
       {selectedProperty && (
         <>
-          <PropertyDetailsDialog
-            property={selectedProperty}
-            isOpen={isDetailsOpen}
-            setIsOpen={setIsDetailsOpen}
-          />
-          <MarkAsSoldDialog
-            property={selectedProperty}
-            isOpen={isSoldOpen}
-            setIsOpen={setIsSoldOpen}
-            onUpdateProperty={handleUpdateProperty}
-          />
-          <RecordVideoDialog
-            property={selectedProperty}
-            isOpen={isRecordVideoOpen}
-            setIsOpen={setIsRecordVideoOpen}
-            onUpdateProperty={handleUpdateProperty}
-          />
+          <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen}/>
+          <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty}/>
+          <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty}/>
         </>
       )}
     </>
@@ -723,5 +559,3 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
-
-    

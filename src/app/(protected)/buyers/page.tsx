@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,6 +28,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
+import { Separator } from '@/components/ui/separator';
 
 
 const statusVariant = {
@@ -81,14 +82,23 @@ function BuyersPageContent() {
 
     const firestore = useFirestore();
 
-    const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+    const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+    const agentBuyersQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.user_id, firestore]);
+    
+    const { data: agencyBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
+    const { data: agentBuyers, isLoading: isAgentLoading } = useCollection<Buyer>(agentBuyersQuery);
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
     const { data: teamMembers } = useCollection<User>(teamMembersQuery);
     
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+    
+    const allBuyers = useMemo(() => {
+        const combined = [...(agencyBuyers || []), ...(agentBuyers || [])];
+        const unique = Array.from(new Map(combined.map(b => [b.id, b])).values());
+        return unique;
+    }, [agencyBuyers, agentBuyers]);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
@@ -146,9 +156,12 @@ function BuyersPageContent() {
         await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment);
     };
     
-    const handleDelete = async (buyerId: string) => {
-        if(!profile.agency_id) return;
-        const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+    const handleDelete = async (buyer: Buyer) => {
+        const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
+        const collectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        if(!collectionId) return;
+
+        const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
         await setDoc(docRef, { is_deleted: true }, { merge: true });
         toast({
             title: "Buyer Moved to Trash",
@@ -165,21 +178,20 @@ function BuyersPageContent() {
         setIsFilterPopoverOpen(false);
     };
 
-    const handleStatusChange = async (buyerId: string, newStatus: BuyerStatus) => {
-        if (!profile.agency_id || !buyers) return;
-        const buyerToUpdate = buyers.find(b => b.id === buyerId);
-        if (!buyerToUpdate) return;
-        
+    const handleStatusChange = async (buyer: Buyer, newStatus: BuyerStatus) => {
         if (newStatus === 'Follow Up') {
-            setBuyerForFollowUp(buyerToUpdate);
+            setBuyerForFollowUp(buyer);
             setIsFollowUpOpen(true);
         } else {
-            const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+            const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
+            const collectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+            if(!collectionId) return;
+
+            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
             await setDoc(docRef, { status: newStatus }, { merge: true });
 
-            // If status changed from 'Follow Up', remove from followUps
-            if (buyerToUpdate.status === 'Follow Up' && followUps) {
-                const followUpToDelete = followUps.find(fu => fu.buyerId === buyerId);
+            if (buyer.status === 'Follow Up' && followUps && profile.agency_id) {
+                const followUpToDelete = followUps.find(fu => fu.buyerId === buyer.id);
                 if (followUpToDelete) {
                     await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'followUps', followUpToDelete.id));
                 }
@@ -188,8 +200,8 @@ function BuyersPageContent() {
     };
     
      const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
-        if (!profile.agency_id || !buyers) return;
-        const buyer = buyers.find(b => b.id === buyerId);
+        if (!profile.agency_id || !allBuyers) return;
+        const buyer = allBuyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
         const newFollowUp: Omit<FollowUp, 'id'> = {
@@ -205,9 +217,10 @@ function BuyersPageContent() {
         };
         
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
-        const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+        const buyerCollectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
+        const buyerCollectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        const buyerDocRef = doc(firestore, buyerCollectionName, buyerCollectionId, 'buyers', buyerId);
 
-        // Check if a followup for this buyer already exists to update it, otherwise create a new one
         const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
         if (existingFollowUp) {
             await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp, { merge: true });
@@ -228,21 +241,22 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'>) => {
-        if (!profile.agency_id) return;
-        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
+        const isAgentAdding = profile.role === 'Agent' && !buyerToEdit;
+        const collectionName = isAgentAdding ? 'agents' : 'agencies';
+        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
+        if (!collectionId) return;
+
+        const collectionRef = collection(firestore, collectionName, collectionId, 'buyers');
         
-        const dataToSave = {
-            ...buyerData,
-            agency_id: profile.agency_id
-        };
+        const dataToSave = { ...buyerData, agency_id: profile.agency_id };
 
         if (buyerToEdit) {
-            // Update existing buyer
-            const docRef = doc(collectionRef, buyerToEdit.id);
+            const editCollectionName = buyerToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
+            const editCollectionId = buyerToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+            const docRef = doc(firestore, editCollectionName, editCollectionId, 'buyers', buyerToEdit.id);
             await setDoc(docRef, dataToSave, { merge: true });
             toast({ title: 'Buyer Updated' });
         } else {
-            // Add new buyer
             await addDoc(collectionRef, dataToSave);
             toast({ title: 'Buyer Added' });
         }
@@ -259,16 +273,12 @@ function BuyersPageContent() {
         });
     };
 
-    const filteredBuyers = useMemo(() => {
-        if (!buyers) return [];
-        let filtered = buyers.filter(b => !b.is_deleted);
+    const getFilteredBuyers = (buyersList: Buyer[] | null) => {
+        if (!buyersList) return [];
+        let filtered = buyersList.filter(b => !b.is_deleted);
 
-        // Status filter from URL (Sidebar or Mobile Tabs)
-        if (activeTab && activeTab !== 'All') {
-            filtered = filtered.filter(b => b.status === activeTab);
-        }
+        if (activeTab && activeTab !== 'All') filtered = filtered.filter(b => b.status === activeTab);
         
-        // Global search query from header
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer => 
@@ -278,32 +288,20 @@ function BuyersPageContent() {
             );
         }
 
-        // Advanced filters from popover
-        if (filters.status !== 'All') {
-            filtered = filtered.filter(b => b.status === filters.status);
-        }
-        if (filters.area) {
-            filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
-        }
-        if (filters.minBudget) {
-             filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
-        }
-        if (filters.maxBudget) {
-             filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
-        }
-         if (filters.propertyType !== 'All') {
-            filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
-        }
-        if (filters.minSize) {
-            filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
-        }
-        if (filters.maxSize) {
-            filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
-        }
-
+        if (filters.status !== 'All') filtered = filtered.filter(b => b.status === filters.status);
+        if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
+        if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
+        if (filters.maxBudget) filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
+        if (filters.propertyType !== 'All') filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
+        if (filters.minSize) filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
+        if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
 
         return filtered;
-    }, [searchQuery, activeTab, filters, buyers]);
+    };
+    
+    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers), [searchQuery, activeTab, filters, agentBuyers]);
+    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers]);
+
 
     const handleTabChange = (value: string) => {
         const status = value as BuyerStatus | 'All';
@@ -311,126 +309,35 @@ function BuyersPageContent() {
         router.push(url);
     };
     
-    const renderTable = () => {
-      if (isBuyersLoading) return <p className="p-4 text-center">Loading buyers...</p>
+    const renderTable = (buyers: Buyer[], isAgentData: boolean) => {
+      if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>
+      if (buyers.length === 0) return null;
       return (
         <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Area & Type</TableHead>
-                    <TableHead>Budget & Size</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
+            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Area & Type</TableHead><TableHead>Budget & Size</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
-                {filteredBuyers.map(buyer => (
+                {buyers.map(buyer => (
                     <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
-                        <TableCell>
-                            <div className="font-bold font-headline text-base">{buyer.name}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                <span>{buyer.phone}</span>
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex flex-col text-sm">
-                                <span>{buyer.area_preference}</span>
-                                <span className="text-muted-foreground">{buyer.property_type_preference}</span>
-                            </div>
-                        </TableCell>
-                         <TableCell>
-                            <div className="flex flex-col text-sm">
-                                <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
-                                <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex items-center gap-2">
-                                <Badge 
-                                    variant={statusVariant[buyer.status]} 
-                                    className={
-                                        buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''
-                                    }
-                                >
-                                    {buyer.status}
-                                </Badge>
-                                {buyer.is_investor && (
-                                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
-                                )}
-                            </div>
-                        </TableCell>
+                        <TableCell><div className="font-bold font-headline text-base">{buyer.name}</div><div className="text-xs text-muted-foreground flex items-center gap-2 mt-1"><Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge><span>{buyer.phone}</span></div></TableCell>
+                        <TableCell><div className="flex flex-col text-sm"><span>{buyer.area_preference}</span><span className="text-muted-foreground">{buyer.property_type_preference}</span></div></TableCell>
+                         <TableCell><div className="flex flex-col text-sm"><span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span><span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span></div></TableCell>
+                        <TableCell><div className="flex items-center gap-2"><Badge variant={statusVariant[buyer.status]} className={ buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : '' }>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
                                 <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
+                                <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                    <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}>
-                                        <Eye />
-                                        View Details
-                                    </DropdownMenuItem>
-                                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                                        <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
-                                            <Edit />
-                                            Edit
-                                        </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}>
-                                        <CalendarPlus />
-                                        Set Appointment
-                                    </DropdownMenuItem>
-                                     <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger>
-                                            <Bookmark />
-                                            Status
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuPortal>
-                                            <DropdownMenuSubContent>
-                                                {buyerStatuses.map((status) => (
-                                                    <DropdownMenuItem 
-                                                        key={status} 
-                                                        onClick={() => handleStatusChange(buyer.id, status)}
-                                                        disabled={buyer.status === status}
-                                                    >
-                                                        {status}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </DropdownMenuSubContent>
-                                        </DropdownMenuPortal>
-                                    </DropdownMenuSub>
-                                     <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger>
-                                            <UserCheck />
-                                            Assign Agent
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuPortal>
-                                            <DropdownMenuSubContent>
-                                                {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                                    <DropdownMenuItem 
-                                                        key={agent.id} 
-                                                        onClick={() => handleAssignAgent(buyer.id, agent.id)}
-                                                        disabled={buyer.assignedTo === agent.id}
-                                                    >
-                                                        {agent.name}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                            </DropdownMenuSubContent>
-                                        </DropdownMenuPortal>
-                                    </DropdownMenuSub>
-                                    {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                                        <DropdownMenuItem onSelect={() => handleDelete(buyer.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                            <Trash2 />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    )}
+                                    <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
+                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit</DropdownMenuItem>)}
+                                    <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                     <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                     {(!isAgentData && profile.role === 'Admin') && (
+                                        <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
+                                            {teamMembers?.filter(m => m.status === 'Active').map(agent => (
+                                                <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)} disabled={buyer.assignedTo === agent.id}>{agent.name}</DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                     )}
+                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>
@@ -440,135 +347,30 @@ function BuyersPageContent() {
         </Table>
     )}
 
-    const renderCards = () => {
-      if (isBuyersLoading) return <p className="p-4 text-center">Loading buyers...</p>
+    const renderCards = (buyers: Buyer[], isAgentData: boolean) => {
+      if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
+      if (buyers.length === 0) return null;
       return (
         <div className="space-y-4">
-            {filteredBuyers.map(buyer => (
+            {buyers.map(buyer => (
                 <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
-                    <CardHeader>
-                        <CardTitle className="flex justify-between items-start">
-                            <div>
-                                <span className="font-bold font-headline text-lg">{buyer.name}</span>
-                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                    <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
-                                </div>
-                            </div>
-                           <div className="flex flex-col items-end gap-2">
-                                <Badge 
-                                    variant={statusVariant[buyer.status]} 
-                                    className={
-                                        `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
-                                        buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                        buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
-                                        buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`
-                                    }
-                                >
-                                    {buyer.status}
-                                </Badge>
-                                {buyer.is_investor && (
-                                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
-                                )}
-                           </div>
-                        </CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="flex justify-between items-start"><div><span className="font-bold font-headline text-lg">{buyer.name}</span><div className="text-xs text-muted-foreground flex items-center gap-2 mt-1"><Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge></div></div><div className="flex flex-col items-end gap-2"><Badge variant={statusVariant[buyer.status]} className={`capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`}>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                           <Home className="h-4 w-4 text-muted-foreground" />
-                           <div>
-                                <p className="text-muted-foreground">Area</p>
-                                <p className="font-medium">{buyer.area_preference}</p>
-                           </div>
-                        </div>
-                         <div className="flex items-center gap-2">
-                           <Ruler className="h-4 w-4 text-muted-foreground" />
-                           <div>
-                                <p className="text-muted-foreground">Size</p>
-                                <p className="font-medium">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</p>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <Wallet className="h-4 w-4 text-muted-foreground" />
-                           <div>
-                                <p className="text-muted-foreground">Budget</p>
-                                <p className="font-medium">{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</p>
-                           </div>
-                        </div>
-                         <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                                <p className="text-muted-foreground">Phone</p>
-                                <p className="font-medium">{buyer.phone}</p>
-                            </div>
-                        </div>
+                        <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Area</p><p className="font-medium">{buyer.area_preference}</p></div></div>
+                         <div className="flex items-center gap-2"><Ruler className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</p></div></div>
+                        <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Budget</p><p className="font-medium">{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</p></div></div>
+                         <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Phone</p><p className="font-medium">{buyer.phone}</p></div></div>
                     </CardContent>
                     <CardFooter className="flex justify-end">
                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                            </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
-                                <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}>
-                                    <Eye />
-                                    View Details
-                                </DropdownMenuItem>
-                                {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                                    <DropdownMenuItem onSelect={() => handleEdit(buyer)}>
-                                        <Edit />
-                                        Edit
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}>
-                                    <CalendarPlus />
-                                    Set Appointment
-                                </DropdownMenuItem>
-                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        <Bookmark />
-                                        Status
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                        <DropdownMenuSubContent>
-                                            {buyerStatuses.map((status) => (
-                                                <DropdownMenuItem 
-                                                    key={status} 
-                                                    onClick={() => handleStatusChange(buyer.id, status)}
-                                                    disabled={buyer.status === status}
-                                                >
-                                                    {status}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                </DropdownMenuSub>
-                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        <UserCheck />
-                                        Assign Agent
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                        <DropdownMenuSubContent>
-                                            {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                                <DropdownMenuItem 
-                                                    key={agent.id} 
-                                                    onClick={() => handleAssignAgent(buyer.id, agent.id)}
-                                                    disabled={buyer.assignedTo === agent.id}
-                                                >
-                                                    {agent.name}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                </DropdownMenuSub>
-                                {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                                    <DropdownMenuItem onSelect={() => handleDelete(buyer.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
-                                        <Trash2 />
-                                        Delete
-                                    </DropdownMenuItem>
-                                )}
+                                <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
+                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit</DropdownMenuItem>)}
+                                <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                {(!isAgentData && profile.role === 'Admin') && (<DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{teamMembers?.filter(m => m.status === 'Active').map(agent => (<DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)} disabled={buyer.assignedTo === agent.id}>{agent.name}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>)}
+                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </CardFooter>
@@ -576,6 +378,19 @@ function BuyersPageContent() {
             ))}
         </div>
     )};
+
+    const renderSection = (title: string, icon: React.ReactNode, buyers: Buyer[], isAgentData: boolean, isLoading: boolean) => {
+        return (
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
+                {isLoading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : buyers.length === 0 ? (
+                    <Card className="flex items-center justify-center h-24 border-dashed"><p className="text-muted-foreground">No buyers in this section.</p></Card>
+                ) : (
+                    isMobile ? renderCards(buyers, isAgentData) : <Card><CardContent className="p-0">{renderTable(buyers, isAgentData)}</CardContent></Card>
+                )}
+            </div>
+        );
+    };
 
   return (
     <>
@@ -589,195 +404,58 @@ function BuyersPageContent() {
           </div>
             {(profile.role === 'Admin' || profile.role === 'Editor') && (
                 <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                    <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                        <PopoverTrigger asChild>
-                        <Button variant="outline" className="rounded-full">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Filters
-                        </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                        <div className="grid gap-4">
-                            <div className="space-y-2">
-                            <h4 className="font-medium leading-none">Filters</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Refine your buyer search.
-                            </p>
-                            </div>
+                    <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}><PopoverTrigger asChild><Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button></PopoverTrigger>
+                        <PopoverContent className="w-80"><div className="grid gap-4"><div className="space-y-2"><h4 className="font-medium leading-none">Filters</h4><p className="text-sm text-muted-foreground">Refine your buyer search.</p></div>
                             <div className="grid gap-2">
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="status">Status</Label>
-                                <Select value={filters.status} onValueChange={(value: BuyerStatus | 'All') => handleFilterChange('status', value)}>
-                                    <SelectTrigger className="col-span-2 h-8">
-                                        <SelectValue placeholder="Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="All">All</SelectItem>
-                                        {buyerStatuses.map(status => (
-                                            <SelectItem key={status} value={status}>{status}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="status">Status</Label><Select value={filters.status} onValueChange={(value: BuyerStatus | 'All') => handleFilterChange('status', value)}><SelectTrigger className="col-span-2 h-8"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="All">All</SelectItem>{buyerStatuses.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent></Select></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="area">Area</Label><Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" /></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="propertyType">Type</Label><Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}><SelectTrigger className="col-span-2 h-8"><SelectValue placeholder="Property Type" /></SelectTrigger><SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="House">House</SelectItem><SelectItem value="Plot">Plot</SelectItem><SelectItem value="Flat">Flat</SelectItem><SelectItem value="Shop">Shop</SelectItem><SelectItem value="Commercial">Commercial</SelectItem><SelectItem value="Agricultural">Agricultural</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label>Budget</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" /><Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" /></div></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.budgetUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('budgetUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Thousand">Thousand</SelectItem><SelectItem value="Lacs">Lacs</SelectItem><SelectItem value="Crore">Crore</SelectItem></SelectContent></Select></div></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label>Size</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" /><Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" /></div></div>
+                            <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Marla">Marla</SelectItem><SelectItem value="SqFt">SqFt</SelectItem><SelectItem value="Kanal">Kanal</SelectItem><SelectItem value="Acre">Acre</SelectItem><SelectItem value="Maraba">Maraba</SelectItem></SelectContent></Select></div></div>
                             </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label htmlFor="area">Area</Label>
-                                <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                            <Label htmlFor="propertyType">Type</Label>
-                            <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                                <SelectTrigger className="col-span-2 h-8">
-                                    <SelectValue placeholder="Property Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="All">All</SelectItem>
-                                    <SelectItem value="House">House</SelectItem>
-                                    <SelectItem value="Plot">Plot</SelectItem>
-                                    <SelectItem value="Flat">Flat</SelectItem>
-                                    <SelectItem value="Shop">Shop</SelectItem>
-                                    <SelectItem value="Commercial">Commercial</SelectItem>
-                                    <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label>Budget</Label>
-                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                <Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" />
-                                <Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label></Label>
-                                <div className="col-span-2">
-                                    <Select value={filters.budgetUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('budgetUnit', value)}>
-                                        <SelectTrigger className="h-8">
-                                            <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="All">All Units</SelectItem>
-                                            <SelectItem value="Thousand">Thousand</SelectItem>
-                                            <SelectItem value="Lacs">Lacs</SelectItem>
-                                            <SelectItem value="Crore">Crore</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label>Size</Label>
-                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                                <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 items-center gap-4">
-                                <Label></Label>
-                                <div className="col-span-2">
-                                    <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
-                                        <SelectTrigger className="h-8">
-                                            <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="All">All Units</SelectItem>
-                                            <SelectItem value="Marla">Marla</SelectItem>
-                                            <SelectItem value="SqFt">SqFt</SelectItem>
-                                            <SelectItem value="Kanal">Kanal</SelectItem>
-                                            <SelectItem value="Acre">Acre</SelectItem>
-                                            <SelectItem value="Maraba">Maraba</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                                <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
-                            </div>
-                        </div>
-                        </PopoverContent>
+                            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={clearFilters}>Clear</Button><Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button></div>
+                        </div></PopoverContent>
                     </Popover>
-                <Button variant="outline" className="rounded-full">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Import
-                </Button>
-                <Button variant="outline" className="rounded-full">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
+                <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
+                <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
                 </div>
             )}
         </div>
         
         {isMobile ? (
             <div className="w-full">
-                <Select value={activeTab} onValueChange={handleTabChange}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Filter by status..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="All">All Statuses</SelectItem>
-                         {buyerStatuses.map((status) => (
-                           <SelectItem key={status} value={status}>{status}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Select value={activeTab} onValueChange={handleTabChange}><SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger><SelectContent><SelectItem value="All">All Statuses</SelectItem>{buyerStatuses.map((status) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}</SelectContent></Select>
             </div>
         ) : null}
-        
-        <Card className="md:block hidden">
-            <CardContent className="p-0">
-                {renderTable()}
-            </CardContent>
-        </Card>
-         <div className="md:hidden">
-            {renderCards()}
+
+        <div className="space-y-8">
+            {profile.role === 'Agent' && renderSection("My Buyers", <Briefcase />, filteredAgentBuyers, true, isAgentLoading)}
+            {filteredAgencyBuyers.length > 0 && <Separator />}
+            {renderSection("Agency Buyers", <Home />, filteredAgencyBuyers, false, isAgencyLoading)}
         </div>
+        
       </div>
 
-      {(profile.role === 'Admin' || profile.role === 'Editor') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
            <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />
                 <span className="sr-only">Add Buyer</span>
             </Button>
         </div>
-      )}
       
        <AddBuyerDialog 
           isOpen={isAddBuyerOpen} 
           setIsOpen={setIsAddBuyerOpen} 
-          totalBuyers={buyers?.length || 0}
+          totalBuyers={allBuyers?.length || 0}
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
         
-        {buyerForFollowUp && (
-            <AddFollowUpDialog
-                isOpen={isFollowUpOpen}
-                setIsOpen={setIsFollowUpOpen}
-                buyer={buyerForFollowUp}
-                onSave={handleSaveFollowUp}
-            />
-        )}
-
-
-        {appointmentDetails && (
-            <SetAppointmentDialog 
-                isOpen={isAppointmentOpen}
-                setIsOpen={setIsAppointmentOpen}
-                onSave={handleSaveAppointment}
-                appointmentDetails={appointmentDetails}
-            />
-        )}
-
-        {selectedBuyer && (
-            <BuyerDetailsDialog
-                buyer={selectedBuyer}
-                isOpen={isDetailsOpen}
-                setIsOpen={setIsDetailsOpen}
-            />
-        )}
+        {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp}/>)}
+        {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
+        {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen}/>)}
     </>
   );
 }
@@ -789,5 +467,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    

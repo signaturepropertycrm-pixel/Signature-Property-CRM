@@ -14,19 +14,23 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Function to check if a user is an admin by checking the roles_admin collection.
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    function isMemberOf(agencyId) {
+        return exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid));
     }
-
+    
+    // Function to check if a user is an admin of the given agency.
+    function isAdmin(agencyId) {
+      return isOwner(agencyId); // The owner of the agency doc is the admin
+    }
+    
     // Function to check if a user is an editor.
-    function isEditor() {
-       return isSignedIn() && exists(/databases/$(database)/documents/roles_editor/$(request.auth.uid));
+    function isEditor(agencyId) {
+       return get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Editor';
     }
 
     // Function to check if a user is an agent.
-    function isAgent() {
-        return isSignedIn() && exists(/databases/$(database)/documents/roles_agent/$(request.auth.uid));
+    function isAgent(agencyId) {
+        return get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Agent';
     }
     
     // =================================
@@ -34,83 +38,89 @@ service cloud.firestore {
     // =================================
 
     // Rules for the /users collection
+    // This collection holds login accounts.
     match /users/{userId} {
-      // Any signed-in user can create their own document (on signup).
-      // Any user can be read by any other signed-in user (for agent selection, etc.).
-      allow read, create: if isSignedIn();
-      // Users can update their own profile.
+      allow get: if isSignedIn();
+      allow create: if isSignedIn(); // Any authenticated user can create their own user doc
       allow update: if isOwner(userId);
-      // Only an Admin can delete users (future implementation).
       allow delete: if false; 
     }
-    
-    // Top-level role indicators for easy querying by other rules.
-    match /roles_admin/{userId} {
-      allow read, write: if isOwner(userId);
-    }
-    match /roles_agent/{userId} {
-      allow read, write: if isSignedIn();
-    }
-    match /roles_editor/{userId} {
-      allow read, write: if isSignedIn();
-    }
 
-    // Rules for the /agencies collection and its sub-collections
+    // Rules for the /agencies collection
     match /agencies/{agencyId} {
-      // The agency owner (Admin), as well as any assigned Agent or Editor can read the agency document.
-      allow get: if isOwner(agencyId) || isAgent() || isEditor();
-      allow list, create, update, delete: if isOwner(agencyId);
+      // Any active team member can read agency-level data.
+      allow get: if isMemberOf(agencyId);
+      // Only the admin can manage the agency document itself.
+      allow list, create, update, delete: if isAdmin(agencyId);
 
-      // Rules for properties sub-collection
+      // Rules for subcollections within an agency
       match /properties/{propertyId} {
-        allow read, write: if isOwner(agencyId);
+        // Any member can read properties.
+        allow get, list: if isMemberOf(agencyId);
+        // Only admin/editor can create/delete.
+        allow create, delete: if isAdmin(agencyId) || isEditor(agencyId);
+        // Admin/Editor can update fully. Agent can only update status to 'Sold'.
+        allow update: if isAdmin(agencyId) || isEditor(agencyId) || 
+                      (isAgent(agencyId) && request.resource.data.status == 'Sold' && resource.data.status != 'Sold');
       }
 
-      // Rules for buyers sub-collection
       match /buyers/{buyerId} {
-        allow read, write: if isOwner(agencyId);
+        // Any member can read buyers.
+        allow read: if isMemberOf(agencyId);
+        // Only admin/editor can create/update/delete.
+        allow write: if isAdmin(agencyId) || isEditor(agencyId);
       }
-
-      // Rules for appointments, follow-ups, activities
+      
+      // An Admin can create/delete members. An Agent can accept an invitation.
+      match /teamMembers/{memberId} {
+        // Any authenticated user can check for their own invitations
+        allow get, list: if isSignedIn();
+        // An admin can write (create/delete). An agent can update their own status to 'Active'.
+        allow write: if isAdmin(agencyId) || 
+                     (isSignedIn() && request.resource.data.status == 'Active' && request.resource.data.email == request.auth.token.email);
+      }
+      
       match /appointments/{appointmentId} {
-        allow read, write: if isOwner(agencyId);
+        // Any member can read appointments.
+        allow read: if isMemberOf(agencyId);
+        // Any member can create, but only admin/editor can update/delete.
+        allow create: if isMemberOf(agencyId);
+        allow update, delete: if isAdmin(agencyId) || isEditor(agencyId);
       }
 
       match /followUps/{followUpId} {
-        allow read, write: if isOwner(agencyId);
+        // Any member can read/create follow-ups.
+        allow read, create: if isMemberOf(agencyId);
+        // Only admin/editor can update/delete.
+        allow update, delete: if isAdmin(agencyId) || isEditor(agencyId);
       }
       
       match /activityLogs/{activityLogId} {
-        allow read: if isOwner(agencyId);
-        allow create: if isOwner(agencyId);
+        // Any member can read logs.
+        allow read: if isMemberOf(agencyId);
+        // Only admin/editor can create.
+        allow create: if isAdmin(agencyId) || isEditor(agencyId);
         allow update, delete: if false; // Logs should be immutable
       }
     }
     
     // Agent-specific data rules
+    // This is the Agent's personal sandbox. Only they can access it.
     match /agents/{agentId} {
-        // An agent can only access their own data sandbox
         allow read, write: if isOwner(agentId);
         
-        match /sharedProperties/{propertyId} {
+        match /properties/{propertyId} {
             allow read, write: if isOwner(agentId);
         }
         
-        match /assignedBuyers/{buyerId} {
-            allow read, write: if isOwner(agentId);
-        }
-
-        match /followUps/{followUpId} {
-            allow read, write: if isOwner(agentId);
-        }
-
-        match /appointments/{appointmentId} {
-            allow read, write: if isOwner(agentId);
-        }
-
-        match /activities/{activityId} {
+        match /buyers/{buyerId} {
             allow read, write: if isOwner(agentId);
         }
     }
+    
+    // Top-level role indicators are no longer needed with this model.
+    match /roles_admin/{userId} { allow read, write: if false; }
+    match /roles_agent/{userId} { allow read, write: if false; }
+    match /roles_editor/{userId} { allow read, write: if false; }
   }
 }
