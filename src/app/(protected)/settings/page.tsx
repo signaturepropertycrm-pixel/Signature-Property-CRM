@@ -50,6 +50,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 
@@ -267,6 +268,10 @@ export default function SettingsPage() {
         // Delete from agents collection
         const agentDoc = doc(firestore, 'agents', user.uid);
         batch.delete(agentDoc);
+
+        // Delete from users collection
+        const userDoc = doc(firestore, 'users', user.uid);
+        batch.delete(userDoc);
         
         // Delete from teamMembers subcollection in the agency, if they belong to one
         if (profile.agency_id) {
