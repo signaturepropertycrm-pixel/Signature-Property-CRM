@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -945,9 +946,8 @@ function AvatarCropDialog({
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<Crop>();
-  const [previewUrl, setPreviewUrl] = useState('');
-  const imgRef = useRef<HTMLImageElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -955,7 +955,6 @@ function AvatarCropDialog({
       setImgSrc('');
       setCrop(undefined);
       setCompletedCrop(undefined);
-      setPreviewUrl('');
     }
   }, [isOpen]);
 
@@ -977,7 +976,7 @@ function AvatarCropDialog({
           unit: '%',
           width: 90,
         },
-        1,
+        1, // aspect ratio 1:1
         width,
         height
       ),
@@ -989,68 +988,61 @@ function AvatarCropDialog({
   
   useEffect(() => {
     if (
-      completedCrop?.width &&
-      completedCrop?.height &&
-      imgRef.current &&
-      previewCanvasRef.current
+      !completedCrop ||
+      !previewCanvasRef.current ||
+      !imgRef.current
     ) {
-      const image = imgRef.current;
-      const canvas = previewCanvasRef.current;
-      const crop = completedCrop;
-
-      const scaleX = image.naturalWidth / image.width;
-      const scaleY = image.naturalHeight / image.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error('No 2d context');
-      }
-
-      const pixelRatio = window.devicePixelRatio;
-      canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
-      canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
-
-      ctx.scale(pixelRatio, pixelRatio);
-      ctx.imageSmoothingQuality = 'high';
-
-      const cropX = crop.x * scaleX;
-      const cropY = crop.y * scaleY;
-      const cropWidth = crop.width * scaleX;
-      const cropHeight = crop.height * scaleY;
-
-      ctx.drawImage(
-        image,
-        cropX,
-        cropY,
-        cropWidth,
-        cropHeight,
-        0,
-        0,
-        crop.width * scaleX,
-        crop.height * scaleY
-      );
-
-      setPreviewUrl(canvas.toDataURL('image/png'));
+      return;
     }
+
+    const image = imgRef.current;
+    const canvas = previewCanvasRef.current;
+    const crop = completedCrop;
+
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    
+    canvas.width = Math.floor(crop.width * scaleX);
+    canvas.height = Math.floor(crop.height * scaleY);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('No 2d context');
+    }
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width * scaleX,
+      crop.height * scaleY
+    );
   }, [completedCrop]);
 
 
   const handleSave = () => {
-    if (!previewUrl) {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) {
       toast({ title: "Please select an image and crop it.", variant: "destructive" });
       return;
     }
+    
     // Simulate resizing to a max of 256x256 for the final output
     const image = document.createElement('img');
-    image.src = previewUrl;
+    image.src = canvas.toDataURL('image/png');
     image.onload = () => {
-        const canvas = document.createElement('canvas');
+        const finalCanvas = document.createElement('canvas');
         const MAX_DIMENSION = 256;
-        canvas.width = MAX_DIMENSION;
-        canvas.height = MAX_DIMENSION;
-        const ctx = canvas.getContext('2d');
+        finalCanvas.width = MAX_DIMENSION;
+        finalCanvas.height = MAX_DIMENSION;
+        const ctx = finalCanvas.getContext('2d');
         if (!ctx) return;
         ctx.drawImage(image, 0, 0, MAX_DIMENSION, MAX_DIMENSION);
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = finalCanvas.toDataURL('image/png');
         onSave(dataUrl);
     };
   };
@@ -1083,19 +1075,11 @@ function AvatarCropDialog({
                         alt="Crop me"
                         src={imgSrc}
                         width={400}
-                        height={400}
+                        height={0} // Set height to 0 and use style for aspect ratio
+                        style={{ height: 'auto', maxHeight: '70vh' }}
                         onLoad={onImageLoad}
-                        style={{ maxHeight: '70vh' }}
                     />
                 </ReactCrop>
-                {previewUrl && (
-                     <div className="flex flex-col items-center gap-2 mt-4">
-                        <Label>Preview</Label>
-                        <Avatar className="h-32 w-32 border">
-                            <AvatarImage src={previewUrl} alt="Preview"/>
-                        </Avatar>
-                     </div>
-                )}
                 <canvas ref={previewCanvasRef} style={{ display: 'none' }} />
             </div>
           )}
@@ -1112,3 +1096,6 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
+
+
+    
