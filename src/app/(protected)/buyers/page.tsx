@@ -30,6 +30,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 const statusVariant = {
@@ -84,9 +85,9 @@ function BuyersPageContent() {
     const firestore = useFirestore();
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const agentBuyersQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.user_id, firestore]);
-    
     const { data: agencyBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
+    
+    const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
     const { data: agentBuyers, isLoading: isAgentLoading } = useCollection<Buyer>(agentBuyersQuery);
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
@@ -111,7 +112,7 @@ function BuyersPageContent() {
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
-
+    const [assignmentToConfirm, setAssignmentToConfirm] = useState<{ buyer: Buyer, agentId: string | null } | null>(null);
 
     useEffect(() => {
         if (!isAddBuyerOpen) {
@@ -275,10 +276,17 @@ function BuyersPageContent() {
         setBuyerToEdit(null);
     };
 
-    const handleAssignAgent = async (buyerId: string, agentId: string | null) => {
-        if (!profile.agency_id || !teamMembers || !agencyBuyers) return;
-        
-        const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+    const handleAssignAgentClick = (buyer: Buyer, agentId: string | null) => {
+        setAssignmentToConfirm({ buyer, agentId });
+    };
+
+    const handleConfirmAssignment = async () => {
+        if (!assignmentToConfirm || !profile.agency_id || !teamMembers || !agencyBuyers) {
+            return;
+        }
+
+        const { buyer, agentId } = assignmentToConfirm;
+        const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await updateDoc(buyerRef, { assignedTo: agentId });
         
         let toastTitle = 'Buyer Unassigned';
@@ -289,7 +297,6 @@ function BuyersPageContent() {
             if (!agent) return;
 
             const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-            const buyer = agencyBuyers.find(b => b.id === buyerId);
             const newActivity: Omit<Activity, 'id'> = {
                 userName: profile.name,
                 userAvatar: profile.avatar,
@@ -309,15 +316,25 @@ function BuyersPageContent() {
             title: toastTitle,
             description: toastDescription,
         });
+
+        setAssignmentToConfirm(null);
     };
 
     const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean = false) => {
         if (!sourceBuyers) return [];
-        let filtered = sourceBuyers.filter(b => !b.is_deleted);
-
-        // For "Assigned Buyers", only show buyers assigned to the current agent from the agency pool.
-        if (profile.role === 'Agent' && !isForMyBuyersTab) {
-            filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+        
+        let filtered;
+        if (profile.role === 'Agent') {
+            if (isForMyBuyersTab) {
+                // "My Buyers" tab: Only show buyers created by the agent in their personal collection.
+                filtered = sourceBuyers.filter(b => !b.is_deleted);
+            } else {
+                // "Assigned Buyers" tab: Only show buyers from the agency collection assigned to this agent.
+                filtered = sourceBuyers.filter(b => b.assignedTo === profile.user_id && !b.is_deleted);
+            }
+        } else {
+            // Admin/Editor view: Show all non-deleted buyers from the source.
+            filtered = sourceBuyers.filter(b => !b.is_deleted);
         }
         
         if (activeTab && activeTab !== 'All') filtered = filtered.filter(b => b.status === activeTab);
@@ -343,10 +360,10 @@ function BuyersPageContent() {
     };
     
     // For agent's "My Buyers" tab, we only use their personal collection (`agentBuyers`).
-    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true), [searchQuery, activeTab, filters, agentBuyers]);
+    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true), [searchQuery, activeTab, filters, agentBuyers, profile.role]);
 
     // For agent's "Assigned Buyers" tab and for Admin/Editor view, we use the agency's collection (`agencyBuyers`).
-    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
+    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers, false), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
 
 
     const handleTabChange = (value: string) => {
@@ -396,13 +413,13 @@ function BuyersPageContent() {
                                      <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                      {(!isAgentData && profile.role === 'Admin') && (
                                         <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
-                                            <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
+                                            <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
                                                 {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
                                                 Unassign
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                                <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
+                                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)}>
                                                     {buyer.assignedTo === agent.id && <Check className='mr-2' />}
                                                     {agent.name}
                                                 </DropdownMenuItem>
@@ -462,13 +479,13 @@ function BuyersPageContent() {
                                 <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                 {(!isAgentData && profile.role === 'Admin') && (
                                     <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
-                                         <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
+                                         <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
                                             {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
                                             Unassign
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                            <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
+                                            <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)}>
                                                  {buyer.assignedTo === agent.id && <Check className='mr-2' />}
                                                  {agent.name}
                                             </DropdownMenuItem>
@@ -574,6 +591,25 @@ function BuyersPageContent() {
         {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp}/>)}
         {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
         {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen}/>)}
+
+        {assignmentToConfirm && (
+            <AlertDialog open={!!assignmentToConfirm} onOpenChange={() => setAssignmentToConfirm(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to assign this buyer to {assignmentToConfirm.agentId ? teamMembers?.find(m => m.id === assignmentToConfirm.agentId)?.name : 'unassign'}?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setAssignmentToConfirm(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmAssignment}>
+                            Confirm Assignment
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
     </TooltipProvider>
     </>
   );
