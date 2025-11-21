@@ -14,7 +14,9 @@ export type User = {
       propertiesSold: number;
       activeBuyers: number;
       appointmentsToday: number;
-  }
+  },
+  status?: 'Pending' | 'Active'; // New status for invitations
+  invitedAt?: any; // Timestamp for pending invites
 };
 
 export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other' | '';

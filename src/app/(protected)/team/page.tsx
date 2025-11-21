@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import type { User as TeamMember, UserRole } from '@/lib/types';
@@ -16,11 +16,13 @@ import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
-const roleConfig = {
+const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
     Editor: { icon: <Edit className="h-4 w-4" />, color: 'bg-yellow-500/10 text-yellow-500' },
     Agent: { icon: <User className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' },
+    Pending: { icon: <Clock className="h-4 w-4" />, color: 'bg-gray-500/10 text-gray-500' },
 };
 
 export default function TeamPage() {
@@ -39,37 +41,28 @@ export default function TeamPage() {
     };
 
     const handleDelete = async (member: TeamMember) => {
-        if (!profile.agency_id) return;
+        if (!profile.agency_id || !member.id) return;
         
-        const batch = writeBatch(firestore);
-
-        // Delete from agency's teamMembers subcollection
-        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
-        batch.delete(teamMemberRef);
-        
-        // Delete the role indicator document
-        const roleCollection = member.role === 'Agent' ? 'roles_agent' : 'roles_editor';
-        const roleRef = doc(firestore, roleCollection, member.id);
-        batch.delete(roleRef);
-        
-        // Optionally: Delete the user's main account document if they shouldn't exist without an agency
-        // For now, we leave the user doc to allow them to be re-assigned.
-        // const userRef = doc(firestore, 'users', member.id);
-        // batch.delete(userRef);
-
-        await batch.commit();
+        const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
+        await deleteDoc(memberRef);
         
         toast({
-            title: 'Member Removed',
-            description: 'The team member has been removed from your agency.',
+            title: 'Invitation Revoked',
+            description: `The invitation for ${member.email} has been revoked.`,
             variant: 'destructive',
         });
     };
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder: Record<UserRole, number> = { Admin: 1, Editor: 2, Agent: 3 };
-        return [...teamMembers].sort((a, b) => roleOrder[a.role] - roleOrder[b.role]);
+        const roleOrder: Record<string, number> = { Admin: 1, Editor: 2, Agent: 3, Pending: 4 };
+        return [...teamMembers].sort((a, b) => {
+            const statusA = a.status || 'Active';
+            const statusB = b.status || 'Active';
+            if (statusA === 'Pending' && statusB !== 'Pending') return -1;
+            if (statusB === 'Pending' && statusA !== 'Pending') return 1;
+            return (roleOrder[a.role] || 5) - (roleOrder[b.role] || 5);
+        });
     }, [teamMembers]);
 
 
@@ -82,7 +75,7 @@ export default function TeamPage() {
                             Team Management
                         </h1>
                         <p className="text-muted-foreground">
-                            Add, view, and manage your agency's team members.
+                            Invite and manage your agency's team members.
                         </p>
                     </div>
                 </div>
@@ -93,18 +86,21 @@ export default function TeamPage() {
                      <Card className="flex items-center justify-center h-64 border-dashed">
                         <div className="text-center">
                             <p className="text-lg font-medium">No team members yet</p>
-                            <p className="text-muted-foreground">Click "Add Member" to build your team.</p>
+                            <p className="text-muted-foreground">Click the '+' button to invite your first member.</p>
                         </div>
                     </Card>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {sortedTeamMembers.map(member => {
-                            const config = roleConfig[member.role] || roleConfig.Agent;
+                            const isPending = member.status === 'Pending';
+                            const displayRole = isPending ? 'Pending' : member.role;
+                            const config = roleConfig[displayRole] || roleConfig.Agent;
                             const isOwner = member.id === profile.user_id;
+
                             return (
-                                <Card key={member.id} className="flex flex-col hover:shadow-lg transition-shadow">
+                                <Card key={member.id || member.email} className={cn("flex flex-col hover:shadow-lg transition-shadow", isPending && "opacity-70 bg-muted/50")}>
                                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                        <Badge variant="outline" className={config.color}>{config.icon} {member.role}</Badge>
+                                        <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
                                         {!isOwner && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -113,11 +109,13 @@ export default function TeamPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleEdit(member)}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                                    </DropdownMenuItem>
+                                                    {!isPending && (
+                                                        <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                                        </DropdownMenuItem>
+                                                    )}
                                                     <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Remove
+                                                        <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -125,14 +123,16 @@ export default function TeamPage() {
                                     </CardHeader>
                                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
                                         <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                                            <AvatarImage src={`https://i.pravatar.cc/150?u=${member.email}`} />
-                                            <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            <AvatarImage src={isPending ? undefined : `https://i.pravatar.cc/150?u=${member.email}`} />
+                                            <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
-                                        <CardTitle className="text-lg font-headline">{member.name}</CardTitle>
+                                        <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                                         <CardDescription>{member.email}</CardDescription>
                                     </CardContent>
                                     <CardFooter className="border-t p-2">
-                                        <div className='text-xs text-center w-full text-muted-foreground'>Leads: 0 | Sold: 0</div>
+                                        <div className='text-xs text-center w-full text-muted-foreground'>
+                                            {isPending ? `Invited on ${member.invitedAt?.toDate().toLocaleDateString()}` : 'Leads: 0 | Sold: 0'}
+                                        </div>
                                     </CardFooter>
                                 </Card>
                             )
