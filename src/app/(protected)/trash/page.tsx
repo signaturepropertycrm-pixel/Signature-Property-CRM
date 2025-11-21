@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -62,8 +63,11 @@ export default function TrashPage() {
   
   
   const handleRestoreProperty = async (prop: Property) => {
-    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    // If agency_id does not equal created_by, it's an agent's personal item.
+    const isAgentOwned = prop.agency_id !== prop.created_by;
+    const collectionName = isAgentOwned ? 'agents' : 'agencies';
+    const collectionId = isAgentOwned ? prop.created_by : prop.agency_id;
+
     if (!collectionId) return;
 
     await setDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id), { is_deleted: false }, { merge: true });
@@ -71,8 +75,10 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteProperty = async (prop: Property) => {
-    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    const isAgentOwned = prop.agency_id !== prop.created_by;
+    const collectionName = isAgentOwned ? 'agents' : 'agencies';
+    const collectionId = isAgentOwned ? prop.created_by : prop.agency_id;
+
     if (!collectionId) return;
 
     await deleteDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id));
@@ -80,8 +86,10 @@ export default function TrashPage() {
   };
   
   const handleRestoreBuyer = async (buyer: Buyer) => {
-    const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    const isAgentOwned = buyer.agency_id !== buyer.created_by;
+    const collectionName = isAgentOwned ? 'agents' : 'agencies';
+    const collectionId = isAgentOwned ? buyer.created_by : buyer.agency_id;
+
     if (!collectionId) return;
 
     await setDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id), { is_deleted: false }, { merge: true });
@@ -89,8 +97,10 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteBuyer = async (buyer: Buyer) => {
-    const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    const isAgentOwned = buyer.agency_id !== buyer.created_by;
+    const collectionName = isAgentOwned ? 'agents' : 'agencies';
+    const collectionId = isAgentOwned ? buyer.created_by : buyer.agency_id;
+
     if (!collectionId) return;
 
     await deleteDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id));
