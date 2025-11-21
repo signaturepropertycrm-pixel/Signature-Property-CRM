@@ -52,6 +52,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import ReactCrop, { centerCrop, makeAspectCrop, type Crop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 
 const passwordFormSchema = z.object({
@@ -447,7 +449,7 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <SimpleAvatarDialog 
+            <AvatarCropDialog 
               isOpen={isAvatarDialogOpen}
               setIsOpen={setIsAvatarDialogOpen}
               onSave={handleAvatarSave}
@@ -805,7 +807,7 @@ export default function SettingsPage() {
       )}
 
     </div>
-    <SimpleAvatarDialog 
+    <AvatarCropDialog 
       isOpen={isAvatarDialogOpen}
       setIsOpen={setIsAvatarDialogOpen}
       onSave={handleAvatarSave}
@@ -930,8 +932,8 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
     </Dialog>
   );
 }
-    
-function SimpleAvatarDialog({
+
+function AvatarCropDialog({
   isOpen,
   setIsOpen,
   onSave,
@@ -941,58 +943,115 @@ function SimpleAvatarDialog({
   onSave: (dataUrl: string) => void;
 }) {
   const [imgSrc, setImgSrc] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [error, setError] = useState('');
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  const [previewUrl, setPreviewUrl] = useState('');
+  const imgRef = useRef<HTMLImageElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isOpen) {
       setImgSrc('');
-      setError('');
+      setCrop(undefined);
+      setCompletedCrop(undefined);
+      setPreviewUrl('');
     }
   }, [isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      setError('');
+      setCrop(undefined); // Reset crop on new image
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(file);
     }
   };
 
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { width, height } = e.currentTarget;
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        1,
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(crop);
+  };
+  
+  useEffect(() => {
+    if (
+      completedCrop?.width &&
+      completedCrop?.height &&
+      imgRef.current &&
+      previewCanvasRef.current
+    ) {
+      const image = imgRef.current;
+      const canvas = previewCanvasRef.current;
+      const crop = completedCrop;
+
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('No 2d context');
+      }
+
+      const pixelRatio = window.devicePixelRatio;
+      canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+      canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+
+      ctx.scale(pixelRatio, pixelRatio);
+      ctx.imageSmoothingQuality = 'high';
+
+      const cropX = crop.x * scaleX;
+      const cropY = crop.y * scaleY;
+      const cropWidth = crop.width * scaleX;
+      const cropHeight = crop.height * scaleY;
+
+      ctx.drawImage(
+        image,
+        cropX,
+        cropY,
+        cropWidth,
+        cropHeight,
+        0,
+        0,
+        crop.width * scaleX,
+        crop.height * scaleY
+      );
+
+      setPreviewUrl(canvas.toDataURL('image/png'));
+    }
+  }, [completedCrop]);
+
+
   const handleSave = () => {
-    if (!imgSrc) {
-      setError('Please select an image first.');
+    if (!previewUrl) {
+      toast({ title: "Please select an image and crop it.", variant: "destructive" });
       return;
     }
+    // Simulate resizing to a max of 256x256 for the final output
     const image = document.createElement('img');
-    image.src = imgSrc;
+    image.src = previewUrl;
     image.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 256;
-      const MAX_HEIGHT = 256;
-      let width = image.width;
-      let height = image.height;
-
-      if (width > height) {
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-      } else {
-        if (height > MAX_HEIGHT) {
-          width *= MAX_HEIGHT / height;
-          height = MAX_HEIGHT;
-        }
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(image, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/png');
-      onSave(dataUrl);
+        const canvas = document.createElement('canvas');
+        const MAX_DIMENSION = 256;
+        canvas.width = MAX_DIMENSION;
+        canvas.height = MAX_DIMENSION;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(image, 0, 0, MAX_DIMENSION, MAX_DIMENSION);
+        const dataUrl = canvas.toDataURL('image/png');
+        onSave(dataUrl);
     };
   };
 
@@ -1001,24 +1060,43 @@ function SimpleAvatarDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change Profile Picture</DialogTitle>
-          <DialogDescription>Upload a new image for your profile.</DialogDescription>
+          <DialogDescription>Crop your image to the perfect size.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <Input
             id="avatar-upload"
             type="file"
             accept="image/*"
-            ref={fileInputRef}
             onChange={handleFileChange}
           />
-          {error && <p className="text-sm text-destructive">{error}</p>}
           {imgSrc && (
             <div className="flex flex-col items-center gap-4 mt-4">
-              <Label>Preview</Label>
-              <Avatar className="h-32 w-32 border">
-                <AvatarImage src={imgSrc} alt="Preview" />
-                <AvatarFallback>IMG</AvatarFallback>
-              </Avatar>
+                <ReactCrop
+                    crop={crop}
+                    onChange={c => setCrop(c)}
+                    onComplete={(c) => setCompletedCrop(c)}
+                    aspect={1}
+                    circularCrop
+                >
+                    <Image
+                        ref={imgRef}
+                        alt="Crop me"
+                        src={imgSrc}
+                        width={400}
+                        height={400}
+                        onLoad={onImageLoad}
+                        style={{ maxHeight: '70vh' }}
+                    />
+                </ReactCrop>
+                {previewUrl && (
+                     <div className="flex flex-col items-center gap-2 mt-4">
+                        <Label>Preview</Label>
+                        <Avatar className="h-32 w-32 border">
+                            <AvatarImage src={previewUrl} alt="Preview"/>
+                        </Avatar>
+                     </div>
+                )}
+                <canvas ref={previewCanvasRef} style={{ display: 'none' }} />
             </div>
           )}
         </div>
@@ -1026,7 +1104,7 @@ function SimpleAvatarDialog({
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!imgSrc || !!error}>
+          <Button onClick={handleSave} disabled={!completedCrop}>
             Save Changes
           </Button>
         </DialogFooter>
