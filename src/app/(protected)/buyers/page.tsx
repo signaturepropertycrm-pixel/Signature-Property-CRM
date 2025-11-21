@@ -311,12 +311,12 @@ function BuyersPageContent() {
         });
     };
 
-    const getFilteredBuyers = (buyersList: Buyer[] | null, isForMyBuyersTab: boolean = false) => {
-        if (!buyersList) return [];
-        let filtered = buyersList.filter(b => !b.is_deleted);
+    const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean = false) => {
+        if (!sourceBuyers) return [];
+        let filtered = sourceBuyers.filter(b => !b.is_deleted);
 
-        // This is the main logic for Agent's "Assigned Buyers" tab
-        if (!isForMyBuyersTab && profile.role === 'Agent') {
+        // For "Assigned Buyers", only show buyers assigned to the current agent from the agency pool.
+        if (profile.role === 'Agent' && !isForMyBuyersTab) {
             filtered = filtered.filter(b => b.assignedTo === profile.user_id);
         }
         
@@ -342,9 +342,10 @@ function BuyersPageContent() {
         return filtered;
     };
     
-    // For agent's "My Buyers" tab, we only use their personal collection
+    // For agent's "My Buyers" tab, we only use their personal collection (`agentBuyers`).
     const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true), [searchQuery, activeTab, filters, agentBuyers]);
-    // For agent's "Assigned" tab and for Admin/Editor view, we use the agency collection
+
+    // For agent's "Assigned Buyers" tab and for Admin/Editor view, we use the agency's collection (`agencyBuyers`).
     const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
 
 
@@ -396,8 +397,7 @@ function BuyersPageContent() {
                                      {(!isAgentData && profile.role === 'Admin') && (
                                         <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
                                             <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
-                                                {buyer.assignedTo === null && <Check className='mr-2'/>}
-                                                <X className="mr-2" />
+                                                {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
                                                 Unassign
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
@@ -463,8 +463,7 @@ function BuyersPageContent() {
                                 {(!isAgentData && profile.role === 'Admin') && (
                                     <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
                                          <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
-                                            {buyer.assignedTo === null && <Check className='mr-2'/>}
-                                            <X className="mr-2" />
+                                            {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
                                             Unassign
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
