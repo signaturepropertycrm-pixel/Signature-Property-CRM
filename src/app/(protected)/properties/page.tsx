@@ -280,27 +280,29 @@ function PropertiesPageContent() {
     });
   };
 
-  const handleSaveProperty = async (propertyData: Omit<Property, 'id'>) => {
+  const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
     const isAgentAdding = profile.role === 'Agent' && !propertyToEdit;
     const collectionName = isAgentAdding ? 'agents' : 'agencies';
     const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
     if (!collectionId) return;
 
-    const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
     
     const dataToSave = {
         ...propertyData,
         agency_id: profile.agency_id
     };
 
-    if (propertyToEdit) {
+    if (propertyToEdit && propertyData.id) {
         const editCollectionName = propertyToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
         const editCollectionId = propertyToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
-        const docRef = doc(firestore, editCollectionName, editCollectionId, 'properties', propertyToEdit.id);
+        if (!editCollectionId) return;
+        const docRef = doc(firestore, editCollectionName, editCollectionId, 'properties', propertyData.id);
         await setDoc(docRef, dataToSave, { merge: true });
         toast({ title: 'Property Updated' });
     } else {
-        await addDoc(collectionRef, dataToSave);
+        const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
+        const { id, ...restOfData } = dataToSave;
+        await addDoc(collectionRef, restOfData);
         toast({ title: 'Property Added' });
     }
     setPropertyToEdit(null);

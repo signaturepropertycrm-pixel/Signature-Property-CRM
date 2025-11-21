@@ -71,7 +71,7 @@ type AddPropertyFormValues = z.infer<typeof formSchema>;
 
 interface AddPropertyFormProps {
   setDialogOpen: (open: boolean) => void;
-  onSave: (property: Omit<Property, 'id'>) => void;
+  onSave: (property: Omit<Property, 'id'> & { id?: string }) => void;
   propertyToEdit?: Property | null;
   totalProperties: number;
 }
@@ -161,9 +161,10 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
     };
 
-    const propertyData: Omit<Property, 'id'> = {
+    const propertyData: Omit<Property, 'id'> & { id?: string } = {
         ...propertyToEdit,
         ...finalValues,
+        id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),

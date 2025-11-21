@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,7 +17,7 @@ import { useEffect } from 'react';
 interface AddPropertyDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    onSave: (property: Omit<Property, 'id'>) => void;
+    onSave: (property: Omit<Property, 'id'> & { id?: string }) => void;
     propertyToEdit: Property | null;
     totalProperties: number;
 }
