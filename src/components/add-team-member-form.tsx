@@ -82,7 +82,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
 
     try {
         if (memberToEdit) {
-            // This logic is now only for changing the role of an existing member.
+            // Logic to update an existing member's role and name.
             const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
             await updateDoc(memberRef, { role: values.role, name: values.name });
             toast({ title: 'Member Updated', description: `Details for ${values.name} have been updated.` });
