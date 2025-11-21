@@ -14,22 +14,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Function to check if a user is an admin.
-    // In our new model, only the agency owner is the admin of their data.
+    // Function to check if a user is an admin of the given agency.
     function isAdmin(agencyId) {
       return isOwner(agencyId);
-    }
-
-    // Function to check if a user is a registered editor for the given agency.
-    function isEditor(agencyId) {
-       return isSignedIn() && exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)) &&
-              get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Editor';
-    }
-
-    // Function to check if a user is a registered agent for the given agency.
-    function isAgent(agencyId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Agent';
     }
     
     // =================================
@@ -39,52 +26,46 @@ service cloud.firestore {
     // Rules for the /users collection
     // This collection holds login accounts.
     match /users/{userId} {
-      // Any signed-in user can read their own user document.
-      // An agency admin can read the user documents of their team members.
       allow get: if isOwner(userId);
-      // A user can be created on signup.
       allow create: if isSignedIn();
-      // Users can update their own profile (e.g., name, avatar).
       allow update: if isOwner(userId);
-      // No one can delete user accounts for now.
       allow delete: if false; 
     }
 
     // Rules for the /agencies collection
     match /agencies/{agencyId} {
-      // Only the agency owner (Admin) can manage the agency document and its direct subcollections.
-      // Team members (Agents/Editors) can read the main agency doc to get agency-level info.
-      allow get: if isAdmin(agencyId) || isAgent(agencyId) || isEditor(agencyId);
-      allow list: if isAdmin(agencyId); // Only admin can list agencies (if ever needed).
-      allow create, update, delete: if isAdmin(agencyId);
+      // Only the agency owner (Admin) can manage the agency document.
+      allow read, create, update, delete: if isAdmin(agencyId);
 
       // Rules for subcollections within an agency
       match /properties/{propertyId} {
-        allow read, write: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
 
       match /buyers/{buyerId} {
-        allow read, write: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
       
-      // An authenticated user (potential agent) can query the list of team members
-      // across all agencies to find their pending invitation.
+      // An Admin can create/delete members. An Agent can accept an invitation.
       match /teamMembers/{memberId} {
+        // Any authenticated user can check for their own invitations
         allow get, list: if isSignedIn();
-        allow write: if isAdmin(agencyId);
+        // An admin can write (create/delete). An agent can update their own status to 'Active'.
+        allow write: if isAdmin(agencyId) || 
+                     (isSignedIn() && request.resource.data.status == 'Active' && resource.data.email == request.auth.token.email);
       }
       
       match /appointments/{appointmentId} {
-        allow read, write: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
 
       match /followUps/{followUpId} {
-        allow read, write: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
       
       match /activityLogs/{activityLogId} {
-        allow read: if isAdmin(agencyId) || isEditor(agencyId);
-        allow create: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read: if isAdmin(agencyId);
+        allow create: if isAdmin(agencyId);
         allow update, delete: if false; // Logs should be immutable
       }
     }
@@ -115,8 +96,7 @@ service cloud.firestore {
         }
     }
     
-    // Top-level role indicators are no longer needed with the new model.
-    // We check roles from within the /agencies/{agencyId}/teamMembers subcollection.
+    // Top-level role indicators are no longer needed with this model.
     match /roles_admin/{userId} { allow read, write: if false; }
     match /roles_agent/{userId} { allow read, write: if false; }
     match /roles_editor/{userId} { allow read, write: if false; }
