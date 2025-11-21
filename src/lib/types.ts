@@ -64,6 +64,7 @@ export type Property = {
   is_deleted?: boolean;
   sold_price?: number;
   sold_at?: string;
+  soldByAgentId?: string; // ID of the agent who sold the property
 };
 
 export type BuyerStatus =
@@ -104,6 +105,7 @@ export type Buyer = {
     agency_id: string;
     is_deleted?: boolean;
     last_follow_up_note?: string;
+    assignedTo?: string; // ID of the agent assigned to this buyer
 };
 
 export type FollowUpStatus = 'Scheduled';

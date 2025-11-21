@@ -10,7 +10,7 @@ import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -83,6 +83,9 @@ function BuyersPageContent() {
 
     const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+
+    const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
+    const { data: teamMembers } = useCollection<User>(teamMembersQuery);
     
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
@@ -246,6 +249,16 @@ function BuyersPageContent() {
         setBuyerToEdit(null);
     };
 
+    const handleAssignAgent = async (buyerId: string, agentId: string) => {
+        if (!profile.agency_id) return;
+        const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+        await setDoc(buyerRef, { assignedTo: agentId }, { merge: true });
+        toast({
+            title: "Buyer Assigned",
+            description: `This buyer has been assigned to the selected agent.`
+        });
+    };
+
     const filteredBuyers = useMemo(() => {
         if (!buyers) return [];
         let filtered = buyers.filter(b => !b.is_deleted);
@@ -393,6 +406,25 @@ function BuyersPageContent() {
                                             </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
                                     </DropdownMenuSub>
+                                     <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            <UserCheck />
+                                            Assign Agent
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal>
+                                            <DropdownMenuSubContent>
+                                                {teamMembers?.filter(m => m.status === 'Active').map(agent => (
+                                                    <DropdownMenuItem 
+                                                        key={agent.id} 
+                                                        onClick={() => handleAssignAgent(buyer.id, agent.id)}
+                                                        disabled={buyer.assignedTo === agent.id}
+                                                    >
+                                                        {agent.name}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuSubContent>
+                                        </DropdownMenuPortal>
+                                    </DropdownMenuSub>
                                     {(profile.role === 'Admin' || profile.role === 'Editor') && (
                                         <DropdownMenuItem onSelect={() => handleDelete(buyer.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                             <Trash2 />
@@ -507,6 +539,25 @@ function BuyersPageContent() {
                                                     disabled={buyer.status === status}
                                                 >
                                                     {status}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <UserCheck />
+                                        Assign Agent
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                            {teamMembers?.filter(m => m.status === 'Active').map(agent => (
+                                                <DropdownMenuItem 
+                                                    key={agent.id} 
+                                                    onClick={() => handleAssignAgent(buyer.id, agent.id)}
+                                                    disabled={buyer.assignedTo === agent.id}
+                                                >
+                                                    {agent.name}
                                                 </DropdownMenuItem>
                                             ))}
                                         </DropdownMenuSubContent>
@@ -684,7 +735,7 @@ function BuyersPageContent() {
         </div>
       </div>
 
-      {(profile.role === 'Admin' || profile.role === 'Editor' || profile.role === 'Agent') && (
+      {(profile.role === 'Admin' || profile.role === 'Editor') && (
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
            <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                 <PlusCircle className="h-6 w-6" />

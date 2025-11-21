@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,12 +22,19 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Property, PriceUnit } from '@/lib/types';
+import { Property, PriceUnit, User } from '@/lib/types';
 import { formatUnit } from '@/lib/formatters';
+import { useProfile } from '@/context/profile-context';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection } from 'firebase/firestore';
+import { useFirestore } from '@/firebase/provider';
+import { useMemoFirebase } from '@/firebase/hooks';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const formSchema = z.object({
   soldPrice: z.coerce.number().positive("Sold price is required"),
   soldPriceUnit: z.enum(['Lacs', 'Crore']),
+  soldByAgentId: z.string().min(1, "You must select the agent who sold the property."),
 });
 
 type MarkAsSoldFormValues = z.infer<typeof formSchema>;
@@ -46,13 +53,32 @@ export function MarkAsSoldDialog({
   onUpdateProperty,
 }: MarkAsSoldDialogProps) {
   const { toast } = useToast();
+  const { profile } = useProfile();
+  const firestore = useFirestore();
+
+  const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
+  const { data: teamMembers } = useCollection<User>(teamMembersQuery);
+
+  const activeAgents = teamMembers?.filter(m => m.status === 'Active') || [];
+
   const form = useForm<MarkAsSoldFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       soldPrice: property.demand_amount,
       soldPriceUnit: property.demand_unit,
+      soldByAgentId: '',
     },
   });
+  
+  useEffect(() => {
+    if (isOpen) {
+        form.reset({
+            soldPrice: property.demand_amount,
+            soldPriceUnit: property.demand_unit,
+            soldByAgentId: '',
+        });
+    }
+  }, [isOpen, property, form]);
 
   function onSubmit(values: MarkAsSoldFormValues) {
     const soldPriceInPkr = formatUnit(values.soldPrice, values.soldPriceUnit);
@@ -62,6 +88,7 @@ export function MarkAsSoldDialog({
         status: 'Sold',
         sold_at: new Date().toISOString(),
         sold_price: soldPriceInPkr,
+        soldByAgentId: values.soldByAgentId,
     };
     onUpdateProperty(updatedProperty);
     
@@ -112,6 +139,29 @@ export function MarkAsSoldDialog({
                   )}
                 />
               </div>
+
+               <FormField
+                control={form.control}
+                name="soldByAgentId"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Sold by Agent</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select an agent..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {activeAgents.map(agent => (
+                                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+               />
 
             <div className="flex justify-end gap-2 pt-4">
               <Button

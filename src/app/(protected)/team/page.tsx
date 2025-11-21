@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -9,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
-import type { User as TeamMember, UserRole } from '@/lib/types';
+import type { User as TeamMember, UserRole, Property, Buyer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -33,7 +32,14 @@ export default function TeamPage() {
     const firestore = useFirestore();
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-    const { data: teamMembers, isLoading } = useCollection<TeamMember>(teamMembersQuery);
+    const { data: teamMembers, isLoading: isMembersLoading } = useCollection<TeamMember>(teamMembersQuery);
+
+    const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+    const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+    
+    const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+    const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+
 
     const handleEdit = (member: TeamMember) => {
         setMemberToEdit(member);
@@ -64,6 +70,22 @@ export default function TeamPage() {
             return (roleOrder[a.role] || 5) - (roleOrder[b.role] || 5);
         });
     }, [teamMembers]);
+
+    const memberStats = useMemo(() => {
+        const stats: Record<string, { assignedBuyers: number; soldProperties: number }> = {};
+        if (!teamMembers || !properties || !buyers) return stats;
+
+        for (const member of teamMembers) {
+            if (member.status === 'Active') {
+                const assignedBuyers = buyers.filter(b => b.assignedTo === member.id).length;
+                const soldProperties = properties.filter(p => p.status === 'Sold' && p.soldByAgentId === member.id).length;
+                stats[member.id] = { assignedBuyers, soldProperties };
+            }
+        }
+        return stats;
+    }, [teamMembers, properties, buyers]);
+    
+    const isLoading = isMembersLoading || isPropertiesLoading || isBuyersLoading;
 
 
     return (
@@ -96,6 +118,7 @@ export default function TeamPage() {
                             const displayRole = isPending ? 'Pending' : member.role;
                             const config = roleConfig[displayRole] || roleConfig.Agent;
                             const isOwner = member.id === profile.user_id;
+                            const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
 
                             return (
                                 <Card key={member.id || member.email} className={cn("flex flex-col hover:shadow-lg transition-shadow", isPending && "opacity-70 bg-muted/50")}>
@@ -131,7 +154,10 @@ export default function TeamPage() {
                                     </CardContent>
                                     <CardFooter className="border-t p-2">
                                         <div className='text-xs text-center w-full text-muted-foreground'>
-                                            {isPending ? `Invited on ${member.invitedAt?.toDate().toLocaleDateString()}` : 'Leads: 0 | Sold: 0'}
+                                            {isPending 
+                                                ? `Invited on ${member.invitedAt?.toDate().toLocaleDateString()}` 
+                                                : `Buyers: ${stats.assignedBuyers} | Sold: ${stats.soldProperties}`
+                                            }
                                         </div>
                                     </CardFooter>
                                 </Card>
