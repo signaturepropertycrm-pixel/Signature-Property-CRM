@@ -17,7 +17,6 @@ import { Shield, User as UserIcon, Edit } from 'lucide-react';
 import { useMemo } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useFirestore } from '@/firebase/provider';
-import { useProfile } from '@/context/profile-context';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Property, Buyer } from '@/lib/types';
@@ -73,13 +72,15 @@ export function TeamMemberDetailsDialog({
                 <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
           <DialogTitle className="text-2xl font-headline">{member.name}</DialogTitle>
-          <DialogDescription className="flex items-center justify-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1.5">
-                {roleConfig[member.role]?.icon}
-                {member.role}
-            </Badge>
-            <span>-</span>
-            <span>{member.email}</span>
+          <DialogDescription asChild>
+            <div className="flex items-center justify-center gap-2">
+                <Badge variant="outline" className="flex items-center gap-1.5">
+                    {roleConfig[member.role]?.icon}
+                    {member.role}
+                </Badge>
+                <span>-</span>
+                <span>{member.email}</span>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 grid grid-cols-2 gap-4">
@@ -123,5 +124,3 @@ export function TeamMemberDetailsDialog({
     </Dialog>
   );
 }
-
-    
