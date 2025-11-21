@@ -30,9 +30,9 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 const defaultProfile: ProfileData = {
-    name: 'New User',
-    agencyName: 'My Agency',
-    ownerName: 'Admin',
+    name: '',
+    agencyName: '',
+    ownerName: '',
     phone: '',
     role: 'Agent',
     avatar: '',
@@ -62,72 +62,56 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   // Effect to load profile from localStorage on initial mount
   useEffect(() => {
-    if (!isInitialized) {
-        try {
-            const savedProfile = localStorage.getItem('app-profile');
-            if (savedProfile) {
-                const parsedProfile = JSON.parse(savedProfile);
-                // Ensure there's at least a default role if localStorage is somehow malformed
-                if (!parsedProfile.role) parsedProfile.role = 'Agent';
-                setProfileState(parsedProfile);
-            }
-        } catch (error) {
-            console.error("Failed to parse profile from localStorage", error);
-        }
-        setIsInitialized(true);
-    }
-  }, [isInitialized]);
+    if (isAuthLoading) return; // Wait for auth to settle
 
-  // Effect to update profile state when firestore data changes
-  useEffect(() => {
     if (userProfile) { // We need the base user profile first to determine the role
         const role = userProfile.role || 'Agent';
 
         let name = user?.displayName || userProfile.name || 'User';
+        let avatar = user?.photoURL || userProfile.avatar || '';
+
         // If the role is agent, prioritize the name from the more detailed agent profile
-        if (role === 'Agent' && agentProfile?.name) {
-            name = agentProfile.name;
-        } else if (role === 'Admin' && agencyProfile?.ownerName) {
+        if (role === 'Agent' && agentProfile) {
+            name = agentProfile.name || name;
+            avatar = agentProfile.avatar || avatar;
+        } else if (role === 'Admin' && agencyProfile) {
             // For admin, the main name is the owner name from the agency doc
-            name = agencyProfile.ownerName;
+            name = agencyProfile.ownerName || name;
+            avatar = agencyProfile.avatar || avatar;
         }
 
         const newProfileData: ProfileData = {
             name: name,
-            agencyName: agencyProfile?.name || profile.agencyName || 'My Agency',
-            ownerName: agencyProfile?.ownerName || 'Admin', // This is for the agency, not the agent
+            agencyName: agencyProfile?.name || 'My Agency',
+            ownerName: agencyProfile?.ownerName || 'Admin',
             phone: agentProfile?.phone || userProfile.phone || '',
             role: role, 
-            avatar: agentProfile?.avatar || userProfile.avatar || user?.photoURL || '',
-            user_id: userProfile.id,
-            agency_id: userProfile.agency_id,
+            avatar: avatar,
+            user_id: user?.uid || '',
+            agency_id: userProfile.agency_id || '',
         };
         
-        // Prevent setting state if data is identical to avoid loops
-        if (JSON.stringify(newProfileData) !== JSON.stringify(profile)) {
-            setProfileState(newProfileData);
-            try {
-                localStorage.setItem('app-profile', JSON.stringify(newProfileData));
-            } catch (error) {
-                console.error("Failed to save profile to localStorage", error);
-            }
+        setProfileState(newProfileData);
+        localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+    } else if (!isUserProfileLoading && !userProfile) {
+        // Handle case where user doc doesn't exist but user is logged in
+        // This could be a new user who just signed up
+        const localProfile = localStorage.getItem('app-profile');
+        if (localProfile) {
+            setProfileState(JSON.parse(localProfile));
         }
     }
-  }, [userProfile, agencyProfile, agentProfile, user, profile]);
+  }, [userProfile, agencyProfile, agentProfile, user, isAuthLoading, isUserProfileLoading]);
 
   const setProfile = (newProfile: Partial<ProfileData>) => {
     setProfileState(prevProfile => {
         const updatedProfile = { ...prevProfile, ...newProfile };
-        try {
-            localStorage.setItem('app-profile', JSON.stringify(updatedProfile));
-        } catch (error) {
-            console.error("Failed to save profile to localStorage", error);
-        }
+        localStorage.setItem('app-profile', JSON.stringify(updatedProfile));
         return updatedProfile;
     });
   };
 
-  const isLoading = isAuthLoading || isUserProfileLoading || isAgencyLoading || isAgentProfileLoading || !isInitialized;
+  const isLoading = isAuthLoading || isUserProfileLoading || (!!userProfile?.agency_id && isAgencyLoading) || (userProfile?.role === 'Agent' && isAgentProfileLoading);
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
