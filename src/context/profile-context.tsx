@@ -55,17 +55,26 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
 
   useEffect(() => {
-    if (isAuthLoading || isUserProfileLoading) return; 
+    if (isAuthLoading) return;
 
-    if (userProfile && user) { 
+    if (user) {
+        // Immediately set the profile with available auth data to prevent UI flicker
+        setProfileState(prev => ({
+            ...prev,
+            user_id: user.uid,
+            name: user.displayName || prev.name,
+            avatar: user.photoURL || prev.avatar,
+        }));
+    }
+
+    if (!isUserProfileLoading && userProfile) {
         const role = userProfile.role || 'Agent';
         
-        // Prioritize Firebase Auth user object for name and avatar, then fall back to Firestore.
-        let name = user.displayName || userProfile.name || 'User';
-        let avatar = user.photoURL || userProfile.avatar || '';
+        let name = user?.displayName || userProfile.name || 'User';
+        let avatar = user?.photoURL || userProfile.avatar || '';
         let phone = userProfile.phone || '';
 
-        // If specific roles have their profiles, they can override.
+        // Specific profiles can override
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             avatar = agentProfile.avatar || avatar;
@@ -82,18 +91,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             phone: phone,
             role: role, 
             avatar: avatar,
-            user_id: user.uid,
+            user_id: user!.uid,
             agency_id: userProfile.agency_id || '',
         };
         
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
     } else if (!isAuthLoading && !user) {
-        // If user is logged out, reset to default profile
         setProfileState(defaultProfile);
         localStorage.removeItem('app-profile');
     }
-  }, [userProfile, agencyProfile, agentProfile, user, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
+  }, [user, userProfile, agencyProfile, agentProfile, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
+
 
   const setProfile = (newProfile: Partial<ProfileData>) => {
     setProfileState(prevProfile => {
@@ -103,7 +112,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const isLoading = isAuthLoading || isUserProfileLoading || (!!userProfile?.agency_id && isAgencyLoading) || (userProfile?.role === 'Agent' && isAgentProfileLoading);
+  const isLoading = isAuthLoading || isUserProfileLoading || (!!userProfile?.agency_id && isAgencyLoading);
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
