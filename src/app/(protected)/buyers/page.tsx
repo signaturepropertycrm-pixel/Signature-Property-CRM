@@ -242,25 +242,28 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
-        const isAgentAdding = profile.role === 'Agent' && !buyerToEdit;
-        const collectionName = isAgentAdding ? 'agents' : 'agencies';
-        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-        if (!collectionId) return;
+        if (buyerToEdit && buyerData.id) {
+            // This is an UPDATE
+            const isAgentProperty = allBuyers.some(p => p.id === buyerToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
 
-        const collectionRef = collection(firestore, collectionName, collectionId, 'buyers');
-        
-        const dataToSave = { ...buyerData, agency_id: profile.agency_id };
+            const collectionName = isAgentProperty ? 'agents' : 'agencies';
+            const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
 
-        if (buyerToEdit) {
-            const editCollectionName = buyerToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
-            const editCollectionId = buyerToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
-            if (!editCollectionId) return;
-            const docRef = doc(firestore, editCollectionName, editCollectionId, 'buyers', buyerToEdit.id);
-            await setDoc(docRef, dataToSave, { merge: true });
+            if (!collectionId) return;
+            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyerData.id);
+            await setDoc(docRef, buyerData, { merge: true });
             toast({ title: 'Buyer Updated' });
         } else {
-            const { id, ...restOfData } = dataToSave;
-            await addDoc(collectionRef, restOfData);
+            // This is a NEW buyer
+            const isAgentAdding = profile.role === 'Agent';
+            const collectionName = isAgentAdding ? 'agents' : 'agencies';
+            const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
+
+            if (!collectionId) return;
+
+            const collectionRef = collection(firestore, collectionName, collectionId, 'buyers');
+            const { id, ...restOfData } = buyerData;
+            await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
             toast({ title: 'Buyer Added' });
         }
         setBuyerToEdit(null);
@@ -482,5 +485,3 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
-
-    

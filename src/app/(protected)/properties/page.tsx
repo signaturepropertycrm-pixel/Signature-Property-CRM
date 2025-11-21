@@ -281,28 +281,29 @@ function PropertiesPageContent() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
-    const isAgentAdding = profile.role === 'Agent' && !propertyToEdit;
-    const collectionName = isAgentAdding ? 'agents' : 'agencies';
-    const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-    if (!collectionId) return;
-
-    
-    const dataToSave = {
-        ...propertyData,
-        agency_id: profile.agency_id
-    };
-
     if (propertyToEdit && propertyData.id) {
-        const editCollectionName = propertyToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
-        const editCollectionId = propertyToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
-        if (!editCollectionId) return;
-        const docRef = doc(firestore, editCollectionName, editCollectionId, 'properties', propertyData.id);
-        await setDoc(docRef, dataToSave, { merge: true });
+        // This is an UPDATE
+        const originalCreator = propertyToEdit.created_by;
+        const isAgentProperty = allProperties.some(p => p.id === propertyToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
+        
+        const collectionName = isAgentProperty ? 'agents' : 'agencies';
+        const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
+
+        if (!collectionId) return;
+        const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
+        await setDoc(docRef, propertyData, { merge: true });
         toast({ title: 'Property Updated' });
     } else {
+        // This is a NEW property
+        const isAgentAdding = profile.role === 'Agent';
+        const collectionName = isAgentAdding ? 'agents' : 'agencies';
+        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
+        
+        if (!collectionId) return;
+
         const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
-        const { id, ...restOfData } = dataToSave;
-        await addDoc(collectionRef, restOfData);
+        const { id, ...restOfData } = propertyData;
+        await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
         toast({ title: 'Property Added' });
     }
     setPropertyToEdit(null);
