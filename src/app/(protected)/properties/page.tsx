@@ -502,35 +502,43 @@ function PropertiesPageContent() {
             )}
           </div>
           
-           {isMobile && (
+           {isMobile ? (
               <div className="w-full">
                 <Select value={activeTab} onValueChange={handleTabChange}>
                   <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
                   <SelectContent>{propertyStatusLinks.map(({label, status}) => (<SelectItem key={status} value={status}>{label}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
+          ) : (
+             <div className="border-b">
+                <nav className="-mb-px flex space-x-6">
+                    {propertyStatusLinks.map(({label, status}) => (
+                        <button
+                            key={status}
+                            onClick={() => handleTabChange(status)}
+                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
+                                ${activeTab === status ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}
+                            `}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </nav>
+            </div>
           )}
 
-            <Tabs defaultValue="agency-properties" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="agency-properties">
-                    <Home className="mr-2 h-4 w-4" /> Agency Properties
-                </TabsTrigger>
+            <div className="space-y-8 mt-6">
                 {profile.role === 'Agent' && (
-                    <TabsTrigger value="my-properties">
-                        <Briefcase className="mr-2 h-4 w-4" /> My Properties
-                    </TabsTrigger>
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Briefcase className="text-primary"/> My Properties</h2>
+                        {renderContent(filteredAgentProperties, true)}
+                    </div>
                 )}
-              </TabsList>
-              <TabsContent value="agency-properties" className="mt-4">
-                  {renderContent(filteredAgencyProperties, false)}
-              </TabsContent>
-               {profile.role === 'Agent' && (
-                  <TabsContent value="my-properties" className="mt-4">
-                     {renderContent(filteredAgentProperties, true)}
-                  </TabsContent>
-                )}
-            </Tabs>
+                 <div>
+                    <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Home className="text-primary"/> Agency Properties</h2>
+                    {renderContent(filteredAgencyProperties, false)}
+                </div>
+            </div>
 
         </div>
       </TooltipProvider>
@@ -570,3 +578,5 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
+
+    
