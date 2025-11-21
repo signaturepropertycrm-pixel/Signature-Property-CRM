@@ -47,7 +47,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, updateProfile } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -140,11 +140,20 @@ export default function SettingsPage() {
     }
 
     const docRef = doc(firestore, collectionName, docId);
-    const dataToUpdate = profile.role === 'Admin' 
-        ? { name: localProfile.agencyName, ownerName: localProfile.ownerName }
-        : { name: localProfile.name };
+    
+    let dataToUpdate: Partial<ProfileData> = {};
+    if (profile.role === 'Admin') {
+        dataToUpdate = { agencyName: localProfile.agencyName, ownerName: localProfile.ownerName };
+    } else {
+        dataToUpdate = { name: localProfile.name };
+    }
 
     await updateDoc(docRef, dataToUpdate);
+
+    // Also update the display name in Firebase Auth itself
+    if (auth.currentUser && localProfile.name) {
+      await updateProfile(auth.currentUser, { displayName: localProfile.name });
+    }
 
     setProfile(localProfile);
     toast({
@@ -201,6 +210,11 @@ export default function SettingsPage() {
         const docRef = doc(firestore, collectionName, docId);
         await updateDoc(docRef, { avatar: avatarPreview });
         
+        // Also update photoURL in auth
+        if (auth.currentUser) {
+          await updateProfile(auth.currentUser, { photoURL: avatarPreview });
+        }
+
         setProfile({ ...profile, avatar: avatarPreview });
         toast({
             title: "Profile Picture Updated",
@@ -422,8 +436,13 @@ export default function SettingsPage() {
              <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Change Profile Picture</DialogTitle></DialogHeader>
-                    {avatarPreview && <div className="flex justify-center"><Image src={avatarPreview} alt="Avatar preview" width={128} height={128} className="rounded-full aspect-square object-cover" /></div>}
-                    <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+                    <div className="grid gap-4 py-4">
+                        {avatarPreview && <div className="flex justify-center"><Image src={avatarPreview} alt="Avatar preview" width={128} height={128} className="rounded-full aspect-square object-cover" /></div>}
+                        <div className="grid gap-2">
+                           <Label htmlFor="avatar-upload">Choose Image</Label>
+                           <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+                        </div>
+                    </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleAvatarSave} disabled={!avatarFile}>Save Changes</Button>
@@ -870,3 +889,6 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
 }
 
 
+
+
+    

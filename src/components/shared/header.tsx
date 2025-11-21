@@ -46,8 +46,8 @@ export function AppHeader({
   const { invitations, isLoading: areInvitesLoading } = useInvitations(user?.email);
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
 
-  const displayName = user?.displayName || 'User';
-  const displayImage = user?.photoURL || profile.avatar;
+  const displayName = profile.name || 'User';
+  const displayImage = profile.avatar || user?.photoURL;
   const firstName = displayName.split(' ')[0];
   
   const handleLogout = async () => {
@@ -214,3 +214,5 @@ export function AppHeader({
     </header>
   );
 }
+
+    
