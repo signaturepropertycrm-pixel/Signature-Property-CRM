@@ -53,8 +53,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
 
 
 const passwordFormSchema = z.object({
@@ -84,11 +82,7 @@ export default function SettingsPage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isDeleteAgentDialogOpen, setDeleteAgentDialogOpen] = useState(false);
   const [isDeleteAgencyDialogOpen, setDeleteAgencyDialogOpen] = useState(false);
-  const [imgSrc, setImgSrc] = useState('');
-  const imgRef = useRef<HTMLImageElement>(null);
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<Crop>();
+  
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -120,87 +114,6 @@ export default function SettingsPage() {
     setMounted(true);
     setLocalProfile(profile);
   }, [profile]);
-
-  useEffect(() => {
-    if (!isAvatarDialogOpen) {
-      setImgSrc('');
-      setCrop(undefined);
-      setCompletedCrop(undefined);
-    }
-  }, [isAvatarDialogOpen]);
-
-  function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number) {
-    return centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        aspect,
-        mediaWidth,
-        mediaHeight
-      ),
-      mediaWidth,
-      mediaHeight
-    );
-  }
-
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, 1 / 1));
-  }
-  
-  function getCroppedImg(image: HTMLImageElement, crop: Crop, canvas: HTMLCanvasElement) {
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    const pixelRatio = window.devicePixelRatio;
-
-    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
-    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-        throw new Error('No 2d context');
-    }
-
-    ctx.scale(pixelRatio, pixelRatio);
-    ctx.imageSmoothingQuality = 'high';
-    
-    const cropX = crop.x * scaleX;
-    const cropY = crop.y * scaleY;
-    const cropWidth = crop.width * scaleX;
-    const cropHeight = crop.height * scaleY;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cropWidth / 2, cropHeight / 2, cropWidth / 2, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      cropWidth,
-      cropHeight
-    );
-    ctx.restore();
-
-    return canvas.toDataURL('image/png');
-  }
-
-  useEffect(() => {
-    if (
-        completedCrop?.width &&
-        completedCrop?.height &&
-        imgRef.current &&
-        previewCanvasRef.current
-    ) {
-        getCroppedImg(imgRef.current, completedCrop, previewCanvasRef.current);
-    }
-  }, [completedCrop]);
 
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -273,39 +186,26 @@ export default function SettingsPage() {
     }
   };
 
-
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setCrop(undefined); // Makes crop preview update between images.
-      const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
-      reader.readAsDataURL(e.target.files[0]);
-    }
-  };
-
-  const handleAvatarSave = async () => {
-    if (previewCanvasRef.current && user) {
-        const croppedDataUrl = previewCanvasRef.current.toDataURL('image/png');
+  const handleAvatarSave = async (dataUrl: string) => {
+    if (!user) return;
         
-        const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
-        const docId = profile.role === 'Admin' ? profile.agency_id : user.uid;
-        if (!docId) return;
+    const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
+    const docId = profile.role === 'Admin' ? profile.agency_id : user.uid;
+    if (!docId) return;
 
-        const docRef = doc(firestore, collectionName, docId);
-        await updateDoc(docRef, { avatar: croppedDataUrl });
-        
-        // Also update photoURL in auth
-        if (auth.currentUser) {
-          await updateProfile(auth.currentUser, { photoURL: croppedDataUrl });
-        }
-
-        setProfile({ ...profile, avatar: croppedDataUrl });
-        toast({
-            title: "Profile Picture Updated",
-            description: "Your new avatar has been saved."
-        });
-        setIsAvatarDialogOpen(false);
+    const docRef = doc(firestore, collectionName, docId);
+    await updateDoc(docRef, { avatar: dataUrl });
+    
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { photoURL: dataUrl });
     }
+
+    setProfile({ ...profile, avatar: dataUrl });
+    toast({
+        title: "Profile Picture Updated",
+        description: "Your new avatar has been saved."
+    });
+    setIsAvatarDialogOpen(false);
   }
 
   const handleBackup = () => {
@@ -318,7 +218,6 @@ export default function SettingsPage() {
             agencyTeamMembers: agencyTeamMembers || [],
             profile: profile || {},
         } : {
-            // Agent backup can be implemented later if needed
             profile: profile || {},
         }
 
@@ -353,7 +252,6 @@ export default function SettingsPage() {
       toast({ title: 'No file or user session', variant: 'destructive' });
       return;
     }
-    // Restore logic for admin...
   };
   
     const handleDeleteAgentAccount = async (password: string) => {
@@ -363,18 +261,14 @@ export default function SettingsPage() {
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     try {
         await reauthenticateWithCredential(currentUser, credential);
-        // User re-authenticated, now delete agent-related data.
         const batch = writeBatch(firestore);
         
-        // Delete from agents collection
         const agentDoc = doc(firestore, 'agents', currentUser.uid);
         batch.delete(agentDoc);
 
-        // Delete from users collection
         const userDoc = doc(firestore, 'users', currentUser.uid);
         batch.delete(userDoc);
         
-        // Delete from teamMembers subcollection in the agency, if they belong to one
         if (profile.agency_id) {
             const teamMemberDoc = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', currentUser.uid);
             batch.delete(teamMemberDoc);
@@ -384,12 +278,12 @@ export default function SettingsPage() {
         await deleteUser(currentUser);
         
         toast({ title: "Account Deleted", description: "Your agent account has been permanently deleted." });
-        window.location.href = '/login'; // Redirect to login
+        window.location.href = '/login';
         
-    } catch (error: any) {
+    } catch (error: any) => {
         console.error("Agent account deletion error:", error);
         toast({ title: 'Deletion Failed', description: error.code === 'auth/invalid-credential' ? 'Incorrect password.' : 'An error occurred.', variant: 'destructive' });
-        throw error; // Re-throw to keep dialog open
+        throw error;
     }
   };
 
@@ -404,25 +298,20 @@ export default function SettingsPage() {
         const batch = writeBatch(firestore);
         const agencyId = profile.agency_id;
         
-        // --- Delete all sub-collections ---
         const subCollections = ['properties', 'buyers', 'teamMembers', 'appointments', 'followUps', 'activityLogs'];
         for (const subCol of subCollections) {
             const querySnapshot = await getDocs(collection(firestore, 'agencies', agencyId, subCol));
             querySnapshot.forEach(doc => batch.delete(doc.ref));
         }
 
-        // --- Delete the agency document ---
         const agencyDocRef = doc(firestore, 'agencies', agencyId);
         batch.delete(agencyDocRef);
 
-        // --- Delete the user document ---
         const userDocRef = doc(firestore, 'users', currentUser.uid);
         batch.delete(userDocRef);
 
-        // Commit all Firestore deletions
         await batch.commit();
 
-        // Finally, delete the user from Firebase Auth
         await deleteUser(currentUser);
         
         toast({ title: "Agency Account Deleted", description: "Your agency and all its data have been permanently deleted." });
@@ -437,10 +326,9 @@ export default function SettingsPage() {
 
 
   if (!mounted || isProfileLoading) {
-    return null; // or a loading spinner
+    return null;
   }
 
-  // AGENT VIEW
   if (profile.role === 'Agent') {
       return (
           <>
@@ -560,19 +448,10 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <AvatarCropDialog 
+            <SimpleAvatarDialog 
               isOpen={isAvatarDialogOpen}
               setIsOpen={setIsAvatarDialogOpen}
               onSave={handleAvatarSave}
-              onFileChange={handleAvatarFileChange}
-              imgSrc={imgSrc}
-              imgRef={imgRef}
-              previewCanvasRef={previewCanvasRef}
-              crop={crop}
-              setCrop={setCrop}
-              completedCrop={completedCrop}
-              setCompletedCrop={setCompletedCrop}
-              onImageLoad={onImageLoad}
             />
             <DeleteAgentDialog 
                 isOpen={isDeleteAgentDialogOpen}
@@ -583,8 +462,6 @@ export default function SettingsPage() {
       );
   }
 
-
-  // ADMIN / EDITOR VIEW
   return (
     <>
     <div className="space-y-8">
@@ -929,19 +806,10 @@ export default function SettingsPage() {
       )}
 
     </div>
-    <AvatarCropDialog 
+    <SimpleAvatarDialog 
       isOpen={isAvatarDialogOpen}
       setIsOpen={setIsAvatarDialogOpen}
       onSave={handleAvatarSave}
-      onFileChange={handleAvatarFileChange}
-      imgSrc={imgSrc}
-      imgRef={imgRef}
-      previewCanvasRef={previewCanvasRef}
-      crop={crop}
-      setCrop={setCrop}
-      completedCrop={completedCrop}
-      setCompletedCrop={setCompletedCrop}
-      onImageLoad={onImageLoad}
     />
 
     <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
@@ -1064,81 +932,109 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
   );
 }
     
-function AvatarCropDialog({
-  isOpen, setIsOpen, onSave, onFileChange, imgSrc, imgRef, previewCanvasRef,
-  crop, setCrop, completedCrop, setCompletedCrop, onImageLoad
+function SimpleAvatarDialog({
+  isOpen,
+  setIsOpen,
+  onSave,
 }: {
-  isOpen: boolean,
-  setIsOpen: (open: boolean) => void,
-  onSave: () => void,
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  imgSrc: string,
-  imgRef: React.RefObject<HTMLImageElement>,
-  previewCanvasRef: React.RefObject<HTMLCanvasElement>,
-  crop: Crop | undefined,
-  setCrop: (crop: Crop | undefined) => void,
-  completedCrop: Crop | undefined,
-  setCompletedCrop: (crop: Crop | undefined) => void,
-  onImageLoad: (e: React.SyntheticEvent<HTMLImageElement>) => void,
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  onSave: (dataUrl: string) => void;
 }) {
+  const [imgSrc, setImgSrc] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setImgSrc('');
+      setError('');
+    }
+  }, [isOpen]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        setError('File is too large. Please select an image under 2MB.');
+        setImgSrc('');
+        return;
+      }
+      setError('');
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    if (!imgSrc) {
+      setError('Please select an image first.');
+      return;
+    }
+    const image = document.createElement('img');
+    image.src = imgSrc;
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 256;
+      const MAX_HEIGHT = 256;
+      let width = image.width;
+      let height = image.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(image, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/png');
+      onSave(dataUrl);
+    };
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Change Profile Picture</DialogTitle>
-          <DialogDescription>
-            Crop your image to the perfect size.
-          </DialogDescription>
+          <DialogDescription>Upload a new image for your profile.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <Input 
+          <Input
             id="avatar-upload"
             type="file"
             accept="image/*"
-            onChange={onFileChange} 
+            ref={fileInputRef}
+            onChange={handleFileChange}
           />
-          <div className="flex flex-col items-center gap-4">
-            {imgSrc && (
-              <ReactCrop
-                crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={1}
-                circularCrop
-              >
-                <Image
-                  ref={imgRef}
-                  alt="Crop me"
-                  src={imgSrc}
-                  onLoad={onImageLoad}
-                  width={400}
-                  height={400}
-                  style={{ maxHeight: '70vh' }}
-                />
-              </ReactCrop>
-            )}
-            {completedCrop && (
-              <>
-                <div>
-                  <h3 className="text-sm font-medium mb-2">Preview</h3>
-                  <canvas
-                    ref={previewCanvasRef}
-                    style={{
-                      border: '1px solid black',
-                      objectFit: 'contain',
-                      width: 128,
-                      height: 128,
-                      borderRadius: '50%',
-                    }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {imgSrc && (
+            <div className="flex flex-col items-center gap-4 mt-4">
+              <Label>Preview</Label>
+              <Avatar className="h-32 w-32 border">
+                <AvatarImage src={imgSrc} alt="Preview" />
+                <AvatarFallback>IMG</AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={onSave} disabled={!completedCrop}>Save Changes</Button>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!imgSrc || !!error}>
+            Save Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
