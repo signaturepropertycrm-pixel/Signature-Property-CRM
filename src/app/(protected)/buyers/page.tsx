@@ -321,26 +321,29 @@ function BuyersPageContent() {
         setAssignmentToConfirm(null);
     };
     
-    const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean) => {
+    const getFilteredBuyers = (
+      sourceBuyers: Buyer[] | null, 
+      isForMyBuyersTab: boolean = false, 
+      isForAssignedBuyersTab: boolean = false
+    ) => {
         if (!sourceBuyers) return [];
         let filtered: Buyer[] = [...sourceBuyers];
     
-        // Role-based filtering
+        // Primary role-based filtering
         if (profile.role === 'Agent') {
-            if (isForMyBuyersTab) {
-                // "My Buyers" tab only shows buyers created by the agent in their personal collection.
-                // sourceBuyers for this is already agentBuyers, so no further filtering needed on creator.
-            } else {
-                // "Assigned Buyers" tab filters agency buyers to show only those assigned to the current agent.
+            if (isForAssignedBuyersTab) {
+                // "Assigned Buyers" tab filters agency buyers to show ONLY those assigned to the current agent.
                 filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+            } else if (isForMyBuyersTab) {
+                // "My Buyers" tab uses the agent's personal buyer collection, so no extra filtering is needed here.
             }
         }
-        // Admin/Editor sees all agency buyers, no initial role filter needed here.
+        // Admin/Editor sees all agency buyers, no initial role filter needed for them.
     
-        // Filter out deleted buyers
+        // Filter out deleted buyers from all views
         filtered = filtered.filter(b => !b.is_deleted);
         
-        // Status tab filtering
+        // Status tab filtering (All, New, Interested, etc.)
         if (activeTab && activeTab !== 'All') {
             filtered = filtered.filter(b => b.status === activeTab);
         }
@@ -367,11 +370,11 @@ function BuyersPageContent() {
         return filtered;
     };
     
-    // For agent's "My Buyers" tab, we only use their personal collection (`agentBuyers`).
-    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true), [searchQuery, activeTab, filters, agentBuyers, profile.role]);
+    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true, false), [searchQuery, activeTab, filters, agentBuyers]);
 
-    // For agent's "Assigned Buyers" tab and for Admin/Editor view, we use the agency's collection (`agencyBuyers`).
-    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers, false), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
+    const filteredAgencyBuyersForAdmin = useMemo(() => getFilteredBuyers(agencyBuyers, false, false), [searchQuery, activeTab, filters, agencyBuyers]);
+
+    const filteredAgencyBuyersForAgent = useMemo(() => getFilteredBuyers(agencyBuyers, false, true), [searchQuery, activeTab, filters, agencyBuyers, profile.user_id]);
 
 
     const handleTabChange = (value: string) => {
@@ -567,7 +570,7 @@ function BuyersPageContent() {
                   </TabsTrigger>
               </TabsList>
               <TabsContent value="agency-buyers" className="mt-4">
-                  {renderContent(filteredAgencyBuyers, false)}
+                  {renderContent(filteredAgencyBuyersForAgent, false)}
               </TabsContent>
               <TabsContent value="my-buyers" className="mt-4">
                   {renderContent(filteredAgentBuyers, true)}
@@ -575,7 +578,7 @@ function BuyersPageContent() {
           </Tabs>
         ) : (
           <div className="mt-4">
-            {renderContent(filteredAgencyBuyers, false)}
+            {renderContent(filteredAgencyBuyersForAdmin, false)}
           </div>
         )}
         
