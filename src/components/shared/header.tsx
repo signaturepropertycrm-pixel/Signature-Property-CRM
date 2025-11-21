@@ -22,7 +22,7 @@ import { useAuth, useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { signOut } from 'firebase/auth';
 import { useInvitations } from '@/hooks/use-invitations';
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -64,19 +64,27 @@ export function AppHeader({
     if (!user) return;
     setUpdatingInvite(invitationId);
     
-    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-    const updateData = { status: 'Active', id: user.uid };
+    const batch = writeBatch(firestore);
 
-    updateDoc(invRef, updateData)
+    // 1. Update the team member document in the agency
+    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+    batch.update(invRef, { status: 'Active', id: user.uid });
+
+    // 2. Update the agent's main user document to include the agency_id
+    const userRef = doc(firestore, 'users', user.uid);
+    batch.update(userRef, { agency_id: agencyId });
+
+    batch.commit()
       .then(() => {
         toast({ title: 'Invitation Accepted!', description: 'You have joined the agency.' });
         setActionedInvitations(prev => ({...prev, [invitationId]: 'accepted'}));
+        // Optional: Force a profile reload or page refresh
+        window.location.reload();
       })
       .catch((error) => {
         const contextualError = new FirestorePermissionError({
-          operation: 'update',
-          path: invRef.path,
-          requestResourceData: updateData,
+          operation: 'write',
+          path: `batch write for ${invRef.path} and ${userRef.path}`,
         });
         errorEmitter.emit('permission-error', contextualError);
       })

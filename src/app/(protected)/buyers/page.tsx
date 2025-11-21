@@ -10,7 +10,7 @@ import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,7 @@ import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -157,8 +157,9 @@ function BuyersPageContent() {
     };
     
     const handleDelete = async (buyer: Buyer) => {
-        const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
-        const collectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
+        const collectionName = isAgentOwned ? 'agents' : 'agencies';
+        const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
         if(!collectionId) return;
 
         const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
@@ -183,8 +184,9 @@ function BuyersPageContent() {
             setBuyerForFollowUp(buyer);
             setIsFollowUpOpen(true);
         } else {
-            const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
-            const collectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+            const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
+            const collectionName = isAgentOwned ? 'agents' : 'agencies';
+            const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
             if(!collectionId) return;
 
             const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
@@ -217,8 +219,11 @@ function BuyersPageContent() {
         };
         
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
-        const buyerCollectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
-        const buyerCollectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        
+        const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
+        const buyerCollectionName = isAgentOwned ? 'agents' : 'agencies';
+        const buyerCollectionId = isAgentOwned ? profile.user_id : profile.agency_id;
+
         if (!buyerCollectionId) return;
         const buyerDocRef = doc(firestore, buyerCollectionName, buyerCollectionId, 'buyers', buyerId);
 
@@ -243,11 +248,9 @@ function BuyersPageContent() {
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
         if (buyerToEdit && buyerData.id) {
-            // This is an UPDATE
-            const isAgentProperty = allBuyers.some(p => p.id === buyerToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
-
-            const collectionName = isAgentProperty ? 'agents' : 'agencies';
-            const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
+            const isAgentOwned = buyerToEdit.created_by === profile.user_id && buyerToEdit.agency_id !== buyerToEdit.created_by;
+            const collectionName = isAgentOwned ? 'agents' : 'agencies';
+            const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
 
             if (!collectionId) return;
             const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyerData.id);
@@ -270,19 +273,42 @@ function BuyersPageContent() {
     };
 
     const handleAssignAgent = async (buyerId: string, agentId: string) => {
-        if (!profile.agency_id) return;
+        if (!profile.agency_id || !teamMembers) return;
+        
+        const agent = teamMembers.find(m => m.id === agentId);
+        if (!agent) return;
+
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
         await setDoc(buyerRef, { assignedTo: agentId }, { merge: true });
+        
+        // Create an activity log entry
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const buyer = agencyBuyers?.find(b => b.id === buyerId);
+        const newActivity: Omit<Activity, 'id'> = {
+            userName: profile.name,
+            userAvatar: profile.avatar,
+            action: `assigned a new buyer to ${agent.name}`,
+            target: buyer?.name || `Buyer #${buyer?.serial_no}`,
+            targetType: 'Buyer',
+            timestamp: new Date().toISOString(),
+            agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
+
         toast({
             title: "Buyer Assigned",
-            description: `This buyer has been assigned to the selected agent.`
+            description: `This buyer has been assigned to ${agent.name}.`
         });
     };
 
-    const getFilteredBuyers = (buyersList: Buyer[] | null) => {
+    const getFilteredBuyers = (buyersList: Buyer[] | null, forAgentAssigned: boolean = false) => {
         if (!buyersList) return [];
         let filtered = buyersList.filter(b => !b.is_deleted);
 
+        if (forAgentAssigned && profile.role === 'Agent') {
+            filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+        }
+        
         if (activeTab && activeTab !== 'All') filtered = filtered.filter(b => b.status === activeTab);
         
         if (searchQuery) {
@@ -306,7 +332,7 @@ function BuyersPageContent() {
     };
     
     const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers), [searchQuery, activeTab, filters, agentBuyers]);
-    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers]);
+    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers, profile.role === 'Agent'), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
 
 
     const handleTabChange = (value: string) => {
@@ -435,7 +461,7 @@ function BuyersPageContent() {
           <Tabs defaultValue="agency-buyers" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="agency-buyers">
-                      <Home className="mr-2 h-4 w-4" /> Agency Buyers
+                      <Home className="mr-2 h-4 w-4" /> Assigned Buyers
                   </TabsTrigger>
                   <TabsTrigger value="my-buyers">
                       <Briefcase className="mr-2 h-4 w-4" /> My Buyers
