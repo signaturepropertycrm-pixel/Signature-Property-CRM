@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Home, Loader2, Eye, EyeOff } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { User, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,53 +24,76 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase/provider';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useAuth, useFirestore } from '@/firebase/provider';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ProfileProvider } from '@/context/profile-context';
 
 const formSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Please enter a valid email.'),
-  password: z.string().min(1, 'Password is required.'),
-  remember: z.boolean().default(false),
+  password: z.string().min(6, 'Password must be at least 6 characters.'),
 });
 
-type LoginFormValues = z.infer<typeof formSchema>;
+type SignupFormValues = z.infer<typeof formSchema>;
 
-function LoginPageContent() {
+function AgentSignupPageContent() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
-      remember: false,
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
-      if (!auth) {
-        throw new Error('Auth service is not available.');
+      if (!auth || !firestore) {
+        throw new Error('Auth or Firestore service is not available.');
       }
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/dashboard');
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      
+      const user = userCredential.user;
+      if (user) {
+        await updateProfile(user, { displayName: values.name });
+        
+        // Create a document in the `/agents` collection
+        const agentDocRef = doc(firestore, 'agents', user.uid);
+        await setDoc(agentDocRef, {
+            id: user.uid,
+            name: values.name,
+            email: values.email,
+            role: 'Agent',
+            createdAt: serverTimestamp(),
+        });
+      }
+
+      toast({
+        title: 'Agent Account Created!',
+        description: 'You have been successfully registered. You can now log in.',
+      });
+      router.push('/agent/login');
+
     } catch (error: any) {
-      console.error('Login Error:', error);
+      console.error('Signup Error:', error);
       toast({
         variant: 'destructive',
-        title: 'Login Failed',
+        title: 'Signup Failed',
         description:
-          error.code === 'auth/invalid-credential'
-            ? 'Incorrect email or password.'
+          error.code === 'auth/email-already-in-use'
+            ? 'This email address is already in use.'
             : 'An unexpected error occurred. Please try again.',
       });
     } finally {
@@ -80,27 +102,45 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-violet-900 p-4 font-body">
+    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-100 via-white to-teal-100 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-900 p-4 font-body">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
-            <Home className="h-8 w-8 text-primary" />
+            <User className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-extrabold text-foreground font-headline tracking-tight">
-              Signature Property CRM
+              Agent Portal
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Welcome back! Please sign in to continue.
+            Create your personal agent account to receive leads.
           </p>
         </div>
 
         <Card className="glass-card shadow-2xl hover:shadow-primary/20">
           <CardHeader>
-            <CardTitle>Agency Login</CardTitle>
+            <CardTitle>Create Agent Account</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label>Your Name</Label>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. Ali Khan"
+                          className="bg-input/80"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <FormField
                   control={form.control}
                   name="email"
@@ -110,7 +150,7 @@ function LoginPageContent() {
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="m@example.com"
+                          placeholder="agent@example.com"
                           className="bg-input/80"
                           {...field}
                         />
@@ -125,7 +165,7 @@ function LoginPageContent() {
                   render={({ field }) => (
                     <FormItem>
                       <Label>Password</Label>
-                      <div className="relative">
+                       <div className="relative">
                         <FormControl>
                           <Input
                             type={showPassword ? 'text' : 'password'}
@@ -149,30 +189,6 @@ function LoginPageContent() {
                   )}
                 />
 
-                <div className="flex items-center justify-between text-sm">
-                  <FormField
-                    control={form.control}
-                    name="remember"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center gap-2 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <Label className="font-normal">Remember me</Label>
-                      </FormItem>
-                    )}
-                  />
-                  <Link
-                    href="#"
-                    className="font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot Password?
-                  </Link>
-                </div>
-
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-bold mt-4 glowing-btn"
@@ -181,24 +197,15 @@ function LoginPageContent() {
                   {isLoading && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Login
+                  Create Account
                 </Button>
                 <div className="mt-4 text-center text-sm">
-                  Don&apos;t have an agency account?{' '}
-                  <Link
-                    href="/signup"
-                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Create an Account
-                  </Link>
-                </div>
-                 <div className="mt-2 text-center text-sm">
-                  Are you an Agent?{' '}
+                  Already have an agent account?{' '}
                   <Link
                     href="/agent/login"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
-                    Login here
+                    Login
                   </Link>
                 </div>
               </form>
@@ -210,11 +217,11 @@ function LoginPageContent() {
   );
 }
 
-export default function LoginPage() {
+export default function AgentSignupPage() {
     return (
         <FirebaseClientProvider>
           <ProfileProvider>
-            <LoginPageContent />
+            <AgentSignupPageContent />
           </ProfileProvider>
         </FirebaseClientProvider>
     );

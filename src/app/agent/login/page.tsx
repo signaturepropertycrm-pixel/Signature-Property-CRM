@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Home, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Home, Loader2, Eye, EyeOff, User } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,7 +40,7 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
-function LoginPageContent() {
+function AgentLoginPageContent() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
@@ -62,6 +62,7 @@ function LoginPageContent() {
       if (!auth) {
         throw new Error('Auth service is not available.');
       }
+      // This will log the user in. The AuthGuard and ProfileProvider will handle role checks and redirection.
       await signInWithEmailAndPassword(auth, values.email, values.password);
       router.push('/dashboard');
     } catch (error: any) {
@@ -80,23 +81,23 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-violet-900 p-4 font-body">
+    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-emerald-100 via-white to-teal-100 dark:from-slate-900 dark:via-slate-800 dark:to-emerald-900 p-4 font-body">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
-            <Home className="h-8 w-8 text-primary" />
+            <User className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-extrabold text-foreground font-headline tracking-tight">
-              Signature Property CRM
+              Agent Portal
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Welcome back! Please sign in to continue.
+            Sign in to your personal agent account.
           </p>
         </div>
 
         <Card className="glass-card shadow-2xl hover:shadow-primary/20">
           <CardHeader>
-            <CardTitle>Agency Login</CardTitle>
+            <CardTitle>Agent Login</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -110,7 +111,7 @@ function LoginPageContent() {
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="m@example.com"
+                          placeholder="agent@example.com"
                           className="bg-input/80"
                           {...field}
                         />
@@ -148,31 +149,6 @@ function LoginPageContent() {
                     </FormItem>
                   )}
                 />
-
-                <div className="flex items-center justify-between text-sm">
-                  <FormField
-                    control={form.control}
-                    name="remember"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center gap-2 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <Label className="font-normal">Remember me</Label>
-                      </FormItem>
-                    )}
-                  />
-                  <Link
-                    href="#"
-                    className="font-medium text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot Password?
-                  </Link>
-                </div>
-
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-bold mt-4 glowing-btn"
@@ -183,19 +159,19 @@ function LoginPageContent() {
                   )}
                   Login
                 </Button>
-                <div className="mt-4 text-center text-sm">
-                  Don&apos;t have an agency account?{' '}
+                 <div className="mt-4 text-center text-sm">
+                  Don&apos;t have an agent account?{' '}
                   <Link
-                    href="/signup"
+                    href="/agent/signup"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
                     Create an Account
                   </Link>
                 </div>
                  <div className="mt-2 text-center text-sm">
-                  Are you an Agent?{' '}
+                  Are you an Agency Admin?{' '}
                   <Link
-                    href="/agent/login"
+                    href="/login"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
                     Login here
@@ -210,11 +186,11 @@ function LoginPageContent() {
   );
 }
 
-export default function LoginPage() {
+export default function AgentLoginPage() {
     return (
         <FirebaseClientProvider>
           <ProfileProvider>
-            <LoginPageContent />
+            <AgentLoginPageContent />
           </ProfileProvider>
         </FirebaseClientProvider>
     );

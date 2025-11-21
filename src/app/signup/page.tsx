@@ -156,13 +156,13 @@ function SignupPageContent() {
             </h1>
           </div>
           <p className="text-muted-foreground">
-            Create an account to get started.
+            Create an account to get started with your agency.
           </p>
         </div>
 
         <Card className="glass-card shadow-2xl hover:shadow-primary/20">
           <CardHeader>
-            <CardTitle>Create Account</CardTitle>
+            <CardTitle>Create Agency Account</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
