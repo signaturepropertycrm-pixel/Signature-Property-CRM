@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -31,7 +31,6 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { AssignBuyerDialog } from '@/components/assign-buyer-dialog';
 
 
 const statusVariant = {
@@ -97,6 +96,8 @@ function BuyersPageContent() {
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
     
+    const activeAgents = useMemo(() => teamMembers?.filter(m => m.status === 'Active') || [], [teamMembers]);
+    
     const allBuyers = useMemo(() => {
         const combined = [...(agencyBuyers || []), ...(agentBuyers || [])];
         const unique = Array.from(new Map(combined.map(b => [b.id, b])).values());
@@ -104,7 +105,6 @@ function BuyersPageContent() {
     }, [agencyBuyers, agentBuyers]);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
-    const [isAssignBuyerOpen, setIsAssignBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -291,7 +291,7 @@ function BuyersPageContent() {
         await updateDoc(buyerRef, { assignedTo: agentId });
         
         let toastTitle = 'Buyer Unassigned';
-        let toastDescription = 'This buyer has been unassigned from any agent.';
+        let toastDescription = 'This buyer is now unassigned from any agent.';
 
         if (agentId) {
             const agent = teamMembers.find(m => m.id === agentId);
@@ -300,7 +300,7 @@ function BuyersPageContent() {
                 const newActivity: Omit<Activity, 'id'> = {
                     userName: profile.name,
                     userAvatar: profile.avatar,
-                    action: `assigned a new buyer to ${agent.name}`,
+                    action: `assigned buyer to ${agent.name}`,
                     target: buyer?.name || `Buyer #${buyer?.serial_no}`,
                     targetType: 'Buyer',
                     timestamp: new Date().toISOString(),
@@ -322,8 +322,8 @@ function BuyersPageContent() {
     };
 
     const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean) => {
-        let filtered: Buyer[] = [];
         if (!sourceBuyers) return [];
+        let filtered: Buyer[] = [];
     
         if (profile.role === 'Agent') {
             if (isForMyBuyersTab) {
@@ -411,7 +411,23 @@ function BuyersPageContent() {
                                     <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
                                     {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                     <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                     <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                    <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                    {profile.role !== 'Agent' && !isAgentData && (
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal><DropdownMenuSubContent>
+                                                <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
+                                                    <UserX className="mr-2 h-4 w-4"/>Unassign
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                {activeAgents.map(agent => (
+                                                    <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                        {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
+                                                    </DropdownMenuItem>
+                                                ))}
+                                            </DropdownMenuSubContent></DropdownMenuPortal>
+                                        </DropdownMenuSub>
+                                    )}
                                     {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -462,7 +478,23 @@ function BuyersPageContent() {
                                 <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                 <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                {profile.role !== 'Agent' && !isAgentData && (
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
+                                        <DropdownMenuPortal><DropdownMenuSubContent>
+                                            <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
+                                                <UserX className="mr-2 h-4 w-4"/>Unassign
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            {activeAgents.map(agent => (
+                                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                    {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent></DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                )}
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -543,17 +575,6 @@ function BuyersPageContent() {
       </div>
 
         <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col gap-3">
-           {(profile.role === 'Admin' || profile.role === 'Editor') && (
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button onClick={() => setIsAssignBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg" size="icon" variant="secondary">
-                        <UserCheck className="h-6 w-6" />
-                        <span className="sr-only">Assign Buyers</span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">Assign Buyers</TooltipContent>
-            </Tooltip>
-           )}
            <Tooltip>
                 <TooltipTrigger asChild>
                     <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
@@ -572,11 +593,6 @@ function BuyersPageContent() {
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
-
-        <AssignBuyerDialog 
-            isOpen={isAssignBuyerOpen}
-            setIsOpen={setIsAssignBuyerOpen}
-        />
         
         {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp}/>)}
         {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
@@ -588,13 +604,13 @@ function BuyersPageContent() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to assign this buyer to {assignmentToConfirm.agentId ? teamMembers?.find(m => m.id === assignmentToConfirm.agentId)?.name : 'unassign'}?
+                            Are you sure you want to {assignmentToConfirm.agentId === null ? 'unassign this buyer' : `assign this buyer to ${activeAgents.find(a => a.id === assignmentToConfirm.agentId)?.name}`}?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={() => setAssignmentToConfirm(null)}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirmAssignment}>
-                            Confirm Assignment
+                            Confirm
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
