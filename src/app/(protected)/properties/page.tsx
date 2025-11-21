@@ -385,7 +385,7 @@ function PropertiesPageContent() {
                         <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
-                        <DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit Details</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
                         prop.is_recorded ? (
@@ -453,7 +453,7 @@ function PropertiesPageContent() {
                           <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye />View Details</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                            {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>)}
-                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (<DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>)}
+                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (<DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit Details</DropdownMenuItem>)}
                           {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (prop.is_recorded ? (<DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>) : (<DropdownMenuItem onSelect={() => handleRecordVideo(prop)}><Video />Mark as Recorded</DropdownMenuItem>))}
                           {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(prop)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                         </DropdownMenuContent>

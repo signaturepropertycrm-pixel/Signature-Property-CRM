@@ -110,6 +110,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   const { profile } = useProfile();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id),   // <-- already theek hai
   });
 
   const { control, setValue, formState, reset } = form;
