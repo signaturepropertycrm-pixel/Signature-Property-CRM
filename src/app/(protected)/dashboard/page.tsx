@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -177,7 +178,7 @@ const calculateKpis = (
 };
 
 const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolean }) => {
-    const dataToShow = (isLoading || kpiData.length === 0) ? Array(5).fill({}) : kpiData;
+    const dataToShow = (isLoading || kpiData.length === 0) ? Array(10).fill({}) : kpiData;
     
     return (
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -226,26 +227,28 @@ export default function DashboardPage() {
 
   // Agent-specific data
   const agentPropertiesQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.role, profile.user_id, firestore]);
-  const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
-  
   const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
+  
+  const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
   const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
 
 
   const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
-  const isAgentDataLoading = agentPLoading || agentBLoading;
+  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading;
 
   const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency]);
   
   const agentKpiData = useMemo(() => {
-    if (profile.role !== 'Agent') return [];
+    if (profile.role !== 'Agent' || !profile.name) return [];
     
-    // For agent's personal stats, we don't calculate appointments/follow-ups separately yet
-    // We can pass null for those.
-    const agentKpis = calculateKpis(agentProperties, agentBuyers, null, null, currency);
-    // We only care about Total Properties and Total Buyers for the agent's personal stats for now.
-    return agentKpis.filter(kpi => kpi.id === 'total-properties' || kpi.id === 'total-buyers');
-  }, [agentProperties, agentBuyers, currency, profile.role]);
+    // Filter agency-level data for the current agent
+    const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
+    const agentSpecificFollowUps = agencyFollowUps?.filter(f => f.buyerId && (agentBuyers?.some(b => b.id === f.buyerId))) || null; // Simplified logic
+    const agentSpecificProperties = agencyProperties?.filter(p => p.created_by === profile.user_id) || [];
+    const allAgentProperties = [...(agentProperties || []), ...agentSpecificProperties];
+    
+    return calculateKpis(allAgentProperties, agentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency);
+  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, agencyProperties, currency, profile.role, profile.name, profile.user_id]);
 
 
   return (
