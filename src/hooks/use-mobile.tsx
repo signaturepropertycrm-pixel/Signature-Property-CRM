@@ -5,19 +5,20 @@ import * as React from 'react';
 const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(true);
 
   React.useEffect(() => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
 
-    checkIsMobile(); // Check on mount (client-side)
+    // Initial check
+    checkIsMobile();
 
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    mql.addEventListener('change', checkIsMobile);
-
-    return () => mql.removeEventListener('change', checkIsMobile);
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Cleanup listener
+    return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
   return isMobile;
