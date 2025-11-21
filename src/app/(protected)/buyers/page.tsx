@@ -276,20 +276,20 @@ function BuyersPageContent() {
     };
 
     const handleAssignAgent = async (buyerId: string, agentId: string | null) => {
-        if (!profile.agency_id || !teamMembers) return;
+        if (!profile.agency_id || !teamMembers || !agencyBuyers) return;
         
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
         await updateDoc(buyerRef, { assignedTo: agentId });
         
         let toastTitle = 'Buyer Unassigned';
-        let toastDescription = 'This buyer has been unassigned.';
+        let toastDescription = 'This buyer has been unassigned from any agent.';
 
         if (agentId) {
             const agent = teamMembers.find(m => m.id === agentId);
             if (!agent) return;
 
             const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-            const buyer = agencyBuyers?.find(b => b.id === buyerId);
+            const buyer = agencyBuyers.find(b => b.id === buyerId);
             const newActivity: Omit<Activity, 'id'> = {
                 userName: profile.name,
                 userAvatar: profile.avatar,
@@ -311,11 +311,12 @@ function BuyersPageContent() {
         });
     };
 
-    const getFilteredBuyers = (buyersList: Buyer[] | null, forAgentAssigned: boolean = false) => {
+    const getFilteredBuyers = (buyersList: Buyer[] | null, isForMyBuyersTab: boolean = false) => {
         if (!buyersList) return [];
         let filtered = buyersList.filter(b => !b.is_deleted);
 
-        if (forAgentAssigned && profile.role === 'Agent') {
+        // This is the main logic for Agent's "Assigned Buyers" tab
+        if (!isForMyBuyersTab && profile.role === 'Agent') {
             filtered = filtered.filter(b => b.assignedTo === profile.user_id);
         }
         
@@ -341,8 +342,10 @@ function BuyersPageContent() {
         return filtered;
     };
     
-    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers), [searchQuery, activeTab, filters, agentBuyers]);
-    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers, profile.role === 'Agent'), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
+    // For agent's "My Buyers" tab, we only use their personal collection
+    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true), [searchQuery, activeTab, filters, agentBuyers]);
+    // For agent's "Assigned" tab and for Admin/Editor view, we use the agency collection
+    const filteredAgencyBuyers = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers, profile.role, profile.user_id]);
 
 
     const handleTabChange = (value: string) => {
