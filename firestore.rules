@@ -52,7 +52,7 @@ service cloud.firestore {
         allow get, list: if isSignedIn();
         // An admin can write (create/delete). An agent can update their own status to 'Active'.
         allow write: if isAdmin(agencyId) || 
-                     (isSignedIn() && request.resource.data.status == 'Active' && resource.data.email == request.auth.token.email);
+                     (isSignedIn() && request.resource.data.status == 'Active' && request.resource.data.email == request.auth.token.email);
       }
       
       match /appointments/{appointmentId} {
