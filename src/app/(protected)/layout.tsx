@@ -59,8 +59,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Define restricted paths for each role
-  const editorForbiddenPaths = ['/team', '/settings', '/upgrade'];
-  const agentForbiddenPaths = ['/team', '/settings', '/upgrade', '/tools', '/trash'];
+  const editorForbiddenPaths = ['/team', '/upgrade'];
+  const agentForbiddenPaths = ['/team', '/upgrade', '/tools', '/trash'];
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
