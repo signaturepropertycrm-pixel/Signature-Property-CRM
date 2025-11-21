@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -49,10 +48,10 @@ export default function TeamPage() {
     const { profile, isLoading: isProfileLoading } = useProfile();
     
     const teamMembersQuery = useMemoFirebase(() => 
-        (currentUser && profile.role === 'Admin' && profile.agency_id) 
+        (profile.role === 'Admin' && profile.agency_id) 
             ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') 
             : null
-    , [currentUser, firestore, profile.role, profile.agency_id]);
+    , [firestore, profile.role, profile.agency_id]);
 
     const { data: teamMembersData, isLoading: isTeamLoading } = useCollection<User>(teamMembersQuery);
 
@@ -96,7 +95,8 @@ export default function TeamPage() {
         
         const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
         const userDocRef = doc(firestore, 'users', member.id);
-        const roleIndicatorRef = doc(firestore, member.role === 'Agent' ? 'roles_agent' : 'roles_editor', member.id);
+        const roleCollectionName = member.role === 'Agent' ? 'roles_agent' : 'roles_editor';
+        const roleIndicatorRef = doc(firestore, roleCollectionName, member.id);
         
         batch.delete(teamMemberRef);
         batch.delete(userDocRef);
@@ -111,58 +111,65 @@ export default function TeamPage() {
         });
     };
 
-    const handleSaveMember = async (memberData: Omit<User, 'id'> & { id?: string, password?: string }) => {
-        if (!currentUser || !auth || !profile.agency_id) {
+     const handleSaveMember = async (memberData: Omit<User, 'id'> & { id?: string, password?: string }) => {
+        if (!auth || !profile.agency_id) {
             toast({ title: 'Admin user or profile data not available.', variant: 'destructive' });
             return;
         }
 
-        const currentAuth = auth;
-
-        if (memberToEdit) {
+        if (memberToEdit) { // Handle Update
             const batch = writeBatch(firestore);
             const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
             const userDocRef = doc(firestore, 'users', memberToEdit.id);
-            const oldRoleIndicatorRef = doc(firestore, memberToEdit.role === 'Agent' ? 'roles_agent' : 'roles_editor', memberToEdit.id);
-            const newRoleIndicatorRef = doc(firestore, memberData.role === 'Agent' ? 'roles_agent' : 'roles_editor', memberData.role);
             
-            const updatedData = { name: memberData.name, phone: memberData.phone, role: memberData.role };
+            const oldRoleCollection = memberToEdit.role === 'Agent' ? 'roles_agent' : 'roles_editor';
+            const newRoleCollection = memberData.role === 'Agent' ? 'roles_agent' : 'roles_editor';
 
-            batch.update(userDocRef, { role: memberData.role, name: memberData.name, phone: memberData.phone });
-            batch.update(teamMemberRef, updatedData);
+            // Update user and team member docs
+            batch.update(userDocRef, { name: memberData.name, phone: memberData.phone, role: memberData.role });
+            batch.update(teamMemberRef, { name: memberData.name, email: memberData.email, phone: memberData.phone, role: memberData.role });
 
-            if(memberToEdit.role !== memberData.role){
-                batch.delete(oldRoleIndicatorRef);
-                batch.set(newRoleIndicatorRef, { uid: memberToEdit.id });
+            // Handle role change by deleting old role doc and creating new one
+            if (memberToEdit.role !== memberData.role) {
+                batch.delete(doc(firestore, oldRoleCollection, memberToEdit.id));
+                batch.set(doc(firestore, newRoleCollection, memberToEdit.id), { uid: memberToEdit.id });
             }
 
-            try {
-                await batch.commit();
-                toast({ title: 'Member Updated Successfully' });
-            } catch (error) {
-                 console.error("Error updating member: ", error);
-                 toast({ title: 'Error', description: 'Could not update team member.', variant: 'destructive' });
-            }
+            await batch.commit();
+            toast({ title: 'Member Updated Successfully' });
             return;
         }
-
+        
+        // Handle Create
         if (!memberData.email || !memberData.password) {
             toast({ title: 'Missing Fields', description: 'Email and password are required for a new member.', variant: 'destructive' });
             return;
         }
 
         try {
-            const newUserCredential = await createUserWithEmailAndPassword(currentAuth, memberData.email, memberData.password);
+            // IMPORTANT: Create user with a temporary, separate Auth instance to avoid re-login issues.
+            const { getAuth: getTempAuth, initializeApp: initTempApp, deleteApp } = await import('firebase/auth');
+            const { firebaseConfig } = await import('@/firebase/config');
+
+            const tempAppName = `temp-signup-app-${Date.now()}`;
+            const tempApp = initTempApp(firebaseConfig, tempAppName);
+            const tempAuth = getTempAuth(tempApp);
+            
+            const newUserCredential = await createUserWithEmailAndPassword(tempAuth, memberData.email, memberData.password);
             const newUID = newUserCredential.user.uid;
+            
+            // Cleanup the temporary app
+            await deleteApp(tempApp);
 
             const batch = writeBatch(firestore);
 
-            // 1. Create user document
+            // 1. Create personal user document in /users
             const newUserDocRef = doc(firestore, 'users', newUID);
             batch.set(newUserDocRef, {
                 id: newUID,
                 name: memberData.name,
                 email: memberData.email,
+                phone: memberData.phone || '',
                 role: memberData.role,
                 agency_id: profile.agency_id,
                 createdAt: serverTimestamp(),
@@ -175,7 +182,8 @@ export default function TeamPage() {
                 name: memberData.name,
                 email: memberData.email,
                 role: memberData.role,
-                createdBy: currentUser.uid,
+                phone: memberData.phone || '',
+                createdBy: profile.user_id,
                 createdAt: serverTimestamp(),
             });
 
@@ -199,27 +207,6 @@ export default function TeamPage() {
             toast({ title: 'Error Creating Member', description: errorMessage, variant: 'destructive' });
         }
     };
-
-    const allMembers = useMemo(() => {
-        if (!currentUser || isProfileLoading || !profile.agency_id) return [];
-
-        const adminAsMember: User = {
-            id: currentUser.uid,
-            name: profile.ownerName,
-            email: currentUser.email || '',
-            role: 'Admin',
-            agency_id: profile.agency_id,
-            stats: { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 } // Dummy stats for admin
-        };
-        
-        const otherMembers = teamMembersData?.map(member => ({
-            ...member,
-            stats: member.stats || { propertiesSold: 0, activeBuyers: 0, appointmentsToday: 0 }
-        })) || [];
-        
-        return [adminAsMember, ...otherMembers];
-
-    }, [currentUser, profile, teamMembersData, isProfileLoading]);
     
     if (isProfileLoading || (profile.role === 'Admin' && isTeamLoading)) {
         return (
@@ -262,13 +249,13 @@ export default function TeamPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {allMembers && allMembers.map(member => (
+                {teamMembersData && teamMembersData.map(member => (
                     <Card key={member.id} className="flex flex-col hover:shadow-primary/10 transition-shadow">
                         <CardHeader className="flex-row items-start justify-between pb-2">
                              <div>
                                 <Badge variant={roleVariant[member.role] ?? 'secondary'} className="capitalize">{member.role}</Badge>
                              </div>
-                             {profile.role === 'Admin' && member.role !== 'Admin' && (
+                             {profile.role === 'Admin' && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" size="icon" className="rounded-full -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>

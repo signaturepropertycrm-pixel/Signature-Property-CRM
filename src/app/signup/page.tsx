@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -105,7 +104,17 @@ function SignupPageContent() {
             id: agencyId,
             name: values.agencyName,
             ownerId: user.uid,
-            createdBy: user.uid, // Explicitly set createdBy
+            ownerName: values.name,
+            createdAt: serverTimestamp(),
+        });
+
+        // 3. Add the admin as a team member of their own agency
+        const teamMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', user.uid);
+        batch.set(teamMemberRef, {
+            id: user.uid,
+            name: values.name,
+            email: values.email,
+            role: 'Admin',
             createdAt: serverTimestamp(),
         });
         
