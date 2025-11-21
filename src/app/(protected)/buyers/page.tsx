@@ -320,26 +320,32 @@ function BuyersPageContent() {
 
         setAssignmentToConfirm(null);
     };
-
+    
     const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean) => {
         if (!sourceBuyers) return [];
-        let filtered: Buyer[] = [];
+        let filtered: Buyer[] = [...sourceBuyers];
     
+        // Role-based filtering
         if (profile.role === 'Agent') {
             if (isForMyBuyersTab) {
-                // "My Buyers" tab: Show buyers from the agent's personal collection.
-                filtered = sourceBuyers.filter(b => !b.is_deleted);
+                // "My Buyers" tab only shows buyers created by the agent in their personal collection.
+                // sourceBuyers for this is already agentBuyers, so no further filtering needed on creator.
             } else {
-                // "Assigned Buyers" tab: Show buyers from the agency collection assigned to this agent.
-                filtered = sourceBuyers.filter(b => b.assignedTo === profile.user_id && !b.is_deleted);
+                // "Assigned Buyers" tab filters agency buyers to show only those assigned to the current agent.
+                filtered = filtered.filter(b => b.assignedTo === profile.user_id);
             }
-        } else {
-            // Admin/Editor view: Show all non-deleted buyers from the agency collection.
-            filtered = sourceBuyers.filter(b => !b.is_deleted);
+        }
+        // Admin/Editor sees all agency buyers, no initial role filter needed here.
+    
+        // Filter out deleted buyers
+        filtered = filtered.filter(b => !b.is_deleted);
+        
+        // Status tab filtering
+        if (activeTab && activeTab !== 'All') {
+            filtered = filtered.filter(b => b.status === activeTab);
         }
         
-        if (activeTab && activeTab !== 'All') filtered = filtered.filter(b => b.status === activeTab);
-        
+        // Search query filtering
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer => 
@@ -349,6 +355,7 @@ function BuyersPageContent() {
             );
         }
 
+        // Advanced filter popover filtering
         if (filters.status !== 'All') filtered = filtered.filter(b => b.status === filters.status);
         if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
@@ -628,3 +635,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    
