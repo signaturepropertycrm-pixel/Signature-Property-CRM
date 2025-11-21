@@ -21,6 +21,7 @@ import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Property, Buyer } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { useProfile } from '@/context/profile-context';
 
 interface TeamMemberDetailsDialogProps {
   member: User;
