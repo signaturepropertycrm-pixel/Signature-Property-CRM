@@ -46,8 +46,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: firestoreProfile, isLoading: isProfileLoading } = useDoc<any>(userDocRef);
 
-  // This will try to get the full agency document if the user is an admin
-  const agencyDocRef = useMemoFirebase(() => (firestoreProfile?.role === 'Admin' ? doc(firestore, 'agencies', firestoreProfile.agency_id) : null), [firestoreProfile, firestore]);
+  // This will try to get the full agency document for any user who has an agency_id
+  const agencyDocRef = useMemoFirebase(() => (firestoreProfile?.agency_id ? doc(firestore, 'agencies', firestoreProfile.agency_id) : null), [firestoreProfile, firestore]);
   const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
   
 
