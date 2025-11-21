@@ -32,7 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ProfileProvider, useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
+  name: z.string().min(1, 'Your name is required.'),
   agencyName: z.string().min(1, 'Agency name is required.'),
   email: z.string().email('Please enter a valid email.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
@@ -75,7 +75,7 @@ function SignupPageContent() {
         
         const newProfileData = {
             id: user.uid,
-            ownerName: values.name,
+            name: values.name,
             agencyName: values.agencyName,
             email: values.email,
             phone: '',
@@ -104,7 +104,8 @@ function SignupPageContent() {
             id: agencyId,
             name: values.agencyName,
             ownerId: user.uid,
-            ownerName: values.name,
+            // Storing the owner's name directly in the agency doc
+            name: values.name, 
             createdAt: serverTimestamp(),
         });
 
@@ -115,6 +116,7 @@ function SignupPageContent() {
             name: values.name,
             email: values.email,
             role: 'Admin',
+            status: 'Active',
             createdAt: serverTimestamp(),
         });
         

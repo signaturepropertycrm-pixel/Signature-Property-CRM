@@ -13,7 +13,6 @@ import { useMemoFirebase } from '@/firebase/hooks';
 export interface ProfileData {
   name: string;
   agencyName: string;
-  ownerName: string;
   phone: string;
   role: UserRole;
   avatar?: string;
@@ -32,7 +31,6 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 const defaultProfile: ProfileData = {
     name: '',
     agencyName: '',
-    ownerName: '',
     phone: '',
     role: 'Agent',
     avatar: '',
@@ -44,47 +42,41 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: isAuthLoading } = useUser();
   const firestore = useFirestore();
 
-  // This hook now correctly points to the user's own profile document in the 'users' collection
   const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: userProfile, isLoading: isUserProfileLoading } = useDoc<any>(userDocRef);
 
-  // This will try to get the full agency document for any user who has an agency_id
   const agencyDocRef = useMemoFirebase(() => (userProfile?.agency_id ? doc(firestore, 'agencies', userProfile.agency_id) : null), [userProfile, firestore]);
   const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
   
-  // This will get the agent's specific profile data from the 'agents' collection if their role is Agent
   const agentDocRef = useMemoFirebase(() => (userProfile?.role === 'Agent' ? doc(firestore, 'agents', user.uid) : null), [userProfile, user, firestore]);
   const { data: agentProfile, isLoading: isAgentProfileLoading } = useDoc<any>(agentDocRef);
 
 
   const [profile, setProfileState] = useState<ProfileData>(defaultProfile);
-  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Effect to load profile from localStorage on initial mount
   useEffect(() => {
-    if (isAuthLoading) return; // Wait for auth to settle
+    if (isAuthLoading || isUserProfileLoading) return; 
 
-    if (userProfile) { // We need the base user profile first to determine the role
+    if (userProfile) { 
         const role = userProfile.role || 'Agent';
-
         let name = user?.displayName || userProfile.name || 'User';
         let avatar = user?.photoURL || userProfile.avatar || '';
+        let phone = userProfile.phone || '';
 
-        // If the role is agent, prioritize the name from the more detailed agent profile
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             avatar = agentProfile.avatar || avatar;
+            phone = agentProfile.phone || phone;
         } else if (role === 'Admin' && agencyProfile) {
-            // For admin, the main name is the owner name from the agency doc
-            name = agencyProfile.ownerName || name;
+            name = agencyProfile.name || name;
             avatar = agencyProfile.avatar || avatar;
+            phone = agencyProfile.phone || phone;
         }
 
         const newProfileData: ProfileData = {
             name: name,
             agencyName: agencyProfile?.name || 'My Agency',
-            ownerName: agencyProfile?.ownerName || 'Admin',
-            phone: agentProfile?.phone || userProfile.phone || '',
+            phone: phone,
             role: role, 
             avatar: avatar,
             user_id: user?.uid || '',
@@ -93,15 +85,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
-    } else if (!isUserProfileLoading && !userProfile) {
-        // Handle case where user doc doesn't exist but user is logged in
-        // This could be a new user who just signed up
-        const localProfile = localStorage.getItem('app-profile');
-        if (localProfile) {
-            setProfileState(JSON.parse(localProfile));
-        }
     }
-  }, [userProfile, agencyProfile, agentProfile, user, isAuthLoading, isUserProfileLoading]);
+  }, [userProfile, agencyProfile, agentProfile, user, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
 
   const setProfile = (newProfile: Partial<ProfileData>) => {
     setProfileState(prevProfile => {

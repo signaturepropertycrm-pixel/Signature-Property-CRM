@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -143,7 +144,7 @@ export default function SettingsPage() {
     
     let dataToUpdate: Partial<ProfileData> = {};
     if (profile.role === 'Admin') {
-        dataToUpdate = { agencyName: localProfile.agencyName, ownerName: localProfile.ownerName };
+        dataToUpdate = { agencyName: localProfile.agencyName, name: localProfile.name };
     } else {
         dataToUpdate = { name: localProfile.name };
     }
@@ -476,7 +477,7 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
           <CardDescription>
-            Update your agency and owner details here.
+            Update your agency and personal details here.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleProfileSave}>
@@ -484,10 +485,10 @@ export default function SettingsPage() {
              <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20 border-4 border-primary/20">
                     <AvatarImage src={profile.avatar} />
-                    <AvatarFallback>{profile.ownerName?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <h3 className="text-lg font-bold">{profile.ownerName}</h3>
+                    <h3 className="text-lg font-bold">{profile.name}</h3>
                     <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
                     <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setIsAvatarDialogOpen(true)}>
                         Change Picture
@@ -507,8 +508,8 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ownerName">Agency Owner Name</Label>
-                <Input id="ownerName" value={localProfile.ownerName || ''} onChange={handleProfileChange} />
+                <Label htmlFor="name">Your Name</Label>
+                <Input id="name" value={localProfile.name || ''} onChange={handleProfileChange} />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
