@@ -1069,14 +1069,16 @@ function AvatarCropDialog({
                     onComplete={(c) => setCompletedCrop(c)}
                     aspect={1}
                     circularCrop
+                    style={{ maxHeight: '50vh' }}
                 >
                     <Image
                         ref={imgRef}
                         alt="Crop me"
                         src={imgSrc}
-                        width={400}
-                        height={0} // Set height to 0 and use style for aspect ratio
-                        style={{ height: 'auto', maxHeight: '70vh' }}
+                        width={0}
+                        height={0}
+                        sizes="100vw"
+                        style={{ width: '100%', height: 'auto' }}
                         onLoad={onImageLoad}
                     />
                 </ReactCrop>
