@@ -71,7 +71,7 @@ import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 function formatSize(value: number, unit: string) {
@@ -315,7 +315,7 @@ function PropertiesPageContent() {
   
   const renderTable = (properties: Property[], isAgentData: boolean) => {
     if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-    if (properties.length === 0) return null;
+    if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found in this section.</div>;
     return (
      <Table>
         <TableHeader>
@@ -382,10 +382,10 @@ function PropertiesPageContent() {
                     {(isAgentData || profile.role !== 'Agent') && (
                         <DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
-                    {(isAgentData) && (
+                    {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
                         <DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>
                     )}
-                    {(isAgentData) && (
+                    {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
                         prop.is_recorded ? (
                             <DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                         ) : (
@@ -406,7 +406,7 @@ function PropertiesPageContent() {
 
   const renderCards = (properties: Property[], isAgentData: boolean) => {
     if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-     if (properties.length === 0) return null;
+     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found in this section.</div>;
     return (
     <div className="space-y-4">
         {properties.map((prop) => (
@@ -450,9 +450,9 @@ function PropertiesPageContent() {
                         <DropdownMenuContent align="end" className="glass-card">
                           <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye />View Details</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleSetAppointment(prop)}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                          {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>)}
-                          {isAgentData && (<DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>)}
-                          {isAgentData && (prop.is_recorded ? (<DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>) : (<DropdownMenuItem onSelect={() => handleRecordVideo(prop)}><Video />Mark as Recorded</DropdownMenuItem>))}
+                           {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleMarkAsSold(prop)}><CheckCircle />Mark as Sold</DropdownMenuItem>)}
+                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (<DropdownMenuItem onSelect={() => handleEdit(prop)}><Edit />Edit</DropdownMenuItem>)}
+                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (prop.is_recorded ? (<DropdownMenuItem onSelect={() => handleUnmarkRecorded(prop)}><VideoOff />Unmark as Recorded</DropdownMenuItem>) : (<DropdownMenuItem onSelect={() => handleRecordVideo(prop)}><Video />Mark as Recorded</DropdownMenuItem>))}
                           {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(prop)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -462,18 +462,14 @@ function PropertiesPageContent() {
     </div>
   )};
 
-  const renderSection = (title: string, icon: React.ReactNode, properties: Property[], isAgentData: boolean, isLoading: boolean) => {
+ const renderContent = (properties: Property[], isAgentData: boolean) => {
     return (
-        <div>
-            <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
-            {isLoading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : properties.length === 0 ? (
-                <Card className="flex items-center justify-center h-24 border-dashed"><p className="text-muted-foreground">No properties in this section.</p></Card>
-            ) : (
-                isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>
-            )}
-        </div>
+        isMobile 
+            ? renderCards(properties, isAgentData) 
+            : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>
     );
   };
+
 
   return (
     <>
@@ -515,11 +511,26 @@ function PropertiesPageContent() {
               </div>
           )}
 
-            <div className="space-y-8">
-                {profile.role === 'Agent' && renderSection("My Properties", <Briefcase />, filteredAgentProperties, true, isAgentLoading)}
-                {filteredAgencyProperties.length > 0 && <Separator />}
-                {renderSection("Agency Properties", <Home />, filteredAgencyProperties, false, isAgencyLoading)}
-            </div>
+            <Tabs defaultValue="agency-properties" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="agency-properties">
+                    <Home className="mr-2 h-4 w-4" /> Agency Properties
+                </TabsTrigger>
+                {profile.role === 'Agent' && (
+                    <TabsTrigger value="my-properties">
+                        <Briefcase className="mr-2 h-4 w-4" /> My Properties
+                    </TabsTrigger>
+                )}
+              </TabsList>
+              <TabsContent value="agency-properties" className="mt-4">
+                  {renderContent(filteredAgencyProperties, false)}
+              </TabsContent>
+               {profile.role === 'Agent' && (
+                  <TabsContent value="my-properties" className="mt-4">
+                     {renderContent(filteredAgentProperties, true)}
+                  </TabsContent>
+                )}
+            </Tabs>
 
         </div>
       </TooltipProvider>

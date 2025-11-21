@@ -28,7 +28,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const statusVariant = {
@@ -311,7 +311,7 @@ function BuyersPageContent() {
     
     const renderTable = (buyers: Buyer[], isAgentData: boolean) => {
       if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>
-      if (buyers.length === 0) return null;
+      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found in this section.</div>;
       return (
         <Table>
             <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Area & Type</TableHead><TableHead>Budget & Size</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
@@ -349,7 +349,7 @@ function BuyersPageContent() {
 
     const renderCards = (buyers: Buyer[], isAgentData: boolean) => {
       if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
-      if (buyers.length === 0) return null;
+      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found in this section.</div>;
       return (
         <div className="space-y-4">
             {buyers.map(buyer => (
@@ -379,17 +379,12 @@ function BuyersPageContent() {
         </div>
     )};
 
-    const renderSection = (title: string, icon: React.ReactNode, buyers: Buyer[], isAgentData: boolean, isLoading: boolean) => {
-        return (
-            <div>
-                <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
-                {isLoading ? <p className="text-muted-foreground text-center py-4">Loading...</p> : buyers.length === 0 ? (
-                    <Card className="flex items-center justify-center h-24 border-dashed"><p className="text-muted-foreground">No buyers in this section.</p></Card>
-                ) : (
-                    isMobile ? renderCards(buyers, isAgentData) : <Card><CardContent className="p-0">{renderTable(buyers, isAgentData)}</CardContent></Card>
-                )}
-            </div>
-        );
+    const renderContent = (buyers: Buyer[], isAgentData: boolean) => {
+      return (
+          isMobile 
+              ? renderCards(buyers, isAgentData) 
+              : <Card><CardContent className="p-0">{renderTable(buyers, isAgentData)}</CardContent></Card>
+      );
     };
 
   return (
@@ -430,11 +425,26 @@ function BuyersPageContent() {
             </div>
         ) : null}
 
-        <div className="space-y-8">
-            {profile.role === 'Agent' && renderSection("My Buyers", <Briefcase />, filteredAgentBuyers, true, isAgentLoading)}
-            {filteredAgencyBuyers.length > 0 && <Separator />}
-            {renderSection("Agency Buyers", <Home />, filteredAgencyBuyers, false, isAgencyLoading)}
-        </div>
+        <Tabs defaultValue="agency-buyers" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="agency-buyers">
+                    <Home className="mr-2 h-4 w-4" /> Agency Buyers
+                </TabsTrigger>
+                {profile.role === 'Agent' && (
+                    <TabsTrigger value="my-buyers">
+                        <Briefcase className="mr-2 h-4 w-4" /> My Buyers
+                    </TabsTrigger>
+                )}
+            </TabsList>
+            <TabsContent value="agency-buyers" className="mt-4">
+                {renderContent(filteredAgencyBuyers, false)}
+            </TabsContent>
+            {profile.role === 'Agent' && (
+                <TabsContent value="my-buyers" className="mt-4">
+                    {renderContent(filteredAgentBuyers, true)}
+                </TabsContent>
+            )}
+        </Tabs>
         
       </div>
 
