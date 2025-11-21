@@ -1,6 +1,5 @@
-
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -14,13 +13,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { signOut } from 'firebase/auth';
+import { useInvitations } from '@/hooks/use-invitations';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export function AppHeader({ 
   searchable,
@@ -32,10 +34,14 @@ export function AppHeader({
   setSearchQuery?: (query: string) => void;
 }) {
   const router = useRouter();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const { setTheme, theme } = useTheme();
   const { profile } = useProfile();
   const auth = useAuth();
   const { user } = useUser();
+  const { invitations, isLoading: areInvitesLoading } = useInvitations(user?.email);
+  const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
 
   const displayName = user?.displayName || 'User';
   const displayImage = user?.photoURL || profile.avatar;
@@ -45,10 +51,42 @@ export function AppHeader({
     if (auth) {
         await signOut(auth);
     }
-    // Clear profile from local storage on logout
     localStorage.removeItem('app-profile');
     router.push('/login');
   };
+
+  const handleAccept = async (invitationId: string, agencyId: string) => {
+    if (!user) return;
+    setUpdatingInvite(invitationId);
+    try {
+        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+        await updateDoc(invRef, {
+            status: 'Active',
+            id: user.uid, // Add the user's ID to the team member doc
+        });
+        toast({ title: 'Invitation Accepted!', description: 'You have joined the agency.' });
+    } catch (error) {
+        console.error("Error accepting invitation:", error);
+        toast({ title: 'Error', description: 'Could not accept the invitation.', variant: 'destructive' });
+    } finally {
+        setUpdatingInvite(null);
+    }
+  };
+
+  const handleReject = async (invitationId: string, agencyId: string) => {
+    setUpdatingInvite(invitationId);
+     try {
+        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+        await deleteDoc(invRef);
+        toast({ title: 'Invitation Rejected' });
+    } catch (error) {
+        console.error("Error rejecting invitation:", error);
+        toast({ title: 'Error', description: 'Could not reject the invitation.', variant: 'destructive' });
+    } finally {
+        setUpdatingInvite(null);
+    }
+  };
+
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
@@ -76,10 +114,52 @@ export function AppHeader({
           <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           <span className="sr-only">Toggle theme</span>
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-        </Button>
+        
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full relative">
+                    <Bell className="h-5 w-5" />
+                    {invitations && invitations.length > 0 && (
+                        <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+                    )}
+                    <span className="sr-only">Invitations</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-card w-80">
+                <DropdownMenuLabel>Pending Invitations</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {areInvitesLoading ? (
+                     <DropdownMenuItem disabled>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                    </DropdownMenuItem>
+                ) : invitations && invitations.length > 0 ? (
+                    invitations.map(invite => (
+                         <DropdownMenuItem key={invite.id} className="flex justify-between items-center" onSelect={(e) => e.preventDefault()}>
+                            <div>
+                                <p className="font-semibold">{invite.agency_name}</p>
+                                <p className="text-xs text-muted-foreground">wants to add you as an {invite.role}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                {updatingInvite === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                    <>
+                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleReject(invite.id, invite.agency_id)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={() => handleAccept(invite.id, invite.agency_id)}>
+                                            <Check className="h-4 w-4" />
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
+                        </DropdownMenuItem>
+                    ))
+                ) : (
+                    <DropdownMenuItem disabled>No pending invitations</DropdownMenuItem>
+                )}
+            </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 rounded-full p-1 h-auto">
@@ -104,12 +184,10 @@ export function AppHeader({
                   Settings
               </DropdownMenuItem>
             )}
-            {(profile.role === 'Admin') && (
-              <DropdownMenuItem onClick={() => router.push('/support')}>
-                  <MessageSquare />
-                  Support
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem onClick={() => router.push('/support')}>
+                <MessageSquare />
+                Support
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />

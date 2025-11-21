@@ -67,10 +67,11 @@ service cloud.firestore {
         allow read, write: if isAdmin(agencyId) || isEditor(agencyId);
       }
       
+      // An authenticated user (potential agent) can query the list of team members
+      // across all agencies to find their pending invitation.
       match /teamMembers/{memberId} {
-        // Admin can manage team. Members can read their own entry.
-        allow get: if isAdmin(agencyId) || isOwner(memberId);
-        allow list, write: if isAdmin(agencyId);
+        allow get, list: if isSignedIn();
+        allow write: if isAdmin(agencyId);
       }
       
       match /appointments/{appointmentId} {
