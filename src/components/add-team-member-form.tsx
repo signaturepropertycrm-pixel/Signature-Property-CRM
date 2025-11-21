@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -28,11 +29,12 @@ import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
-const roles: UserRole[] = ['Editor', 'Agent'];
+const roles: UserRole[] = ['Agent'];
 
 const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(roles),
+  role: z.enum(roles).default('Agent'),
 });
 
 type AddMemberFormValues = z.infer<typeof formSchema>;
@@ -51,6 +53,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
   const form = useForm<AddMemberFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       email: '',
       role: 'Agent',
     },
@@ -59,11 +62,12 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
   useEffect(() => {
     if (memberToEdit) {
       form.reset({
+        name: memberToEdit.name,
         email: memberToEdit.email,
-        role: memberToEdit.role,
+        role: memberToEdit.role === 'Admin' ? 'Agent' : memberToEdit.role,
       });
     } else {
-        form.reset({ email: '', role: 'Agent' });
+        form.reset({ name: '', email: '', role: 'Agent' });
     }
   }, [memberToEdit, form]);
 
@@ -79,12 +83,13 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
         if (memberToEdit) {
             // This logic is now only for changing the role of an existing member.
             const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
-            await updateDoc(memberRef, { role: values.role });
-            toast({ title: 'Member Updated', description: `Role has been updated to ${values.role}.` });
+            await updateDoc(memberRef, { role: values.role, name: values.name });
+            toast({ title: 'Member Updated', description: `Details for ${values.name} have been updated.` });
         } else {
             // Send an invitation by creating a 'pending' document.
             const teamMemberRef = collection(firestore, 'agencies', profile.agency_id, 'teamMembers');
             await addDoc(teamMemberRef, {
+                name: values.name,
                 email: values.email,
                 role: values.role,
                 status: 'Pending', // New invitation status
@@ -95,7 +100,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
 
             toast({ 
                 title: 'Invitation Sent!', 
-                description: `${values.email} has been invited to join your agency as an ${values.role}.` 
+                description: `${values.name} (${values.email}) has been invited to join your agency as an ${values.role}.` 
             });
         }
         setDialogOpen(false);
@@ -115,6 +120,19 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSaveMember)} className="space-y-4">
+         <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Member's Name</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="e.g. Ahmed Khan" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"
