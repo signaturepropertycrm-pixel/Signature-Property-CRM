@@ -166,7 +166,6 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     const propertyData = {
         ...propertyToEdit,
         ...finalValues,
-        id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),
@@ -574,5 +573,3 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     </Form>
   );
 }
-
-    
