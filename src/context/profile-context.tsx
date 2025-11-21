@@ -57,12 +57,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthLoading || isUserProfileLoading) return; 
 
-    if (userProfile) { 
+    if (userProfile && user) { 
         const role = userProfile.role || 'Agent';
-        let name = user?.displayName || userProfile.name || 'User';
-        let avatar = user?.photoURL || userProfile.avatar || '';
+        
+        // Prioritize Firebase Auth user object for name and avatar, then fall back to Firestore.
+        let name = user.displayName || userProfile.name || 'User';
+        let avatar = user.photoURL || userProfile.avatar || '';
         let phone = userProfile.phone || '';
 
+        // If specific roles have their profiles, they can override.
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             avatar = agentProfile.avatar || avatar;
@@ -79,7 +82,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             phone: phone,
             role: role, 
             avatar: avatar,
-            user_id: user?.uid || '',
+            user_id: user.uid,
             agency_id: userProfile.agency_id || '',
         };
         
