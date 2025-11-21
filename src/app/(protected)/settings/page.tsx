@@ -1090,7 +1090,7 @@ function AvatarCropDialog({
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!completedCrop}>
+          <Button onClick={handleSave} disabled={!imgSrc}>
             Save Changes
           </Button>
         </DialogFooter>
@@ -1098,3 +1098,5 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
+
+    
