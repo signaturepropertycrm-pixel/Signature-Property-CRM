@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { AddTeamMemberForm } from './add-team-member-form';
 import type { User } from '@/lib/types';
-import { useEffect } from 'react';
 
 interface AddTeamMemberDialogProps {
   isOpen: boolean;
@@ -19,12 +18,6 @@ interface AddTeamMemberDialogProps {
 }
 
 export function AddTeamMemberDialog({ isOpen, setIsOpen, memberToEdit }: AddTeamMemberDialogProps) {
-
-  useEffect(() => {
-    if (!isOpen) {
-      // Optional: Logic to clear form state when dialog closes
-    }
-  }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

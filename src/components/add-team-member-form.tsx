@@ -24,9 +24,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { User, UserRole } from '@/lib/types';
 import { useEffect, useState } from 'react';
-import { useAuth, useFirestore } from '@/firebase/provider';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { useFirestore } from '@/firebase/provider';
+import { doc, setDoc, serverTimestamp, writeBatch, updateDoc } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 
 const roles: UserRole[] = ['Editor', 'Agent'];
@@ -47,7 +46,6 @@ interface AddTeamMemberFormProps {
 
 export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMemberFormProps) {
   const { toast } = useToast();
-  const auth = useAuth();
   const firestore = useFirestore();
   const { profile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
@@ -86,24 +84,27 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
     try {
         if (memberToEdit) {
             // Update existing member logic
-            const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
-            const userRef = doc(firestore, 'users', memberToEdit.id);
-
             const batch = writeBatch(firestore);
-            batch.update(memberRef, { name: values.name, role: values.role });
-            batch.update(userRef, { name: values.name, role: values.role });
+            
+            const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberToEdit.id);
+            batch.update(memberRef, { role: values.role });
 
-            // Handle role changes
+            const userRef = doc(firestore, 'users', memberToEdit.id);
+            batch.update(userRef, { role: values.role });
+
+            // Handle role indicator changes
             const oldRole = memberToEdit.role.toLowerCase();
             const newRole = values.role.toLowerCase();
-            if (oldRole !== newRole) {
-                if(oldRole !== 'admin') await deleteDoc(doc(firestore, `roles_${oldRole}`, memberToEdit.id));
-                await setDoc(doc(firestore, `roles_${newRole}`, memberToEdisrc/components/add-team-member-form.tsxt.id), { uid: memberToEdit.id });
+            if (oldRole !== newRole && oldRole !== 'admin') {
+                batch.delete(doc(firestore, `roles_${oldRole}`, memberToEdit.id));
             }
+             if (oldRole !== newRole) {
+                batch.set(doc(firestore, `roles_${newRole}`, memberToEdit.id), { uid: memberToEdit.id });
+             }
 
             await batch.commit();
 
-            toast({ title: 'Member Updated', description: `${values.name}'s details have been updated.` });
+            toast({ title: 'Member Updated', description: `${values.name}'s role has been updated.` });
 
         } else {
             // Add new member logic
@@ -113,29 +114,19 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 return;
             }
 
-            // This part creates a temporary auth client to not affect the current admin's session.
-            const { initializeApp, getApps, getApp } = await import('firebase/app');
-            const { getAuth: getTempAuth } = await import('firebase/auth');
+            // This is a placeholder for a Cloud Function that would create the auth user
+            // We cannot create a user with email/password on the client without logging out the admin
+            // For now, we will create the Firestore documents.
             
-            const tempAppName = `temp-signup-${Date.now()}`;
-            const firebaseConfig = {
-                apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-                authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-                projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-            };
-
-            const tempApp = getApps().find(app => app.name === tempAppName) || initializeApp(firebaseConfig, tempAppName);
-            const tempAuth = getTempAuth(tempApp);
-
-            const userCredential = await createUserWithEmailAndPassword(tempAuth, values.email, values.password);
-            const newUser = userCredential.user;
+            // This is a temporary UID, a Cloud Function would replace this with a real one
+            const tempNewUserId = doc(collection(firestore, 'users')).id;
 
             const batch = writeBatch(firestore);
 
             // 1. Create team member doc inside agency
-            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', newUser.uid);
+            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', tempNewUserId);
             batch.set(teamMemberRef, {
-                id: newUser.uid,
+                id: tempNewUserId,
                 name: values.name,
                 email: values.email,
                 role: values.role,
@@ -143,9 +134,9 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             });
 
             // 2. Create the main user doc
-            const userRef = doc(firestore, 'users', newUser.uid);
+            const userRef = doc(firestore, 'users', tempNewUserId);
             batch.set(userRef, {
-                id: newUser.uid,
+                id: tempNewUserId,
                 name: values.name,
                 email: values.email,
                 role: values.role,
@@ -155,19 +146,22 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
 
             // 3. Create the role document
             const roleCollection = values.role === 'Agent' ? 'roles_agent' : 'roles_editor';
-            const roleRef = doc(firestore, roleCollection, newUser.uid);
-            batch.set(roleRef, { uid: newUser.uid });
+            const roleRef = doc(firestore, roleCollection, tempNewUserId);
+            batch.set(roleRef, { uid: tempNewUserId });
 
             await batch.commit();
 
-            toast({ title: 'Member Added', description: `${values.name} has been added to your team.` });
+            toast({ 
+                title: 'Member Added (Pending Auth)', 
+                description: `${values.name} has been added. They need to be manually created in Firebase Auth with email: ${values.email} and UID: ${tempNewUserId}` 
+            });
         }
         setDialogOpen(false);
     } catch (error: any) {
         console.error("Error saving member:", error);
         toast({
             title: 'An Error Occurred',
-            description: error.code === 'auth/email-already-in-use' ? 'This email is already in use.' : 'Could not save the team member. Please try again.',
+            description: error.message || 'Could not save the team member. Please try again.',
             variant: 'destructive',
         });
     } finally {
@@ -211,7 +205,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             name="password"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Password (for manual auth creation)</FormLabel>
                 <FormControl>
                     <Input type="password" {...field} placeholder="••••••••" />
                 </FormControl>

@@ -6,17 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, PlusCircle, Trash2, Edit, Star, Shield, User } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
-import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import type { User as TeamMember, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 const roleConfig = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
@@ -27,8 +26,6 @@ const roleConfig = {
 export default function TeamPage() {
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
-    const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
-    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const { toast } = useToast();
     const { profile } = useProfile();
     const firestore = useFirestore();
@@ -41,29 +38,32 @@ export default function TeamPage() {
         setIsAddMemberOpen(true);
     };
 
-    const handleDelete = async (memberId: string) => {
+    const handleDelete = async (member: TeamMember) => {
         if (!profile.agency_id) return;
         
-        await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberId));
+        const batch = writeBatch(firestore);
+
+        // Delete from agency's teamMembers subcollection
+        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
+        batch.delete(teamMemberRef);
         
-        // Also delete the role document
-        try {
-            await deleteDoc(doc(firestore, 'roles_agent', memberId));
-            await deleteDoc(doc(firestore, 'roles_editor', memberId));
-        } catch (e) {
-            console.warn("Could not delete role doc, it might not exist.", e);
-        }
+        // Delete the role indicator document
+        const roleCollection = member.role === 'Agent' ? 'roles_agent' : 'roles_editor';
+        const roleRef = doc(firestore, roleCollection, member.id);
+        batch.delete(roleRef);
+        
+        // Optionally: Delete the user's main account document if they shouldn't exist without an agency
+        // For now, we leave the user doc to allow them to be re-assigned.
+        // const userRef = doc(firestore, 'users', member.id);
+        // batch.delete(userRef);
+
+        await batch.commit();
         
         toast({
             title: 'Member Removed',
             description: 'The team member has been removed from your agency.',
             variant: 'destructive',
         });
-    };
-
-    const handleViewDetails = (member: TeamMember) => {
-        setSelectedMember(member);
-        setIsDetailsOpen(true);
     };
 
     const sortedTeamMembers = useMemo(() => {
@@ -104,25 +104,28 @@ export default function TeamPage() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {sortedTeamMembers.map(member => {
                             const config = roleConfig[member.role] || roleConfig.Agent;
+                            const isOwner = member.id === profile.user_id;
                             return (
                                 <Card key={member.id} className="flex flex-col hover:shadow-lg transition-shadow">
                                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                                         <Badge variant="outline" className={config.color}>{config.icon} {member.role}</Badge>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleEdit(member)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDelete(member.id)} className="text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        {!isOwner && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Remove
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                     </CardHeader>
                                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
                                         <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
@@ -132,8 +135,8 @@ export default function TeamPage() {
                                         <CardTitle className="text-lg font-headline">{member.name}</CardTitle>
                                         <CardDescription>{member.email}</CardDescription>
                                     </CardContent>
-                                    <CardFooter className="border-t">
-                                        <Button variant="link" className="w-full" onClick={() => handleViewDetails(member)}>View Details</Button>
+                                    <CardFooter className="border-t p-2">
+                                        <div className='text-xs text-center w-full text-muted-foreground'>Leads: 0 | Sold: 0</div>
                                     </CardFooter>
                                 </Card>
                             )
@@ -147,13 +150,6 @@ export default function TeamPage() {
                 setIsOpen={setIsAddMemberOpen} 
                 memberToEdit={memberToEdit}
             />
-            {selectedMember && (
-                <TeamMemberDetailsDialog 
-                    member={selectedMember}
-                    isOpen={isDetailsOpen}
-                    setIsOpen={setIsDetailsOpen}
-                />
-            )}
         </>
     );
 }

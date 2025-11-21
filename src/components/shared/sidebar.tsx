@@ -73,7 +73,7 @@ const mainMenuItems = [
 
 const bottomMenuItems = [
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin'] },
+  { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Editor', 'Agent'] },
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
 ];
 
@@ -97,13 +97,13 @@ export function AppSidebar() {
       setOpenCollapsibles(prev => ({...prev, [href]: !prev[href]}));
   }
 
-  const mobileNavItems = mainMenuItems.filter(item => item.roles.includes(profile.role) && ['/dashboard', '/properties', '/buyers', '/team', '/follow-ups'].includes(item.href));
+  const mobileNavItems = mainMenuItems.filter(item => item.roles.includes(profile.role) && ['/dashboard', '/properties', '/buyers', '/follow-ups'].includes(item.href));
 
 
   if (isMobile) {
     return (
       <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-card/80 backdrop-blur-md">
-        <div className="grid h-16 grid-cols-5">
+        <div className="grid h-16 grid-cols-4">
           {mobileNavItems.map((item) => (
             <Link
               key={item.href}
