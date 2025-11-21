@@ -30,6 +30,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import type { Property } from '@/lib/types';
 import { useUser } from '@/firebase/auth/use-user';
+import { useProfile } from '@/context/profile-context';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -76,7 +77,7 @@ interface AddPropertyFormProps {
   totalProperties: number;
 }
 
-const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined) => ({
+const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined, agencyId: string | undefined) => ({
   serial_no: `P-${totalProperties + 1}`,
   auto_title: '',
   owner_number: '',
@@ -99,12 +100,14 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   documents: '',
   created_at: new Date().toISOString(),
   created_by: userId || '',
+  agency_id: agencyId || '',
 });
 
 
 export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddPropertyFormProps) {
   const { toast } = useToast();
   const { user } = useUser();
+  const { profile } = useProfile();
   const form = useForm<AddPropertyFormValues>({
     resolver: zodResolver(formSchema),
   });
@@ -126,9 +129,9 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             storey: propertyToEdit.storey || '',
         });
     } else {
-      reset(getNewPropertyDefaults(totalProperties, user?.uid));
+      reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
     }
-  }, [propertyToEdit, totalProperties, reset, user]);
+  }, [propertyToEdit, totalProperties, reset, user, profile.agency_id]);
 
 
   useEffect(() => {
@@ -168,6 +171,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),
         created_by: propertyToEdit?.created_by || user?.uid || '',
+        agency_id: propertyToEdit?.agency_id || profile.agency_id || '',
         is_deleted: propertyToEdit?.is_deleted || false,
     } as Omit<Property, 'id'> & { id?: string };
 
@@ -570,3 +574,5 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     </Form>
   );
 }
+
+    

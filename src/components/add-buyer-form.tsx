@@ -155,7 +155,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         <FormItem>
                         <FormLabel>Serial No</FormLabel>
                         <FormControl>
-                            <Input {...field} readOnly className="bg-muted/50" />
+                            <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -368,3 +368,5 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
     </Form>
   );
 }
+
+    
