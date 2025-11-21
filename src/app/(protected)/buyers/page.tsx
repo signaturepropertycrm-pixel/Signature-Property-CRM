@@ -311,7 +311,7 @@ function BuyersPageContent() {
     
     const renderTable = (buyers: Buyer[], isAgentData: boolean) => {
       if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>
-      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found in this section.</div>;
+      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
       return (
         <Table>
             <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Area & Type</TableHead><TableHead>Budget & Size</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
@@ -349,7 +349,7 @@ function BuyersPageContent() {
 
     const renderCards = (buyers: Buyer[], isAgentData: boolean) => {
       if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
-      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found in this section.</div>;
+      if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
       return (
         <div className="space-y-4">
             {buyers.map(buyer => (
@@ -425,26 +425,28 @@ function BuyersPageContent() {
             </div>
         ) : null}
 
-        <Tabs defaultValue="agency-buyers" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="agency-buyers">
-                    <Home className="mr-2 h-4 w-4" /> Agency Buyers
-                </TabsTrigger>
-                {profile.role === 'Agent' && (
-                    <TabsTrigger value="my-buyers">
-                        <Briefcase className="mr-2 h-4 w-4" /> My Buyers
-                    </TabsTrigger>
-                )}
-            </TabsList>
-            <TabsContent value="agency-buyers" className="mt-4">
-                {renderContent(filteredAgencyBuyers, false)}
-            </TabsContent>
-            {profile.role === 'Agent' && (
-                <TabsContent value="my-buyers" className="mt-4">
-                    {renderContent(filteredAgentBuyers, true)}
-                </TabsContent>
-            )}
-        </Tabs>
+        {profile.role === 'Agent' ? (
+          <Tabs defaultValue="agency-buyers" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="agency-buyers">
+                      <Home className="mr-2 h-4 w-4" /> Agency Buyers
+                  </TabsTrigger>
+                  <TabsTrigger value="my-buyers">
+                      <Briefcase className="mr-2 h-4 w-4" /> My Buyers
+                  </TabsTrigger>
+              </TabsList>
+              <TabsContent value="agency-buyers" className="mt-4">
+                  {renderContent(filteredAgencyBuyers, false)}
+              </TabsContent>
+              <TabsContent value="my-buyers" className="mt-4">
+                  {renderContent(filteredAgentBuyers, true)}
+              </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="mt-4">
+            {renderContent(filteredAgencyBuyers, false)}
+          </div>
+        )}
         
       </div>
 

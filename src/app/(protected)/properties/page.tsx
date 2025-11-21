@@ -315,7 +315,7 @@ function PropertiesPageContent() {
   
   const renderTable = (properties: Property[], isAgentData: boolean) => {
     if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-    if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found in this section.</div>;
+    if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
      <Table>
         <TableHeader>
@@ -406,7 +406,7 @@ function PropertiesPageContent() {
 
   const renderCards = (properties: Property[], isAgentData: boolean) => {
     if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found in this section.</div>;
+     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
     <div className="space-y-4">
         {properties.map((prop) => (
@@ -527,18 +527,28 @@ function PropertiesPageContent() {
             </div>
           )}
 
-            <div className="space-y-8 mt-6">
-                {profile.role === 'Agent' && (
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Briefcase className="text-primary"/> My Properties</h2>
-                        {renderContent(filteredAgentProperties, true)}
-                    </div>
-                )}
-                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2"><Home className="text-primary"/> Agency Properties</h2>
-                    {renderContent(filteredAgencyProperties, false)}
-                </div>
-            </div>
+          {profile.role === 'Agent' ? (
+              <Tabs defaultValue="agency-properties" className="w-full mt-6">
+                  <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="agency-properties">
+                          <Home className="mr-2 h-4 w-4" /> Agency Properties
+                      </TabsTrigger>
+                      <TabsTrigger value="my-properties">
+                          <Briefcase className="mr-2 h-4 w-4" /> My Properties
+                      </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="agency-properties" className="mt-4">
+                      {renderContent(filteredAgencyProperties, false)}
+                  </TabsContent>
+                  <TabsContent value="my-properties" className="mt-4">
+                      {renderContent(filteredAgentProperties, true)}
+                  </TabsContent>
+              </Tabs>
+          ) : (
+              <div className="mt-6">
+                  {renderContent(filteredAgencyProperties, false)}
+              </div>
+          )}
 
         </div>
       </TooltipProvider>
@@ -578,5 +588,3 @@ export default function PropertiesPage() {
         </Suspense>
     );
 }
-
-    
