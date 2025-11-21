@@ -84,15 +84,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         const role = userProfile.role || 'Agent';
 
         let name = user?.displayName || userProfile.name || 'User';
+        // If the role is agent, prioritize the name from the more detailed agent profile
         if (role === 'Agent' && agentProfile?.name) {
-            name = agentProfile.name; // Prioritize name from agents collection for agents
+            name = agentProfile.name;
+        } else if (role === 'Admin' && agencyProfile?.ownerName) {
+            // For admin, the main name is the owner name from the agency doc
+            name = agencyProfile.ownerName;
         }
 
         const newProfileData: ProfileData = {
             name: name,
             agencyName: agencyProfile?.name || profile.agencyName || 'My Agency',
             ownerName: agencyProfile?.ownerName || 'Admin', // This is for the agency, not the agent
-            phone: userProfile.phone || '',
+            phone: agentProfile?.phone || userProfile.phone || '',
             role: role, 
             avatar: agentProfile?.avatar || userProfile.avatar || user?.photoURL || '',
             user_id: userProfile.id,

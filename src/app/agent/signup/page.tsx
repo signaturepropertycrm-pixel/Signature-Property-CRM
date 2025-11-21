@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -27,7 +26,7 @@ import {
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileProvider } from '@/context/profile-context';
@@ -69,15 +68,30 @@ function AgentSignupPageContent() {
       if (user) {
         await updateProfile(user, { displayName: values.name });
         
-        // Create a document in the `/agents` collection
+        const batch = writeBatch(firestore);
+
+        // 1. Create a document in the `/agents` collection for personal details
         const agentDocRef = doc(firestore, 'agents', user.uid);
-        await setDoc(agentDocRef, {
+        batch.set(agentDocRef, {
             id: user.uid,
             name: values.name,
             email: values.email,
             role: 'Agent',
             createdAt: serverTimestamp(),
         });
+
+        // 2. Create a document in the main `/users` collection for role lookup
+        const userDocRef = doc(firestore, 'users', user.uid);
+        batch.set(userDocRef, {
+            id: user.uid,
+            name: values.name,
+            email: values.email,
+            role: 'Agent',
+            agency_id: null, // Agent isn't part of an agency on signup
+            createdAt: serverTimestamp(),
+        });
+
+        await batch.commit();
       }
 
       toast({
