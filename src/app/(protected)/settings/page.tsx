@@ -25,7 +25,7 @@ import type { Currency } from '@/context/currency-context';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useProfile } from '@/context/profile-context';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ProfileData } from '@/context/profile-context';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
@@ -53,6 +53,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import ReactCrop, { type Crop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 
 const passwordFormSchema = z.object({
@@ -82,8 +84,11 @@ export default function SettingsPage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isDeleteAgentDialogOpen, setDeleteAgentDialogOpen] = useState(false);
   const [isDeleteAgencyDialogOpen, setDeleteAgencyDialogOpen] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [imgSrc, setImgSrc] = useState('');
+  const imgRef = useRef<HTMLImageElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<Crop>();
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -118,10 +123,84 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!isAvatarDialogOpen) {
-      setAvatarPreview(null);
-      setAvatarFile(null);
+      setImgSrc('');
+      setCrop(undefined);
+      setCompletedCrop(undefined);
     }
   }, [isAvatarDialogOpen]);
+
+  function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number) {
+    return centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        aspect,
+        mediaWidth,
+        mediaHeight
+      ),
+      mediaWidth,
+      mediaHeight
+    );
+  }
+
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const { width, height } = e.currentTarget;
+    setCrop(centerAspectCrop(width, height, 1 / 1));
+  }
+  
+  function getCroppedImg(image: HTMLImageElement, crop: Crop, canvas: HTMLCanvasElement) {
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    const pixelRatio = window.devicePixelRatio;
+
+    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        throw new Error('No 2d context');
+    }
+
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
+    
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
+    const cropWidth = crop.width * scaleX;
+    const cropHeight = crop.height * scaleY;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cropWidth / 2, cropHeight / 2, cropWidth / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(
+      image,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      cropWidth,
+      cropHeight
+    );
+    ctx.restore();
+
+    return canvas.toDataURL('image/png');
+  }
+
+  useEffect(() => {
+    if (
+        completedCrop?.width &&
+        completedCrop?.height &&
+        imgRef.current &&
+        previewCanvasRef.current
+    ) {
+        getCroppedImg(imgRef.current, completedCrop, previewCanvasRef.current);
+    }
+  }, [completedCrop]);
 
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,28 +275,31 @@ export default function SettingsPage() {
 
 
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+    if (e.target.files && e.target.files.length > 0) {
+      setCrop(undefined); // Makes crop preview update between images.
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.readAsDataURL(e.target.files[0]);
     }
   };
 
   const handleAvatarSave = async () => {
-    if (avatarPreview && user) {
+    if (previewCanvasRef.current && user) {
+        const croppedDataUrl = previewCanvasRef.current.toDataURL('image/png');
+        
         const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
         const docId = profile.role === 'Admin' ? profile.agency_id : user.uid;
         if (!docId) return;
 
         const docRef = doc(firestore, collectionName, docId);
-        await updateDoc(docRef, { avatar: avatarPreview });
+        await updateDoc(docRef, { avatar: croppedDataUrl });
         
         // Also update photoURL in auth
         if (auth.currentUser) {
-          await updateProfile(auth.currentUser, { photoURL: avatarPreview });
+          await updateProfile(auth.currentUser, { photoURL: croppedDataUrl });
         }
 
-        setProfile({ ...profile, avatar: avatarPreview });
+        setProfile({ ...profile, avatar: croppedDataUrl });
         toast({
             title: "Profile Picture Updated",
             description: "Your new avatar has been saved."
@@ -478,22 +560,20 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-             <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Change Profile Picture</DialogTitle></DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        {avatarPreview && <div className="flex justify-center"><Image src={avatarPreview} alt="Avatar preview" width={128} height={128} className="rounded-full aspect-square object-cover" /></div>}
-                        <div className="grid gap-2">
-                           <Label htmlFor="avatar-upload">Choose Image</Label>
-                           <Input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarFileChange} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleAvatarSave} disabled={!avatarFile}>Save Changes</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <AvatarCropDialog 
+              isOpen={isAvatarDialogOpen}
+              setIsOpen={setIsAvatarDialogOpen}
+              onSave={handleAvatarSave}
+              onFileChange={handleAvatarFileChange}
+              imgSrc={imgSrc}
+              imgRef={imgRef}
+              previewCanvasRef={previewCanvasRef}
+              crop={crop}
+              setCrop={setCrop}
+              completedCrop={completedCrop}
+              setCompletedCrop={setCompletedCrop}
+              onImageLoad={onImageLoad}
+            />
             <DeleteAgentDialog 
                 isOpen={isDeleteAgentDialogOpen}
                 setIsOpen={setDeleteAgentDialogOpen}
@@ -849,36 +929,20 @@ export default function SettingsPage() {
       )}
 
     </div>
-    <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Change Profile Picture</DialogTitle>
-                <DialogDescription>
-                    Upload an image from your computer to update your profile picture.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                {avatarPreview && (
-                  <div className="flex justify-center">
-                    <Image src={avatarPreview} alt="Avatar preview" width={128} height={128} className="rounded-full aspect-square object-cover" />
-                  </div>
-                )}
-                <div className="grid gap-2">
-                    <Label htmlFor="avatar-upload">Choose Image</Label>
-                    <Input 
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/png, image/jpeg, image/gif"
-                        onChange={handleAvatarFileChange}
-                    />
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAvatarDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAvatarSave} disabled={!avatarFile}>Save Changes</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <AvatarCropDialog 
+      isOpen={isAvatarDialogOpen}
+      setIsOpen={setIsAvatarDialogOpen}
+      onSave={handleAvatarSave}
+      onFileChange={handleAvatarFileChange}
+      imgSrc={imgSrc}
+      imgRef={imgRef}
+      previewCanvasRef={previewCanvasRef}
+      crop={crop}
+      setCrop={setCrop}
+      completedCrop={completedCrop}
+      setCompletedCrop={setCompletedCrop}
+      onImageLoad={onImageLoad}
+    />
 
     <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
     <DeleteAgencyDialog 
@@ -1000,3 +1064,84 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
   );
 }
     
+function AvatarCropDialog({
+  isOpen, setIsOpen, onSave, onFileChange, imgSrc, imgRef, previewCanvasRef,
+  crop, setCrop, completedCrop, setCompletedCrop, onImageLoad
+}: {
+  isOpen: boolean,
+  setIsOpen: (open: boolean) => void,
+  onSave: () => void,
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  imgSrc: string,
+  imgRef: React.RefObject<HTMLImageElement>,
+  previewCanvasRef: React.RefObject<HTMLCanvasElement>,
+  crop: Crop | undefined,
+  setCrop: (crop: Crop | undefined) => void,
+  completedCrop: Crop | undefined,
+  setCompletedCrop: (crop: Crop | undefined) => void,
+  onImageLoad: (e: React.SyntheticEvent<HTMLImageElement>) => void,
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change Profile Picture</DialogTitle>
+          <DialogDescription>
+            Crop your image to the perfect size.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <Input 
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            onChange={onFileChange} 
+          />
+          <div className="flex flex-col items-center gap-4">
+            {imgSrc && (
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={1}
+                circularCrop
+              >
+                <Image
+                  ref={imgRef}
+                  alt="Crop me"
+                  src={imgSrc}
+                  onLoad={onImageLoad}
+                  width={400}
+                  height={400}
+                  style={{ maxHeight: '70vh' }}
+                />
+              </ReactCrop>
+            )}
+            {completedCrop && (
+              <>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Preview</h3>
+                  <canvas
+                    ref={previewCanvasRef}
+                    style={{
+                      border: '1px solid black',
+                      objectFit: 'contain',
+                      width: 128,
+                      height: 128,
+                      borderRadius: '50%',
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button onClick={onSave} disabled={!completedCrop}>Save Changes</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
