@@ -81,6 +81,7 @@ export default function SettingsPage() {
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isDeleteAgentDialogOpen, setDeleteAgentDialogOpen] = useState(false);
+  const [isDeleteAgencyDialogOpen, setDeleteAgencyDialogOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -309,6 +310,49 @@ export default function SettingsPage() {
         throw error; // Re-throw to keep dialog open
     }
   };
+
+  const handleDeleteAgencyAccount = async (password: string) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email || !profile.agency_id) return;
+
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    try {
+        await reauthenticateWithCredential(currentUser, credential);
+        
+        const batch = writeBatch(firestore);
+        const agencyId = profile.agency_id;
+        
+        // --- Delete all sub-collections ---
+        const subCollections = ['properties', 'buyers', 'teamMembers', 'appointments', 'followUps', 'activityLogs'];
+        for (const subCol of subCollections) {
+            const querySnapshot = await getDocs(collection(firestore, 'agencies', agencyId, subCol));
+            querySnapshot.forEach(doc => batch.delete(doc.ref));
+        }
+
+        // --- Delete the agency document ---
+        const agencyDocRef = doc(firestore, 'agencies', agencyId);
+        batch.delete(agencyDocRef);
+
+        // --- Delete the user document ---
+        const userDocRef = doc(firestore, 'users', currentUser.uid);
+        batch.delete(userDocRef);
+
+        // Commit all Firestore deletions
+        await batch.commit();
+
+        // Finally, delete the user from Firebase Auth
+        await deleteUser(currentUser);
+        
+        toast({ title: "Agency Account Deleted", description: "Your agency and all its data have been permanently deleted." });
+        window.location.href = '/login';
+        
+    } catch (error: any) {
+        console.error("Agency account deletion error:", error);
+        toast({ title: 'Deletion Failed', description: error.code === 'auth/invalid-credential' ? 'Incorrect password.' : 'An error occurred while deleting data.', variant: 'destructive' });
+        throw error;
+    }
+  };
+
 
   if (!mounted || isProfileLoading) {
     return null; // or a loading spinner
@@ -792,6 +836,13 @@ export default function SettingsPage() {
                         </div>
                         <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setIsResetDialogOpen(true)}>Reset Account</Button>
                     </div>
+                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
+                        <div>
+                            <h3 className="font-bold">Delete Agency Account</h3>
+                            <p className="text-sm text-destructive/80">Permanently delete your agency, all CRM data, and your user account.</p>
+                        </div>
+                        <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setDeleteAgencyDialogOpen(true)}>Delete Agency</Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -830,6 +881,11 @@ export default function SettingsPage() {
     </Dialog>
 
     <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
+    <DeleteAgencyDialog 
+        isOpen={isDeleteAgencyDialogOpen}
+        setIsOpen={setDeleteAgencyDialogOpen}
+        onConfirm={handleDeleteAgencyAccount}
+    />
     </>
   );
 }
@@ -890,6 +946,57 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
 }
 
 
-
-
+function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, setIsOpen: (open: boolean) => void, onConfirm: (password: string) => Promise<void> }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleConfirm = async () => {
+    if (!password) {
+      setError('Password is required to confirm.');
+      return;
+    }
+    setError('');
+    setIsLoading(true);
+    try {
+      await onConfirm(password);
+      setIsOpen(false);
+    } catch (e: any) {
+       setError(e.message || 'An error occurred during deletion.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="text-destructive">Delete Agency Account</DialogTitle>
+          <DialogDescription>
+            This action will permanently delete your agency, all its data, and your user account. To confirm, please enter your password.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+            <Label htmlFor="delete-agency-password">Password</Label>
+            <Input 
+                id="delete-agency-password"
+                type="password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                placeholder="Enter your password"
+            />
+            {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
+            {isLoading && <Loader2 className="animate-spin mr-2" />}
+            Confirm & Delete Agency
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
     
