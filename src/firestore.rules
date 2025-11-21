@@ -107,13 +107,18 @@ service cloud.firestore {
     // Agent-specific data rules
     // This is the Agent's personal sandbox. Only they can access it.
     match /agents/{agentId} {
-        allow read, write: if isOwner(agentId);
+        // An agent can read and list their own sandbox and its sub-collections.
+        allow get, list: if isOwner(agentId); 
+        // An agent can only write to their own top-level sandbox document.
+        allow write: if isOwner(agentId);
         
         match /properties/{propertyId} {
+            // An agent can fully manage their own properties within their sandbox.
             allow read, write: if isOwner(agentId);
         }
         
         match /buyers/{buyerId} {
+            // An agent can fully manage their own buyers within their sandbox.
             allow read, write: if isOwner(agentId);
         }
     }
