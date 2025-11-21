@@ -48,7 +48,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const agencyDocRef = useMemoFirebase(() => (userProfile?.agency_id ? doc(firestore, 'agencies', userProfile.agency_id) : null), [userProfile, firestore]);
   const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
   
-  const agentDocRef = useMemoFirebase(() => (userProfile?.role === 'Agent' ? doc(firestore, 'agents', user.uid) : null), [userProfile, user, firestore]);
+  const agentDocRef = useMemoFirebase(() => (userProfile?.role === 'Agent' && user ? doc(firestore, 'agents', user.uid) : null), [userProfile, user, firestore]);
   const { data: agentProfile, isLoading: isAgentProfileLoading } = useDoc<any>(agentDocRef);
 
 
@@ -85,6 +85,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
+    } else if (!isAuthLoading && !user) {
+        // If user is logged out, reset to default profile
+        setProfileState(defaultProfile);
+        localStorage.removeItem('app-profile');
     }
   }, [userProfile, agencyProfile, agentProfile, user, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
 
