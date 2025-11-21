@@ -23,6 +23,8 @@ import { signOut } from 'firebase/auth';
 import { useInvitations } from '@/hooks/use-invitations';
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function AppHeader({ 
   searchable,
@@ -55,36 +57,48 @@ export function AppHeader({
     router.push('/login');
   };
 
-  const handleAccept = async (invitationId: string, agencyId: string) => {
+  const handleAccept = (invitationId: string, agencyId: string) => {
     if (!user) return;
     setUpdatingInvite(invitationId);
-    try {
-        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-        await updateDoc(invRef, {
-            status: 'Active',
-            id: user.uid, // Add the user's ID to the team member doc
-        });
+    
+    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+    const updateData = { status: 'Active', id: user.uid };
+
+    updateDoc(invRef, updateData)
+      .then(() => {
         toast({ title: 'Invitation Accepted!', description: 'You have joined the agency.' });
-    } catch (error) {
-        console.error("Error accepting invitation:", error);
-        toast({ title: 'Error', description: 'Could not accept the invitation.', variant: 'destructive' });
-    } finally {
+      })
+      .catch((error) => {
+        const contextualError = new FirestorePermissionError({
+          operation: 'update',
+          path: invRef.path,
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+      })
+      .finally(() => {
         setUpdatingInvite(null);
-    }
+      });
   };
 
-  const handleReject = async (invitationId: string, agencyId: string) => {
+  const handleReject = (invitationId: string, agencyId: string) => {
     setUpdatingInvite(invitationId);
-     try {
-        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-        await deleteDoc(invRef);
+    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+
+    deleteDoc(invRef)
+      .then(() => {
         toast({ title: 'Invitation Rejected' });
-    } catch (error) {
-        console.error("Error rejecting invitation:", error);
-        toast({ title: 'Error', description: 'Could not reject the invitation.', variant: 'destructive' });
-    } finally {
+      })
+      .catch((error) => {
+        const contextualError = new FirestorePermissionError({
+          operation: 'delete',
+          path: invRef.path,
+        });
+        errorEmitter.emit('permission-error', contextualError);
+      })
+      .finally(() => {
         setUpdatingInvite(null);
-    }
+      });
   };
 
 
