@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -69,7 +70,7 @@ export function TeamMemberDetailsDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader className="items-center text-center">
              <Avatar className="h-24 w-24 mb-4 border-4 border-primary/20">
-                <AvatarImage src={member.avatar || `https://i.pravatar.cc/150?u=${member.email}`} />
+                <AvatarImage src={member.avatar} />
                 <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
           <DialogTitle className="text-2xl font-headline">{member.name}</DialogTitle>

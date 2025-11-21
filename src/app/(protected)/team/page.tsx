@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -74,8 +75,8 @@ export default function TeamPage() {
         return [...teamMembers].sort((a, b) => {
             const statusA = a.status || 'Active';
             const statusB = b.status || 'Active';
-            if (statusA === 'Pending' && statusB !== 'Pending') return -1;
-            if (statusB === 'Pending' && statusA !== 'Pending') return 1;
+            if (statusA === 'Pending' && statusB !== 'Pending') return 1;
+            if (statusB === 'Pending' && statusA !== 'Pending') return -1;
             return (roleOrder[a.role] || 5) - (roleOrder[b.role] || 5);
         });
     }, [teamMembers]);
@@ -159,7 +160,7 @@ export default function TeamPage() {
                                     </CardHeader>
                                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
                                         <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                                            <AvatarImage src={isPending ? undefined : (member.avatar || `https://i.pravatar.cc/150?u=${member.email}`)} />
+                                            <AvatarImage src={isPending ? undefined : member.avatar} />
                                             <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>

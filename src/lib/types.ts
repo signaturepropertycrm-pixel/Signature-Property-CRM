@@ -8,6 +8,7 @@ export type User = {
   email?: string;
   phone?: string;
   role: UserRole;
+  avatar?: string;
   agency_id: string; // The ID of the agency admin user
   permissions?: Record<string, boolean>;
   stats?: {

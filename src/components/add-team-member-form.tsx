@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -93,6 +94,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 email: values.email,
                 role: values.role,
                 status: 'Pending', // New invitation status
+                avatar: '', // Add empty avatar field
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
                 invitedAt: serverTimestamp()
