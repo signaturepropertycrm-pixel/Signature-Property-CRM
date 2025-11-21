@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -31,6 +31,7 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AssignBuyerDialog } from '@/components/assign-buyer-dialog';
 
 
 const statusVariant = {
@@ -103,6 +104,7 @@ function BuyersPageContent() {
     }, [agencyBuyers, agentBuyers]);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
+    const [isAssignBuyerOpen, setIsAssignBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
@@ -250,13 +252,12 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
-        const isAgentOwned = buyerToEdit?.created_by === profile.user_id && buyerToEdit?.agency_id !== buyerToEdit?.created_by;
-        
-        if (buyerToEdit && buyerData.id) {
+        if (buyerToEdit) {
+            const isAgentOwned = buyerToEdit.created_by === profile.user_id && buyerToEdit.agency_id !== buyerToEdit.created_by;
             const collectionName = isAgentOwned ? 'agents' : 'agencies';
             const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
 
-            if (!collectionId) return;
+            if (!collectionId || !buyerData.id) return;
             const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyerData.id);
             await setDoc(docRef, buyerData, { merge: true });
             toast({ title: 'Buyer Updated' });
@@ -281,7 +282,7 @@ function BuyersPageContent() {
     };
 
     const handleConfirmAssignment = async () => {
-        if (!assignmentToConfirm || !profile.agency_id || !teamMembers || !agencyBuyers) {
+        if (!assignmentToConfirm || !profile.agency_id || !teamMembers) {
             return;
         }
 
@@ -294,22 +295,22 @@ function BuyersPageContent() {
 
         if (agentId) {
             const agent = teamMembers.find(m => m.id === agentId);
-            if (!agent) return;
+            if (agent) {
+                const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+                const newActivity: Omit<Activity, 'id'> = {
+                    userName: profile.name,
+                    userAvatar: profile.avatar,
+                    action: `assigned a new buyer to ${agent.name}`,
+                    target: buyer?.name || `Buyer #${buyer?.serial_no}`,
+                    targetType: 'Buyer',
+                    timestamp: new Date().toISOString(),
+                    agency_id: profile.agency_id,
+                };
+                await addDoc(activityLogRef, newActivity);
 
-            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-            const newActivity: Omit<Activity, 'id'> = {
-                userName: profile.name,
-                userAvatar: profile.avatar,
-                action: `assigned a new buyer to ${agent.name}`,
-                target: buyer?.name || `Buyer #${buyer?.serial_no}`,
-                targetType: 'Buyer',
-                timestamp: new Date().toISOString(),
-                agency_id: profile.agency_id,
-            };
-            await addDoc(activityLogRef, newActivity);
-
-            toastTitle = 'Buyer Assigned';
-            toastDescription = `This buyer has been assigned to ${agent.name}.`;
+                toastTitle = 'Buyer Assigned';
+                toastDescription = `This buyer has been assigned to ${agent.name}.`;
+            }
         }
 
         toast({
@@ -320,23 +321,20 @@ function BuyersPageContent() {
         setAssignmentToConfirm(null);
     };
 
-    const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean = false) => {
+    const getFilteredBuyers = (sourceBuyers: Buyer[] | null, isForMyBuyersTab: boolean) => {
+        let filtered: Buyer[] = [];
         if (!sourceBuyers) return [];
-        
-        let filtered;
-
+    
         if (profile.role === 'Agent') {
             if (isForMyBuyersTab) {
-                // "My Buyers" tab: Show buyers created by the agent in their personal collection.
-                // sourceBuyers here will be `agentBuyers`.
+                // "My Buyers" tab: Show buyers from the agent's personal collection.
                 filtered = sourceBuyers.filter(b => !b.is_deleted);
             } else {
                 // "Assigned Buyers" tab: Show buyers from the agency collection assigned to this agent.
-                // sourceBuyers here will be `agencyBuyers`.
                 filtered = sourceBuyers.filter(b => b.assignedTo === profile.user_id && !b.is_deleted);
             }
         } else {
-            // Admin/Editor view: Show all non-deleted buyers from the source (which is always agencyBuyers).
+            // Admin/Editor view: Show all non-deleted buyers from the agency collection.
             filtered = sourceBuyers.filter(b => !b.is_deleted);
         }
         
@@ -414,21 +412,6 @@ function BuyersPageContent() {
                                     {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                     <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                      <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
-                                     {(!isAgentData && profile.role === 'Admin') && (
-                                        <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
-                                            <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
-                                                {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
-                                                Unassign
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)}>
-                                                    {buyer.assignedTo === agent.id && <Check className='mr-2' />}
-                                                    {agent.name}
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
-                                     )}
                                     {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -480,21 +463,6 @@ function BuyersPageContent() {
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                 <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                 <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
-                                {(!isAgentData && profile.role === 'Admin') && (
-                                    <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
-                                         <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
-                                            {buyer.assignedTo === null ? <Check className='mr-2' /> : <X className="mr-2 h-4 w-4" /> }
-                                            Unassign
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                            <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)}>
-                                                 {buyer.assignedTo === agent.id && <Check className='mr-2' />}
-                                                 {agent.name}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
-                                )}
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -539,8 +507,6 @@ function BuyersPageContent() {
                             <div className="flex justify-end gap-2"><Button variant="ghost" onClick={clearFilters}>Clear</Button><Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button></div>
                         </div></PopoverContent>
                     </Popover>
-                <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
-                <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
                 </div>
             )}
         </div>
@@ -576,11 +542,27 @@ function BuyersPageContent() {
         
       </div>
 
-        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
-           <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                <PlusCircle className="h-6 w-6" />
-                <span className="sr-only">Add Buyer</span>
-            </Button>
+        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col gap-3">
+           {(profile.role === 'Admin' || profile.role === 'Editor') && (
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button onClick={() => setIsAssignBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg" size="icon" variant="secondary">
+                        <UserCheck className="h-6 w-6" />
+                        <span className="sr-only">Assign Buyers</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Assign Buyers</TooltipContent>
+            </Tooltip>
+           )}
+           <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                        <PlusCircle className="h-6 w-6" />
+                        <span className="sr-only">Add Buyer</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Add Buyer</TooltipContent>
+            </Tooltip>
         </div>
       
        <AddBuyerDialog 
@@ -590,6 +572,11 @@ function BuyersPageContent() {
           buyerToEdit={buyerToEdit}
           onSave={handleSaveBuyer}
        />
+
+        <AssignBuyerDialog 
+            isOpen={isAssignBuyerOpen}
+            setIsOpen={setIsAssignBuyerOpen}
+        />
         
         {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp}/>)}
         {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
