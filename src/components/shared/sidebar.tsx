@@ -1,8 +1,9 @@
+
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -79,6 +80,7 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   
@@ -131,6 +133,9 @@ export function AppSidebar() {
     const isActive = pathname.startsWith(item.href);
 
     if (item.collapsible && item.links) {
+      const statusParam = searchParams.get('status');
+      const typeParam = searchParams.get('type');
+      
       return (
         <Collapsible key={item.href} open={openCollapsibles[item.href]} onOpenChange={() => toggleCollapsible(item.href)}>
           <SidebarMenuItem className="relative">
@@ -155,7 +160,10 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                  const isSubActive = link.href === pathname || (link.href !== '/' && pathname.startsWith(link.href) && pathname.includes(link.status || link.type));
+                  const paramToCheck = link.status ? statusParam : typeParam;
+                  const valueInUrl = paramToCheck ?? 'All';
+                  const isSubActive = link.status === valueInUrl || link.type === valueInUrl;
+
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
