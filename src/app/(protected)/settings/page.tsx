@@ -42,7 +42,7 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
@@ -70,6 +70,7 @@ export default function SettingsPage() {
   const { currency, setCurrency } = useCurrency();
   const { profile, setProfile, isLoading: isProfileLoading } = useProfile();
   const { user } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -153,17 +154,18 @@ export default function SettingsPage() {
   };
 
   const handlePasswordChange = async (values: PasswordFormValues) => {
-    if (!user || !user.email) {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
         toast({ title: "Error", description: "Not logged in or email not found.", variant: "destructive" });
         return;
     }
     
     setIsPasswordUpdating(true);
-    const credential = EmailAuthProvider.credential(user.email, values.currentPassword);
+    const credential = EmailAuthProvider.credential(currentUser.email, values.currentPassword);
     
     try {
-        await reauthenticateWithCredential(user, credential);
-        await updatePassword(user, values.newPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, values.newPassword);
         toast({
             title: 'Password Updated',
             description: 'Your password has been changed successfully.',
@@ -257,30 +259,31 @@ export default function SettingsPage() {
   };
   
     const handleDeleteAgentAccount = async (password: string) => {
-    if (!user || !user.email) return;
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) return;
 
-    const credential = EmailAuthProvider.credential(user.email, password);
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
     try {
-        await reauthenticateWithCredential(user, credential);
+        await reauthenticateWithCredential(currentUser, credential);
         // User re-authenticated, now delete agent-related data.
         const batch = writeBatch(firestore);
         
         // Delete from agents collection
-        const agentDoc = doc(firestore, 'agents', user.uid);
+        const agentDoc = doc(firestore, 'agents', currentUser.uid);
         batch.delete(agentDoc);
 
         // Delete from users collection
-        const userDoc = doc(firestore, 'users', user.uid);
+        const userDoc = doc(firestore, 'users', currentUser.uid);
         batch.delete(userDoc);
         
         // Delete from teamMembers subcollection in the agency, if they belong to one
         if (profile.agency_id) {
-            const teamMemberDoc = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+            const teamMemberDoc = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', currentUser.uid);
             batch.delete(teamMemberDoc);
         }
 
         await batch.commit();
-        await deleteUser(user);
+        await deleteUser(currentUser);
         
         toast({ title: "Account Deleted", description: "Your agent account has been permanently deleted." });
         window.location.href = '/login'; // Redirect to login
@@ -865,4 +868,5 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
     </Dialog>
   );
 }
+
 
