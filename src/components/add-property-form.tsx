@@ -163,7 +163,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
     };
 
-    const propertyData = {
+    const propertyData: Omit<Property, 'id'> = {
         ...propertyToEdit,
         ...finalValues,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
@@ -172,7 +172,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         created_by: propertyToEdit?.created_by || user?.uid || '',
         agency_id: propertyToEdit?.agency_id || profile.agency_id || '',
         is_deleted: propertyToEdit?.is_deleted || false,
-    } as Omit<Property, 'id'> & { id?: string };
+    };
 
     onSave(propertyData);
 
