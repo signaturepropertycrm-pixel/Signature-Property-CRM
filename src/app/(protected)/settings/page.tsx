@@ -137,18 +137,6 @@ export default function SettingsPage() {
     });
   };
 
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleAvatarSave = async () => {
     if (avatarPreview && user) {
         const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
@@ -228,7 +216,7 @@ export default function SettingsPage() {
         const agentDoc = doc(firestore, 'agents', user.uid);
         batch.delete(agentDoc);
         
-        // Delete from teamMembers subcollection in the agency
+        // Delete from teamMembers subcollection in the agency, if they belong to one
         if (profile.agency_id) {
             const teamMemberDoc = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
             batch.delete(teamMemberDoc);
@@ -756,5 +744,3 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
     </Dialog>
   );
 }
-
-    
