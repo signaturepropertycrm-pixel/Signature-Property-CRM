@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -24,6 +23,8 @@ import {
   TrendingDown,
   Users,
   XCircle,
+  Briefcase,
+  Home,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type KpiData = {
   id: string;
@@ -49,22 +51,13 @@ type KpiData = {
 };
 
 
-export default function DashboardPage() {
-  const { currency } = useCurrency();
-  const firestore = useFirestore();
-  const { profile } = useProfile();
-  
-  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
-  const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  
-  const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
-  const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
-  const { data: appointments, isLoading: aLoading } = useCollection<Appointment>(appointmentsQuery);
-  const { data: followUps, isLoading: fLoading } = useCollection<FollowUp>(followUpsQuery);
-  
-  const kpiData: KpiData[] = useMemo(() => {
+const calculateKpis = (
+    properties: Property[] | null,
+    buyers: Buyer[] | null,
+    appointments: Appointment[] | null,
+    followUps: FollowUp[] | null,
+    currency: string
+): KpiData[] => {
     const now = new Date();
     const last30Days = subDays(now, 30);
     
@@ -99,9 +92,8 @@ export default function DashboardPage() {
     const totalRevenue = safeProperties.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
     const previousRevenue = totalRevenue - revenueInLast30Days;
 
-
     return [
-      {
+       {
         id: 'total-properties',
         title: 'Total Properties',
         value: safeProperties.length.toString(),
@@ -128,7 +120,7 @@ export default function DashboardPage() {
       {
         id: 'monthly-revenue',
         title: 'Revenue (30d)',
-        value: formatCurrency(revenueInLast30Days, currency, { notation: 'compact' }),
+        value: formatCurrency(revenueInLast30Days, currency as any, { notation: 'compact' }),
         icon: DollarSign,
         color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
         change: getChange(revenueInLast30Days, previousRevenue),
@@ -182,49 +174,98 @@ export default function DashboardPage() {
         change: 'Review reasons',
       },
     ];
+};
 
-  }, [currency, properties, buyers, appointments, followUps]);
+const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolean }) => {
+    const dataToShow = (isLoading || kpiData.length === 0) ? Array(5).fill({}) : kpiData;
+    
+    return (
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {dataToShow.map((kpi, i) => (
+                isLoading ? 
+                <Skeleton key={i} className="h-[108px]" /> :
+                <Card key={kpi.id}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+                        <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
+                            <kpi.icon className="h-4 w-4" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{kpi.value}</div>
+                        <p className={cn(
+                            "text-xs text-muted-foreground",
+                            kpi.change.startsWith('+') && "text-green-600",
+                            kpi.change.startsWith('-') && "text-red-600"
+                        )}>
+                            {kpi.change}
+                        </p>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    )
+};
+
+
+export default function DashboardPage() {
+  const { currency } = useCurrency();
+  const firestore = useFirestore();
+  const { profile } = useProfile();
   
-  const isLoading = pLoading || bLoading || aLoading || fLoading;
+  // Agency-wide data
+  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const agencyAppointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
+  const agencyFollowUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
+  
+  const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
+  const { data: agencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
+  const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
+  const { data: agencyFollowUps, isLoading: afLoading } = useCollection<FollowUp>(agencyFollowUpsQuery);
+
+  // Agent-specific data
+  const agentPropertiesQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.role, profile.user_id, firestore]);
+  const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
+  
+  const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
+  const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
+
+
+  const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
+  const isAgentDataLoading = agentPLoading || agentBLoading;
+
+  const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency]);
+  
+  const agentKpiData = useMemo(() => {
+    if (profile.role !== 'Agent') return [];
+    
+    // For agent's personal stats, we don't calculate appointments/follow-ups separately yet
+    // We can pass null for those.
+    const agentKpis = calculateKpis(agentProperties, agentBuyers, null, null, currency);
+    // We only care about Total Properties and Total Buyers for the agent's personal stats for now.
+    return agentKpis.filter(kpi => kpi.id === 'total-properties' || kpi.id === 'total-buyers');
+  }, [agentProperties, agentBuyers, currency, profile.role]);
+
 
   return (
     <div className="flex flex-col gap-8">
-       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-                <Card key={i} className="h-[108px] animate-pulse bg-muted/50" />
-            ))}
+        {profile.role === 'Agent' && (
+             <div className='space-y-4'>
+                <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Briefcase /> My Stats</h2>
+                <KpiGrid kpiData={agentKpiData} isLoading={isAgentDataLoading} />
+             </div>
+        )}
+
+        <div className='space-y-4'>
+            <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Home /> Agency Stats</h2>
+            <KpiGrid kpiData={agencyKpiData} isLoading={isAgencyDataLoading} />
         </div>
-       ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {kpiData.map((kpi) => (
-              <Card key={kpi.id}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-                   <div className={cn("flex items-center justify-center rounded-full h-8 w-8", kpi.color)}>
-                     <kpi.icon className="h-4 w-4" />
-                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{kpi.value}</div>
-                  <p className={cn(
-                    "text-xs text-muted-foreground",
-                    kpi.change.startsWith('+') && "text-green-600",
-                    kpi.change.startsWith('-') && "text-red-600"
-                  )}>
-                    {kpi.change}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-       )}
+
       <div className="grid grid-cols-1 gap-8">
-        <PerformanceChart properties={properties || []} />
-        <AnalyticsChart buyers={buyers || []} />
+        <PerformanceChart properties={agencyProperties || []} />
+        <AnalyticsChart buyers={agencyBuyers || []} />
       </div>
     </div>
   );
 }
-
-    
