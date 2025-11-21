@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -132,7 +131,6 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
     }
   }, [propertyToEdit, totalProperties, reset, user, profile.agency_id]);
-
 
   useEffect(() => {
     const [sizeValue, sizeUnit, propertyType, area, customPropertyType] = watchedFields;

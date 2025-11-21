@@ -26,6 +26,7 @@ import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { cn } from '@/lib/utils';
 
 export function AppHeader({ 
   searchable,
@@ -45,6 +46,7 @@ export function AppHeader({
   const { user } = useUser();
   const { invitations, isLoading: areInvitesLoading } = useInvitations(user?.email);
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
+  const [actionedInvitations, setActionedInvitations] = useState<Record<string, 'accepted' | 'rejected'>>({});
 
   const displayName = profile.name || 'User';
   const displayImage = profile.avatar || user?.photoURL;
@@ -68,6 +70,7 @@ export function AppHeader({
     updateDoc(invRef, updateData)
       .then(() => {
         toast({ title: 'Invitation Accepted!', description: 'You have joined the agency.' });
+        setActionedInvitations(prev => ({...prev, [invitationId]: 'accepted'}));
       })
       .catch((error) => {
         const contextualError = new FirestorePermissionError({
@@ -89,6 +92,7 @@ export function AppHeader({
     deleteDoc(invRef)
       .then(() => {
         toast({ title: 'Invitation Rejected' });
+        setActionedInvitations(prev => ({...prev, [invitationId]: 'rejected'}));
       })
       .catch((error) => {
         const contextualError = new FirestorePermissionError({
@@ -149,14 +153,21 @@ export function AppHeader({
                         Loading...
                     </DropdownMenuItem>
                 ) : invitations && invitations.length > 0 ? (
-                    invitations.map(invite => (
-                         <DropdownMenuItem key={invite.id} className="flex justify-between items-center" onSelect={(e) => e.preventDefault()}>
+                    invitations.map(invite => {
+                        const actionTaken = actionedInvitations[invite.id];
+                        return (
+                         <DropdownMenuItem key={invite.id} className={cn("flex justify-between items-center", actionTaken && "opacity-50")} onSelect={(e) => e.preventDefault()} disabled={!!actionTaken}>
                             <div>
                                 <p className="font-semibold">{invite.agency_name}</p>
                                 <p className="text-xs text-muted-foreground">wants to add you as an {invite.role}</p>
                             </div>
-                            <div className="flex items-center gap-1">
-                                {updatingInvite === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                            <div className="flex items-center gap-1 w-20 justify-end">
+                                {updatingInvite === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 
+                                 actionTaken ? (
+                                    <span className={cn("text-xs font-semibold", actionTaken === 'accepted' ? 'text-green-600' : 'text-red-600')}>
+                                      {actionTaken === 'accepted' ? 'Accepted' : 'Rejected'}
+                                    </span>
+                                 ) : (
                                     <>
                                         <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleReject(invite.id, invite.agency_id)}>
                                             <X className="h-4 w-4" />
@@ -168,7 +179,8 @@ export function AppHeader({
                                 )}
                             </div>
                         </DropdownMenuItem>
-                    ))
+                        )
+                    })
                 ) : (
                     <DropdownMenuItem disabled>No pending invitations</DropdownMenuItem>
                 )}
@@ -214,5 +226,3 @@ export function AppHeader({
     </header>
   );
 }
-
-    
