@@ -137,6 +137,14 @@ export default function SettingsPage() {
     });
   };
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleAvatarSave = async () => {
     if (avatarPreview && user) {
         const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
