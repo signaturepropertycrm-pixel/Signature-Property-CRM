@@ -290,7 +290,53 @@ export default function SettingsPage() {
                     <CardHeader><CardTitle>Security</CardTitle><CardDescription>Change your password.</CardDescription></CardHeader>
                     <form onSubmit={handlePasswordChange}>
                         <CardContent className="space-y-4">
-                            {/* Password change form fields as before */}
+                            <div className="space-y-2">
+                                <Label htmlFor="currentPassword">Current Password</Label>
+                                <div className="relative">
+                                    <Input id="currentPassword" type={showCurrentPassword ? 'text' : 'password'} className="pr-10" />
+                                    <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    >
+                                    {showCurrentPassword ? <EyeOff /> : <Eye />}
+                                    </Button>
+                                </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                    <Label htmlFor="newPassword">New Password</Label>
+                                    <div className="relative">
+                                        <Input id="newPassword" type={showNewPassword ? 'text' : 'password'} className="pr-10" />
+                                        <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        >
+                                        {showNewPassword ? <EyeOff /> : <Eye />}
+                                        </Button>
+                                    </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                                    <div className="relative">
+                                        <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} className="pr-10" />
+                                        <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        >
+                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                                        </Button>
+                                    </div>
+                                    </div>
+                                </div>
                         </CardContent>
                         <CardFooter className="border-t px-6 py-4"><Button>Update Password</Button></CardFooter>
                     </form>
