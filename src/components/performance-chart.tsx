@@ -129,11 +129,9 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <ArrowUp className="h-4 w-4 text-green-500" />
-              <span>Revenue</span>
             </div>
             <div className="flex items-center gap-2">
               <ArrowDown className="h-4 w-4 text-red-500" />
-              <span>Cost</span>
             </div>
           </div>
         </div>
