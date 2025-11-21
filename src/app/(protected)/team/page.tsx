@@ -160,19 +160,29 @@ export default function TeamPage() {
                                     </CardHeader>
                                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
                                         <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                                            <AvatarImage src={isPending ? undefined : member.avatar} />
+                                            <AvatarImage src={member.avatar} />
                                             <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                                         <CardDescription>{member.email}</CardDescription>
                                     </CardContent>
-                                    <CardFooter className="border-t p-2">
-                                        <div className='text-xs text-center w-full text-muted-foreground'>
-                                            {isPending 
-                                                ? `Invited on ${member.invitedAt?.toDate().toLocaleDateString()}` 
-                                                : `Buyers: ${stats.assignedBuyers} | Sold: ${stats.soldProperties}`
-                                            }
-                                        </div>
+                                    <CardFooter className="border-t p-0">
+                                        {isPending ? (
+                                            <div className='text-xs text-center w-full text-muted-foreground py-2'>
+                                                {`Invited on ${member.invitedAt?.toDate().toLocaleDateString()}`}
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 divide-x w-full">
+                                                <div className="flex flex-col items-center justify-center p-2">
+                                                    <span className="text-xs text-muted-foreground">Buyers</span>
+                                                    <span className="font-bold">{stats.assignedBuyers}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center justify-center p-2">
+                                                    <span className="text-xs text-muted-foreground">Sold</span>
+                                                    <span className="font-bold">{stats.soldProperties}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </CardFooter>
                                 </Card>
                             )
@@ -204,5 +214,3 @@ export default function TeamPage() {
         </>
     );
 }
-
-    
