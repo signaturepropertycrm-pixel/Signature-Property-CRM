@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,37 +22,78 @@ export default function TrashPage() {
   const firestore = useFirestore();
   const { profile } = useProfile();
 
-  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
+  // Agency-wide queries
+  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
   
-  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
-
-
-  const deletedProperties = properties?.filter(p => p.is_deleted) || [];
-  const deletedBuyers = buyers?.filter(b => b.is_deleted) || [];
+  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: agencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
   
-  const handleRestoreProperty = async (id: string) => {
-    if (!profile.agency_id) return;
-    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', id), { is_deleted: false }, { merge: true });
+  // Agent-specific queries
+  const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
+  const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
+
+  const agentBuyersQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.user_id, firestore]);
+  const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
+
+  const isLoading = apLoading || abLoading || (profile.role === 'Agent' && (agentPLoading || agentBLoading));
+
+  const deletedProperties = useMemo(() => {
+      const allProps = profile.role === 'Agent' ? [...(agencyProperties || []), ...(agentProperties || [])] : (agencyProperties || []);
+      const uniqueProps = Array.from(new Map(allProps.map(p => [p.id, p])).values());
+      
+      let props = uniqueProps.filter(p => p.is_deleted);
+      if (profile.role === 'Agent') {
+          props = props.filter(p => p.created_by === profile.user_id);
+      }
+      return props;
+  }, [agencyProperties, agentProperties, profile.role, profile.user_id]);
+
+  const deletedBuyers = useMemo(() => {
+      const allBuyersData = profile.role === 'Agent' ? [...(agencyBuyers || []), ...(agentBuyers || [])] : (agencyBuyers || []);
+      const uniqueBuyers = Array.from(new Map(allBuyersData.map(b => [b.id, b])).values());
+      
+      let buyers = uniqueBuyers.filter(b => b.is_deleted);
+      if (profile.role === 'Agent') {
+          buyers = buyers.filter(b => b.created_by === profile.user_id);
+      }
+      return buyers;
+  }, [agencyBuyers, agentBuyers, profile.role, profile.user_id]);
+  
+  
+  const handleRestoreProperty = async (prop: Property) => {
+    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    await setDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id), { is_deleted: false }, { merge: true });
     toast({ title: 'Property Restored', description: 'The property has been successfully restored.' });
   };
   
-  const handlePermanentDeleteProperty = async (id: string) => {
-    if (!profile.agency_id) return;
-    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', id));
+  const handlePermanentDeleteProperty = async (prop: Property) => {
+    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    await deleteDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id));
     toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
   };
   
-  const handleRestoreBuyer = async (id: string) => {
-    if (!profile.agency_id) return;
-    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', id), { is_deleted: false }, { merge: true });
+  const handleRestoreBuyer = async (buyer: Buyer) => {
+    const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    await setDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id), { is_deleted: false }, { merge: true });
     toast({ title: 'Buyer Restored', description: 'The buyer has been successfully restored.' });
   };
   
-  const handlePermanentDeleteBuyer = async (id: string) => {
-    if (!profile.agency_id) return;
-    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', id));
+  const handlePermanentDeleteBuyer = async (buyer: Buyer) => {
+    const collectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = collectionName === 'agents' ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    await deleteDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id));
     toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
   };
 
@@ -97,7 +137,7 @@ export default function TrashPage() {
               <CardTitle>Deleted Properties</CardTitle>
             </CardHeader>
             <CardContent>
-              {pLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> : 
+              {isLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> : 
               deletedProperties.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No deleted properties.</div>
               ) : (
@@ -115,8 +155,8 @@ export default function TrashPage() {
                         <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
                         <TableCell>{prop.auto_title}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleRestoreProperty(prop.id)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop.id)} />
+                          <Button variant="outline" size="sm" onClick={() => handleRestoreProperty(prop)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -132,7 +172,7 @@ export default function TrashPage() {
               <CardTitle>Deleted Buyers</CardTitle>
             </CardHeader>
             <CardContent>
-               {bLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> :
+               {isLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> :
                deletedBuyers.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">No deleted buyers.</div>
               ) : (
@@ -152,8 +192,8 @@ export default function TrashPage() {
                         <TableCell>{buyer.name}</TableCell>
                         <TableCell>{buyer.phone}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleRestoreBuyer(buyer.id)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer.id)} />
+                          <Button variant="outline" size="sm" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} />
                         </TableCell>
                       </TableRow>
                     ))}

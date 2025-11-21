@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +11,7 @@ import {
   CalendarPlus,
   ArrowRight,
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Activity } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
@@ -36,7 +35,6 @@ export default function ActivitiesPage() {
   const firestore = useFirestore();
   const { profile } = useProfile();
 
-  // Updated query to point to the agency-specific activityLogs subcollection
   const activitiesQuery = useMemoFirebase(() => 
     profile.agency_id ? query(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null,
     [firestore, profile.agency_id]
@@ -47,7 +45,15 @@ export default function ActivitiesPage() {
     setIsMounted(true);
   }, []);
 
-  const sortedActivities = activities ? [...activities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) : [];
+  const filteredActivities = useMemo(() => {
+      if (!activities) return [];
+      if (profile.role === 'Agent') {
+          return activities.filter(activity => activity.userName === profile.name);
+      }
+      return activities;
+  }, [activities, profile.role, profile.name]);
+
+  const sortedActivities = filteredActivities ? [...filteredActivities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) : [];
 
   return (
     <div className="space-y-6">
@@ -56,7 +62,7 @@ export default function ActivitiesPage() {
           Recent Activities
         </h1>
         <p className="text-muted-foreground">
-          A log of all major actions taken within the system.
+          {profile.role === 'Agent' ? 'A log of your recent major actions.' : 'A log of all major actions taken within the system.'}
         </p>
       </div>
 

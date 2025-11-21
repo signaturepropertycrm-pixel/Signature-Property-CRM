@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -66,8 +65,8 @@ const mainMenuItems = [
       { label: 'Buyer', type: 'Buyer', href: '/appointments?type=Buyer' },
       { label: 'Owner', type: 'Owner', href: '/appointments?type=Owner' },
   ]},
-  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor'] },
-  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor'] },
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor', 'Agent'] },
+  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor', 'Agent'] },
 ];
 
 
