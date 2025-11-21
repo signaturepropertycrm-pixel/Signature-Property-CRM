@@ -14,23 +14,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isMemberOf(agencyId) {
-        return exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid));
-    }
-    
     // Function to check if a user is an admin of the given agency.
     function isAdmin(agencyId) {
-      return isOwner(agencyId); // The owner of the agency doc is the admin
-    }
-    
-    // Function to check if a user is an editor.
-    function isEditor(agencyId) {
-       return get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Editor';
-    }
-
-    // Function to check if a user is an agent.
-    function isAgent(agencyId) {
-        return get(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid)).data.role == 'Agent';
+      return isOwner(agencyId);
     }
     
     // =================================
@@ -40,35 +26,24 @@ service cloud.firestore {
     // Rules for the /users collection
     // This collection holds login accounts.
     match /users/{userId} {
-      allow get: if isSignedIn();
-      allow create: if isSignedIn(); // Any authenticated user can create their own user doc
+      allow get: if isOwner(userId);
+      allow create: if isSignedIn();
       allow update: if isOwner(userId);
       allow delete: if false; 
     }
 
     // Rules for the /agencies collection
     match /agencies/{agencyId} {
-      // Any active team member can read agency-level data.
-      allow get: if isMemberOf(agencyId);
-      // Only the admin can manage the agency document itself.
-      allow list, create, update, delete: if isAdmin(agencyId);
+      // Only the agency owner (Admin) can manage the agency document.
+      allow read, create, update, delete: if isAdmin(agencyId);
 
       // Rules for subcollections within an agency
       match /properties/{propertyId} {
-        // Any member can read properties.
-        allow get, list: if isMemberOf(agencyId);
-        // Only admin/editor can create/delete.
-        allow create, delete: if isAdmin(agencyId) || isEditor(agencyId);
-        // Admin/Editor can update fully. Agent can only update status to 'Sold'.
-        allow update: if isAdmin(agencyId) || isEditor(agencyId) || 
-                      (isAgent(agencyId) && request.resource.data.status == 'Sold' && resource.data.status != 'Sold');
+        allow read, write: if isAdmin(agencyId);
       }
 
       match /buyers/{buyerId} {
-        // Any member can read buyers.
-        allow read: if isMemberOf(agencyId);
-        // Only admin/editor can create/update/delete.
-        allow write: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
       
       // An Admin can create/delete members. An Agent can accept an invitation.
@@ -81,33 +56,24 @@ service cloud.firestore {
       }
       
       match /appointments/{appointmentId} {
-        // Any member can read appointments.
-        allow read: if isMemberOf(agencyId);
-        // Any member can create, but only admin/editor can update/delete.
-        allow create: if isMemberOf(agencyId);
-        allow update, delete: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
 
       match /followUps/{followUpId} {
-        // Any member can read/create follow-ups.
-        allow read, create: if isMemberOf(agencyId);
-        // Only admin/editor can update/delete.
-        allow update, delete: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read, write: if isAdmin(agencyId);
       }
       
       match /activityLogs/{activityLogId} {
-        // Any member can read logs.
-        allow read: if isMemberOf(agencyId);
-        // Only admin/editor can create.
-        allow create: if isAdmin(agencyId) || isEditor(agencyId);
+        allow read: if isAdmin(agencyId);
+        allow create: if isAdmin(agencyId);
         allow update, delete: if false; // Logs should be immutable
       }
     }
     
-    // Agent-specific data rules
-    // This is the Agent's personal sandbox. The owner can perform all actions within it.
+    // Agent-specific data rules. This is the Agent's personal sandbox. 
+    // The wildcard {document=**} grants access to all subcollections within the agent's document.
     match /agents/{agentId}/{document=**} {
-      allow read, write: if isOwner(agentId);
+        allow read, write: if isOwner(agentId);
     }
     
     // Top-level role indicators are no longer needed with this model.
