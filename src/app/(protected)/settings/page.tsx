@@ -40,14 +40,30 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Server, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword } from 'firebase/auth';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useForm } from 'react-hook-form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+
+
+const passwordFormSchema = z.object({
+    currentPassword: z.string().min(1, 'Current password is required.'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters.'),
+    confirmPassword: z.string()
+}).refine(data => data.newPassword === data.confirmPassword, {
+    message: "New passwords don't match",
+    path: ['confirmPassword']
+});
+
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 
 export default function SettingsPage() {
@@ -69,6 +85,13 @@ export default function SettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+
+
+  const passwordForm = useForm<PasswordFormValues>({
+      resolver: zodResolver(passwordFormSchema),
+      defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' }
+  });
 
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const { data: agencyProperties } = useCollection(agencyPropertiesQuery);
@@ -129,13 +152,35 @@ export default function SettingsPage() {
     });
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: 'Password Updated',
-      description: 'Your password has been changed successfully.',
-    });
+  const handlePasswordChange = async (values: PasswordFormValues) => {
+    if (!user || !user.email) {
+        toast({ title: "Error", description: "Not logged in or email not found.", variant: "destructive" });
+        return;
+    }
+    
+    setIsPasswordUpdating(true);
+    const credential = EmailAuthProvider.credential(user.email, values.currentPassword);
+    
+    try {
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, values.newPassword);
+        toast({
+            title: 'Password Updated',
+            description: 'Your password has been changed successfully.',
+        });
+        passwordForm.reset();
+    } catch (error: any) {
+        console.error("Password change error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Password Change Failed',
+            description: error.code === 'auth/invalid-credential' ? 'Incorrect current password.' : 'An error occurred. Please try again.',
+        });
+    } finally {
+        setIsPasswordUpdating(false);
+    }
   };
+
 
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -288,58 +333,68 @@ export default function SettingsPage() {
                 </Card>
                 <Card>
                     <CardHeader><CardTitle>Security</CardTitle><CardDescription>Change your password.</CardDescription></CardHeader>
-                    <form onSubmit={handlePasswordChange}>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="currentPassword">Current Password</Label>
-                                <div className="relative">
-                                    <Input id="currentPassword" type={showCurrentPassword ? 'text' : 'password'} className="pr-10" />
-                                    <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
-                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                                    >
-                                    {showCurrentPassword ? <EyeOff /> : <Eye />}
-                                    </Button>
-                                </div>
-                                </div>
+                    <Form {...passwordForm}>
+                        <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)}>
+                            <CardContent className="space-y-4">
+                                <FormField
+                                    control={passwordForm.control}
+                                    name="currentPassword"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Current Password</FormLabel>
+                                        <div className="relative">
+                                        <FormControl>
+                                            <Input type={showCurrentPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff /> : <Eye />}</Button>
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                    <Label htmlFor="newPassword">New Password</Label>
-                                    <div className="relative">
-                                        <Input id="newPassword" type={showNewPassword ? 'text' : 'password'} className="pr-10" />
-                                        <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
-                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                        >
-                                        {showNewPassword ? <EyeOff /> : <Eye />}
-                                        </Button>
-                                    </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                                    <div className="relative">
-                                        <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} className="pr-10" />
-                                        <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        >
-                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
-                                        </Button>
-                                    </div>
-                                    </div>
+                                    <FormField
+                                        control={passwordForm.control}
+                                        name="newPassword"
+                                        render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>New Password</FormLabel>
+                                            <div className="relative">
+                                            <FormControl>
+                                                <Input type={showNewPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff /> : <Eye />}</Button>
+                                            </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={passwordForm.control}
+                                        name="confirmPassword"
+                                        render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Confirm New Password</FormLabel>
+                                            <div className="relative">
+                                            <FormControl>
+                                                <Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff /> : <Eye />}</Button>
+                                            </div>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
                                 </div>
-                        </CardContent>
-                        <CardFooter className="border-t px-6 py-4"><Button>Update Password</Button></CardFooter>
-                    </form>
+                            </CardContent>
+                            <CardFooter className="border-t px-6 py-4">
+                                <Button type="submit" disabled={isPasswordUpdating}>
+                                    {isPasswordUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Update Password
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Form>
                 </Card>
                  <Card className="border-destructive">
                     <CardHeader>
@@ -460,7 +515,7 @@ export default function SettingsPage() {
             Change your password.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handlePasswordChange}>
+        <form>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
@@ -798,3 +853,4 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
     </Dialog>
   );
 }
+
