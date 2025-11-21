@@ -219,6 +219,7 @@ function BuyersPageContent() {
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
         const buyerCollectionName = buyer.created_by === profile.user_id ? 'agents' : 'agencies';
         const buyerCollectionId = buyer.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+        if (!buyerCollectionId) return;
         const buyerDocRef = doc(firestore, buyerCollectionName, buyerCollectionId, 'buyers', buyerId);
 
         const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
@@ -240,7 +241,7 @@ function BuyersPageContent() {
     };
 
 
-     const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'>) => {
+     const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
         const isAgentAdding = profile.role === 'Agent' && !buyerToEdit;
         const collectionName = isAgentAdding ? 'agents' : 'agencies';
         const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
@@ -253,11 +254,13 @@ function BuyersPageContent() {
         if (buyerToEdit) {
             const editCollectionName = buyerToEdit.created_by === profile.user_id ? 'agents' : 'agencies';
             const editCollectionId = buyerToEdit.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+            if (!editCollectionId) return;
             const docRef = doc(firestore, editCollectionName, editCollectionId, 'buyers', buyerToEdit.id);
             await setDoc(docRef, dataToSave, { merge: true });
             toast({ title: 'Buyer Updated' });
         } else {
-            await addDoc(collectionRef, dataToSave);
+            const { id, ...restOfData } = dataToSave;
+            await addDoc(collectionRef, restOfData);
             toast({ title: 'Buyer Added' });
         }
         setBuyerToEdit(null);
@@ -327,7 +330,7 @@ function BuyersPageContent() {
                                 <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
                                     <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
-                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit</DropdownMenuItem>)}
+                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                     <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                      <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                      {(!isAgentData && profile.role === 'Admin') && (
@@ -366,7 +369,7 @@ function BuyersPageContent() {
                             <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
                                 <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
-                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit</DropdownMenuItem>)}
+                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                 <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                 <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                 {(!isAgentData && profile.role === 'Admin') && (<DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{teamMembers?.filter(m => m.status === 'Active').map(agent => (<DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)} disabled={buyer.assignedTo === agent.id}>{agent.name}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>)}
@@ -479,3 +482,5 @@ export default function BuyersPage() {
         </Suspense>
     );
 }
+
+    

@@ -66,7 +66,7 @@ interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
   totalBuyers: number;
   buyerToEdit?: Buyer | null;
-  onSave: (buyer: Omit<Buyer, 'id'>) => void;
+  onSave: (buyer: Omit<Buyer, 'id'> & { id?: string }) => void;
 }
 
 const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string, agencyId?: string): AddBuyerFormValues => {
@@ -131,7 +131,8 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
 
   function onSubmit(values: AddBuyerFormValues) {
      const buyerData = {
-        ...values,
+        ...buyerToEdit, // Keep original data like ID, created_at, etc.
+        ...values, // Overwrite with new form values
         serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
@@ -368,3 +369,5 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
     </Form>
   );
 }
+
+    
