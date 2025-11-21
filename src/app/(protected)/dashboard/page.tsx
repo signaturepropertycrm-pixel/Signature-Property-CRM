@@ -27,11 +27,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { subDays, isWithinInterval } from 'date-fns';
+import { subDays, isWithinInterval, parseISO } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
-import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
+import { Property, Buyer, Appointment, FollowUp, User, PriceUnit } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -72,11 +72,12 @@ export default function DashboardPage() {
         if (previous === 0) {
             return current > 0 ? `+${current}` : 'No change';
         }
-        if (current === 0 && previous === 0) {
-          return 'No change';
+        const change = current - previous;
+        if (change === 0) {
+            return 'No change';
         }
-        const percentageChange = ((current - previous) / previous) * 100;
-        return percentageChange > 0 ? `+${percentageChange.toFixed(1)}%` : `${percentageChange.toFixed(1)}%`;
+        const percentageChange = (change / previous) * 100;
+        return `${percentageChange > 0 ? '+' : ''}${percentageChange.toFixed(0)}%`;
     }
     
     const safeProperties = properties || [];
@@ -84,13 +85,13 @@ export default function DashboardPage() {
     const safeAppointments = appointments || [];
     const safeFollowUps = followUps || [];
 
-    const propertiesInLast30Days = safeProperties.filter(p => p.created_at && isWithinInterval(new Date(p.created_at), { start: last30Days, end: now })).length;
+    const propertiesInLast30Days = safeProperties.filter(p => p.created_at && isWithinInterval(parseISO(p.created_at), { start: last30Days, end: now })).length;
     const previousPropertiesCount = safeProperties.length - propertiesInLast30Days;
     
-    const buyersInLast30Days = safeBuyers.filter(b => b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length;
+    const buyersInLast30Days = safeBuyers.filter(b => b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length;
     const previousBuyersCount = safeBuyers.length - buyersInLast30Days;
     
-    const soldInLast30Days = safeProperties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(new Date(p.sold_at), { start: last30Days, end: now }));
+    const soldInLast30Days = safeProperties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(parseISO(p.sold_at), { start: last30Days, end: now }));
     const totalSoldCount = safeProperties.filter(p => p.status === 'Sold').length;
     const previousSoldCount = totalSoldCount - soldInLast30Days.length;
     
@@ -138,7 +139,7 @@ export default function DashboardPage() {
         value: safeBuyers.filter((b: any) => b.status === 'Interested').length.toString(),
         icon: Star,
         color: 'bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300',
-        change: `${safeBuyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${safeBuyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'hot-leads',
@@ -146,7 +147,7 @@ export default function DashboardPage() {
         value: safeBuyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
         icon: Flame,
         color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
-        change: `${safeBuyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(new Date(b.created_at), { start: last30Days, end: now })).length} new`,
+        change: `${safeBuyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
         id: 'follow-up-leads',
@@ -159,7 +160,7 @@ export default function DashboardPage() {
        {
         id: 'appointments-month',
         title: 'Appointments (30d)',
-        value: safeAppointments.filter((a: any) => a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.date && isWithinInterval(parseISO(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CalendarDays,
         color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
         change: `${safeAppointments.filter((a: any) => a.status === 'Scheduled' && a.date && new Date(a.date) >= now).length} upcoming`,
@@ -167,7 +168,7 @@ export default function DashboardPage() {
        {
         id: 'completed-month',
         title: 'Completed (30d)',
-        value: safeAppointments.filter((a: any) => a.status === 'Completed' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.status === 'Completed' && a.date && isWithinInterval(parseISO(a.date), { start: last30Days, end: now })).length.toString(),
         icon: CheckCheck,
         color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
         change: 'Keep it up!',
@@ -175,7 +176,7 @@ export default function DashboardPage() {
         {
         id: 'cancelled-month',
         title: 'Cancelled (30d)',
-        value: safeAppointments.filter((a: any) => a.status === 'Cancelled' && a.date && isWithinInterval(new Date(a.date), { start: last30Days, end: now })).length.toString(),
+        value: safeAppointments.filter((a: any) => a.status === 'Cancelled' && a.date && isWithinInterval(parseISO(a.date), { start: last30Days, end: now })).length.toString(),
         icon: XCircle,
         color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300',
         change: 'Review reasons',
@@ -225,3 +226,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

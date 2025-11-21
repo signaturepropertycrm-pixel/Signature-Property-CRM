@@ -87,7 +87,7 @@ export function MarkAsSoldDialog({
         ...property,
         status: 'Sold',
         sold_at: new Date().toISOString(),
-        sold_price: soldPriceInPkr,
+        sold_price: soldPriceInPkr, // Save the final numeric value
         soldByAgentId: values.soldByAgentId,
     };
     onUpdateProperty(updatedProperty);
@@ -132,7 +132,15 @@ export function MarkAsSoldDialog({
                     <FormItem className="self-end">
                       <FormLabel className="sr-only">Unit</FormLabel>
                        <FormControl>
-                          <Input type="text" value={field.value} readOnly className="mt-8 bg-muted/50" />
+                          <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger className="mt-8">
+                                    <SelectValue />
+                                </SelectTrigger>
+                               <SelectContent>
+                                    <SelectItem value="Lacs">Lacs</SelectItem>
+                                    <SelectItem value="Crore">Crore</SelectItem>
+                               </SelectContent>
+                           </Select>
                        </FormControl>
                        <FormMessage />
                     </FormItem>
@@ -179,3 +187,5 @@ export function MarkAsSoldDialog({
     </Dialog>
   );
 }
+
+    
