@@ -324,16 +324,19 @@ function BuyersPageContent() {
         if (!sourceBuyers) return [];
         
         let filtered;
+
         if (profile.role === 'Agent') {
             if (isForMyBuyersTab) {
                 // "My Buyers" tab: Show buyers created by the agent in their personal collection.
+                // sourceBuyers here will be `agentBuyers`.
                 filtered = sourceBuyers.filter(b => !b.is_deleted);
             } else {
                 // "Assigned Buyers" tab: Show buyers from the agency collection assigned to this agent.
+                // sourceBuyers here will be `agencyBuyers`.
                 filtered = sourceBuyers.filter(b => b.assignedTo === profile.user_id && !b.is_deleted);
             }
         } else {
-            // Admin/Editor view: Show all non-deleted buyers from the source.
+            // Admin/Editor view: Show all non-deleted buyers from the source (which is always agencyBuyers).
             filtered = sourceBuyers.filter(b => !b.is_deleted);
         }
         
