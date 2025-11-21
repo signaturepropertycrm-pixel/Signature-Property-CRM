@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,6 +17,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
@@ -27,6 +29,8 @@ const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: s
 export default function TeamPage() {
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
+    const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const { toast } = useToast();
     const { profile } = useProfile();
     const firestore = useFirestore();
@@ -57,6 +61,11 @@ export default function TeamPage() {
             description: `The invitation for ${member.email} has been revoked.`,
             variant: 'destructive',
         });
+    };
+
+    const handleCardClick = (member: TeamMember) => {
+        setSelectedMember(member);
+        setIsDetailsOpen(true);
     };
 
     const sortedTeamMembers = useMemo(() => {
@@ -121,17 +130,21 @@ export default function TeamPage() {
                             const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
 
                             return (
-                                <Card key={member.id || member.email} className={cn("flex flex-col hover:shadow-lg transition-shadow", isPending && "opacity-70 bg-muted/50")}>
+                                <Card 
+                                    key={member.id || member.email} 
+                                    className={cn("flex flex-col hover:shadow-lg transition-shadow cursor-pointer", isPending && "opacity-70 bg-muted/50")}
+                                    onClick={() => !isPending && handleCardClick(member)}
+                                >
                                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                                         <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
                                         {!isOwner && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                                                         <MoreVertical className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
+                                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                                     {!isPending && (
                                                         <DropdownMenuItem onClick={() => handleEdit(member)}>
                                                             <Edit className="mr-2 h-4 w-4" /> Edit Role
@@ -146,7 +159,7 @@ export default function TeamPage() {
                                     </CardHeader>
                                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
                                         <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                                            <AvatarImage src={isPending ? undefined : `https://i.pravatar.cc/150?u=${member.email}`} />
+                                            <AvatarImage src={isPending ? undefined : (member.avatar || `https://i.pravatar.cc/150?u=${member.email}`)} />
                                             <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
@@ -179,6 +192,16 @@ export default function TeamPage() {
                 setIsOpen={setIsAddMemberOpen} 
                 memberToEdit={memberToEdit}
             />
+
+            {selectedMember && (
+                <TeamMemberDetailsDialog 
+                    isOpen={isDetailsOpen}
+                    setIsOpen={setIsDetailsOpen}
+                    member={selectedMember}
+                />
+            )}
         </>
     );
 }
+
+    
