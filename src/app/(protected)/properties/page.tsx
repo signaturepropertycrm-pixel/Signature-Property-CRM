@@ -502,29 +502,13 @@ function PropertiesPageContent() {
             )}
           </div>
           
-           {isMobile ? (
+           {isMobile && (
               <div className="w-full">
                 <Select value={activeTab} onValueChange={handleTabChange}>
                   <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
                   <SelectContent>{propertyStatusLinks.map(({label, status}) => (<SelectItem key={status} value={status}>{label}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
-          ) : (
-             <div className="border-b">
-                <nav className="-mb-px flex space-x-6">
-                    {propertyStatusLinks.map(({label, status}) => (
-                        <button
-                            key={status}
-                            onClick={() => handleTabChange(status)}
-                            className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition-colors
-                                ${activeTab === status ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}
-                            `}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </nav>
-            </div>
           )}
 
           {profile.role === 'Agent' ? (
