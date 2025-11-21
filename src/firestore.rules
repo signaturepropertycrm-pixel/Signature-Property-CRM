@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,49 +14,37 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Function to check if a user is an admin of ANY agency.
+    // Function to check if a user is an admin by checking the roles_admin collection.
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
-    // Function to check if a user is an editor of ANY agency.
+    // Function to check if a user is an editor.
     function isEditor() {
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Editor';
+       return isSignedIn() && exists(/databases/$(database)/documents/roles_editor/$(request.auth.uid));
     }
 
-    // Function to check if a user is an agent of ANY agency.
+    // Function to check if a user is an agent.
     function isAgent() {
-        return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Agent';
-    }
-
-    // Function to check if a user belongs to a specific agency.
-    function isMemberOfAgency(agencyId) {
-        return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.agency_id == agencyId;
+        return isSignedIn() && exists(/databases/$(database)/documents/roles_agent/$(request.auth.uid));
     }
     
-    function getRole() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
     // =================================
     // Collection Rules
     // =================================
 
     // Rules for the /users collection
     match /users/{userId} {
-      // Any signed-in user can create their own document (on signup)
-      allow create: if isSignedIn();
-      // Users can read or update their own profile.
-      allow read, update: if isOwner(userId);
-      // Only an Admin can delete users from their agency (future implementation)
+      // Any signed-in user can create their own document (on signup).
+      // Any user can be read by any other signed-in user (for agent selection, etc.).
+      allow read, create: if isSignedIn();
+      // Users can update their own profile.
+      allow update: if isOwner(userId);
+      // Only an Admin can delete users (future implementation).
       allow delete: if false; 
     }
     
-    // Top-level role indicators for easy querying by other rules if needed.
+    // Top-level role indicators for easy querying by other rules.
     match /roles_admin/{userId} {
       allow read, write: if isOwner(userId);
     }
@@ -68,51 +57,32 @@ service cloud.firestore {
 
     // Rules for the /agencies collection and its sub-collections
     match /agencies/{agencyId} {
-      // The agency owner (Admin) can read/write their own agency document.
-      // Team members (Agents/Editors) can also read their agency's top-level document.
-      allow get: if isOwner(agencyId) || isMemberOfAgency(agencyId);
+      // The agency owner (Admin), as well as any assigned Agent or Editor can read the agency document.
+      allow get: if isOwner(agencyId) || isAgent() || isEditor();
       allow list, create, update, delete: if isOwner(agencyId);
-
-      // Rules for team members sub-collection
-      match /teamMembers/{memberId} {
-        // Any member of the agency can read the team list
-        allow read: if isMemberOfAgency(agencyId);
-        // Only the Admin of the agency can add, update, or delete team members
-        allow write: if isMemberOfAgency(agencyId) && getRole() == 'Admin';
-      }
 
       // Rules for properties sub-collection
       match /properties/{propertyId} {
-        // Any member of the agency can read properties
-        allow read: if isMemberOfAgency(agencyId);
-        // Only Admin or Editor can create/delete properties
-        allow create, delete: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
-        // Admin/Editor can update everything.
-        allow update: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
+        allow read, write: if isOwner(agencyId);
       }
 
       // Rules for buyers sub-collection
       match /buyers/{buyerId} {
-        // Any agency member can read or create buyers
-        allow read, create: if isMemberOfAgency(agencyId);
-        // Admin/Editor can delete.
-        allow delete: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
-        // Admin/Editor can update everything.
-        allow update: if isMemberOfAgedocumentncy(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
+        allow read, write: if isOwner(agencyId);
       }
 
       // Rules for appointments, follow-ups, activities
       match /appointments/{appointmentId} {
-        allow read, write: if isMemberOfAgency(agencyId);
+        allow read, write: if isOwner(agencyId);
       }
 
       match /followUps/{followUpId} {
-        allow read, write: if isMemberOfAgency(agencyId);
+        allow read, write: if isOwner(agencyId);
       }
       
       match /activityLogs/{activityLogId} {
-        allow read: if isMemberOfAgency(agencyId) && (getRole() == 'Admin' || getRole() == 'Editor');
-        allow create: if isMemberOfAgency(agencyId);
+        allow read: if isOwner(agencyId);
+        allow create: if isOwner(agencyId);
         allow update, delete: if false; // Logs should be immutable
       }
     }

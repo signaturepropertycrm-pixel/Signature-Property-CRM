@@ -33,7 +33,6 @@ import { formatCurrency } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
 import { Property, Buyer, Appointment, FollowUp, User } from '@/lib/types';
 import { AnalyticsChart } from '@/components/analytics-chart';
-import { TeamPerformanceChart } from '@/components/team-performance-chart';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
@@ -59,14 +58,12 @@ export default function DashboardPage() {
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-
+  
   const { data: properties, isLoading: pLoading } = useCollection<Property>(propertiesQuery);
   const { data: buyers, isLoading: bLoading } = useCollection<Buyer>(buyersQuery);
   const { data: appointments, isLoading: aLoading } = useCollection<Appointment>(appointmentsQuery);
   const { data: followUps, isLoading: fLoading } = useCollection<FollowUp>(followUpsQuery);
-  const { data: teamMembers, isLoading: tLoading } = useCollection<User>(teamMembersQuery);
-
+  
   const kpiData: KpiData[] = useMemo(() => {
     const now = new Date();
     const last30Days = subDays(now, 30);
@@ -187,7 +184,7 @@ export default function DashboardPage() {
 
   }, [currency, properties, buyers, appointments, followUps]);
   
-  const isLoading = pLoading || bLoading || aLoading || fLoading || tLoading;
+  const isLoading = pLoading || bLoading || aLoading || fLoading;
 
   return (
     <div className="flex flex-col gap-8">
@@ -224,7 +221,6 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-8">
         <PerformanceChart properties={properties || []} />
         <AnalyticsChart buyers={buyers || []} />
-        <TeamPerformanceChart teamMembers={teamMembers || []} />
       </div>
     </div>
   );
