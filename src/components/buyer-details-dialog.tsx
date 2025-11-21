@@ -14,7 +14,7 @@ import { Buyer, PriceUnit, SizeUnit } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 
@@ -118,10 +118,11 @@ export function BuyerDetailsDialog({
             <div className="space-y-6 py-4">
 
               <div className="p-4 rounded-lg bg-muted/50">
-                  <h3 className="font-bold text-lg mb-4">Contact Information</h3>
+                  <h3 className="font-bold text-lg mb-4">Contact & Assignment</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <DetailItem icon={<Phone />} label="Phone Number" value={buyer.phone} />
                       <DetailItem icon={<Mail />} label="Email Address" value={buyer.email} />
+                      <DetailItem icon={<UserCheck />} label="Assigned Agent" value={buyer.assignedAgentName} />
                   </div>
               </div>
               

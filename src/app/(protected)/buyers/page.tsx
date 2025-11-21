@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -29,6 +29,7 @@ import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp } from 'fir
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 const statusVariant = {
@@ -137,7 +138,8 @@ function BuyersPageContent() {
     };
 
     const handleDetailsClick = (buyer: Buyer) => {
-        setSelectedBuyer(buyer);
+        const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+        setSelectedBuyer({ ...buyer, assignedAgentName: agent?.name });
         setIsDetailsOpen(true);
     }
 
@@ -348,9 +350,27 @@ function BuyersPageContent() {
         <Table>
             <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Area & Type</TableHead><TableHead>Budget & Size</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
-                {buyers.map(buyer => (
+                {buyers.map(buyer => {
+                    const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+                    return (
                     <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
-                        <TableCell><div className="font-bold font-headline text-base">{buyer.name}</div><div className="text-xs text-muted-foreground flex items-center gap-2 mt-1"><Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge><span>{buyer.phone}</span></div></TableCell>
+                        <TableCell>
+                            <div className="font-bold font-headline text-base flex items-center gap-2">
+                                {buyer.name}
+                                {buyer.assignedTo && agent && (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>Assigned to {agent.name}</TooltipContent>
+                                    </Tooltip>
+                                )}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                                <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                <span>{buyer.phone}</span>
+                            </div>
+                        </TableCell>
                         <TableCell><div className="flex flex-col text-sm"><span>{buyer.area_preference}</span><span className="text-muted-foreground">{buyer.property_type_preference}</span></div></TableCell>
                          <TableCell><div className="flex flex-col text-sm"><span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span><span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span></div></TableCell>
                         <TableCell><div className="flex items-center gap-2"><Badge variant={statusVariant[buyer.status]} className={ buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : '' }>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></TableCell>
@@ -365,7 +385,10 @@ function BuyersPageContent() {
                                      {(!isAgentData && profile.role === 'Admin') && (
                                         <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
                                             {teamMembers?.filter(m => m.status === 'Active').map(agent => (
-                                                <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)} disabled={buyer.assignedTo === agent.id}>{agent.name}</DropdownMenuItem>
+                                                <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
+                                                    {buyer.assignedTo === agent.id && <Check className='mr-2' />}
+                                                    {agent.name}
+                                                </DropdownMenuItem>
                                             ))}
                                         </DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                      )}
@@ -374,7 +397,7 @@ function BuyersPageContent() {
                             </DropdownMenu>
                         </TableCell>
                     </TableRow>
-                ))}
+                )})}
             </TableBody>
         </Table>
     )}
@@ -384,9 +407,28 @@ function BuyersPageContent() {
       if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
       return (
         <div className="space-y-4">
-            {buyers.map(buyer => (
+            {buyers.map(buyer => {
+                const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+                return (
                 <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
-                    <CardHeader><CardTitle className="flex justify-between items-start"><div><span className="font-bold font-headline text-lg">{buyer.name}</span><div className="text-xs text-muted-foreground flex items-center gap-2 mt-1"><Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge></div></div><div className="flex flex-col items-end gap-2"><Badge variant={statusVariant[buyer.status]} className={`capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`}>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="flex justify-between items-start">
+                        <div className="font-bold font-headline text-lg flex items-center gap-2">
+                           {buyer.name}
+                           {buyer.assignedTo && agent && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>Assigned to {agent.name}</TooltipContent>
+                                </Tooltip>
+                            )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2"><Badge variant={statusVariant[buyer.status]} className={`capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`}>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div>
+                    </CardTitle>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 -mt-2 px-6">
+                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                    </div>
+                    </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Area</p><p className="font-medium">{buyer.area_preference}</p></div></div>
                          <div className="flex items-center gap-2"><Ruler className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</p></div></div>
@@ -401,13 +443,22 @@ function BuyersPageContent() {
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
                                 <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                 <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
-                                {(!isAgentData && profile.role === 'Admin') && (<DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{teamMembers?.filter(m => m.status === 'Active').map(agent => (<DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)} disabled={buyer.assignedTo === agent.id}>{agent.name}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>)}
+                                {(!isAgentData && profile.role === 'Admin') && (
+                                    <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
+                                        {teamMembers?.filter(m => m.status === 'Active').map(agent => (
+                                            <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
+                                                 {buyer.assignedTo === agent.id && <Check className='mr-2' />}
+                                                 {agent.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                )}
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </CardFooter>
                 </Card>
-            ))}
+            )})}
         </div>
     )};
 
@@ -421,6 +472,7 @@ function BuyersPageContent() {
 
   return (
     <>
+    <TooltipProvider>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className='hidden md:block'>
@@ -500,6 +552,7 @@ function BuyersPageContent() {
         {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp}/>)}
         {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
         {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen}/>)}
+    </TooltipProvider>
     </>
   );
 }
