@@ -280,7 +280,7 @@ export default function SettingsPage() {
         toast({ title: "Account Deleted", description: "Your agent account has been permanently deleted." });
         window.location.href = '/login';
         
-    } catch (error: any) => {
+    } catch (error: any) {
         console.error("Agent account deletion error:", error);
         toast({ title: 'Deletion Failed', description: error.code === 'auth/invalid-credential' ? 'Incorrect password.' : 'An error occurred.', variant: 'destructive' });
         throw error;
@@ -1040,4 +1040,3 @@ function SimpleAvatarDialog({
     </Dialog>
   );
 }
-
