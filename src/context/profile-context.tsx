@@ -11,6 +11,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 
 
 export interface ProfileData {
+  name: string;
   agencyName: string;
   ownerName: string;
   phone: string;
@@ -29,8 +30,9 @@ interface ProfileContextType {
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 const defaultProfile: ProfileData = {
+    name: 'New User',
     agencyName: 'My Agency',
-    ownerName: 'New User',
+    ownerName: 'Admin',
     phone: '',
     role: 'Agent',
     avatar: '',
@@ -76,8 +78,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (firestoreProfile) {
         const newProfileData: ProfileData = {
+            name: firestoreProfile.name || user?.displayName || 'User',
             agencyName: agencyProfile?.name || profile.agencyName || 'My Agency',
-            ownerName: firestoreProfile.name || user?.displayName || 'User',
+            ownerName: agencyProfile?.ownerName || 'Admin',
             phone: firestoreProfile.phone || '',
             role: firestoreProfile.role || profile.role || 'Agent', 
             avatar: user?.photoURL || firestoreProfile.avatar || '',
@@ -125,3 +128,5 @@ export function useProfile() {
   }
   return context;
 }
+
+    
