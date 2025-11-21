@@ -2,11 +2,11 @@
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X } from 'lucide-react';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -25,7 +25,7 @@ import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -249,8 +249,9 @@ function BuyersPageContent() {
 
 
      const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
+        const isAgentOwned = buyerToEdit?.created_by === profile.user_id && buyerToEdit?.agency_id !== buyerToEdit?.created_by;
+        
         if (buyerToEdit && buyerData.id) {
-            const isAgentOwned = buyerToEdit.created_by === profile.user_id && buyerToEdit.agency_id !== buyerToEdit.created_by;
             const collectionName = isAgentOwned ? 'agents' : 'agencies';
             const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
 
@@ -274,32 +275,39 @@ function BuyersPageContent() {
         setBuyerToEdit(null);
     };
 
-    const handleAssignAgent = async (buyerId: string, agentId: string) => {
+    const handleAssignAgent = async (buyerId: string, agentId: string | null) => {
         if (!profile.agency_id || !teamMembers) return;
         
-        const agent = teamMembers.find(m => m.id === agentId);
-        if (!agent) return;
-
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
-        await setDoc(buyerRef, { assignedTo: agentId }, { merge: true });
+        await updateDoc(buyerRef, { assignedTo: agentId });
         
-        // Create an activity log entry
-        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-        const buyer = agencyBuyers?.find(b => b.id === buyerId);
-        const newActivity: Omit<Activity, 'id'> = {
-            userName: profile.name,
-            userAvatar: profile.avatar,
-            action: `assigned a new buyer to ${agent.name}`,
-            target: buyer?.name || `Buyer #${buyer?.serial_no}`,
-            targetType: 'Buyer',
-            timestamp: new Date().toISOString(),
-            agency_id: profile.agency_id,
-        };
-        await addDoc(activityLogRef, newActivity);
+        let toastTitle = 'Buyer Unassigned';
+        let toastDescription = 'This buyer has been unassigned.';
+
+        if (agentId) {
+            const agent = teamMembers.find(m => m.id === agentId);
+            if (!agent) return;
+
+            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+            const buyer = agencyBuyers?.find(b => b.id === buyerId);
+            const newActivity: Omit<Activity, 'id'> = {
+                userName: profile.name,
+                userAvatar: profile.avatar,
+                action: `assigned a new buyer to ${agent.name}`,
+                target: buyer?.name || `Buyer #${buyer?.serial_no}`,
+                targetType: 'Buyer',
+                timestamp: new Date().toISOString(),
+                agency_id: profile.agency_id,
+            };
+            await addDoc(activityLogRef, newActivity);
+
+            toastTitle = 'Buyer Assigned';
+            toastDescription = `This buyer has been assigned to ${agent.name}.`;
+        }
 
         toast({
-            title: "Buyer Assigned",
-            description: `This buyer has been assigned to ${agent.name}.`
+            title: toastTitle,
+            description: toastDescription,
         });
     };
 
@@ -384,6 +392,12 @@ function BuyersPageContent() {
                                      <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                      {(!isAgentData && profile.role === 'Admin') && (
                                         <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
+                                            <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
+                                                {buyer.assignedTo === null && <Check className='mr-2'/>}
+                                                <X className="mr-2" />
+                                                Unassign
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
                                             {teamMembers?.filter(m => m.status === 'Active').map(agent => (
                                                 <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
                                                     {buyer.assignedTo === agent.id && <Check className='mr-2' />}
@@ -445,6 +459,12 @@ function BuyersPageContent() {
                                 <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                 {(!isAgentData && profile.role === 'Admin') && (
                                     <DropdownMenuSub><DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>
+                                         <DropdownMenuItem onClick={() => handleAssignAgent(buyer.id, null)}>
+                                            {buyer.assignedTo === null && <Check className='mr-2'/>}
+                                            <X className="mr-2" />
+                                            Unassign
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
                                         {teamMembers?.filter(m => m.status === 'Active').map(agent => (
                                             <DropdownMenuItem key={agent.id} onClick={() => handleAssignAgent(buyer.id, agent.id)}>
                                                  {buyer.assignedTo === agent.id && <Check className='mr-2' />}
