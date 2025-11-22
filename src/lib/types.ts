@@ -70,16 +70,11 @@ export type Property = {
 
 export type BuyerStatus =
   | 'New'
-  | 'Contacted'
   | 'Interested'
   | 'Not Interested'
   | 'Follow Up'
-  | 'Pending Response'
-  | 'Need More Info'
   | 'Visited Property'
-  | 'Deal Closed'
-  | 'Hot Lead'
-  | 'Cold Lead';
+  | 'Deal Closed';
 
 
 export type Buyer = {

@@ -4,9 +4,8 @@ import type { Property, User, Buyer, FollowUp, Appointment, BuyerStatus, Activit
 export const properties: Property[] = [];
 
 export const buyerStatuses: BuyerStatus[] = [
-    'New', 'Contacted', 'Interested', 'Not Interested', 'Follow Up',
-    'Pending Response', 'Need More Info', 'Visited Property',
-    'Deal Closed', 'Hot Lead', 'Cold Lead'
+    'New', 'Interested', 'Not Interested', 'Follow Up',
+    'Visited Property', 'Deal Closed'
 ];
 
 export const buyers: Buyer[] = [];

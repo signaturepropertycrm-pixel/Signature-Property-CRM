@@ -135,14 +135,6 @@ const calculateKpis = (
         change: `${safeBuyers.filter(b => b.status === 'Interested' && b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length} new`,
       },
       {
-        id: 'hot-leads',
-        title: 'Hot Leads',
-        value: safeBuyers.filter((b: any) => b.status === 'Hot Lead').length.toString(),
-        icon: Flame,
-        color: 'bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300',
-        change: `${safeBuyers.filter(b => b.status === 'Hot Lead' && b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length} new`,
-      },
-      {
         id: 'follow-up-leads',
         title: 'Follow-up Leads',
         value: safeFollowUps.length.toString(),
@@ -178,7 +170,7 @@ const calculateKpis = (
 };
 
 const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolean }) => {
-    const dataToShow = (isLoading || kpiData.length === 0) ? Array(10).fill({}) : kpiData;
+    const dataToShow = (isLoading || kpiData.length === 0) ? Array(9).fill({}) : kpiData;
     
     return (
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

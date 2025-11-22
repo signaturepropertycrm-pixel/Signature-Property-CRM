@@ -36,16 +36,11 @@ const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: stri
 
 const statusVariant = {
     'New': 'default',
-    'Contacted': 'secondary',
     'Interested': 'default',
     'Not Interested': 'destructive',
     'Follow Up': 'default',
-    'Pending Response': 'secondary',
-    'Need More Info': 'secondary',
     'Visited Property': 'secondary',
     'Deal Closed': 'default',
-    'Hot Lead': 'default',
-    'Cold Lead': 'secondary'
 } as const;
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
@@ -101,9 +96,9 @@ export function BuyerDetailsDialog({
                     <Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>
                 )}
                 <Badge 
-                        variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status]} 
+                        variant={buyer.status === 'Follow Up' ? 'default' : statusVariant[buyer.status as keyof typeof statusVariant]} 
                         className={
-                            `capitalize ${buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
+                            `capitalize ${buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 
                             buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' :
                             buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' :
                             buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`

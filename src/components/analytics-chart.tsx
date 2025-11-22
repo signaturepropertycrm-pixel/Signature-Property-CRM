@@ -8,12 +8,11 @@ import { Buyer } from '@/lib/types';
 import { TrendingUp, Flame, Star, PhoneForwarded } from 'lucide-react';
 import { useMemo } from 'react';
 
-const COLORS = ['#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#f59e0b', '#8b5cf6'];
 const RADIAN = Math.PI / 180;
 
 const demoData = [
     { name: 'Interested', value: 12, icon: Star },
-    { name: 'Hot Leads', value: 5, icon: Flame },
     { name: 'Follow-up', value: 8, icon: PhoneForwarded },
 ];
 
@@ -36,12 +35,10 @@ export const AnalyticsChart = ({ buyers }: { buyers: Buyer[] }) => {
     }
 
     const interested = buyers.filter(b => b.status === 'Interested').length;
-    const hotLeads = buyers.filter(b => b.status === 'Hot Lead').length;
     const followUp = buyers.filter(b => b.status === 'Follow Up').length;
 
     const chartData = [
         { name: 'Interested', value: interested, icon: Star },
-        { name: 'Hot Leads', value: hotLeads, icon: Flame },
         { name: 'Follow-up', value: followUp, icon: PhoneForwarded },
     ];
     
