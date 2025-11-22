@@ -47,6 +47,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../u
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
+import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'] },
@@ -88,8 +89,8 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { openMobile, setOpenMobile } = useSidebar();
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const { setOpenMobile } = useSidebar();
+  const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
@@ -114,7 +115,7 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) &&
       // Include collapsible items if they are the main link, but not their children
       (!item.collapsible || item.href === '/appointments')
@@ -202,10 +203,7 @@ export function AppSidebar() {
   if (isMobile) {
     return (
       <TooltipProvider>
-      <div className={cn(
-        "fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300",
-        openMobile ? "translate-y-full" : "translate-y-0"
-      )}>
+      <div className={cn("fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300")}>
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -224,7 +222,6 @@ export function AppSidebar() {
                             <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3 z-50">
                                {moreSheetItems.map((sheetItem, index) => {
                                   const finalLabel = sheetItem.label === 'Upgrade Plan' ? 'Upgrade' : sheetItem.label;
-                                  if (['Support', 'Settings'].includes(sheetItem.label)) return null;
 
                                   return (
                                     <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>

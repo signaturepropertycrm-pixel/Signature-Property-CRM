@@ -586,7 +586,7 @@ function BuyersPageContent() {
         
       </div>
 
-        <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col gap-3 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
+        <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
            <Tooltip>
                 <TooltipTrigger asChild>
                     <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
