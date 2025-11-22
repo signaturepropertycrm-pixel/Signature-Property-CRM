@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSearchParams, usePathname, useRouter } from 'next/navigation';
-import { useSearch } from '../layout';
+import { useSearch, useUI } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 
 const statusVariant = {
@@ -77,6 +78,7 @@ function BuyersPageContent() {
     const { profile } = useProfile();
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
+    const { isMoreMenuOpen } = useUI();
     const { toast } = useToast();
     const { currency } = useCurrency();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
@@ -584,7 +586,7 @@ function BuyersPageContent() {
         
       </div>
 
-        <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col gap-3">
+        <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col gap-3 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
            <Tooltip>
                 <TooltipTrigger asChild>
                     <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">

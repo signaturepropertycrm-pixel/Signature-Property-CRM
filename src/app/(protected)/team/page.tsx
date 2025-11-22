@@ -22,6 +22,7 @@ import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { UpdateMemberAvatarDialog } from '@/components/update-member-avatar-dialog';
+import { useUI } from '../layout';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
@@ -32,6 +33,7 @@ const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: s
 
 export default function TeamPage() {
     const isMobile = useIsMobile();
+    const { isMoreMenuOpen } = useUI();
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
@@ -301,7 +303,7 @@ export default function TeamPage() {
                 )}
             </div>
 
-            <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+            <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                <Button onClick={() => { setMemberToEdit(null); setIsAddMemberOpen(true); }} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                     <PlusCircle className="h-6 w-6" />
                     <span className="sr-only">Add Member</span>

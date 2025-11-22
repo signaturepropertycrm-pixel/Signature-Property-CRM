@@ -61,7 +61,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { useSearch } from '../layout';
+import { useSearch, useUI } from '../layout';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/context/currency-context';
@@ -72,6 +72,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 
 function formatSize(value: number, unit: string) {
@@ -105,6 +106,7 @@ function PropertiesPageContent() {
   const searchParams = useSearchParams();
   const { profile } = useProfile();
   const { searchQuery } = useSearch();
+  const { isMoreMenuOpen } = useUI();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
   const activeTab = statusFilterFromURL || 'All';
   const { toast } = useToast();
@@ -540,7 +542,7 @@ function PropertiesPageContent() {
         </div>
       </TooltipProvider>
 
-      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50">
+      <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
         <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
             <PlusCircle className="h-6 w-6" />
             <span className="sr-only">Add Property</span>

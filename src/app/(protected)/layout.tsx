@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -22,6 +23,18 @@ const SearchContext = React.createContext<{
 });
 
 export const useSearch = () => React.useContext(SearchContext);
+
+// Context for general UI state that needs to be shared
+const UIContext = React.createContext<{
+  isMoreMenuOpen: boolean;
+  setIsMoreMenuOpen: (isOpen: boolean) => void;
+}>({
+  isMoreMenuOpen: false,
+  setIsMoreMenuOpen: () => {},
+});
+
+export const useUI = () => React.useContext(UIContext);
+
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -92,6 +105,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const pathname = usePathname();
   const isSearchable = pathname.startsWith('/properties') || pathname.startsWith('/buyers');
@@ -106,6 +120,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
+      <UIContext.Provider value={{ isMoreMenuOpen, setIsMoreMenuOpen }}>
         <SidebarProvider>
           <div className="flex h-screen w-full bg-background">
           <AppSidebar />
@@ -123,6 +138,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
           </div>
         </SidebarProvider>
+      </UIContext.Provider>
     </SearchContext.Provider>
   );
 }
