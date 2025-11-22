@@ -78,8 +78,8 @@ const mainMenuItems = [
 
 
 const bottomMenuItems = [
-  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor', 'Agent'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Editor', 'Agent'] },
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor', 'Agent'] },
   { href: '/upgrade', label: 'Upgrade', icon: <Rocket />, roles: ['Admin'] },
 ];
 
@@ -89,7 +89,6 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { setOpenMobile } = useSidebar();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
@@ -115,9 +114,8 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
-      item.roles.includes(profile.role) &&
-      (item.href === '/appointments' || !item.collapsible)
+      !['/dashboard', '/properties', '/buyers', '/team', '/settings', '/support'].includes(item.href) &&
+      item.roles.includes(profile.role)
   );
 
   const renderMenuItem = (item: any) => {
@@ -126,11 +124,10 @@ export function AppSidebar() {
     }
 
     const isActive = pathname.startsWith(item.href);
+    const fullUrl = pathname + '?' + searchParams.toString();
+
 
     if (item.collapsible && item.links) {
-      const statusParam = searchParams.get('status');
-      const typeParam = searchParams.get('type');
-      
       return (
         <Collapsible key={item.href} open={openCollapsibles[item.href]} onOpenChange={() => toggleCollapsible(item.href)}>
           <SidebarMenuItem className="relative">
@@ -155,10 +152,7 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                  const paramToCheck = link.status ? statusParam : typeParam;
-                  const valueInUrl = paramToCheck ?? (link.status ? 'All' : 'All');
-                  const isSubActive = link.status === valueInUrl || link.type === valueInUrl;
-
+                   const isSubActive = fullUrl.endsWith(link.href) || (link.href === item.href && fullUrl === item.href + '?');
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
@@ -318,3 +312,5 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
+
+    
