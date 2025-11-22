@@ -79,7 +79,7 @@ const mainMenuItems = [
 const bottomMenuItems = [
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor', 'Agent'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Rocket />, roles: ['Admin'] },
+  { href: '/upgrade', label: 'Upgrade', icon: <Rocket />, roles: ['Admin'] },
 ];
 
 
@@ -226,7 +226,7 @@ export function AppSidebar() {
                                             className="flex items-center gap-3"
                                             style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
                                         >
-                                            <span className="font-semibold text-background shadow-lg">{sheetItem.label}</span>
+                                            <span className="font-semibold text-white shadow-lg">{sheetItem.label}</span>
                                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
                                                 {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
                                             </div>
