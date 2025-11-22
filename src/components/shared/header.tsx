@@ -118,10 +118,6 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
-      <Button onClick={toggleSidebar} variant="ghost" size="icon" className="h-7 w-7 md:hidden">
-        <Menu />
-        <span className="sr-only">Toggle Sidebar</span>
-      </Button>
       
       <div className="flex-1 hidden md:block">
         <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
