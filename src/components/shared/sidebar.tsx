@@ -114,8 +114,10 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
-      item.roles.includes(profile.role) && !item.collapsible
+      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      item.roles.includes(profile.role) &&
+      // Include collapsible items if they are the main link, but not their children
+      (!item.collapsible || item.href === '/appointments')
   );
 
   const renderMenuItem = (item: any) => {
@@ -220,19 +222,24 @@ export function AppSidebar() {
                         )}
                         {isMoreMenuOpen && (
                             <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3 z-50">
-                               {moreSheetItems.map((sheetItem, index) => (
+                               {moreSheetItems.map((sheetItem, index) => {
+                                  const finalLabel = sheetItem.label === 'Upgrade Plan' ? 'Upgrade' : sheetItem.label;
+                                  if (['Support', 'Settings'].includes(sheetItem.label)) return null;
+
+                                  return (
                                     <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
                                         <div 
                                             className="flex items-center gap-3"
                                             style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
                                         >
-                                            <span className="font-semibold text-white shadow-lg">{sheetItem.label === 'Upgrade Plan' ? 'Upgrade' : sheetItem.label}</span>
+                                            <span className="font-semibold text-white shadow-lg">{finalLabel}</span>
                                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
                                                 {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
                                             </div>
                                         </div>
                                     </Link>
-                               ))}
+                                  )
+                               })}
                             </div>
                         )}
                         <button 
