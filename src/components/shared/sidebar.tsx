@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -63,7 +63,7 @@ const mainMenuItems = [
   ]},
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
   { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Editor'], collapsible: true, links: [
-      { label: 'List Generator', href: '/tools'},
+      { label: 'List Generator', href: '/tools/list-generator'},
       { label: 'Post Generator', href: '/tools/post-generator', isNew: true },
   ]},
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Editor', 'Agent'] },
@@ -86,7 +86,6 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
@@ -114,7 +113,8 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team', '/settings', '/support'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      (!item.collapsible || ['/appointments'].includes(item.href)) && // Show collapsible appointments, but not others that are handled differently
       item.roles.includes(profile.role)
   );
 
@@ -124,7 +124,7 @@ export function AppSidebar() {
     }
 
     const isActive = pathname.startsWith(item.href);
-    const fullUrl = pathname + '?' + searchParams.toString();
+    const fullUrl = pathname;
 
 
     if (item.collapsible && item.links) {
@@ -152,7 +152,7 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                   const isSubActive = fullUrl.endsWith(link.href) || (link.href === item.href && fullUrl === item.href + '?');
+                   const isSubActive = fullUrl === link.href;
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
@@ -177,7 +177,7 @@ export function AppSidebar() {
           <TooltipTrigger asChild>
             <Link href={item.href}>
               <SidebarMenuButton
-                isActive={isActive}
+                isActive={isActive && !item.collapsible}
                 className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
               >
                 {item.icon}
@@ -187,7 +187,7 @@ export function AppSidebar() {
           </TooltipTrigger>
           <TooltipContent side="right" align="center">{item.label}</TooltipContent>
         </Tooltip>
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+        {isActive && !item.collapsible && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
       </SidebarMenuItem>
     );
   };
@@ -203,7 +203,7 @@ export function AppSidebar() {
             style={{ animation: 'fadeIn 0.3s ease-out' }}
           />
         )}
-      <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300">
+      <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -214,7 +214,7 @@ export function AppSidebar() {
                         {isMoreMenuOpen && (
                             <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3 z-50">
                                {moreSheetItems.map((sheetItem, index) => {
-                                  const finalLabel = sheetItem.label === 'Upgrade Plan' ? 'Upgrade' : sheetItem.label;
+                                  const finalLabel = sheetItem.label;
 
                                   return (
                                     <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
@@ -312,5 +312,3 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
-
-    
