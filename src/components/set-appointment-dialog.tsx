@@ -244,8 +244,24 @@ export function SetAppointmentDialog({
                     />
                 </div>
                  <DialogFooter className="pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button type="submit">Save Appointment</Button>
+                 <Button
+  type="button"
+  variant="ghost"
+  onClick={(e) => {
+    e.stopPropagation();   // <-- ADD this line
+    setIsOpen(false);
+  }}
+>
+  Cancel
+</Button>
+<Button
+  type="submit"
+  onClick={(e) => {
+    e.stopPropagation();   // <-- ADD this line
+  }}
+>
+  Save Appointment
+</Button>
                 </DialogFooter>
             </form>
         </Form>
