@@ -390,7 +390,7 @@ export default function BuyersPage() {
                 {buyers.map(buyer => {
                     const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
                     return (
-                    <TableRow key={buyer.id} className="cursor-pointer" onClick={() => handleDetailsClick(buyer)}>
+                        <TableRow key={buyer.id} className="cursor-pointer">
                         <TableCell>
                             <div className="font-bold font-headline text-base flex items-center gap-2">
                                 {buyer.name}
@@ -453,7 +453,7 @@ export default function BuyersPage() {
             {buyers.map(buyer => {
                 const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
                 return (
-                <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
+                    <Card key={buyer.id}>
                     <CardHeader><CardTitle className="flex justify-between items-start">
                         <div className="font-bold font-headline text-lg flex items-center gap-2">
                            {buyer.name}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -266,9 +265,8 @@ export default function PropertiesPage() {
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-    const isAgentProperty = allProperties.some((p) => p.id === updatedProperty.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
-    const collectionName = isAgentProperty ? 'agents' : 'agencies';
-    const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
+    const collectionName = updatedProperty.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = updatedProperty.created_by === profile.user_id ? profile.user_id : profile.agency_id;
     if (!collectionId) return;
 
     const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
@@ -335,7 +333,7 @@ export default function PropertiesPage() {
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors">
               <TableCell>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base">{prop.auto_title}</span>
@@ -366,7 +364,7 @@ export default function PropertiesPage() {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
+                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
                       <MoreHorizontal className="h-4 w-4" />
                       <span className="sr-only">Toggle menu</span>
                     </Button>
@@ -406,7 +404,7 @@ export default function PropertiesPage() {
     return (
       <div className="space-y-4">
         {properties.map((prop) => (
-          <Card key={prop.id} onClick={() => handleRowClick(prop)}>
+          <Card key={prop.id}>
             <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
@@ -439,7 +437,7 @@ export default function PropertiesPage() {
             <CardFooter className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>

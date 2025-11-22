@@ -1,6 +1,5 @@
 
 'use client';
-import { PerformanceChart } from '@/components/performance-chart';
 
 export default function AnalyticsPage() {
   return (
@@ -13,7 +12,8 @@ export default function AnalyticsPage() {
           Visualize your performance and growth metrics.
         </p>
       </div>
-      <PerformanceChart />
     </div>
   );
 }
+
+    

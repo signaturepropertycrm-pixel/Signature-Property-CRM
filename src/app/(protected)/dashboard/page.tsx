@@ -33,9 +33,7 @@ import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
-import { PerformanceChart } from '@/components/performance-chart';
 import { Property, Buyer, Appointment, FollowUp, User, PriceUnit } from '@/lib/types';
-import { AnalyticsChart } from '@/components/analytics-chart';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
@@ -257,11 +255,8 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Home /> Agency Stats</h2>
             <KpiGrid kpiData={agencyKpiData} isLoading={isAgencyDataLoading} />
         </div>
-
-      <div className="grid grid-cols-1 gap-8">
-        <PerformanceChart properties={agencyProperties || []} />
-        <AnalyticsChart buyers={agencyBuyers || []} />
-      </div>
     </div>
   );
 }
+
+    
