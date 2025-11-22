@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -85,12 +86,12 @@ const calculateKpis = (
     const buyersInLast30Days = safeBuyers.filter(b => b.created_at && isWithinInterval(parseISO(b.created_at), { start: last30Days, end: now })).length;
     const previousBuyersCount = safeBuyers.length - buyersInLast30Days;
     
-    const soldInLast30Days = safeProperties.filter(p => p.status === 'Sold' && p.sold_at && isWithinInterval(parseISO(p.sold_at), { start: last30Days, end: now }));
+    const soldInLast30Days = safeProperties.filter(p => p.status === 'Sold' && p.sale_date && isWithinInterval(parseISO(p.sale_date), { start: last30Days, end: now }));
     const totalSoldCount = safeProperties.filter(p => p.status === 'Sold').length;
     const previousSoldCount = totalSoldCount - soldInLast30Days.length;
     
-    const revenueInLast30Days = soldInLast30Days.reduce((acc, p) => acc + (p.sold_price || 0), 0);
-    const totalRevenue = safeProperties.filter(p => p.status === 'Sold' && p.sold_price).reduce((acc, p) => acc + (p.sold_price || 0), 0);
+    const revenueInLast30Days = soldInLast30Days.reduce((acc, p) => acc + (p.total_commission || 0), 0);
+    const totalRevenue = safeProperties.filter(p => p.status === 'Sold' && p.total_commission).reduce((acc, p) => acc + (p.total_commission || 0), 0);
     const previousRevenue = totalRevenue - revenueInLast30Days;
 
     return [

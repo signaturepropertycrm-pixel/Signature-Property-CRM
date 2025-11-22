@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -16,7 +17,7 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
-import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video } from 'lucide-react';
+import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
@@ -117,6 +118,22 @@ export function PropertyDetailsDialog({
                     <DetailItem icon={<Briefcase />} label="Potential Rent" value={formatPrice(property.potential_rent_amount, property.potential_rent_unit)} />
                  </div>
               </div>
+              
+              {property.status === 'Sold' && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-bold text-lg mb-4">Sale Details</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                      <DetailItem icon={<Wallet />} label="Sold Price" value={formatCurrency(property.sold_price || 0, currency)} />
+                      <DetailItem icon={<CircleDollarSign />} label="Total Commission" value={formatCurrency(property.total_commission || 0, currency)} />
+                      <DetailItem icon={<Percent />} label="Agent Share" value={`${property.agent_share_percentage || 0}%`} />
+                      <DetailItem icon={<User />} label="Sold By" value={property.sold_by_agent_id} />
+                       <DetailItem icon={<CalendarDays />} label="Sale Date" value={property.sale_date ? new Date(property.sale_date).toLocaleDateString() : 'N/A'} />
+                    </div>
+                  </div>
+                </>
+              )}
                
               <Separator />
 

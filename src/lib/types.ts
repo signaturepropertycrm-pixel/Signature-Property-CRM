@@ -23,6 +23,7 @@ export type User = {
 export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
+export type CommissionUnit = 'PKR' | '%';
 export type PropertyStatus = 'Available' | 'Sold';
 
 export type Property = {
@@ -63,9 +64,17 @@ export type Property = {
     other?: string;
   };
   is_deleted?: boolean;
+  // Sale details
   sold_price?: number;
-  sold_at?: string;
-  soldByAgentId?: string; // ID of the agent who sold the property
+  sold_price_unit?: PriceUnit;
+  sale_date?: string;
+  sold_by_agent_id?: string;
+  commission_from_buyer?: number;
+  commission_from_buyer_unit?: CommissionUnit;
+  commission_from_seller?: number;
+  commission_from_seller_unit?: CommissionUnit;
+  total_commission?: number;
+  agent_share_percentage?: number;
 };
 
 export type BuyerStatus =

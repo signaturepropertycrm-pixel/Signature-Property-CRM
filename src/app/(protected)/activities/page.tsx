@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,7 @@ const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
   if (action.includes('added a new buyer')) return <UserPlus className="h-4 w-4" />;
   if (action.includes('updated the status')) return <Edit className="h-4 w-4" />;
-  if (action.includes('marked a property as "Sold"')) return <CheckCircle className="h-4 w-4" />;
+  if (action.includes('marked property as "Sold"')) return <CheckCircle className="h-4 w-4" />;
   if (action.includes('scheduled an appointment')) return <CalendarPlus className="h-4 w-4" />;
   return <Edit className="h-4 w-4" />;
 };
@@ -86,7 +87,7 @@ export default function ActivitiesPage() {
                        </div>
                      </div>
                     <div className="flex-auto pt-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold">{activity.userName}</span>
                         <span className="text-muted-foreground text-sm">{activity.action}</span>
                       </div>
