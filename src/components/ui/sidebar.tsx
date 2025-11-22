@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -67,12 +68,12 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    const [isMobile, setIsMobile] = React.useState(false);
+    const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false)
 
      React.useEffect(() => {
         const checkIsMobile = () => {
-            setIsMobile(window.innerWidth < 768);
+            // This is handled by useIsMobile hook now
         };
         checkIsMobile();
         window.addEventListener('resize', checkIsMobile);
