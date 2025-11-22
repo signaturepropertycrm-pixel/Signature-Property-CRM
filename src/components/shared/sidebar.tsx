@@ -89,7 +89,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { openMobile, setOpenMobile } = useSidebar();
+  const { setOpenMobile } = useSidebar();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
@@ -117,7 +117,7 @@ export function AppSidebar() {
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) &&
-      (!item.collapsible || item.href === '/appointments')
+      (item.href === '/appointments' || !item.collapsible)
   );
 
   const renderMenuItem = (item: any) => {
@@ -202,7 +202,7 @@ export function AppSidebar() {
   if (isMobile) {
     return (
       <TooltipProvider>
-      <div className={cn("fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300", isMoreMenuOpen && "-translate-y-full")}>
+      <div className="fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300">
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
