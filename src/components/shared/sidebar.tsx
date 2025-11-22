@@ -54,6 +54,7 @@ const mainMenuItems = [
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'], collapsible: true, links: [
       { label: 'All Properties', status: 'All', href: '/properties' },
       { label: 'Available', status: 'Available', href: '/properties?status=Available' },
+      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
       { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
       { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
   ]},

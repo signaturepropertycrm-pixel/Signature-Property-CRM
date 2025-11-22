@@ -90,11 +90,12 @@ interface Filters {
   demandUnit: PriceUnit | 'All';
 }
 
-type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded';
+type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded' | 'For Rent';
 
 const propertyStatusLinks: {label: string, status: FilterTab}[] = [
     { label: 'All Properties', status: 'All' },
     { label: 'Available', status: 'Available' },
+    { label: 'For Rent', status: 'For Rent' },
     { label: 'Sold', status: 'Sold' },
     { label: 'Recorded', status: 'Recorded' },
 ];
@@ -189,6 +190,8 @@ export default function PropertiesPage() {
         filtered = filtered.filter(p => p.status === activeTab);
     } else if (activeTab === 'Recorded') {
         filtered = filtered.filter(p => p.is_recorded);
+    } else if (activeTab === 'For Rent') {
+        filtered = filtered.filter(p => p.potential_rent_amount && p.potential_rent_amount > 0);
     }
     
     if (searchQuery) {
