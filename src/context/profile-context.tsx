@@ -57,31 +57,34 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isAuthLoading) return;
 
-    if (user) {
-        // Immediately set the profile with available auth data to prevent UI flicker
-        setProfileState(prev => ({
-            ...prev,
-            user_id: user.uid,
-            name: user.displayName || prev.name,
-            avatar: user.photoURL || prev.avatar,
-        }));
+    if (!user) {
+        setProfileState(defaultProfile);
+        localStorage.removeItem('app-profile');
+        return;
     }
+
+    // Set initial data from auth user to avoid flicker
+    setProfileState(prev => ({
+        ...prev,
+        user_id: user.uid,
+        name: user.displayName || prev.name || 'User',
+        avatar: user.photoURL || prev.avatar,
+    }));
 
     if (!isUserProfileLoading && userProfile) {
         const role = userProfile.role || 'Agent';
         
-        let name = user?.displayName || userProfile.name || 'User';
-        let avatar = user?.photoURL || userProfile.avatar || '';
+        let name = userProfile.name || user.displayName || 'User';
         let phone = userProfile.phone || '';
+        // Prioritize the avatar from the specific profile documents (agent/agency) over the general user profile or auth object
+        let avatar = agentProfile?.avatar || agencyProfile?.avatar || userProfile.avatar || user.photoURL || '';
 
-        // Specific profiles can override
+        // Specific profiles can override details
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
-            avatar = agentProfile.avatar || avatar;
             phone = agentProfile.phone || phone;
-        } else if (role === 'Admin' && agencyProfile) {
+        } else if ((role === 'Admin' || role === 'Editor') && agencyProfile) {
             name = agencyProfile.name || name;
-            avatar = agencyProfile.avatar || avatar;
             phone = agencyProfile.phone || phone;
         }
 
@@ -91,15 +94,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             phone: phone,
             role: role, 
             avatar: avatar,
-            user_id: user!.uid,
+            user_id: user.uid,
             agency_id: userProfile.agency_id || '',
         };
         
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
-    } else if (!isAuthLoading && !user) {
-        setProfileState(defaultProfile);
-        localStorage.removeItem('app-profile');
     }
   }, [user, userProfile, agencyProfile, agentProfile, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
 
