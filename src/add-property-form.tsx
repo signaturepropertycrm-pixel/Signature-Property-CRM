@@ -31,6 +31,7 @@ import { Separator } from './ui/separator';
 import type { Property } from '@/lib/types';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
+import { formatPhoneNumber } from '@/lib/utils';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -123,6 +124,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
         const isStandardType = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural'].includes(propertyToEdit.property_type);
         reset({
             ...propertyToEdit,
+            owner_number: propertyToEdit.owner_number.replace('+92', ''),
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
@@ -160,6 +162,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
   function onSubmit(values: AddPropertyFormValues) {
      const finalValues = {
         ...values,
+        owner_number: formatPhoneNumber(values.owner_number),
         property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
     };
 
@@ -496,9 +499,14 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Owner Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="+92 300 1234567" />
-                  </FormControl>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-gray-500 sm:text-sm">+92</span>
+                    </div>
+                    <FormControl>
+                      <Input {...field} placeholder="3001234567" className="pl-12" />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -574,5 +582,3 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     </Form>
   );
 }
-
-    

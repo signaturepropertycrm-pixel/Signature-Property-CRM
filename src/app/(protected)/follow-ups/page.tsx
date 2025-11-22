@@ -15,6 +15,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
+import { formatPhoneNumber } from '@/lib/utils';
 
 
 export default function FollowUpsPage() {
@@ -66,11 +67,8 @@ export default function FollowUpsPage() {
   const handleWhatsAppClick = (e: React.MouseEvent, phone?: string) => {
       e.stopPropagation(); 
       if (phone) {
-        let sanitizedPhone = phone.replace(/\s+/g, '').replace(/^\+|^00/, '');
-        if (!sanitizedPhone.startsWith('92')) {
-            sanitizedPhone = `92${sanitizedPhone.replace(/^0/, '')}`;
-        }
-        const whatsappUrl = `https://wa.me/${sanitizedPhone}`;
+        const formattedPhone = formatPhoneNumber(phone).replace('+', '');
+        const whatsappUrl = `https://wa.me/${formattedPhone}`;
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       } else {
         toast({

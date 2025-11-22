@@ -31,6 +31,7 @@ import { buyerStatuses } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
+import { formatPhoneNumber } from '@/lib/utils';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
@@ -73,13 +74,13 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
     if (buyerToEdit) {
         return {
             ...buyerToEdit,
+            phone: buyerToEdit.phone.replace('+92', ''),
             property_type_preference: buyerToEdit.property_type_preference || '',
             size_min_unit: buyerToEdit.size_min_unit || 'Marla',
             size_max_unit: buyerToEdit.size_max_unit || 'Marla',
             budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
             budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
             name: buyerToEdit.name || '',
-            phone: buyerToEdit.phone || '',
             email: buyerToEdit.email || '',
             area_preference: buyerToEdit.area_preference || '',
             notes: buyerToEdit.notes || '',
@@ -133,6 +134,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
      const buyerData = {
         ...buyerToEdit, // Keep original data like ID, created_at, etc.
         ...values, // Overwrite with new form values
+        phone: formatPhoneNumber(values.phone),
         serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
@@ -191,9 +193,14 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                            <Input {...field} placeholder="+92 300 1234567" />
-                        </FormControl>
+                        <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <span className="text-gray-500 sm:text-sm">+92</span>
+                            </div>
+                            <FormControl>
+                                <Input {...field} placeholder="3001234567" className="pl-12" />
+                            </FormControl>
+                        </div>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -369,5 +376,3 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
     </Form>
   );
 }
-
-    

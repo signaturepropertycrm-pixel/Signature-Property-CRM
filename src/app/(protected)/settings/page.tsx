@@ -56,6 +56,7 @@ import ReactCrop, { centerCrop, makeAspectCrop, type Crop } from 'react-image-cr
 import 'react-image-crop/dist/ReactCrop.css';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { formatPhoneNumber } from '@/lib/utils';
 
 
 const passwordFormSchema = z.object({
@@ -115,13 +116,19 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
-    setLocalProfile(profile);
+    // Remove +92 for editing
+    setLocalProfile({ ...profile, phone: profile.phone?.replace('+92', '') });
   }, [profile]);
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    const formattedProfile = {
+        ...localProfile,
+        phone: formatPhoneNumber(localProfile.phone),
+    };
 
     const isUserAdmin = profile.role === 'Admin';
     const collectionName = isUserAdmin ? 'agencies' : 'agents';
@@ -136,27 +143,27 @@ export default function SettingsPage() {
     
     let dataToUpdate: Partial<ProfileData> = {};
     if (isUserAdmin) {
-        // For Admin, update agencyName and their own name in the agency doc
-        dataToUpdate = { agencyName: localProfile.agencyName, name: localProfile.name };
+        // For Admin, update agencyName, their own name, and phone in the agency doc
+        dataToUpdate = { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone };
     } else {
-        // For Agent, update just their name in their agent doc
-        dataToUpdate = { name: localProfile.name };
+        // For Agent, update just their name and phone in their agent doc
+        dataToUpdate = { name: formattedProfile.name, phone: formattedProfile.phone };
     }
 
     await updateDoc(docRef, dataToUpdate);
 
-    // Also update the display name in Firebase Auth itself, which is what shows up initially
-    if (auth.currentUser && localProfile.name !== profile.name) {
-      await updateProfile(auth.currentUser, { displayName: localProfile.name });
+    // Also update the display name in Firebase Auth itself
+    if (auth.currentUser && formattedProfile.name !== profile.name) {
+      await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
     }
     
-    // Update the teamMember document as well if the name changed
-    if (isUserAdmin && localProfile.name !== profile.name) {
+    // Update the teamMember document as well if the name or phone changed for the admin
+    if (isUserAdmin) {
         const teamMemberRef = doc(firestore, 'agencies', docId, 'teamMembers', user.uid);
-        await updateDoc(teamMemberRef, { name: localProfile.name });
+        await updateDoc(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
     }
 
-    setProfile(localProfile);
+    setProfile(formattedProfile);
     toast({
       title: 'Profile Updated',
       description: 'Your profile information has been saved successfully.',
@@ -546,7 +553,12 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} />
+                 <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-gray-500 sm:text-sm">+92</span>
+                    </div>
+                    <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="pl-12" placeholder="3001234567" />
+                  </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Account Email</Label>
@@ -1127,5 +1139,3 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
-
-    
