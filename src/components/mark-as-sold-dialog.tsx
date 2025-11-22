@@ -35,6 +35,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Calculator } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
+import { Card, CardContent } from './ui/card';
 
 const formSchema = z.object({
   sold_price: z.coerce.number().positive("Sold price is required"),
