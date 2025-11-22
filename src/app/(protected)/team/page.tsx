@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock, MoreHorizontal } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock, MoreHorizontal, Camera } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import type { User as TeamMember, UserRole, Property, Buyer } from '@/lib/types';
@@ -16,11 +16,12 @@ import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { UpdateMemberAvatarDialog } from '@/components/update-member-avatar-dialog';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
@@ -32,7 +33,9 @@ const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: s
 export default function TeamPage() {
     const isMobile = useIsMobile();
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+    const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
+    const [memberToUpdateAvatar, setMemberToUpdateAvatar] = useState<TeamMember | null>(null);
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const { toast } = useToast();
@@ -71,6 +74,27 @@ export default function TeamPage() {
         if(member.status === 'Pending') return;
         setSelectedMember(member);
         setIsDetailsOpen(true);
+    };
+
+    const handleChangePicture = (member: TeamMember) => {
+        setMemberToUpdateAvatar(member);
+        setIsAvatarDialogOpen(true);
+    };
+
+    const handleAvatarSave = async (memberId: string, dataUrl: string) => {
+        if (!profile.agency_id) return;
+
+        const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberId);
+        await updateDoc(memberRef, { avatar: dataUrl });
+        
+        // If the user is updating their own avatar, also update the main user doc
+        if (memberId === profile.user_id) {
+            const userRef = doc(firestore, 'users', memberId);
+            await updateDoc(userRef, { avatar: dataUrl });
+        }
+        
+        toast({ title: 'Avatar Updated', description: "The team member's profile picture has been updated." });
+        setIsAvatarDialogOpen(false);
     };
 
     const sortedTeamMembers = useMemo(() => {
@@ -126,9 +150,15 @@ export default function TeamPage() {
                     return (
                         <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className={cn('cursor-pointer', isPending && 'opacity-70 bg-muted/50')}>
                             <TableCell className="font-medium">
-                                <div>
-                                    <p className="font-bold">{member.name || 'Invitation Sent'}</p>
-                                    <p className="text-xs text-muted-foreground">{member.email}</p>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={member.avatar} alt={member.name} />
+                                        <AvatarFallback>{member.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-bold">{member.name || 'Invitation Sent'}</p>
+                                        <p className="text-xs text-muted-foreground">{member.email}</p>
+                                    </div>
                                 </div>
                             </TableCell>
                             <TableCell><Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge></TableCell>
@@ -147,9 +177,14 @@ export default function TeamPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             {!isPending && (
+                                                <>
                                                 <DropdownMenuItem onClick={() => handleEdit(member)}>
                                                     <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                                    <Camera className="mr-2 h-4 w-4" /> Change Picture
+                                                </DropdownMenuItem>
+                                                </>
                                             )}
                                             <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
                                                 <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
@@ -193,9 +228,14 @@ export default function TeamPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                     {!isPending && (
+                                        <>
                                         <DropdownMenuItem onClick={() => handleEdit(member)}>
                                             <Edit className="mr-2 h-4 w-4" /> Edit Role
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                            <Camera className="mr-2 h-4 w-4" /> Change Picture
+                                        </DropdownMenuItem>
+                                        </>
                                     )}
                                     <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
                                         <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
@@ -205,6 +245,10 @@ export default function TeamPage() {
                         )}
                     </CardHeader>
                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
+                         <Avatar className="h-20 w-20 mb-4 border-2 border-primary/20">
+                            <AvatarImage src={member.avatar} alt={member.name} />
+                            <AvatarFallback>{member.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                         <CardDescription>{member.email}</CardDescription>
                     </CardContent>
@@ -273,6 +317,15 @@ export default function TeamPage() {
                 setIsOpen={setIsAddMemberOpen} 
                 memberToEdit={memberToEdit}
             />
+
+            {memberToUpdateAvatar && (
+                <UpdateMemberAvatarDialog
+                    isOpen={isAvatarDialogOpen}
+                    setIsOpen={setIsAvatarDialogOpen}
+                    member={memberToUpdateAvatar}
+                    onSave={handleAvatarSave}
+                />
+            )}
 
             {selectedMember && (
                 <TeamMemberDetailsDialog 

@@ -30,7 +30,7 @@ import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
-const roles: UserRole[] = ['Agent'];
+const roles: UserRole[] = ['Editor', 'Agent'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -88,13 +88,15 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             toast({ title: 'Member Updated', description: `Details for ${values.name} have been updated.` });
         } else {
             // Send an invitation by creating a 'pending' document.
-            const teamMemberRef = collection(firestore, 'agencies', profile.agency_id, 'teamMembers');
-            await addDoc(teamMemberRef, {
+            // We use addDoc and let Firestore generate the ID.
+            const teamMembersCollectionRef = collection(firestore, 'agencies', profile.agency_id, 'teamMembers');
+            
+            await addDoc(teamMembersCollectionRef, {
+                // Do not set ID, Firestore will generate it.
                 name: values.name,
                 email: values.email,
                 role: values.role,
                 status: 'Pending', // New invitation status
-                avatar: '', // Add empty avatar field
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
                 invitedAt: serverTimestamp()
