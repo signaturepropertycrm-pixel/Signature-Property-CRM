@@ -118,7 +118,7 @@ export function AppSidebar() {
                     <div key={item.href} className="relative flex items-center justify-center">
                         <Link href={item.href}>
                              <div className={cn(
-                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300',
+                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
                                 'bg-gradient-to-br from-primary to-blue-500',
                                 isActive && 'ring-4 ring-primary/30'
                              )}>
