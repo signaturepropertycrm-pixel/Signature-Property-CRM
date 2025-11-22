@@ -58,7 +58,7 @@ const mainMenuItems = [
       { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
   ]},
   { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'], collapsible: true, links: [
-      { label: 'All', status: 'All', href: '/buyers' },
+      { label: 'All Buyers', status: 'All', href: '/buyers' },
       ...buyerStatuses.map(s => ({label: s, status: s, href: `/buyers?status=${encodeURIComponent(s)}`}))
   ]},
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
@@ -115,8 +115,7 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
-      !['/support', '/settings'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) &&
       (item.href === '/appointments' || !item.collapsible)
   );
