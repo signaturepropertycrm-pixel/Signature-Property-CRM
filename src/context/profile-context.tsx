@@ -90,7 +90,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
         const newProfileData: ProfileData = {
             name: name,
-            agencyName: agencyProfile?.name || 'My Agency',
+            agencyName: agencyProfile?.agencyName || 'My Agency',
             phone: phone,
             role: role, 
             avatar: avatar,
