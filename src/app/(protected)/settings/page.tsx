@@ -50,11 +50,13 @@ import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDo
 import { useMemoFirebase } from '@/firebase/hooks';
 import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, updateProfile } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import *as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 
 const passwordFormSchema = z.object({
@@ -117,11 +119,6 @@ export default function SettingsPage() {
     setLocalProfile(profile);
   }, [profile]);
 
-
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { id, value } = e.target;
-      setLocalProfile(prev => ({ ...prev, [id]: value }));
-  };
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +185,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAvatarSave = async (dataUrl: string) => {
+  const handleAvatarSave = (dataUrl: string) => {
     if (!user) return;
         
     const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
@@ -196,18 +193,30 @@ export default function SettingsPage() {
     if (!docId) return;
 
     const docRef = doc(firestore, collectionName, docId);
-    await updateDoc(docRef, { avatar: dataUrl });
-    
-    if (auth.currentUser) {
-      await updateProfile(auth.currentUser, { photoURL: dataUrl });
-    }
+    const dataToUpdate = { avatar: dataUrl };
 
-    setProfile({ ...profile, avatar: dataUrl });
-    toast({
-        title: "Profile Picture Updated",
-        description: "Your new avatar has been saved."
-    });
-    setIsAvatarDialogOpen(false);
+    updateDoc(docRef, dataToUpdate)
+        .then(() => {
+            if (auth.currentUser) {
+                return updateProfile(auth.currentUser, { photoURL: dataUrl });
+            }
+        })
+        .then(() => {
+            setProfile({ ...profile, avatar: dataUrl });
+            toast({
+                title: "Profile Picture Updated",
+                description: "Your new avatar has been saved."
+            });
+            setIsAvatarDialogOpen(false);
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: docRef.path,
+                operation: 'update',
+                requestResourceData: dataToUpdate,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   }
 
   const handleBackup = () => {
@@ -984,6 +993,7 @@ function AvatarCropDialog({
       height
     );
     setCrop(crop);
+    setCompletedCrop(crop); // Set initial completed crop
   };
   
   useEffect(() => {
@@ -1098,5 +1108,7 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
+
+    
 
     
