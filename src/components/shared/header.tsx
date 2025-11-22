@@ -209,11 +209,7 @@ export function AppHeader({
           <DropdownMenuContent align="end" className="glass-card">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/settings')}>
-                <User />
-                Profile
-            </DropdownMenuItem>
-            {(profile.role === 'Admin') && (
+            {(profile.role === 'Admin' || profile.role === 'Editor' || profile.role === 'Agent') && (
               <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <Settings />
                   Settings
