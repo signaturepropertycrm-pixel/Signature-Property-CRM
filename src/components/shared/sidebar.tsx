@@ -31,6 +31,7 @@ import {
   MessageSquare,
   ClipboardList,
   Badge,
+  MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,6 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
@@ -84,7 +86,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { openMobile } = useSidebar();
+  const { openMobile, setOpenMobile } = useSidebar();
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
@@ -105,52 +107,13 @@ export function AppSidebar() {
      { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'] },
      { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'], isCenter: true },
      { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'] },
-     { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Editor'] },
+     { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Editor', 'Agent'], isSheet: true },
   ].filter(item => item.roles.includes(profile.role));
 
-
-  if (isMobile) {
-    return (
-      <div className={cn(
-        "fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300",
-        openMobile ? "translate-y-full" : "translate-y-0"
-      )}>
-        <div className="grid h-full grid-cols-5">
-          {mobileNavItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            if (item.isCenter) {
-                return (
-                    <div key={item.href} className="relative flex items-center justify-center">
-                        <Link href={item.href}>
-                             <div className={cn(
-                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
-                                'bg-gradient-to-br from-primary to-blue-500',
-                                isActive && 'ring-4 ring-primary/30'
-                             )}>
-                                {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
-                            </div>
-                        </Link>
-                    </div>
-                )
-            }
-            return (
-                <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                        isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
-                    )}
-                >
-                    {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
-                    <span>{item.label}</span>
-                </Link>
-            )
-          })}
-        </div>
-      </div>
-    );
-  }
+  const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
+      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      item.roles.includes(profile.role)
+  );
 
   const renderMenuItem = (item: any) => {
     if (!item.roles.includes(profile.role)) {
@@ -188,7 +151,7 @@ export function AppSidebar() {
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
                   const paramToCheck = link.status ? statusParam : typeParam;
-                  const valueInUrl = paramToCheck ?? 'All';
+                  const valueInUrl = paramToCheck ?? (link.status ? 'All' : 'All');
                   const isSubActive = link.status === valueInUrl || link.type === valueInUrl;
 
                   return (
@@ -229,6 +192,84 @@ export function AppSidebar() {
       </SidebarMenuItem>
     );
   };
+
+
+  if (isMobile) {
+    return (
+      <div className={cn(
+        "fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300",
+        openMobile ? "translate-y-full" : "translate-y-0"
+      )}>
+        <div className="grid h-full grid-cols-5">
+          {mobileNavItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            
+            if (item.isSheet) {
+                return (
+                     <Sheet key={item.href}>
+                        <SheetTrigger asChild>
+                            <div className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary')}>
+                                {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                                <span>{item.label}</span>
+                            </div>
+                        </SheetTrigger>
+                        <SheetContent side="bottom" className="rounded-t-2xl h-[75vh]">
+                            <SheetHeader>
+                                <SheetTitle className="font-headline">More Options</SheetTitle>
+                            </SheetHeader>
+                            <div className="grid gap-2 py-4">
+                                {moreSheetItems.map(sheetItem => {
+                                    const isItemActive = pathname.startsWith(sheetItem.href);
+                                    return (
+                                     <Link href={sheetItem.href} key={sheetItem.href} className="block">
+                                        <SheetTrigger asChild>
+                                            <div className={cn("flex items-center gap-4 p-3 rounded-lg", isItemActive ? "bg-primary/10 text-primary" : "hover:bg-accent")}>
+                                                <div className="text-primary">
+                                                    {sheetItem.icon}
+                                                </div>
+                                                <span className="font-medium">{sheetItem.label}</span>
+                                            </div>
+                                        </SheetTrigger>
+                                     </Link>
+                                )})}
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                )
+            }
+            if (item.isCenter) {
+                return (
+                    <div key={item.href} className="relative flex items-center justify-center">
+                        <Link href={item.href}>
+                             <div className={cn(
+                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
+                                'bg-gradient-to-br from-primary to-blue-500',
+                                isActive && 'ring-4 ring-primary/30'
+                             )}>
+                                {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                            </div>
+                        </Link>
+                    </div>
+                )
+            }
+            return (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                        isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+                    )}
+                >
+                    {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                    <span>{item.label}</span>
+                </Link>
+            )
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
