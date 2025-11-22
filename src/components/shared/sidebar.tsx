@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Badge,
   MoreHorizontal,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -86,7 +87,8 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { openMobile, setOpenMobile } = useSidebar();
+  const { openMobile } = useSidebar();
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
@@ -196,45 +198,45 @@ export function AppSidebar() {
 
   if (isMobile) {
     return (
+      <TooltipProvider>
       <div className={cn(
         "fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300",
         openMobile ? "translate-y-full" : "translate-y-0"
       )}>
-        <div className="grid h-full grid-cols-5">
+        <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             
             if (item.isSheet) {
                 return (
-                     <Sheet key={item.href}>
-                        <SheetTrigger asChild>
-                            <div className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary')}>
-                                {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
-                                <span>{item.label}</span>
-                            </div>
-                        </SheetTrigger>
-                        <SheetContent side="bottom" className="rounded-t-2xl h-[75vh]">
-                            <SheetHeader>
-                                <SheetTitle className="font-headline">More Options</SheetTitle>
-                            </SheetHeader>
-                            <div className="grid gap-2 py-4">
-                                {moreSheetItems.map(sheetItem => {
-                                    const isItemActive = pathname.startsWith(sheetItem.href);
-                                    return (
-                                     <Link href={sheetItem.href} key={sheetItem.href} className="block">
-                                        <SheetTrigger asChild>
-                                            <div className={cn("flex items-center gap-4 p-3 rounded-lg", isItemActive ? "bg-primary/10 text-primary" : "hover:bg-accent")}>
-                                                <div className="text-primary">
-                                                    {sheetItem.icon}
+                     <div key={item.href} className="relative flex flex-col items-center justify-center">
+                        <button 
+                            onClick={() => setIsMoreMenuOpen(prev => !prev)}
+                            className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary')}
+                        >
+                            {isMoreMenuOpen ? <X className="h-5 w-5" /> : React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                            <span>{item.label}</span>
+                        </button>
+                         {isMoreMenuOpen && (
+                            <div className="absolute bottom-full right-2 mb-4 flex gap-2 items-center">
+                               {moreSheetItems.map((sheetItem, index) => (
+                                   <Tooltip key={sheetItem.href}>
+                                        <TooltipTrigger asChild>
+                                            <Link href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
+                                                <div 
+                                                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110"
+                                                    style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
+                                                >
+                                                    {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
                                                 </div>
-                                                <span className="font-medium">{sheetItem.label}</span>
-                                            </div>
-                                        </SheetTrigger>
-                                     </Link>
-                                )})}
+                                            </Link>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="mb-2">{sheetItem.label}</TooltipContent>
+                                   </Tooltip>
+                               ))}
                             </div>
-                        </SheetContent>
-                    </Sheet>
+                        )}
+                    </div>
                 )
             }
             if (item.isCenter) {
@@ -268,6 +270,7 @@ export function AppSidebar() {
           })}
         </div>
       </div>
+      </TooltipProvider>
     );
   }
 
