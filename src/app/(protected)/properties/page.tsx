@@ -574,7 +574,3 @@ export default function PropertiesPage() {
     </>
   );
 }
-
-    
-
-    

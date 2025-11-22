@@ -416,14 +416,14 @@ export default function BuyersPage() {
                         <TableCell><div className="flex flex-col text-sm"><span>{buyer.area_preference}</span><span className="text-muted-foreground">{buyer.property_type_preference}</span></div></TableCell>
                          <TableCell><div className="flex flex-col text-sm"><span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span><span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span></div></TableCell>
                         <TableCell><div className="flex items-center gap-2"><Badge variant={statusVariant[buyer.status]} className={ buyer.status === 'Interested' || buyer.status === 'Hot Lead' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : '' }>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
+                        <TableCell className="text-right">
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
                                     {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                    <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                    <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                     {profile.role !== 'Agent' && !isAgentData && (
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
@@ -490,7 +490,7 @@ export default function BuyersPage() {
                                 <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
                                 {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                 <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                 {profile.role !== 'Agent' && !isAgentData && (
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
@@ -632,7 +632,3 @@ export default function BuyersPage() {
     </>
   );
 }
-
-    
-
-    
