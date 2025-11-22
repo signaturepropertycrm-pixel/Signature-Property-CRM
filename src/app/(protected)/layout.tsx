@@ -125,7 +125,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarProvider>
           <div className="flex h-screen w-full bg-background">
           <AppSidebar />
-          <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
+          <div className="flex flex-col flex-1 overflow-hidden">
               <AppHeader 
               searchable={isSearchable}
               searchQuery={searchQuery}

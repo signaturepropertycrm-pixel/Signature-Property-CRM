@@ -205,7 +205,7 @@ export function AppSidebar() {
       <TooltipProvider>
         {isMoreMenuOpen && (
           <div
-            className="fixed inset-0 z-49 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
             onClick={() => setIsMoreMenuOpen(false)}
             style={{ animation: 'fadeIn 0.3s ease-out' }}
           />
