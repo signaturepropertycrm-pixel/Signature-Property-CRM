@@ -451,7 +451,12 @@ export default function PropertiesPage() {
                 </CardContent>
                  <CardFooter className="flex justify-end">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="glass-card">
                           <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                           <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
