@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -102,10 +103,9 @@ function SignupPageContent() {
         const agencyDocRef = doc(firestore, 'agencies', agencyId);
         batch.set(agencyDocRef, {
             id: agencyId,
-            name: values.agencyName,
+            agencyName: values.agencyName, // Corrected field
             ownerId: user.uid,
-            // Storing the owner's name directly in the agency doc
-            name: values.name, 
+            name: values.name, // Storing the owner's name directly in the agency doc
             createdAt: serverTimestamp(),
         });
 
@@ -288,3 +288,5 @@ export default function SignupPage() {
         </FirebaseClientProvider>
     );
 }
+
+    

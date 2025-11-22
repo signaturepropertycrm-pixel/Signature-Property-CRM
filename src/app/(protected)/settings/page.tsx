@@ -123,8 +123,9 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
 
-    const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
-    const docId = profile.role === 'Admin' ? profile.agency_id : user.uid;
+    const isUserAdmin = profile.role === 'Admin';
+    const collectionName = isUserAdmin ? 'agencies' : 'agents';
+    const docId = isUserAdmin ? profile.agency_id : user.uid;
 
     if (!docId) {
         toast({ title: 'Error updating profile', description: 'Could not determine document to update.', variant: 'destructive'});
@@ -134,17 +135,25 @@ export default function SettingsPage() {
     const docRef = doc(firestore, collectionName, docId);
     
     let dataToUpdate: Partial<ProfileData> = {};
-    if (profile.role === 'Admin') {
+    if (isUserAdmin) {
+        // For Admin, update agencyName and their own name in the agency doc
         dataToUpdate = { agencyName: localProfile.agencyName, name: localProfile.name };
     } else {
+        // For Agent, update just their name in their agent doc
         dataToUpdate = { name: localProfile.name };
     }
 
     await updateDoc(docRef, dataToUpdate);
 
-    // Also update the display name in Firebase Auth itself
-    if (auth.currentUser && localProfile.name) {
+    // Also update the display name in Firebase Auth itself, which is what shows up initially
+    if (auth.currentUser && localProfile.name !== profile.name) {
       await updateProfile(auth.currentUser, { displayName: localProfile.name });
+    }
+    
+    // Update the teamMember document as well if the name changed
+    if (isUserAdmin && localProfile.name !== profile.name) {
+        const teamMemberRef = doc(firestore, 'agencies', docId, 'teamMembers', user.uid);
+        await updateDoc(teamMemberRef, { name: localProfile.name });
     }
 
     setProfile(localProfile);
@@ -1120,6 +1129,3 @@ function AvatarCropDialog({
 }
 
     
-
-    
-
