@@ -88,7 +88,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { openMobile } = useSidebar();
+  const { openMobile, setOpenMobile } = useSidebar();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
@@ -114,7 +114,7 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) && !item.collapsible
   );
 
