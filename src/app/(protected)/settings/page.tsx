@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -334,6 +333,11 @@ export default function SettingsPage() {
         throw error;
     }
   };
+  
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setLocalProfile(prev => ({...prev, [id]: value}));
+  }
 
 
   if (!mounted || isProfileLoading) {
@@ -353,14 +357,18 @@ export default function SettingsPage() {
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
                             <div className="flex items-center gap-6">
-                                <Avatar className="h-20 w-20 border-4 border-primary/20">
-                                    <AvatarImage src={profile.avatar} />
-                                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                </Avatar>
+                                <button type="button" onClick={() => setIsAvatarDialogOpen(true)} className="rounded-full relative group">
+                                    <Avatar className="h-20 w-20 border-4 border-primary/20">
+                                        <AvatarImage src={profile.avatar} />
+                                        <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span className="text-white text-xs font-bold">Change</span>
+                                    </div>
+                                </button>
                                 <div>
                                     <h3 className="text-lg font-bold">{profile.name}</h3>
                                     <p className="text-sm text-muted-foreground">{user?.email}</p>
-                                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setIsAvatarDialogOpen(true)}>Change Picture</Button>
                                 </div>
                             </div>
                             <Separator />
@@ -495,16 +503,18 @@ export default function SettingsPage() {
         <form onSubmit={handleProfileSave}>
           <CardContent className="space-y-6">
              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 border-4 border-primary/20">
-                    <AvatarImage src={profile.avatar} />
-                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
+                <button type="button" onClick={() => setIsAvatarDialogOpen(true)} className="rounded-full relative group">
+                    <Avatar className="h-20 w-20 border-4 border-primary/20">
+                        <AvatarImage src={profile.avatar} />
+                        <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-white text-xs font-bold">Change</span>
+                    </div>
+                </button>
                 <div>
                     <h3 className="text-lg font-bold">{profile.name}</h3>
                     <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
-                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setIsAvatarDialogOpen(true)}>
-                        Change Picture
-                    </Button>
                 </div>
             </div>
 
@@ -1112,3 +1122,4 @@ function AvatarCropDialog({
     
 
     
+
