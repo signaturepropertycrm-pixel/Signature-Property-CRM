@@ -33,6 +33,7 @@ import {
   Badge,
   MoreHorizontal,
   X,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -114,7 +115,7 @@ export function AppSidebar() {
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
-      item.roles.includes(profile.role)
+      item.roles.includes(profile.role) && !item.collapsible
   );
 
   const renderMenuItem = (item: any) => {
@@ -210,32 +211,37 @@ export function AppSidebar() {
             if (item.isSheet) {
                 return (
                      <div key={item.href} className="relative flex flex-col items-center justify-center">
+                        {isMoreMenuOpen && (
+                            <div 
+                                className="absolute inset-0 -top-[calc(100vh-80px)] -bottom-20 bg-black/30 backdrop-blur-sm"
+                                onClick={() => setIsMoreMenuOpen(false)}
+                                style={{ animation: 'fadeIn 0.3s ease-out' }}
+                            />
+                        )}
+                        {isMoreMenuOpen && (
+                            <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3">
+                               {moreSheetItems.map((sheetItem, index) => (
+                                    <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
+                                        <div 
+                                            className="flex items-center gap-3"
+                                            style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
+                                        >
+                                            <span className="font-semibold text-background shadow-lg">{sheetItem.label}</span>
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
+                                                {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
+                                            </div>
+                                        </div>
+                                    </Link>
+                               ))}
+                            </div>
+                        )}
                         <button 
                             onClick={() => setIsMoreMenuOpen(prev => !prev)}
-                            className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary')}
+                            className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary z-10')}
                         >
                             {isMoreMenuOpen ? <X className="h-5 w-5" /> : React.cloneElement(item.icon, { className: 'h-5 w-5' })}
                             <span>{item.label}</span>
                         </button>
-                         {isMoreMenuOpen && (
-                            <div className="absolute bottom-full right-2 mb-4 flex gap-2 items-center">
-                               {moreSheetItems.map((sheetItem, index) => (
-                                   <Tooltip key={sheetItem.href}>
-                                        <TooltipTrigger asChild>
-                                            <Link href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
-                                                <div 
-                                                    className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110"
-                                                    style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
-                                                >
-                                                    {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
-                                                </div>
-                                            </Link>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top" className="mb-2">{sheetItem.label}</TooltipContent>
-                                   </Tooltip>
-                               ))}
-                            </div>
-                        )}
                     </div>
                 )
             }
