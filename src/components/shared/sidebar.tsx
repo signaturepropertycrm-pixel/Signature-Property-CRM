@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -97,28 +98,50 @@ export function AppSidebar() {
       setOpenCollapsibles(prev => ({...prev, [href]: !prev[href]}));
   }
 
-  const mobileNavItems = mainMenuItems.filter(item => item.roles.includes(profile.role) && ['/dashboard', '/properties', '/buyers', '/follow-ups'].includes(item.href));
+  const mobileNavItems = [
+     { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+     { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'] },
+     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'], isCenter: true },
+     { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'] },
+     { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Editor'] },
+  ].filter(item => item.roles.includes(profile.role));
 
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-0 left-0 z-40 w-full border-t bg-card/80 backdrop-blur-md">
-        <div className="grid h-16 grid-cols-4">
-          {mobileNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex flex-col items-center justify-center gap-1 text-xs font-medium',
-                pathname.startsWith(item.href)
-                  ? 'text-primary'
-                  : 'text-muted-foreground'
-              )}
-            >
-              {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
-              <span>{item.label}</span>
-            </Link>
-          ))}
+      <div className="fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+        <div className="grid h-full grid-cols-5">
+          {mobileNavItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            if (item.isCenter) {
+                return (
+                    <div key={item.href} className="relative flex items-center justify-center">
+                        <Link href={item.href}>
+                             <div className={cn(
+                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300',
+                                'bg-gradient-to-br from-primary to-blue-500',
+                                isActive && 'ring-4 ring-primary/30'
+                             )}>
+                                {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                            </div>
+                        </Link>
+                    </div>
+                )
+            }
+            return (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                        isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+                    )}
+                >
+                    {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                    <span>{item.label}</span>
+                </Link>
+            )
+          })}
         </div>
       </div>
     );
