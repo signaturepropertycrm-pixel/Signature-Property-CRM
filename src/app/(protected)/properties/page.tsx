@@ -40,7 +40,7 @@ import {
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment } from '@/lib/types';
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
@@ -99,7 +99,7 @@ const propertyStatusLinks: {label: string, status: FilterTab}[] = [
     { label: 'Recorded', status: 'Recorded' },
 ];
 
-function PropertiesPageContent() {
+export default function PropertiesPage() {
   const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
@@ -568,12 +568,4 @@ function PropertiesPageContent() {
       )}
     </>
   );
-}
-
-export default function PropertiesPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <PropertiesPageContent />
-        </Suspense>
-    );
 }

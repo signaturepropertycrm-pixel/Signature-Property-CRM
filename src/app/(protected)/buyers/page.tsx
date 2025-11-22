@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX } from 'lucide-react';
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity } from '@/lib/types';
@@ -71,7 +71,7 @@ interface Filters {
   sizeUnit: SizeUnit | 'All';
 }
 
-function BuyersPageContent() {
+export default function BuyersPage() {
     const isMobile = useIsMobile();
     const router = useRouter();
     const pathname = usePathname();
@@ -632,13 +632,3 @@ function BuyersPageContent() {
     </>
   );
 }
-
-export default function BuyersPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <BuyersPageContent />
-        </Suspense>
-    );
-}
-
-    

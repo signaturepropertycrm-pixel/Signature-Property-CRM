@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
@@ -19,7 +19,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 
 
-function AppointmentsPageContent() {
+export default function AppointmentsPage() {
   const searchParams = useSearchParams();
   const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
@@ -217,12 +217,4 @@ function AppointmentsPageContent() {
         )}
     </div>
   );
-}
-
-export default function AppointmentsPage() {
-    return (
-        <Suspense fallback={<div>Loading appointments...</div>}>
-            <AppointmentsPageContent />
-        </Suspense>
-    );
 }
