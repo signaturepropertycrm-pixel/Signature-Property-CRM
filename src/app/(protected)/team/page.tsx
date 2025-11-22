@@ -151,10 +151,6 @@ export default function TeamPage() {
                         <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className={cn('cursor-pointer', isPending && 'opacity-70 bg-muted/50')}>
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10">
-                                        <AvatarImage src={member.avatar} alt={member.name} />
-                                        <AvatarFallback>{member.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
                                     <div>
                                         <p className="font-bold">{member.name || 'Invitation Sent'}</p>
                                         <p className="text-xs text-muted-foreground">{member.email}</p>
@@ -168,30 +164,36 @@ export default function TeamPage() {
                             <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.assignedBuyers}</TableCell>
                             <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.soldProperties}</TableCell>
                             <TableCell className="text-right">
-                                {!isOwner && (
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            {!isPending && (
-                                                <>
-                                                <DropdownMenuItem onClick={() => handleEdit(member)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleChangePicture(member)}>
-                                                    <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                                </DropdownMenuItem>
-                                                </>
-                                            )}
-                                            <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {isOwner ? (
+                                            <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                                <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                )}
+                                        ) : (
+                                            <>
+                                                {!isPending && (
+                                                    <>
+                                                    <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                        <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                                        <Camera className="mr-2 h-4 w-4" /> Change Picture
+                                                    </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                                <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </TableCell>
                         </TableRow>
                     )
@@ -219,36 +221,38 @@ export default function TeamPage() {
                 >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
-                        {!isOwner && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                        <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                    {!isPending && (
-                                        <>
-                                        <DropdownMenuItem onClick={() => handleEdit(member)}>
-                                            <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleChangePicture(member)}>
-                                            <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                        </DropdownMenuItem>
-                                        </>
-                                    )}
-                                    <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                 {isOwner ? (
+                                    <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                        <Camera className="mr-2 h-4 w-4" /> Change Picture
                                     </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
+                                ) : (
+                                    <>
+                                        {!isPending && (
+                                            <>
+                                            <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                                <Camera className="mr-2 h-4 w-4" /> Change Picture
+                                            </DropdownMenuItem>
+                                            </>
+                                        )}
+                                        <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </CardHeader>
                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
-                         <Avatar className="h-20 w-20 mb-4 border-2 border-primary/20">
-                            <AvatarImage src={member.avatar} alt={member.name} />
-                            <AvatarFallback>{member.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                         <CardDescription>{member.email}</CardDescription>
                     </CardContent>
