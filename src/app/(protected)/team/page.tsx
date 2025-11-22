@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock } from 'lucide-react';
+import { MoreVertical, PlusCircle, Trash2, Edit, User, Shield, Clock, MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddTeamMemberDialog } from '@/components/add-team-member-dialog';
 import type { User as TeamMember, UserRole, Property, Buyer } from '@/lib/types';
@@ -16,9 +16,11 @@ import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { collection, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, deleteDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
@@ -28,6 +30,7 @@ const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: s
 };
 
 export default function TeamPage() {
+    const isMobile = useIsMobile();
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -65,6 +68,7 @@ export default function TeamPage() {
     };
 
     const handleCardClick = (member: TeamMember) => {
+        if(member.status === 'Pending') return;
         setSelectedMember(member);
         setIsDetailsOpen(true);
     };
@@ -97,6 +101,147 @@ export default function TeamPage() {
     
     const isLoading = isMembersLoading || isPropertiesLoading || isBuyersLoading;
 
+    const renderTable = () => (
+        <Card>
+        <CardContent className="p-0">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Assigned Buyers</TableHead>
+                    <TableHead>Properties Sold</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {sortedTeamMembers.map(member => {
+                    const isPending = member.status === 'Pending';
+                    const displayRole = isPending ? 'Pending' : member.role;
+                    const config = roleConfig[displayRole] || roleConfig.Agent;
+                    const isOwner = member.id === profile.user_id;
+                    const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
+                    
+                    return (
+                        <TableRow key={member.id || member.email} className={cn(isPending && 'opacity-70 bg-muted/50')}>
+                            <TableCell className="font-medium">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-bold">{member.name || 'Invitation Sent'}</p>
+                                        <p className="text-xs text-muted-foreground">{member.email}</p>
+                                    </div>
+                                </div>
+                            </TableCell>
+                            <TableCell><Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge></TableCell>
+                            <TableCell>
+                                <Badge variant={isPending ? 'secondary' : 'default'} className={cn(!isPending && 'bg-green-600/80')}>{member.status || 'Active'}</Badge>
+                            </TableCell>
+                            <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.assignedBuyers}</TableCell>
+                            <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.soldProperties}</TableCell>
+                            <TableCell className="text-right">
+                                {!isOwner && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            {!isPending && (
+                                                <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
+            </TableBody>
+        </Table>
+        </CardContent>
+        </Card>
+    );
+
+    const renderCards = () => (
+        <div className="space-y-4">
+        {sortedTeamMembers.map(member => {
+            const isPending = member.status === 'Pending';
+            const displayRole = isPending ? 'Pending' : member.role;
+            const config = roleConfig[displayRole] || roleConfig.Agent;
+            const isOwner = member.id === profile.user_id;
+            const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
+
+            return (
+                <Card 
+                    key={member.id || member.email} 
+                    className={cn("flex flex-col hover:shadow-lg transition-shadow cursor-pointer", isPending && "opacity-70 bg-muted/50")}
+                    onClick={() => handleCardClick(member)}
+                >
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
+                        {!isOwner && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                    {!isPending && (
+                                        <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </CardHeader>
+                    <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
+                        <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
+                            <AvatarImage src={member.avatar} />
+                            <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
+                        <CardDescription>{member.email}</CardDescription>
+                    </CardContent>
+                    <CardFooter className="border-t p-0">
+                        {isPending ? (
+                            <div className='text-xs text-center w-full text-muted-foreground py-2'>
+                                {`Invited on ${member.invitedAt?.toDate().toLocaleDateString()}`}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 divide-x w-full">
+                                <div className="flex flex-col items-center justify-center p-2">
+                                    <span className="text-xs text-muted-foreground">Buyers</span>
+                                    <span className="font-bold">{stats.assignedBuyers}</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center p-2">
+                                    <span className="text-xs text-muted-foreground">Sold</span>
+                                    <span className="font-bold">{stats.soldProperties}</span>
+                                </div>
+                            </div>
+                        )}
+                    </CardFooter>
+                </Card>
+            )
+        })}
+        </div>
+    );
+
 
     return (
         <>
@@ -122,72 +267,7 @@ export default function TeamPage() {
                         </div>
                     </Card>
                 ) : (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {sortedTeamMembers.map(member => {
-                            const isPending = member.status === 'Pending';
-                            const displayRole = isPending ? 'Pending' : member.role;
-                            const config = roleConfig[displayRole] || roleConfig.Agent;
-                            const isOwner = member.id === profile.user_id;
-                            const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
-
-                            return (
-                                <Card 
-                                    key={member.id || member.email} 
-                                    className={cn("flex flex-col hover:shadow-lg transition-shadow cursor-pointer", isPending && "opacity-70 bg-muted/50")}
-                                    onClick={() => !isPending && handleCardClick(member)}
-                                >
-                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                        <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
-                                        {!isOwner && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                                    {!isPending && (
-                                                        <DropdownMenuItem onClick={() => handleEdit(member)}>
-                                                            <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                    <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
-                                    </CardHeader>
-                                    <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
-                                        <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                                            <AvatarImage src={member.avatar} />
-                                            <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
-                                        <CardDescription>{member.email}</CardDescription>
-                                    </CardContent>
-                                    <CardFooter className="border-t p-0">
-                                        {isPending ? (
-                                            <div className='text-xs text-center w-full text-muted-foreground py-2'>
-                                                {`Invited on ${member.invitedAt?.toDate().toLocaleDateString()}`}
-                                            </div>
-                                        ) : (
-                                            <div className="grid grid-cols-2 divide-x w-full">
-                                                <div className="flex flex-col items-center justify-center p-2">
-                                                    <span className="text-xs text-muted-foreground">Buyers</span>
-                                                    <span className="font-bold">{stats.assignedBuyers}</span>
-                                                </div>
-                                                <div className="flex flex-col items-center justify-center p-2">
-                                                    <span className="text-xs text-muted-foreground">Sold</span>
-                                                    <span className="font-bold">{stats.soldProperties}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </CardFooter>
-                                </Card>
-                            )
-                        })}
-                    </div>
+                    isMobile ? renderCards() : renderTable()
                 )}
             </div>
 
