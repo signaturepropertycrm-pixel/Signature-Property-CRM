@@ -115,7 +115,8 @@ export function AppSidebar() {
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      !['/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) &&
       (item.href === '/appointments' || !item.collapsible)
   );
@@ -202,7 +203,14 @@ export function AppSidebar() {
   if (isMobile) {
     return (
       <TooltipProvider>
-      <div className="fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300">
+        {isMoreMenuOpen && (
+          <div
+            className="fixed inset-0 z-49 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsMoreMenuOpen(false)}
+            style={{ animation: 'fadeIn 0.3s ease-out' }}
+          />
+        )}
+      <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300">
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -210,13 +218,6 @@ export function AppSidebar() {
             if (item.isSheet) {
                 return (
                      <div key={item.href} className="relative flex flex-col items-center justify-center">
-                        {isMoreMenuOpen && (
-                            <div 
-                                className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-                                onClick={() => setIsMoreMenuOpen(false)}
-                                style={{ animation: 'fadeIn 0.3s ease-out' }}
-                            />
-                        )}
                         {isMoreMenuOpen && (
                             <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3 z-50">
                                {moreSheetItems.map((sheetItem, index) => {

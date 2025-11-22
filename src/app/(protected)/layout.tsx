@@ -12,6 +12,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -124,7 +125,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
         <SidebarProvider>
           <div className="flex h-screen w-full bg-background">
           <AppSidebar />
-          <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="relative z-10 flex flex-col flex-1 overflow-hidden">
               <AppHeader 
               searchable={isSearchable}
               searchQuery={searchQuery}
