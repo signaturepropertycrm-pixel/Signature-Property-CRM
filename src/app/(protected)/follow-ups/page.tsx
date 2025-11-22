@@ -36,7 +36,8 @@ export default function FollowUpsPage() {
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
   
-  const handlePhoneClick = (phone?: string) => {
+  const handlePhoneClick = (e: React.MouseEvent, phone?: string) => {
+    e.stopPropagation();
     if (phone) {
         toast({
             title: "Buyer's Phone Number",
@@ -176,7 +177,7 @@ export default function FollowUpsPage() {
                   <p className="text-sm border-t pt-3">{followUp.notes}</p>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                  <Button variant="outline" size="icon" onClick={(e) => { e.stopPropagation(); handlePhoneClick(followUp.buyerPhone); }}><Phone /></Button>
+                  <Button variant="outline" size="icon" onClick={(e) => handlePhoneClick(e, followUp.buyerPhone)}><Phone /></Button>
                   <Button variant="outline" size="icon" onClick={(e) => handleWhatsAppClick(e, followUp.buyerPhone)}><MessageSquare /></Button>
                   <Button variant="outline" size="icon" onClick={(e) => handleOpenStatusUpdate(e, followUp)}><CalendarPlus /></Button>
                   <Button size="icon" onClick={(e) => handleSetAppointment(e, followUp)}><CheckCircle /></Button>
@@ -212,3 +213,5 @@ export default function FollowUpsPage() {
     </>
   );
 }
+
+    

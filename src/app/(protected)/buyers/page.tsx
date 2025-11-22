@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSearch, useUI } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
@@ -420,27 +420,27 @@ export default function BuyersPage() {
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="glass-card">
-                                    <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
-                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
-                                    <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                    <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
+                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                    <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                     {profile.role !== 'Agent' && !isAgentData && (
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                             <DropdownMenuPortal><DropdownMenuSubContent>
-                                                <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
+                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, null); }}>
                                                     <UserX className="mr-2 h-4 w-4"/>Unassign
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 {activeAgents.map(agent => (
-                                                    <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                    <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.id); }} disabled={buyer.assignedTo === agent.id}>
                                                         {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
                                                     </DropdownMenuItem>
                                                 ))}
                                             </DropdownMenuSubContent></DropdownMenuPortal>
                                         </DropdownMenuSub>
                                     )}
-                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
+                                    {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>
@@ -487,27 +487,27 @@ export default function BuyersPage() {
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="glass-card">
-                                <DropdownMenuItem onSelect={() => handleDetailsClick(buyer)}><Eye />View Details</DropdownMenuItem>
-                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleEdit(buyer)}><Edit />Edit Details</DropdownMenuItem>)}
-                                <DropdownMenuItem onSelect={() => handleSetAppointment(buyer)}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
+                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
+                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                <DropdownMenuSub><DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger><DropdownMenuPortal><DropdownMenuSubContent>{buyerStatuses.map((status) => (<DropdownMenuItem key={status} onClick={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>))}</DropdownMenuSubContent></DropdownMenuPortal></DropdownMenuSub>
                                 {profile.role !== 'Agent' && !isAgentData && (
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                         <DropdownMenuPortal><DropdownMenuSubContent>
-                                            <DropdownMenuItem onSelect={() => handleAssignAgentClick(buyer, null)}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, null); }}>
                                                 <UserX className="mr-2 h-4 w-4"/>Unassign
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             {activeAgents.map(agent => (
-                                                <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgentClick(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.id); }} disabled={buyer.assignedTo === agent.id}>
                                                     {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
                                                 </DropdownMenuItem>
                                             ))}
                                         </DropdownMenuSubContent></DropdownMenuPortal>
                                     </DropdownMenuSub>
                                 )}
-                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={() => handleDelete(buyer)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
+                                {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </CardFooter>
@@ -632,3 +632,5 @@ export default function BuyersPage() {
     </>
   );
 }
+
+    

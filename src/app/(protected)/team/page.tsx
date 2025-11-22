@@ -173,22 +173,22 @@ export default function TeamPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         {isOwner ? (
-                                            <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                         ) : (
                                             <>
                                                 {!isPending && (
                                                     <>
-                                                    <DropdownMenuItem onClick={(e) => handleEdit(e, member)}>
+                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(e, member); }}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
+                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
                                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                                     </DropdownMenuItem>
                                                     </>
                                                 )}
-                                                <DropdownMenuItem onClick={(e) => handleDelete(e, member)} className="text-destructive">
+                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(e, member); }} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                                 </DropdownMenuItem>
                                             </>
@@ -230,22 +230,22 @@ export default function TeamPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                  {isOwner ? (
-                                    <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
+                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                     </DropdownMenuItem>
                                 ) : (
                                     <>
                                         {!isPending && (
                                             <>
-                                            <DropdownMenuItem onClick={(e) => handleEdit(e, member)}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(e, member); }}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Role
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                             </>
                                         )}
-                                        <DropdownMenuItem onClick={(e) => handleDelete(e, member)} className="text-destructive">
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(e, member); }} className="text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                         </DropdownMenuItem>
                                     </>
@@ -335,3 +335,5 @@ export default function TeamPage() {
         </>
     );
 }
+
+    
