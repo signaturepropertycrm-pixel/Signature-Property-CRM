@@ -54,14 +54,12 @@ export default function TeamPage() {
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
 
 
-    const handleEdit = (e: React.MouseEvent, member: TeamMember) => {
-        e.stopPropagation();
+    const handleEdit = (member: TeamMember) => {
         setMemberToEdit(member);
         setIsAddMemberOpen(true);
     };
 
-    const handleDelete = async (e: React.MouseEvent, member: TeamMember) => {
-        e.stopPropagation();
+    const handleDelete = async (member: TeamMember) => {
         if (!profile.agency_id || !member.id) return;
         
         const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
@@ -80,8 +78,7 @@ export default function TeamPage() {
         setIsDetailsOpen(true);
     };
 
-    const handleChangePicture = (e: React.MouseEvent, member: TeamMember) => {
-        e.stopPropagation();
+    const handleChangePicture = (member: TeamMember) => {
         setMemberToUpdateAvatar(member);
         setIsAvatarDialogOpen(true);
     };
@@ -173,22 +170,22 @@ export default function TeamPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         {isOwner ? (
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                         ) : (
                                             <>
                                                 {!isPending && (
                                                     <>
-                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(e, member); }}>
+                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
+                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
                                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                                     </DropdownMenuItem>
                                                     </>
                                                 )}
-                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(e, member); }} className="text-destructive">
+                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                                 </DropdownMenuItem>
                                             </>
@@ -230,22 +227,22 @@ export default function TeamPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                  {isOwner ? (
-                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
+                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                     </DropdownMenuItem>
                                 ) : (
                                     <>
                                         {!isPending && (
                                             <>
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(e, member); }}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Role
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(e, member); }}>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                             </>
                                         )}
-                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(e, member); }} className="text-destructive">
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                         </DropdownMenuItem>
                                     </>
