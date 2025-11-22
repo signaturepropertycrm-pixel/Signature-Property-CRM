@@ -373,7 +373,7 @@ export default function PropertiesPage() {
                   {prop.status}
                 </Badge>
               </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()} className="text-right">
+              <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
