@@ -52,12 +52,14 @@ export default function TeamPage() {
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
 
 
-    const handleEdit = (member: TeamMember) => {
+    const handleEdit = (e: React.MouseEvent, member: TeamMember) => {
+        e.stopPropagation();
         setMemberToEdit(member);
         setIsAddMemberOpen(true);
     };
 
-    const handleDelete = async (member: TeamMember) => {
+    const handleDelete = async (e: React.MouseEvent, member: TeamMember) => {
+        e.stopPropagation();
         if (!profile.agency_id || !member.id) return;
         
         const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', member.id);
@@ -76,7 +78,8 @@ export default function TeamPage() {
         setIsDetailsOpen(true);
     };
 
-    const handleChangePicture = (member: TeamMember) => {
+    const handleChangePicture = (e: React.MouseEvent, member: TeamMember) => {
+        e.stopPropagation();
         setMemberToUpdateAvatar(member);
         setIsAvatarDialogOpen(true);
     };
@@ -134,8 +137,6 @@ export default function TeamPage() {
                     <TableHead>Member</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Assigned Buyers</TableHead>
-                    <TableHead>Properties Sold</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -161,33 +162,31 @@ export default function TeamPage() {
                             <TableCell>
                                 <Badge variant={isPending ? 'secondary' : 'default'} className={cn(!isPending && 'bg-green-600/80')}>{member.status || 'Active'}</Badge>
                             </TableCell>
-                            <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.assignedBuyers}</TableCell>
-                            <TableCell className="text-center font-bold">{isPending ? 'N/A' : stats.soldProperties}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         {isOwner ? (
-                                            <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                            <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                         ) : (
                                             <>
                                                 {!isPending && (
                                                     <>
-                                                    <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                                    <DropdownMenuItem onClick={(e) => handleEdit(e, member)}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                                    <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
                                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                                     </DropdownMenuItem>
                                                     </>
                                                 )}
-                                                <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                                <DropdownMenuItem onClick={(e) => handleDelete(e, member)} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                                 </DropdownMenuItem>
                                             </>
@@ -229,22 +228,22 @@ export default function TeamPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                  {isOwner ? (
-                                    <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                    <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
                                         <Camera className="mr-2 h-4 w-4" /> Change Picture
                                     </DropdownMenuItem>
                                 ) : (
                                     <>
                                         {!isPending && (
                                             <>
-                                            <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                            <DropdownMenuItem onClick={(e) => handleEdit(e, member)}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Role
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleChangePicture(member)}>
+                                            <DropdownMenuItem onClick={(e) => handleChangePicture(e, member)}>
                                                 <Camera className="mr-2 h-4 w-4" /> Change Picture
                                             </DropdownMenuItem>
                                             </>
                                         )}
-                                        <DropdownMenuItem onClick={() => handleDelete(member)} className="text-destructive">
+                                        <DropdownMenuItem onClick={(e) => handleDelete(e, member)} className="text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
                                         </DropdownMenuItem>
                                     </>
@@ -256,21 +255,14 @@ export default function TeamPage() {
                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                         <CardDescription>{member.email}</CardDescription>
                     </CardContent>
-                    <CardFooter className="border-t p-0">
+                    <CardFooter className="border-t p-2">
                         {isPending ? (
                             <div className='text-xs text-center w-full text-muted-foreground py-2'>
                                 {`Invited on ${member.invitedAt?.toDate().toLocaleDateString()}`}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 divide-x w-full">
-                                <div className="flex flex-col items-center justify-center p-2">
-                                    <span className="text-xs text-muted-foreground">Buyers</span>
-                                    <span className="font-bold">{stats.assignedBuyers}</span>
-                                </div>
-                                <div className="flex flex-col items-center justify-center p-2">
-                                    <span className="text-xs text-muted-foreground">Sold</span>
-                                    <span className="font-bold">{stats.soldProperties}</span>
-                                </div>
+                            <div className="text-center w-full">
+                               <Badge variant={isPending ? 'secondary' : 'default'} className={cn(!isPending && 'bg-green-600/80')}>{member.status || 'Active'}</Badge>
                             </div>
                         )}
                     </CardFooter>
