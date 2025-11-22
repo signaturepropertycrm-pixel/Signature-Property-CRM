@@ -84,7 +84,7 @@ function LoginPageContent() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
-            <Home className="h-8 w-8 text-primary" />
+            
             <h1 className="text-3xl font-extrabold text-foreground font-headline tracking-tight">
               Signature Property CRM
             </h1>

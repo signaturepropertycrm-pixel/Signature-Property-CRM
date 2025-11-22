@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -74,7 +73,6 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
-
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
 }
@@ -92,12 +90,12 @@ interface Filters {
 
 type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded' | 'For Rent';
 
-const propertyStatusLinks: {label: string, status: FilterTab}[] = [
-    { label: 'All Properties', status: 'All' },
-    { label: 'Available', status: 'Available' },
-    { label: 'For Rent', status: 'For Rent' },
-    { label: 'Sold', status: 'Sold' },
-    { label: 'Recorded', status: 'Recorded' },
+const propertyStatusLinks: { label: string; status: FilterTab }[] = [
+  { label: 'All Properties', status: 'All' },
+  { label: 'Available', status: 'Available' },
+  { label: 'For Rent', status: 'For Rent' },
+  { label: 'Sold', status: 'Sold' },
+  { label: 'Recorded', status: 'Recorded' },
 ];
 
 export default function PropertiesPage() {
@@ -114,10 +112,15 @@ export default function PropertiesPage() {
   const { currency } = useCurrency();
   const firestore = useFirestore();
 
-  // Data sources
-  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
-  
+  const agencyPropertiesQuery = useMemoFirebase(
+    () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
+    [profile.agency_id, firestore]
+  );
+  const agentPropertiesQuery = useMemoFirebase(
+    () => (profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null),
+    [profile.user_id, firestore]
+  );
+
   const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
 
@@ -127,7 +130,12 @@ export default function PropertiesPage() {
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
-  const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
+  const [appointmentDetails, setAppointmentDetails] = useState<{
+    contactType: AppointmentContactType;
+    contactName: string;
+    contactSerialNo?: string;
+    message: string;
+  } | null>(null);
   const [propertyToEdit, setPropertyToEdit] = useState<Property | null>(null);
   const [filters, setFilters] = useState<Filters>({
     area: '',
@@ -137,21 +145,18 @@ export default function PropertiesPage() {
     sizeUnit: 'All',
     minDemand: '',
     maxDemand: '',
-    demandUnit: 'All'
+    demandUnit: 'All',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
 
   const allProperties = useMemo(() => {
-      const combined = [...(agencyProperties || []), ...(agentProperties || [])];
-      // Simple deduplication based on ID
-      const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
-      return unique;
+    const combined = [...(agencyProperties || []), ...(agentProperties || [])];
+    return Array.from(new Map(combined.map((p) => [p.id, p])).values());
   }, [agencyProperties, agentProperties]);
-
 
   useEffect(() => {
     if (!isAddPropertyOpen) {
-        setPropertyToEdit(null);
+      setPropertyToEdit(null);
     }
   }, [isAddPropertyOpen]);
 
@@ -160,11 +165,7 @@ export default function PropertiesPage() {
     return formatCurrency(valueInPkr, currency);
   };
 
-
-  const handleFilterChange = (
-    key: keyof Filters,
-    value: string | PropertyType | SizeUnit | PriceUnit
-  ) => {
+  const handleFilterChange = (key: keyof Filters, value: string | PropertyType | SizeUnit | PriceUnit) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -177,46 +178,46 @@ export default function PropertiesPage() {
       sizeUnit: 'All',
       minDemand: '',
       maxDemand: '',
-      demandUnit: 'All'
+      demandUnit: 'All',
     });
     setIsFilterPopoverOpen(false);
   };
-  
- const getFilteredProperties = (properties: Property[] | null) => {
+
+  const getFilteredProperties = (properties: Property[] | null) => {
     if (!properties) return [];
-    let filtered = properties.filter(p => !p.is_deleted);
+    let filtered = properties.filter((p) => !p.is_deleted);
 
     if (activeTab && (activeTab === 'Available' || activeTab === 'Sold')) {
-        filtered = filtered.filter(p => p.status === activeTab);
+      filtered = filtered.filter((p) => p.status === activeTab);
     } else if (activeTab === 'Recorded') {
-        filtered = filtered.filter(p => p.is_recorded);
+      filtered = filtered.filter((p) => p.is_recorded);
     } else if (activeTab === 'For Rent') {
-        filtered = filtered.filter(p => p.potential_rent_amount && p.potential_rent_amount > 0);
+      filtered = filtered.filter((p) => p.potential_rent_amount && p.potential_rent_amount > 0);
     }
-    
+
     if (searchQuery) {
-        const lowercasedQuery = searchQuery.toLowerCase();
-        filtered = filtered.filter(prop => 
-            prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
-            prop.address.toLowerCase().includes(lowercasedQuery) ||
-            prop.area.toLowerCase().includes(lowercasedQuery) ||
-            prop.serial_no.toLowerCase().includes(lowercasedQuery)
-        );
+      const lowercasedQuery = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (prop) =>
+          prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
+          prop.address.toLowerCase().includes(lowercasedQuery) ||
+          prop.area.toLowerCase().includes(lowercasedQuery) ||
+          prop.serial_no.toLowerCase().includes(lowercasedQuery)
+      );
     }
-    
-    if (filters.area) filtered = filtered.filter(p => p.area.toLowerCase().includes(filters.area.toLowerCase()));
-    if (filters.propertyType !== 'All') filtered = filtered.filter(p => p.property_type === filters.propertyType);
-    if (filters.minSize) filtered = filtered.filter(p => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    if (filters.maxSize) filtered = filtered.filter(p => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    if (filters.minDemand) filtered = filtered.filter(p => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
-    if (filters.maxDemand) filtered = filtered.filter(p => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
+
+    if (filters.area) filtered = filtered.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
+    if (filters.propertyType !== 'All') filtered = filtered.filter((p) => p.property_type === filters.propertyType);
+    if (filters.minSize) filtered = filtered.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.maxSize) filtered = filtered.filter((p) => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.minDemand) filtered = filtered.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
+    if (filters.maxDemand) filtered = filtered.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
     return filtered;
   };
 
   const filteredAgentProperties = useMemo(() => getFilteredProperties(agentProperties), [searchQuery, filters, activeTab, agentProperties]);
   const filteredAgencyProperties = useMemo(() => getFilteredProperties(agencyProperties), [searchQuery, filters, activeTab, agencyProperties]);
-
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -232,7 +233,7 @@ export default function PropertiesPage() {
     setSelectedProperty(prop);
     setIsRecordVideoOpen(true);
   };
-  
+
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true);
@@ -247,85 +248,79 @@ export default function PropertiesPage() {
     });
     setIsAppointmentOpen(true);
   };
-  
+
   const handleSaveAppointment = async (appointment: Appointment) => {
-      if (!profile.agency_id) return;
-      const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
-      await addDoc(collectionRef, appointment);
+    if (!profile.agency_id) return;
+    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
+    await addDoc(collectionRef, appointment);
   };
 
   const handleUnmarkRecorded = async (prop: Property) => {
-      const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
-      const collectionId = prop.created_by === profile.user_id ? profile.user_id : profile.agency_id;
-      if (!collectionId) return;
+    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = prop.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
 
-      const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-      await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-      const collectionName = updatedProperty.created_by === profile.user_id ? 'agents' : 'agencies';
-      const collectionId = updatedProperty.created_by === profile.user_id ? profile.user_id : profile.agency_id;
-       if (!collectionId) return;
-      
-      const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
-      await setDoc(docRef, updatedProperty, { merge: true });
+    const collectionName = updatedProperty.created_by === profile.user_id ? 'agents' : 'agencies';
+    const collectionId = updatedProperty.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    if (!collectionId) return;
+
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
+    await setDoc(docRef, updatedProperty, { merge: true });
   };
-  
+
   const handleDelete = async (property: Property) => {
     const collectionName = property.created_by === profile.user_id ? 'agents' : 'agencies';
     const collectionId = property.created_by === profile.user_id ? profile.user_id : profile.agency_id;
     if (!collectionId) return;
-    
+
     const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
     await setDoc(docRef, { is_deleted: true }, { merge: true });
     toast({
-        title: "Property Moved to Trash",
-        description: "You can restore it from the trash page.",
+      title: 'Property Moved to Trash',
+      description: 'You can restore it from the trash page.',
     });
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
     if (propertyToEdit && propertyData.id) {
-        // This is an UPDATE
-        const originalCreator = propertyToEdit.created_by;
-        const isAgentProperty = allProperties.some(p => p.id === propertyToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
-        
-        const collectionName = isAgentProperty ? 'agents' : 'agencies';
-        const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
+      const isAgentProperty = allProperties.some((p) => p.id === propertyToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
+      const collectionName = isAgentProperty ? 'agents' : 'agencies';
+      const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
 
-        if (!collectionId) return;
-        const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
-        await setDoc(docRef, propertyData, { merge: true });
-        toast({ title: 'Property Updated' });
+      if (!collectionId) return;
+      const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
+      await setDoc(docRef, propertyData, { merge: true });
+      toast({ title: 'Property Updated' });
     } else {
-        // This is a NEW property
-        const isAgentAdding = profile.role === 'Agent';
-        const collectionName = isAgentAdding ? 'agents' : 'agencies';
-        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-        
-        if (!collectionId) return;
+      const isAgentAdding = profile.role === 'Agent';
+      const collectionName = isAgentAdding ? 'agents' : 'agencies';
+      const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
 
-        const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
-        const { id, ...restOfData } = propertyData;
-        await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
-        toast({ title: 'Property Added' });
+      if (!collectionId) return;
+      const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
+      const { id, ...restOfData } = propertyData;
+      await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
+      toast({ title: 'Property Added' });
     }
     setPropertyToEdit(null);
   };
-
 
   const handleTabChange = (value: string) => {
     const status = value as FilterTab;
     const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
     router.push(url);
   };
-  
+
   const renderTable = (properties: Property[], isAgentData: boolean) => {
     if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
-     <Table>
+      <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[350px]">Property</TableHead>
@@ -333,19 +328,15 @@ export default function PropertiesPage() {
             <TableHead>Size</TableHead>
             <TableHead>Demand</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="text-right">
-              Actions
-            </TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={() => handleRowClick(prop)}>
+            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors">
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold font-headline text-base">
-                    {prop.auto_title}
-                  </span>
+                  <span className="font-bold font-headline text-base">{prop.auto_title}</span>
                   {prop.is_recorded && (
                     <Tooltip>
                       <TooltipTrigger>
@@ -363,23 +354,17 @@ export default function PropertiesPage() {
                 </div>
               </TableCell>
               <TableCell>{prop.property_type}</TableCell>
+              <TableCell>{formatSize(prop.size_value, prop.size_unit)}</TableCell>
+              <TableCell>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
               <TableCell>
-                {formatSize(prop.size_value, prop.size_unit)}
-              </TableCell>
-              <TableCell>
-                {formatDemand(prop.demand_amount, prop.demand_unit)}
-              </TableCell>
-              <TableCell>
-                <Badge 
-                  className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}
-                >
+                <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
                   {prop.status}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
+                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
                       <MoreHorizontal className="h-4 w-4" />
                       <span className="sr-only">Toggle menu</span>
                     </Button>
@@ -388,20 +373,20 @@ export default function PropertiesPage() {
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                     {(isAgentData || profile.role !== 'Agent') && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
-                        prop.is_recorded ? (
-                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
-                        ) : (
-                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
-                        )
+                      prop.is_recorded ? (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
+                      )
                     )}
                     {(isAgentData || profile.role !== 'Agent') && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -410,168 +395,257 @@ export default function PropertiesPage() {
           ))}
         </TableBody>
       </Table>
-  )};
-
-  const renderCards = (properties: Property[], isAgentData: boolean) => {
-    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
-    return (
-    <div className="space-y-4">
-        {properties.map((prop) => (
-            <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
-                <CardHeader>
-                    <CardTitle className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                             <span className="font-bold font-headline text-base">
-                                {prop.auto_title}
-                            </span>
-                            {prop.is_recorded && (
-                                <Tooltip>
-                                    <TooltipTrigger>
-                                        <Video className="h-4 w-4 text-primary" />
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                    <p>Video is recorded</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            )}
-                        </div>
-                        <Badge 
-                           className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}
-                        >
-                            {prop.status}
-                        </Badge>
-                    </CardTitle>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
-                        <span className="truncate">{prop.address}</span>
-                    </div>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Type</p><p className="font-medium">{prop.property_type}</p></div></div>
-                    <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p></div></div>
-                    <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
-                </CardContent>
-                 <CardFooter className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="glass-card">
-                          <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                           {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>)}
-                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>)}
-                          {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (prop.is_recorded ? (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>) : (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>))}
-                          {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                </CardFooter>
-            </Card>
-        ))}
-    </div>
-  )};
-
- const renderContent = (properties: Property[], isAgentData: boolean) => {
-    return (
-        isMobile 
-            ? renderCards(properties, isAgentData) 
-            : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>
     );
   };
 
+  const renderCards = (properties: Property[], isAgentData: boolean) => {
+    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
+    return (
+      <div className="space-y-4">
+        {properties.map((prop) => (
+          <Card key={prop.id}>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-start">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold font-headline text-base">{prop.auto_title}</span>
+                  {prop.is_recorded && (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Video className="h-4 w-4 text-primary" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Video is recorded</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+                <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
+                  {prop.status}
+                </Badge>
+              </CardTitle>
+              <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                <span className="truncate">{prop.address}</span>
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <div className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Type</p><p className="font-medium">{prop.property_type}</p></div></div>
+              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p></div></div>
+              <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
+            </CardContent>
+            <CardFooter className="flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="glass-card">
+                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                  {(isAgentData || profile.role !== 'Agent') && (
+                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                  )}
+                  {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
+                  )}
+                  {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                    prop.is_recorded ? (
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
+                    )
+                  )}
+                  {(isAgentData || profile.role !== 'Agent') && (
+                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
+  const renderContent = (properties: Property[], isAgentData: boolean) => {
+    return isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>;
+  };
 
   return (
     <>
       <TooltipProvider>
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className='hidden md:block'>
+            <div className="hidden md:block">
               <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
               <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
             </div>
             {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}><PopoverTrigger asChild><Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button></PopoverTrigger><PopoverContent className="w-80">
-                    <div className="grid gap-4"><div className="space-y-2"><h4 className="font-medium leading-none">Filters</h4><p className="text-sm text-muted-foreground">Refine your property search.</p></div>
-                        <div className="grid gap-2">
-                        <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="area">Area</Label><Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" /></div>
-                        <div className="grid grid-cols-3 items-center gap-4"><Label htmlFor="propertyType">Type</Label><Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}><SelectTrigger className="col-span-2 h-8"><SelectValue placeholder="Property Type" /></SelectTrigger><SelectContent><SelectItem value="All">All</SelectItem><SelectItem value="House">House</SelectItem><SelectItem value="Plot">Plot</SelectItem><SelectItem value="Flat">Flat</SelectItem><SelectItem value="Shop">Shop</SelectItem><SelectItem value="Commercial">Commercial</SelectItem><SelectItem value="Agricultural">Agricultural</SelectItem><SelectItem value="Other">Other</SelectItem></SelectContent></Select></div>
-                        <div className="grid grid-cols-3 items-center gap-4"><Label>Size</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" /><Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" /></div></div>
-                        <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Marla">Marla</SelectItem><SelectItem value="SqFt">SqFt</SelectItem><SelectItem value="Kanal">Kanal</SelectItem><SelectItem value="Acre">Acre</SelectItem><SelectItem value="Maraba">Maraba</SelectItem></SelectContent></Select></div></div>
-                        <div className="grid grid-cols-3 items-center gap-4"><Label>Demand</Label><div className="col-span-2 grid grid-cols-2 gap-2"><Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={e => handleFilterChange('minDemand', e.target.value)} className="h-8" /><Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={e => handleFilterChange('maxDemand', e.target.value)} className="h-8" /></div></div>
-                        <div className="grid grid-cols-3 items-center gap-4"><Label></Label><div className="col-span-2"><Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}><SelectTrigger className="h-8"><SelectValue placeholder="Unit" /></SelectTrigger><SelectContent><SelectItem value="All">All Units</SelectItem><SelectItem value="Lacs">Lacs</SelectItem><SelectItem value="Crore">Crore</SelectItem></SelectContent></Select></div></div>
+              <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
+                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Filters</h4>
+                        <p className="text-sm text-muted-foreground">Refine your property search.</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="area">Area</Label>
+                          <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
                         </div>
-                        <div className="flex justify-end gap-2"><Button variant="ghost" onClick={clearFilters}>Clear</Button><Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button></div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label htmlFor="propertyType">Type</Label>
+                          <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                            <SelectTrigger className="col-span-2 h-8">
+                              <SelectValue placeholder="Property Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="All">All</SelectItem>
+                              <SelectItem value="House">House</SelectItem>
+                              <SelectItem value="Plot">Plot</SelectItem>
+                              <SelectItem value="Flat">Flat</SelectItem>
+                              <SelectItem value="Shop">Shop</SelectItem>
+                              <SelectItem value="Commercial">Commercial</SelectItem>
+                              <SelectItem value="Agricultural">Agricultural</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label>Size</Label>
+                          <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={(e) => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                            <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={(e) => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label></Label>
+                          <div className="col-span-2">
+                            <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="All">All Units</SelectItem>
+                                <SelectItem value="Marla">Marla</SelectItem>
+                                <SelectItem value="SqFt">SqFt</SelectItem>
+                                <SelectItem value="Kanal">Kanal</SelectItem>
+                                <SelectItem value="Acre">Acre</SelectItem>
+                                <SelectItem value="Maraba">Maraba</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label>Demand</Label>
+                          <div className="col-span-2 grid grid-cols-2 gap-2">
+                            <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={(e) => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                            <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={(e) => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 items-center gap-4">
+                          <Label></Label>
+                          <div className="col-span-2">
+                            <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Unit" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="All">All Units</SelectItem>
+                                <SelectItem value="Lacs">Lacs</SelectItem>
+                                <SelectItem value="Crore">Crore</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                          <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                        </div>
                     </div>
-                    </PopoverContent>
+                  </PopoverContent>
                 </Popover>
                 <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
                 <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
-                </div>
+              </div>
             )}
           </div>
-          
-           {isMobile && (
-              <div className="w-full">
-                <Select value={activeTab} onValueChange={handleTabChange}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
-                  <SelectContent>{propertyStatusLinks.map(({label, status}) => (<SelectItem key={status} value={status}>{label}</SelectItem>))}</SelectContent>
-                </Select>
-              </div>
+
+          {isMobile && (
+            <div className="w-full">
+              <Select value={activeTab} onValueChange={handleTabChange}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
+                <SelectContent>
+                  {propertyStatusLinks.map(({ label, status }) => (
+                    <SelectItem key={status} value={status}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
           {profile.role === 'Agent' ? (
-              <Tabs defaultValue="agency-properties" className="w-full mt-6">
-                  <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="agency-properties">
-                          <Home className="mr-2 h-4 w-4" /> Agency Properties
-                      </TabsTrigger>
-                      <TabsTrigger value="my-properties">
-                          <Briefcase className="mr-2 h-4 w-4" /> My Properties
-                      </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="agency-properties" className="mt-4">
-                      {renderContent(filteredAgencyProperties, false)}
-                  </TabsContent>
-                  <TabsContent value="my-properties" className="mt-4">
-                      {renderContent(filteredAgentProperties, true)}
-                  </TabsContent>
-              </Tabs>
+            <Tabs defaultValue="agency-properties" className="w-full mt-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="agency-properties">
+                  <Home className="mr-2 h-4 w-4" /> Agency Properties
+                </TabsTrigger>
+                <TabsTrigger value="my-properties">
+                  <Briefcase className="mr-2 h-4 w-4" /> My Properties
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="agency-properties" className="mt-4">
+                {renderContent(filteredAgencyProperties, false)}
+              </TabsContent>
+              <TabsContent value="my-properties" className="mt-4">
+                {renderContent(filteredAgentProperties, true)}
+              </TabsContent>
+            </Tabs>
           ) : (
-              <div className="mt-6">
-                  {renderContent(filteredAgencyProperties, false)}
-              </div>
+            <div className="mt-6">
+              {renderContent(filteredAgencyProperties, false)}
+            </div>
           )}
-
         </div>
       </TooltipProvider>
 
-      <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-        <Button onClick={() => setIsAddPropertyOpen(true) } className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-            <PlusCircle className="h-6 w-6" />
-            <span className="sr-only">Add Property</span>
+      <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
+        <Button onClick={() => setIsAddPropertyOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+          <PlusCircle className="h-6 w-6" />
+          <span className="sr-only">Add Property</span>
         </Button>
       </div>
 
-      <AddPropertyDialog 
-          isOpen={isAddPropertyOpen}
-          setIsOpen={setIsAddPropertyOpen}
-          propertyToEdit={propertyToEdit}
-          totalProperties={allProperties.length}
-          onSave={handleSaveProperty}
+      <AddPropertyDialog
+        isOpen={isAddPropertyOpen}
+        setIsOpen={setIsAddPropertyOpen}
+        propertyToEdit={propertyToEdit}
+        totalProperties={allProperties.length}
+        onSave={handleSaveProperty}
       />
 
-      {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails}/>)}
-      
+      {appointmentDetails && (
+        <SetAppointmentDialog
+          isOpen={isAppointmentOpen}
+          setIsOpen={setIsAppointmentOpen}
+          onSave={handleSaveAppointment}
+          appointmentDetails={appointmentDetails}
+        />
+      )}
+
       {selectedProperty && (
         <>
-          <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen}/>
-          <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty}/>
-          <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty}/>
+          <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
+          <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
+          <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
         </>
       )}
     </>
