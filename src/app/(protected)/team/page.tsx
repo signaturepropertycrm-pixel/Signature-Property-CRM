@@ -124,17 +124,11 @@ export default function TeamPage() {
                     const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
                     
                     return (
-                        <TableRow key={member.id || member.email} className={cn(isPending && 'opacity-70 bg-muted/50')}>
+                        <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className={cn('cursor-pointer', isPending && 'opacity-70 bg-muted/50')}>
                             <TableCell className="font-medium">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10 border-2 border-primary/20">
-                                        <AvatarImage src={member.avatar} />
-                                        <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="font-bold">{member.name || 'Invitation Sent'}</p>
-                                        <p className="text-xs text-muted-foreground">{member.email}</p>
-                                    </div>
+                                <div>
+                                    <p className="font-bold">{member.name || 'Invitation Sent'}</p>
+                                    <p className="text-xs text-muted-foreground">{member.email}</p>
                                 </div>
                             </TableCell>
                             <TableCell><Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge></TableCell>
@@ -211,10 +205,6 @@ export default function TeamPage() {
                         )}
                     </CardHeader>
                     <CardContent className="text-center flex-1 flex flex-col items-center justify-center">
-                        <Avatar className="h-20 w-20 mb-4 border-4 border-primary/20">
-                            <AvatarImage src={member.avatar} />
-                            <AvatarFallback>{(member.name || member.email!).substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
                         <CardTitle className="text-lg font-headline">{member.name || 'Invitation Sent'}</CardTitle>
                         <CardDescription>{member.email}</CardDescription>
                     </CardContent>
