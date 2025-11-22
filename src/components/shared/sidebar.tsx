@@ -117,7 +117,6 @@ export function AppSidebar() {
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/dashboard', '/properties', '/buyers', '/team', '/support', '/settings'].includes(item.href) &&
       item.roles.includes(profile.role) &&
-      // Include collapsible items if they are the main link, but not their children
       (!item.collapsible || item.href === '/appointments')
   );
 
@@ -203,7 +202,7 @@ export function AppSidebar() {
   if (isMobile) {
     return (
       <TooltipProvider>
-      <div className={cn("fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300")}>
+      <div className={cn("fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300", openMobile && "-translate-y-full")}>
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -229,7 +228,7 @@ export function AppSidebar() {
                                             className="flex items-center gap-3"
                                             style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
                                         >
-                                            <span className="font-semibold text-white shadow-lg">{finalLabel}</span>
+                                            <span className="font-semibold text-foreground dark:text-white shadow-lg">{finalLabel}</span>
                                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
                                                 {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
                                             </div>
