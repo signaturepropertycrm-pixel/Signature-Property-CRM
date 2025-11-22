@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2 } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2, Menu } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
@@ -44,6 +44,7 @@ export function AppHeader({
   const { profile } = useProfile();
   const auth = useAuth();
   const { user } = useUser();
+  const { toggleSidebar } = useSidebar();
   const { invitations, isLoading: areInvitesLoading } = useInvitations(user?.email);
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
   const [actionedInvitations, setActionedInvitations] = useState<Record<string, 'accepted' | 'rejected'>>({});
@@ -117,7 +118,10 @@ export function AppHeader({
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
-      <SidebarTrigger className="md:hidden" />
+      <Button onClick={toggleSidebar} variant="ghost" size="icon" className="h-7 w-7 md:hidden">
+        <Menu />
+        <span className="sr-only">Toggle Sidebar</span>
+      </Button>
       
       <div className="flex-1 hidden md:block">
         <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>

@@ -12,6 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  useSidebar
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -83,6 +84,7 @@ export function AppSidebar() {
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
+  const { openMobile } = useSidebar();
   
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
@@ -109,7 +111,10 @@ export function AppSidebar() {
 
   if (isMobile) {
     return (
-      <div className="fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+      <div className={cn(
+        "fixed bottom-0 left-0 z-40 w-full h-20 border-t bg-card/80 backdrop-blur-md transition-transform duration-300",
+        openMobile ? "translate-y-full" : "translate-y-0"
+      )}>
         <div className="grid h-full grid-cols-5">
           {mobileNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
