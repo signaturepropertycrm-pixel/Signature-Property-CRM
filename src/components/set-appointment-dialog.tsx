@@ -21,12 +21,17 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Appointment, AppointmentContactType, User } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Textarea } from './ui/textarea';
+import { useProfile } from '@/context/profile-context';
+import { useFirestore } from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
 
 interface SetAppointmentDialogProps {
   isOpen: boolean;
@@ -62,16 +67,17 @@ export function SetAppointmentDialog({
   appointmentToEdit,
 }: SetAppointmentDialogProps) {
   const { toast } = useToast();
-  const [teamMembers, setTeamMembers] = useState<User[]>([]);
+  const { profile } = useProfile();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-      const savedTeamMembers = localStorage.getItem('teamMembers');
-      if (savedTeamMembers) {
-          setTeamMembers(JSON.parse(savedTeamMembers));
-      }
-  }, []);
-  
-  const agentNames = teamMembers.filter(m => m.role === 'Agent' || m.role === 'Admin').map(m => m.name);
+  const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
+  const { data: teamMembers } = useCollection<User>(teamMembersQuery);
+
+  const assignableMembers = useMemo(() => {
+    if (!teamMembers) return [];
+    return teamMembers.filter(m => m.status === 'Active' && (m.role === 'Agent' || m.role === 'Admin'));
+  }, [teamMembers]);
+
 
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(formSchema),
@@ -111,12 +117,9 @@ export function SetAppointmentDialog({
         ...data,
         id: appointmentToEdit?.id || new Date().toISOString(), // simple unique id
         status: 'Scheduled',
+        agency_id: profile.agency_id,
     };
     onSave(newAppointment);
-    toast({
-      title: appointmentToEdit ? 'Appointment Rescheduled!' : 'Appointment Set!',
-      description: `Appointment with ${data.contactName} has been ${appointmentToEdit ? 'updated' : 'scheduled'}.`,
-    });
     setIsOpen(false);
   };
   
@@ -160,7 +163,7 @@ export function SetAppointmentDialog({
                             <FormItem>
                                 <FormLabel>Contact Serial No.</FormLabel>
                                 <FormControl>
-                                    <Input {...field} placeholder="e.g. B-1 or P-1" />
+                                    <Input {...field} value={field.value ?? ''} placeholder="e.g. B-1 or P-1" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -174,7 +177,7 @@ export function SetAppointmentDialog({
                         <FormItem>
                             <FormLabel>Name</FormLabel>
                             <FormControl>
-                                <Input {...field} placeholder="e.g. Ahmed Hassan" />
+                                <Input {...field} value={field.value ?? ''} placeholder="e.g. Ahmed Hassan" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -193,8 +196,8 @@ export function SetAppointmentDialog({
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {agentNames.map(name => (
-                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                    {assignableMembers.map(member => (
+                                        <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -209,7 +212,7 @@ export function SetAppointmentDialog({
                         <FormItem>
                             <FormLabel>Message / Purpose</FormLabel>
                             <FormControl>
-                                <Textarea {...field} placeholder="e.g. Meeting at property location..." />
+                                <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Meeting at property location..." />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -223,7 +226,7 @@ export function SetAppointmentDialog({
                             <FormItem>
                                 <FormLabel>Date</FormLabel>
                                 <FormControl>
-                                    <Input {...field} type="date" />
+                                    <Input {...field} value={field.value ?? ''} type="date" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -236,7 +239,7 @@ export function SetAppointmentDialog({
                             <FormItem>
                                 <FormLabel>Time</FormLabel>
                                 <FormControl>
-                                    <Input {...field} type="time" />
+                                    <Input {...field} value={field.value ?? ''} type="time" />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -245,23 +248,20 @@ export function SetAppointmentDialog({
                 </div>
                  <DialogFooter className="pt-4">
                  <Button
-  type="button"
-  variant="ghost"
-  onClick={(e) => {
-    e.stopPropagation();   // <-- ADD this line
-    setIsOpen(false);
-  }}
->
-  Cancel
-</Button>
-<Button
-  type="submit"
-  onClick={(e) => {
-    e.stopPropagation();   // <-- ADD this line
-  }}
->
-  Save Appointment
-</Button>
+                    type="button"
+                    variant="ghost"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsOpen(false);
+                    }}
+                    >
+                    Cancel
+                    </Button>
+                    <Button
+                    type="submit"
+                    >
+                    Save Appointment
+                    </Button>
                 </DialogFooter>
             </form>
         </Form>
