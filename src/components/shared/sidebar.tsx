@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -50,37 +51,37 @@ import { useProfile } from '@/context/profile-context';
 import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'], collapsible: true, links: [
+  { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
+  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Properties', status: 'All', href: '/properties' },
       { label: 'Available', status: 'Available', href: '/properties?status=Available' },
       { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
       { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
       { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
   ]},
-  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'], collapsible: true, links: [
+  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Buyers', status: 'All', href: '/buyers' },
       ...buyerStatuses.map(s => ({label: s, status: s, href: `/buyers?status=${encodeURIComponent(s)}`}))
   ]},
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin', 'Editor'], collapsible: true, links: [
+  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin'], collapsible: true, links: [
       { label: 'List Generator', href: '/tools/list-generator'},
       { label: 'Post Generator', href: '/tools/post-generator', isNew: true },
   ]},
-  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Editor', 'Agent'], collapsible: true, links: [
+  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Appointments', type: 'All', href: '/appointments' },
       { label: 'Buyer', type: 'Buyer', href: '/appointments?type=Buyer' },
       { label: 'Owner', type: 'Owner', href: '/appointments?type=Owner' },
   ]},
-  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Editor', 'Agent'] },
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
+  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
 
 
 const bottomMenuItems = [
-  { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Editor', 'Agent'] },
-  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Editor', 'Agent'] },
+  { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
   { href: '/upgrade', label: 'Upgrade', icon: <Rocket />, roles: ['Admin'] },
 ];
 
@@ -106,11 +107,11 @@ export function AppSidebar() {
   }
 
   const mobileNavItems = [
-     { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'] },
-     { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'] },
-     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'], isCenter: true },
-     { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Editor', 'Agent'] },
-     { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Editor', 'Agent'], isSheet: true },
+     { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+     { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
+     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'], isCenter: true },
+     { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
+     { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent'], isSheet: true },
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 

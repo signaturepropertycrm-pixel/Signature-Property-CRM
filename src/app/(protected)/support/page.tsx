@@ -18,7 +18,7 @@ const faqs = [
   {
     question: 'How do I manage team members?',
     answer:
-      "As an Admin, you can add, edit, or delete team members from the 'Team' page. You can also assign different roles (Admin, Editor, Agent) to control their access levels.",
+      "As an Admin, you can add, edit, or delete team members from the 'Team' page. You can also assign different roles (Admin, Agent) to control their access levels.",
   },
   {
     question: "How can I upgrade or change my subscription plan?",
@@ -28,12 +28,12 @@ const faqs = [
   {
     question: 'Where can I see all system activities?',
     answer:
-      "The 'Activities' page provides a complete log of all major actions taken within the system, such as adding properties, updating buyer statuses, and more. This page is accessible to Admins and Editors.",
+      "The 'Activities' page provides a complete log of all major actions taken within the system, such as adding properties, updating buyer statuses, and more. This page is accessible to Admins.",
   },
   {
     question: "How do I restore a deleted property or buyer?",
     answer:
-      "Deleted items are moved to the 'Trash' page. From there, you can either restore them to their original state or delete them permanently. Access to the Trash is available for Admins and Editors.",
+      "Deleted items are moved to the 'Trash' page. From there, you can either restore them to their original state or delete them permanently. Access to the Trash is available for Admins and Agents for items they created.",
   },
 ];
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -333,7 +334,7 @@ export default function PropertiesPage() {
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors">
+            <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="hover:bg-accent/50 transition-colors cursor-pointer">
               <TableCell>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base">{prop.auto_title}</span>
@@ -364,7 +365,7 @@ export default function PropertiesPage() {
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full">
+                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
                       <MoreHorizontal className="h-4 w-4" />
                       <span className="sr-only">Toggle menu</span>
                     </Button>
@@ -375,10 +376,10 @@ export default function PropertiesPage() {
                     {(isAgentData || profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
-                    {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                    {(isAgentData || profile.role === 'Admin') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
-                    {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                    {(isAgentData || profile.role === 'Admin') && (
                       prop.is_recorded ? (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                       ) : (
@@ -404,7 +405,7 @@ export default function PropertiesPage() {
     return (
       <div className="space-y-4">
         {properties.map((prop) => (
-          <Card key={prop.id}>
+          <Card key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
             <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
@@ -437,7 +438,7 @@ export default function PropertiesPage() {
             <CardFooter className="flex justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
+                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Toggle menu</span>
                   </Button>
@@ -448,10 +449,10 @@ export default function PropertiesPage() {
                   {(isAgentData || profile.role !== 'Agent') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                   )}
-                  {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                  {(isAgentData || profile.role === 'Admin') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                   )}
-                  {(isAgentData || profile.role === 'Admin' || profile.role === 'Editor') && (
+                  {(isAgentData || profile.role === 'Admin') && (
                     prop.is_recorded ? (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                     ) : (
@@ -483,7 +484,7 @@ export default function PropertiesPage() {
               <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
               <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
             </div>
-            {(profile.role === 'Admin' || profile.role === 'Editor') && (
+            {(profile.role === 'Admin') && (
               <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                 <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                   <PopoverTrigger asChild>

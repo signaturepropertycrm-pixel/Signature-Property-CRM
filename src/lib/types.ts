@@ -1,6 +1,6 @@
 
 
-export type UserRole = 'Admin' | 'Agent' | 'Editor';
+export type UserRole = 'Admin' | 'Agent';
 
 export type User = {
   id: string;

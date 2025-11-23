@@ -26,7 +26,6 @@ import { useUI } from '../layout';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
-    Editor: { icon: <Edit className="h-4 w-4" />, color: 'bg-yellow-500/10 text-yellow-500' },
     Agent: { icon: <User className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' },
     Pending: { icon: <Clock className="h-4 w-4" />, color: 'bg-gray-500/10 text-gray-500' },
 };
@@ -101,13 +100,13 @@ export default function TeamPage() {
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder: Record<string, number> = { Admin: 1, Editor: 2, Agent: 3, Pending: 4 };
+        const roleOrder: Record<string, number> = { Admin: 1, Agent: 2, Pending: 3 };
         return [...teamMembers].sort((a, b) => {
             const statusA = a.status || 'Active';
             const statusB = b.status || 'Active';
             if (statusA === 'Pending' && statusB !== 'Pending') return 1;
             if (statusB === 'Pending' && statusA !== 'Pending') return -1;
-            return (roleOrder[a.role] || 5) - (roleOrder[b.role] || 5);
+            return (roleOrder[a.role] || 4) - (roleOrder[b.role] || 4);
         });
     }, [teamMembers]);
 

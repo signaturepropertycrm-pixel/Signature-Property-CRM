@@ -30,7 +30,7 @@ import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
-const roles: UserRole[] = ['Editor', 'Agent'];
+const roles: UserRole[] = ['Agent'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
