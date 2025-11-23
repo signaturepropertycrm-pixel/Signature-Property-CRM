@@ -106,15 +106,15 @@ export function AppSidebar() {
   }
 
   const mobileNavItems = [
-     { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
      { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Editor', 'Agent'] },
-     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'], isCenter: true },
      { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Editor', 'Agent'] },
+     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Editor', 'Agent'], isCenter: true },
+     { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Editor', 'Agent'] },
      { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Editor', 'Agent'], isSheet: true },
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/team'].includes(item.href) &&
+      !['/dashboard', '/properties', '/buyers', '/follow-ups', '/team'].includes(item.href) &&
       (!item.collapsible || ['/appointments'].includes(item.href)) && // Show collapsible appointments, but not others that are handled differently
       item.roles.includes(profile.role)
   );
