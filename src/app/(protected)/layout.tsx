@@ -52,10 +52,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || isProfileLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground">Loading Your Workspace...</p>
+        <div className="flex h-screen w-full items-center justify-center bg-slate-900">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <h2 className="text-xl font-semibold text-white">Loading Your Workspace</h2>
+                <p className="text-muted-foreground">Please wait a moment...</p>
             </div>
         </div>
     );
@@ -64,10 +65,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!user || !profile.role) {
     // This can happen briefly between login and profile hydration
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-             <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-muted-foreground">Authenticating...</p>
+         <div className="flex h-screen w-full items-center justify-center bg-slate-900">
+            <div className="flex flex-col items-center gap-4 text-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <h2 className="text-xl font-semibold text-white">Authenticating</h2>
+                <p className="text-muted-foreground">Verifying your credentials...</p>
             </div>
         </div>
     );
@@ -121,21 +123,21 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
     <SearchContext.Provider value={{ searchQuery, setSearchQuery }}>
       <UIContext.Provider value={{ isMoreMenuOpen, setIsMoreMenuOpen }}>
         <SidebarProvider>
-          <div className="flex h-screen w-full bg-background">
-          <AppSidebar />
-          <div className="flex flex-col flex-1 overflow-hidden">
-              <AppHeader 
-              searchable={isSearchable}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              />
-              <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24">
-                <AuthGuard>
-                  {children}
-                </AuthGuard>
-              </main>
-          </div>
-          </div>
+          <AuthGuard>
+            <div className="flex h-screen w-full bg-background">
+            <AppSidebar />
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <AppHeader 
+                searchable={isSearchable}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                />
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24">
+                    {children}
+                </main>
+            </div>
+            </div>
+          </AuthGuard>
         </SidebarProvider>
       </UIContext.Provider>
     </SearchContext.Provider>
