@@ -194,6 +194,9 @@ export function AppSidebar() {
     );
   };
 
+  if (isMobile === null) {
+      return null; // Don't render anything until we know the screen size
+  }
 
   if (isMobile) {
     return (
