@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export function AppHeader({ 
   searchable,
@@ -38,6 +39,7 @@ export function AppHeader({
   setSearchQuery?: (query: string) => void;
 }) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const firestore = useFirestore();
   const { toast } = useToast();
   const { setTheme, theme } = useTheme();
@@ -119,12 +121,14 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
       
-      <div className="flex-1 hidden md:block">
-        <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
-        <p className="text-muted-foreground text-sm">Welcome back!</p>
-      </div>
+      {!isMobile && (
+        <div className="flex-1">
+            <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
+            <p className="text-muted-foreground text-sm">Welcome back!</p>
+        </div>
+      )}
 
-      <div className="flex flex-1 md:flex-initial items-center gap-2 justify-end">
+      <div className="flex flex-1 items-center gap-2 justify-end">
         {searchable && (
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -209,7 +213,7 @@ export function AppHeader({
           <DropdownMenuContent align="end" className="glass-card">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {(profile.role === 'Admin' || profile.role === 'Editor' || profile.role === 'Agent') && (
+            {(profile.role === 'Admin' || profile.role === 'Agent') && (
               <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <Settings />
                   Settings
@@ -230,3 +234,5 @@ export function AppHeader({
     </header>
   );
 }
+
+    
