@@ -25,8 +25,7 @@ export const useInvitations = (userEmail: string | null | undefined) => {
         userEmail 
         ? query(
             collectionGroup(firestore, 'teamMembers'), 
-            where('email', '==', userEmail),
-            where('status', '==', 'Pending')
+            where('email', '==', userEmail)
           )
         : null, 
     [firestore, userEmail]);
@@ -41,10 +40,13 @@ export const useInvitations = (userEmail: string | null | undefined) => {
         const unsubscribe = onSnapshot(
             invitationsQuery,
             (snapshot: QuerySnapshot<DocumentData>) => {
-                const fetchedInvitations = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as Invitation[];
+                const fetchedInvitations = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(item => item.status === 'Pending') as Invitation[];
+                
                 setInvitations(fetchedInvitations);
                 setIsLoading(false);
             },
