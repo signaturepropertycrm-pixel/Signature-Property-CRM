@@ -1,0 +1,152 @@
+# Prompt for Building a Real Estate CRM: "SignatureCRM"
+
+## 1. Application Overview
+
+**App Name:** SignatureCRM
+
+**Core Idea:** A comprehensive Customer Relationship Management (CRM) application designed specifically for real estate agencies in Pakistan. It helps agents and admins manage properties, buyers, team members, appointments, and performance, all in one place.
+
+---
+
+## 2. Core Features
+
+### 2.1. User Authentication & Roles
+
+The system must support two distinct user roles with separate login/signup flows:
+
+1.  **Agency Admin:**
+    *   **Signup:** An Admin creates the entire "Agency." Their account is the master account.
+    *   **Login:** They use the main login page.
+    *   **Permissions:** Full access to all features, including adding/managing properties, buyers, team members, viewing all appointments, and seeing agency-wide analytics. They are the only ones who can manage the team and see subscription/upgrade pages.
+
+2.  **Agent:**
+    *   **Signup/Invitation:** Agents cannot sign up directly. They must be invited by an Agency Admin via email. Once invited, they can create their account. When they accept an invitation, they become part of that agency.
+    *   **Login:** They use a separate "Agent Portal" login page.
+    *   **Permissions:**
+        *   They can add and manage their own properties and buyers.
+        *   They can view properties and buyers assigned to them by the agency.
+        *   They have a restricted view of the dashboard, showing only their personal stats and assigned leads.
+        *   They cannot access Team Management, Settings, or Upgrade pages.
+
+### 2.2. Property Management (Lead Management - Properties)
+
+This is a core feature for managing property listings.
+
+*   **Add/Edit Property:**
+    *   A comprehensive form to add new properties with the following fields:
+        *   **Basic Info:** Serial No (auto-generated, e.g., P-1, P-2), City, Area, Full Address.
+        *   **Specification:** Property Type (House, Plot, Flat, Shop, Commercial, etc.), Size (e.g., 5 Marla), Dimensions (Front/Length in ft), Road Size (ft), Storeys (e.g., Single, Double).
+        *   **Financials:** Demand Price (e.g., 90 Lacs), Potential Rent (e.g., 30 Thousand).
+        *   **Contact:** Owner's Phone Number.
+        *   **Utilities:** Checkboxes for Electricity, Gas, Water.
+        *   **Documents:** A text field to list available documents (e.g., Registry, Fard).
+    *   **Auto-Generated Title:** The system should automatically generate a title based on key details (e.g., "5 Marla House in DHA Phase 5").
+    *   **Status:** Every property has a status, primarily "Available" or "Sold".
+
+*   **View Properties:**
+    *   Display all properties in a table and a card view (for mobile).
+    *   Admins see all properties. Agents see properties they created AND properties assigned to them.
+    *   Implement robust filtering options: by Area, Property Type, Size, and Demand.
+    *   Implement tab-based filtering for main statuses: "All," "Available," "Sold."
+
+*   **Property Actions:**
+    *   **View Details:** A popup (dialog) showing all details of a single property.
+    *   **Mark as Sold:** A special form to update a property's status to "Sold." This form should capture:
+        *   Final Sold Price.
+        *   Commission received from both buyer and seller (as a percentage or fixed amount).
+        *   The agent who closed the deal.
+        *   The date of the sale.
+    *   **Delete/Trash:** A "soft delete" functionality that moves a property to a "Trash" page instead of deleting it permanently.
+    *   **Restore:** From the "Trash" page, an admin should be able to restore a deleted property.
+
+### 2.3. Buyer Management (Lead Management - Buyers)
+
+This feature is for managing potential buyers.
+
+*   **Add/Edit Buyer:**
+    *   A form to capture buyer details:
+        *   **Basic Info:** Serial No (auto-generated, e.g., B-1, B-2), Name, Phone, Email.
+        *   **Requirements:** Preferred Area, Preferred Property Type.
+        *   **Budget:** Minimum and Maximum budget (e.g., 80 Lacs to 95 Lacs).
+        *   **Size Preference:** Minimum and Maximum size (e.g., 5 Marla to 8 Marla).
+        *   **Status:** A dropdown to select the buyer's status (e.g., "New," "Interested," "Follow Up," "Deal Closed").
+        *   **Investor Flag:** A checkbox to mark the buyer as an investor.
+
+*   **View Buyers:**
+    *   Display all buyers in a table and card view.
+    *   Admins see all buyers. Agents see buyers they created AND buyers assigned to them.
+    *   Filter buyers by status, area, budget, etc.
+
+*   **Buyer Actions:**
+    *   **View Details:** A detailed popup showing all information about a buyer.
+    *   **Assign Agent (Admin only):** Inside the buyer details popup, an Admin should see an "Assign Agent" option. This opens a list of all active agents. The admin can select an agent to assign the buyer to. The assigned agent's name should then be visible on the buyer's profile.
+    *   **Change Status:** Quickly change a buyer's status (e.g., from "New" to "Interested").
+
+### 2.4. Dashboard & Analytics
+
+The main dashboard should provide a quick overview of the agency's performance.
+
+*   **Key Performance Indicators (KPIs):** Displayed as small cards with icons and statistics.
+    *   Total Properties
+    *   Total Buyers
+    *   Properties Sold (in the last 30 days)
+    *   Total Revenue (Commission earned in the last 30 days)
+    *   Number of "Interested" Buyers
+    *   Leads requiring "Follow-up"
+    *   **For Agents Only:** "Assigned Properties" and "Assigned Buyers" count.
+*   **Charts:**
+    *   A bar chart showing year-over-year revenue growth.
+    *   A pie chart showing the distribution of buyer statuses (e.g., % Interested vs. % Follow Up).
+
+### 2.5. Team & Appointment Management
+
+*   **Team Management (Admin only):**
+    *   An interface to view all team members (Admins and Agents).
+    *   An "Invite Member" button that opens a form to send an email invitation to a new agent.
+    *   The main view should show each member's name, email, role, and status ("Active" or "Pending Invitation").
+    *   Admins can revoke a pending invitation or remove an active member.
+*   **Appointment Management:**
+    *   A dedicated page to schedule and view appointments.
+    *   An "Add Appointment" form to schedule a meeting between an agent, a buyer, and a property owner.
+    *   Fields should include: Contact Name, Contact Type (Buyer/Owner), Agent, Date, Time, and a brief message/purpose.
+    *   Display appointments as cards, separated into "Buyer Appointments" and "Owner Appointments."
+    *   Each appointment card should have actions to "Mark as Completed," "Mark as Cancelled," or "Reschedule."
+*   **Follow-up Automation:**
+    *   When a buyer's status is changed to "Follow Up," create a task in the "Follow-ups" page.
+    *   The Follow-ups page should display a list of buyers needing a call or meeting, showing their name, interest, and the last contact date.
+
+### 2.6. Tools & Utilities
+
+*   **List Generator Tool:**
+    *   A tool that allows an admin to generate a formatted text list of available properties.
+    *   The user should be able to filter properties (e.g., by area) and then select which properties to include in the list.
+    *   The user should also be able to select which fields to include in the final text (e.g., Serial No, Size, Demand, etc.).
+    *   The generated text should be neatly formatted (e.g., using asterisks for bolding) and ready to be copied and pasted into WhatsApp or other platforms.
+*   **Shareable Text Generator (per property):**
+    *   From a property's details page, there should be a "Share" or "Copy" button.
+    *   This should generate two versions of a formatted text description:
+        1.  **For Customer:** Includes property details but hides the owner's number and full address.
+        2.  **For Agent:** Includes all details, including the owner's number and full address.
+
+---
+
+## 3. UI/UX Style & Component Guidelines
+
+*   **Primary Color:** Deep Blue (`#293B5F`) - Used for primary buttons, active links, and important icons.
+*   **Background Color:** Light Gray (`#E7E8EA`) - For the main app background.
+*   **Accent Color:** Warm Yellow (`#FFC857`) - Used for highlighting key actions, notifications, and secondary information.
+*   **Fonts:**
+    *   **Headlines:** 'Poppins' (bold) for all major titles and headings.
+    *   **Body:** 'Poppins' (regular) for all other content, labels, and descriptions.
+*   **Layout:**
+    *   The main interface should have a persistent sidebar on the left (for desktop) and a main content area.
+    *   For mobile, the sidebar should be replaced with a bottom navigation bar for core features.
+    *   The entire UI should be built using a **card-based layout**. Every main element (KPI card, property card, appointment card) should be a distinct card with rounded corners (`1rem` radius) and a subtle drop shadow.
+*   **Components:**
+    *   **Buttons:** Primary buttons should have a slight "glow" effect on hover.
+    *   **Dialogs/Modals:** All popups for adding/editing/viewing details should have a "glass morphism" effect (semi-transparent, blurred background).
+    *   **Forms:** Use clean, modern input fields, dropdowns, and checkboxes. All forms must have clear labels and validation messages for required fields.
+    *   **Tables:** Use clean, modern tables with alternating row colors on hover for better readability.
+    *   **Icons:** Use the `lucide-react` icon library for a consistent, flat, and modern look.
+
+This detailed prompt provides a complete blueprint for the SignatureCRM application. The AI should be able to use this to build the application feature by feature, using Supabase as its backend.
