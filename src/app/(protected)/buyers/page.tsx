@@ -322,11 +322,10 @@ export default function BuyersPage() {
 
         const { buyer, agentId } = assignmentToConfirm;
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
-        
         const agent = teamMembers.find(m => m.user_id === agentId);
         
         if (agentId === "") { // This means unassign
-            await updateDoc(buyerRef, { assignedTo: null });
+            await setDoc(buyerRef, { assignedTo: null }, { merge: true });
             toast({
                 title: 'Buyer Unassigned',
                 description: 'This buyer is now unassigned from any agent.',
