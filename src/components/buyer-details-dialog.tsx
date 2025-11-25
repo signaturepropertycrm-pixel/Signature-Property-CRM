@@ -10,18 +10,23 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Buyer, PriceUnit, SizeUnit } from '@/lib/types';
+import { Buyer, PriceUnit, SizeUnit, User } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck, Check, UserPlus } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { useMemo } from 'react';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  activeAgents: User[];
+  onAssign: (buyer: Buyer, agentId: string | null) => void;
 }
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
@@ -58,6 +63,8 @@ export function BuyerDetailsDialog({
   buyer,
   isOpen,
   setIsOpen,
+  activeAgents,
+  onAssign,
 }: BuyerDetailsDialogProps) {
   const { currency } = useCurrency();
 
@@ -73,6 +80,11 @@ export function BuyerDetailsDialog({
     const maxVal = formatUnit(maxAmount, maxUnit);
     return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
   };
+  
+  const assignedAgentName = useMemo(() => {
+    if (!buyer.assignedTo) return 'Unassigned';
+    return activeAgents.find(agent => agent.user_id === buyer.assignedTo)?.name || 'Unknown Agent';
+  }, [buyer.assignedTo, activeAgents]);
 
   if (!buyer) return null;
 
@@ -143,7 +155,32 @@ export function BuyerDetailsDialog({
 
             </div>
           </ScrollArea>
-          <DialogFooter className="border-t pt-4">
+          <DialogFooter className="border-t pt-4 sm:justify-between">
+            <div className="flex items-center gap-2">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" />Assign Agent</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-0">
+                         <Command>
+                            <CommandList>
+                                <CommandGroup>
+                                    {buyer.assignedTo && (
+                                        <CommandItem onSelect={() => onAssign(buyer, null)}>Unassign</CommandItem>
+                                    )}
+                                    {activeAgents.map(agent => (
+                                        <CommandItem key={agent.id} onSelect={() => onAssign(buyer, agent.user_id)} disabled={buyer.assignedTo === agent.user_id}>
+                                            <Check className={buyer.assignedTo === agent.user_id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
+                                            {agent.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+                {buyer.assignedTo && <Badge variant="secondary" className="text-sm">{assignedAgentName}</Badge>}
+            </div>
              <Button variant="secondary" onClick={() => setIsOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>

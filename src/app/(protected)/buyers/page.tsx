@@ -75,10 +75,7 @@ export default function BuyersPage() {
     const firestore = useFirestore();
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const { data: agencyBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
-
-    const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
-    const { data: agentBuyers, isLoading: isAgentLoading } = useCollection<Buyer>(agentBuyersQuery);
+    const { data: allBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
     const { data: teamMembers } = useCollection<User>(teamMembersQuery);
@@ -87,11 +84,6 @@ export default function BuyersPage() {
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
     const activeAgents = useMemo(() => teamMembers?.filter(m => m.status === 'Active') || [], [teamMembers]);
-
-    const allBuyers = useMemo(() => {
-        const combined = [...(agencyBuyers || []), ...(agentBuyers || [])];
-        return Array.from(new Map(combined.map(b => [b.id, b])).values());
-    }, [agencyBuyers, agentBuyers]);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
@@ -154,12 +146,9 @@ export default function BuyersPage() {
     };
 
     const handleDelete = async (buyer: Buyer) => {
-        const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
-        const collectionName = isAgentOwned ? 'agents' : 'agencies';
-        const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
-        if (!collectionId) return;
+        if (!profile.agency_id) return;
 
-        const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await setDoc(docRef, { is_deleted: true }, { merge: true });
         toast({ title: "Buyer Moved to Trash", description: "You can restore them from the trash page." });
     };
@@ -172,18 +161,23 @@ export default function BuyersPage() {
         setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
         setIsFilterPopoverOpen(false);
     };
+    
+    const handleAssignAgent = async (buyer: Buyer, agentId: string | null) => {
+        if (!profile.agency_id) return;
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
+        await setDoc(docRef, { assignedTo: agentId }, { merge: true });
+        setSelectedBuyer(prev => prev ? { ...prev, assignedTo: agentId } : null);
+        toast({ title: 'Buyer Re-assigned', description: 'The assigned agent has been updated.' });
+    };
 
     const handleStatusChange = async (buyer: Buyer, newStatus: BuyerStatus) => {
         if (newStatus === 'Follow Up') {
             setBuyerForFollowUp(buyer);
             setIsFollowUpOpen(true);
         } else {
-            const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
-            const collectionName = isAgentOwned ? 'agents' : 'agencies';
-            const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
-            if (!collectionId) return;
+            if (!profile.agency_id) return;
 
-            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
+            const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
             await setDoc(docRef, { status: newStatus }, { merge: true });
 
             const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
@@ -225,12 +219,8 @@ export default function BuyersPage() {
 
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
 
-        const isAgentOwned = buyer.created_by === profile.user_id && buyer.agency_id !== buyer.created_by;
-        const buyerCollectionName = isAgentOwned ? 'agents' : 'agencies';
-        const buyerCollectionId = isAgentOwned ? profile.user_id : profile.agency_id;
-
-        if (!buyerCollectionId) return;
-        const buyerDocRef = doc(firestore, buyerCollectionName, buyerCollectionId, 'buyers', buyerId);
+        if (!profile.agency_id) return;
+        const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
 
         const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
         if (existingFollowUp) {
@@ -248,20 +238,13 @@ export default function BuyersPage() {
 
     const handleSaveBuyer = async (buyerData: Omit<Buyer, 'id'> & { id?: string }) => {
         if (buyerToEdit) {
-            const isAgentOwned = buyerToEdit.created_by === profile.user_id && buyerToEdit.agency_id !== buyerToEdit.created_by;
-            const collectionName = isAgentOwned ? 'agents' : 'agencies';
-            const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
-            if (!collectionId || !buyerData.id) return;
-            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyerData.id);
+            if (!profile.agency_id || !buyerData.id) return;
+            const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerData.id);
             await setDoc(docRef, buyerData, { merge: true });
             toast({ title: 'Buyer Updated' });
         } else {
-            const isAgentAdding = profile.role === 'Agent';
-            const collectionName = isAgentAdding ? 'agents' : 'agencies';
-            const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-            if (!collectionId) return;
-
-            const collectionRef = collection(firestore, collectionName, collectionId, 'buyers');
+            if (!profile.agency_id) return;
+            const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
             const { id, ...restOfData } = buyerData;
             const newDocRef = await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
 
@@ -287,12 +270,11 @@ export default function BuyersPage() {
         if (!sourceBuyers) return [];
         let filtered: Buyer[] = [...sourceBuyers];
 
-        if (profile.role === 'Agent') {
-           // Agent sees only their own created buyers
-           filtered = filtered.filter(b => b.created_by === profile.user_id);
-        }
-
         filtered = filtered.filter(b => !b.is_deleted);
+
+        if (profile.role === 'Agent') {
+            filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+        }
 
         if (activeTab && activeTab !== 'All') {
             filtered = filtered.filter(b => b.status === activeTab);
@@ -317,18 +299,19 @@ export default function BuyersPage() {
 
         return filtered;
     };
-
-    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers), [searchQuery, activeTab, filters, agentBuyers]);
-    const filteredAgencyBuyersForAdmin = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers]);
     
+    const filteredBuyers = useMemo(() => getFilteredBuyers(allBuyers), [searchQuery, activeTab, filters, allBuyers, profile.role, profile.user_id]);
+
+    const myBuyers = useMemo(() => (allBuyers || []).filter(b => !b.is_deleted && b.created_by === profile.user_id), [allBuyers, profile.user_id]);
+
     const handleTabChange = (value: string) => {
         const status = value as BuyerStatus | 'All';
         const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
         router.push(url);
     };
 
-    const renderTable = (buyers: Buyer[], isAgentData: boolean) => {
-        if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
+    const renderTable = (buyers: Buyer[]) => {
+        if (isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
         if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
         return (
             <Table>
@@ -382,7 +365,7 @@ export default function BuyersPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="glass-card">
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
-                                            {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                            {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                             <DropdownMenuSub>
                                                 <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
@@ -394,7 +377,7 @@ export default function BuyersPage() {
                                                     </DropdownMenuSubContent>
                                                 </DropdownMenuPortal>
                                             </DropdownMenuSub>
-                                            {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
+                                            {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -406,8 +389,8 @@ export default function BuyersPage() {
         );
     };
 
-    const renderCards = (buyers: Buyer[], isAgentData: boolean) => {
-        if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
+    const renderCards = (buyers: Buyer[]) => {
+        if (isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
         if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
         return (
             <div className="space-y-4">
@@ -444,7 +427,7 @@ export default function BuyersPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="glass-card">
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
-                                        {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
@@ -456,7 +439,7 @@ export default function BuyersPage() {
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
                                         </DropdownMenuSub>
-                                        {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
+                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </CardFooter>
@@ -467,9 +450,19 @@ export default function BuyersPage() {
         );
     };
 
-    const renderContent = (buyers: Buyer[], isAgentData: boolean) => {
-        return isMobile ? renderCards(buyers, isAgentData) : <Card><CardContent className="p-0">{renderTable(buyers, isAgentData)}</CardContent></Card>;
+    const renderContent = (buyers: Buyer[]) => {
+        return isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
     };
+
+    const tabsForAdmin = [
+        { value: 'All', label: 'All Buyers', icon: null },
+        ...buyerStatuses.map(status => ({ value: status, label: status, icon: null }))
+    ];
+
+    const tabsForAgent = [
+        { value: 'Assigned', label: 'Assigned Buyers', icon: <UserCheck className="mr-2 h-4 w-4"/> },
+        { value: 'MyBuyers', label: 'My Buyers', icon: <Briefcase className="mr-2 h-4 w-4"/> },
+    ];
 
     return (
         <>
@@ -606,21 +599,24 @@ export default function BuyersPage() {
                             </Select>
                         </div>
                     ) : null}
-
+                    
                     {profile.role === 'Agent' ? (
-                        <Tabs defaultValue="my-buyers" className="w-full">
-                            <TabsList className="grid w-full grid-cols-1">
-                                <TabsTrigger value="my-buyers">
-                                    <Briefcase className="mr-2 h-4 w-4" /> My Buyers
-                                </TabsTrigger>
+                         <Tabs defaultValue="Assigned" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2">
+                                {tabsForAgent.map(tab => (
+                                    <TabsTrigger key={tab.value} value={tab.value}>{tab.icon}{tab.label}</TabsTrigger>
+                                ))}
                             </TabsList>
-                            <TabsContent value="my-buyers" className="mt-4">
-                                {renderContent(filteredAgentBuyers, true)}
+                             <TabsContent value="Assigned" className="mt-4">
+                                {renderContent(filteredBuyers)}
                             </TabsContent>
-                        </Tabs>
+                             <TabsContent value="MyBuyers" className="mt-4">
+                                {renderContent(myBuyers)}
+                            </TabsContent>
+                         </Tabs>
                     ) : (
                         <div className="mt-4">
-                            {renderContent(filteredAgencyBuyersForAdmin, false)}
+                            {renderContent(filteredBuyers)}
                         </div>
                     )}
                 </div>
@@ -648,7 +644,7 @@ export default function BuyersPage() {
 
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
-            {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />)}
+            {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
 
         </>
     );
