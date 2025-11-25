@@ -110,7 +110,7 @@ export default function BuyersPage() {
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
-    const [assignmentToConfirm, setAssignmentToConfirm] = useState<{ buyer: Buyer, agentId: string | null } | null>(null);
+    const [assignmentToConfirm, setAssignmentToConfirm] = useState<{ buyer: Buyer, agentId: string } | null>(null);
 
     useEffect(() => {
         if (!isAddBuyerOpen) {
@@ -285,36 +285,32 @@ export default function BuyersPage() {
         const { buyer, agentId } = assignmentToConfirm;
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         
-        // agentId is now the user_id of the agent from teamMembers
-        await updateDoc(buyerRef, { assignedTo: agentId });
+        const agent = teamMembers.find(m => m.user_id === agentId);
         
-        let toastTitle = 'Buyer Unassigned';
-        let toastDescription = 'This buyer is now unassigned from any agent.';
-
-        if (agentId) {
-            const agent = teamMembers.find(m => m.user_id === agentId);
-            if (agent) {
-                const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-                const newActivity: Omit<Activity, 'id'> = {
-                    userName: profile.name,
-                    userAvatar: profile.avatar,
-                    action: `assigned buyer to ${agent.name}`,
-                    target: buyer?.name || `Buyer #${buyer?.serial_no}`,
-                    targetType: 'Buyer',
-                    timestamp: new Date().toISOString(),
-                    agency_id: profile.agency_id,
-                };
-                await addDoc(activityLogRef, newActivity);
-
-                toastTitle = 'Buyer Assigned';
-                toastDescription = `This buyer has been assigned to ${agent.name}.`;
-            }
+        if (agentId === "") { // This means unassign
+            await updateDoc(buyerRef, { assignedTo: null });
+            toast({
+                title: 'Buyer Unassigned',
+                description: 'This buyer is now unassigned from any agent.',
+            });
+        } else if (agent) {
+             await updateDoc(buyerRef, { assignedTo: agentId });
+            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+            const newActivity: Omit<Activity, 'id'> = {
+                userName: profile.name,
+                userAvatar: profile.avatar,
+                action: `assigned buyer to ${agent.name}`,
+                target: buyer?.name || `Buyer #${buyer?.serial_no}`,
+                targetType: 'Buyer',
+                timestamp: new Date().toISOString(),
+                agency_id: profile.agency_id,
+            };
+            await addDoc(activityLogRef, newActivity);
+            toast({
+                title: 'Buyer Assigned',
+                description: `This buyer has been assigned to ${agent.name}.`,
+            });
         }
-
-        toast({
-            title: toastTitle,
-            description: toastDescription,
-        });
 
         setAssignmentToConfirm(null);
     };
@@ -425,12 +421,12 @@ export default function BuyersPage() {
                                             <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                             <DropdownMenuPortal><DropdownMenuSubContent>
                                                 {buyer.assignedTo && (
-                                                    <>
-                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
-                                                        <UserX className="mr-2 h-4 w-4"/>Unassign
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    </>
+                                                    <React.Fragment key="unassign-fragment">
+                                                        <DropdownMenuItem key="unassign" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
+                                                            <UserX className="mr-2 h-4 w-4"/>Unassign
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator key="unassign-separator" />
+                                                    </React.Fragment>
                                                 )}
                                                 {activeAgents.map(agent => (
                                                     <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
@@ -496,12 +492,12 @@ export default function BuyersPage() {
                                         <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                         <DropdownMenuPortal><DropdownMenuSubContent>
                                             {buyer.assignedTo && (
-                                                <>
-                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
-                                                    <UserX className="mr-2 h-4 w-4"/>Unassign
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                </>
+                                                <React.Fragment key="unassign-fragment">
+                                                    <DropdownMenuItem key="unassign" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
+                                                        <UserX className="mr-2 h-4 w-4"/>Unassign
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator key="unassign-separator" />
+                                                </React.Fragment>
                                             )}
                                             {activeAgents.map(agent => (
                                                 <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
@@ -636,5 +632,3 @@ export default function BuyersPage() {
     </>
   );
 }
-
-    
