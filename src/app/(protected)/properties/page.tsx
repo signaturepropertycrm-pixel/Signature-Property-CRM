@@ -256,9 +256,15 @@ export default function PropertiesPage() {
     await addDoc(collectionRef, appointment);
   };
 
+  const getPropertyCollectionInfo = (property: Property) => {
+    const isAgentOwned = profile.role === 'Agent' && property.created_by === profile.user_id;
+    const collectionName = isAgentOwned ? 'agents' : 'agencies';
+    const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
+    return { collectionName, collectionId };
+  };
+
   const handleUnmarkRecorded = async (prop: Property) => {
-    const collectionName = prop.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = prop.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
 
     const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
@@ -266,8 +272,7 @@ export default function PropertiesPage() {
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-    const collectionName = updatedProperty.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = updatedProperty.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    const { collectionName, collectionId } = getPropertyCollectionInfo(updatedProperty);
     if (!collectionId) return;
 
     const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
@@ -275,8 +280,7 @@ export default function PropertiesPage() {
   };
 
   const handleDelete = async (property: Property) => {
-    const collectionName = property.created_by === profile.user_id ? 'agents' : 'agencies';
-    const collectionId = property.created_by === profile.user_id ? profile.user_id : profile.agency_id;
+    const { collectionName, collectionId } = getPropertyCollectionInfo(property);
     if (!collectionId) return;
 
     const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
@@ -288,28 +292,36 @@ export default function PropertiesPage() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
+    const isAgentAdding = profile.role === 'Agent';
+    
     if (propertyToEdit && propertyData.id) {
-      const isAgentProperty = allProperties.some((p) => p.id === propertyToEdit.id && p.created_by === profile.user_id && p.agency_id !== p.created_by);
-      const collectionName = isAgentProperty ? 'agents' : 'agencies';
-      const collectionId = isAgentProperty ? profile.user_id : profile.agency_id;
+        // When editing, determine the correct collection based on the original property's creator
+        const { collectionName, collectionId } = getPropertyCollectionInfo(propertyToEdit);
+        if (!collectionId) return;
 
-      if (!collectionId) return;
-      const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
-      await setDoc(docRef, propertyData, { merge: true });
-      toast({ title: 'Property Updated' });
+        const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
+        await setDoc(docRef, propertyData, { merge: true });
+        toast({ title: 'Property Updated' });
     } else {
-      const isAgentAdding = profile.role === 'Agent';
-      const collectionName = isAgentAdding ? 'agents' : 'agencies';
-      const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-
-      if (!collectionId) return;
-      const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
-      const { id, ...restOfData } = propertyData;
-      await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
-      toast({ title: 'Property Added' });
+        // When adding a new property
+        const collectionName = isAgentAdding ? 'agents' : 'agencies';
+        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
+        
+        if (!collectionId) return;
+        
+        const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
+        const { id, ...restOfData } = propertyData;
+        
+        await addDoc(collectionRef, { 
+            ...restOfData,
+            created_by: profile.user_id, // Ensure created_by is set correctly
+            agency_id: profile.agency_id // Ensure agency_id is always present
+        });
+        toast({ title: 'Property Added' });
     }
     setPropertyToEdit(null);
-  };
+};
+
 
   const handleTabChange = (value: string) => {
     const status = value as FilterTab;
@@ -334,7 +346,7 @@ export default function PropertiesPage() {
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => handleRowClick(prop)}>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base">{prop.auto_title}</span>
@@ -405,7 +417,7 @@ export default function PropertiesPage() {
     return (
       <div className="space-y-4">
         {properties.map((prop) => (
-          <Card key={prop.id} className="cursor-pointer">
+          <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
             <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
