@@ -53,9 +53,9 @@ export function TeamMemberDetailsDialog({
   const memberStats = useMemo(() => {
     if (!member || !properties || !buyers) return { soldProperties: 0, hotLeads: 0, followUps: 0 };
 
-    const soldProperties = properties.filter(p => p.status === 'Sold' && p.sold_by_agent_id === member.user_id).length;
+    const soldProperties = properties.filter(p => p.status === 'Sold' && p.sold_by_agent_id === member.id).length;
     // Since assignment is removed, we check for buyers created by the agent
-    const agentBuyers = buyers.filter(b => b.created_by === member.user_id);
+    const agentBuyers = buyers.filter(b => b.created_by === member.id);
     const hotLeads = agentBuyers.filter(b => b.status === 'Interested').length;
     const followUps = agentBuyers.filter(b => b.status === 'Follow Up').length;
 
