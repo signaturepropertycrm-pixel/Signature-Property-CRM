@@ -154,7 +154,20 @@ export default function BuyersPage() {
 
     const handleSaveAppointment = async (appointment: Appointment) => {
         if (!profile.agency_id) return;
-        await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment);
+        const newAppointmentRef = await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), { ...appointment, id: undefined });
+        
+        // Add activity log
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity: Omit<Activity, 'id'> = {
+            userName: profile.name,
+            userAvatar: profile.avatar,
+            action: `scheduled an appointment for buyer`,
+            target: appointment.contactName || 'N/A',
+            targetType: 'Appointment',
+            timestamp: new Date().toISOString(),
+            agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
     };
     
     const handleDelete = async (buyer: Buyer) => {
@@ -192,6 +205,19 @@ export default function BuyersPage() {
 
             const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
             await setDoc(docRef, { status: newStatus }, { merge: true });
+            
+            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+            const newActivity: Omit<Activity, 'id'> = {
+                userName: profile.name,
+                userAvatar: profile.avatar,
+                action: `updated the status`,
+                target: buyer.name,
+                targetType: 'Buyer',
+                details: { from: buyer.status, to: newStatus },
+                timestamp: new Date().toISOString(),
+                agency_id: profile.agency_id,
+            };
+            await addDoc(activityLogRef, newActivity);
 
             if (buyer.status === 'Follow Up' && followUps && profile.agency_id) {
                 const followUpToDelete = followUps.find(fu => fu.buyerId === buyer.id);
@@ -258,7 +284,6 @@ export default function BuyersPage() {
             await setDoc(docRef, buyerData, { merge: true });
             toast({ title: 'Buyer Updated' });
         } else {
-            // This is a NEW buyer
             const isAgentAdding = profile.role === 'Agent';
             const collectionName = isAgentAdding ? 'agents' : 'agencies';
             const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
@@ -267,7 +292,20 @@ export default function BuyersPage() {
 
             const collectionRef = collection(firestore, collectionName, collectionId, 'buyers');
             const { id, ...restOfData } = buyerData;
-            await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
+            const newDocRef = await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
+
+            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+            const newActivity: Omit<Activity, 'id'> = {
+                userName: profile.name,
+                userAvatar: profile.avatar,
+                action: 'added a new buyer',
+                target: buyerData.name,
+                targetType: 'Buyer',
+                timestamp: new Date().toISOString(),
+                agency_id: profile.agency_id,
+            };
+            await addDoc(activityLogRef, newActivity);
+            
             toast({ title: 'Buyer Added' });
         }
         setBuyerToEdit(null);
@@ -294,7 +332,7 @@ export default function BuyersPage() {
                 description: 'This buyer is now unassigned from any agent.',
             });
         } else if (agent) {
-             await updateDoc(buyerRef, { assignedTo: agentId });
+             await updateDoc(buyerRef, { assignedTo: agent.user_id });
             const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
             const newActivity: Omit<Activity, 'id'> = {
                 userName: profile.name,
@@ -326,23 +364,18 @@ export default function BuyersPage() {
         // Primary role-based filtering
         if (profile.role === 'Agent') {
             if (isForAssignedBuyersTab) {
-                // "Assigned Buyers" tab filters agency buyers to show ONLY those assigned to the current agent.
-                filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+                filtered = agencyBuyers?.filter(b => b.assignedTo === profile.user_id) || [];
             } else if (isForMyBuyersTab) {
-                // "My Buyers" tab uses the agent's personal buyer collection, so no extra filtering is needed here.
+                // This is correct, uses the agent's own buyers.
             }
         }
-        // Admin/Editor sees all agency buyers, no initial role filter needed for them.
-    
-        // Filter out deleted buyers from all views
+        
         filtered = filtered.filter(b => !b.is_deleted);
         
-        // Status tab filtering (All, New, Interested, etc.)
         if (activeTab && activeTab !== 'All') {
             filtered = filtered.filter(b => b.status === activeTab);
         }
         
-        // Search query filtering
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer => 
@@ -352,7 +385,6 @@ export default function BuyersPage() {
             );
         }
 
-        // Advanced filter popover filtering
         if (filters.status !== 'All') filtered = filtered.filter(b => b.status === filters.status);
         if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
@@ -388,7 +420,7 @@ export default function BuyersPage() {
                     const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                     return (
                         <TableRow key={buyer.id} className="cursor-pointer">
-                        <TableCell>
+                        <TableCell onClick={() => handleDetailsClick(buyer)}>
                             <div className="font-bold font-headline text-base flex items-center gap-2">
                                 {buyer.name}
                                 {buyer.assignedTo && agent && (
@@ -405,9 +437,9 @@ export default function BuyersPage() {
                                 <span>{buyer.phone}</span>
                             </div>
                         </TableCell>
-                        <TableCell><div className="flex flex-col text-sm"><span>{buyer.area_preference}</span><span className="text-muted-foreground">{buyer.property_type_preference}</span></div></TableCell>
-                         <TableCell><div className="flex flex-col text-sm"><span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span><span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span></div></TableCell>
-                        <TableCell><div className="flex items-center gap-2"><Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={ buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : '' }>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></TableCell>
+                        <TableCell onClick={() => handleDetailsClick(buyer)}><div className="flex flex-col text-sm"><span>{buyer.area_preference}</span><span className="text-muted-foreground">{buyer.property_type_preference}</span></div></TableCell>
+                         <TableCell onClick={() => handleDetailsClick(buyer)}><div className="flex flex-col text-sm"><span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span><span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span></div></TableCell>
+                        <TableCell onClick={() => handleDetailsClick(buyer)}><div className="flex items-center gap-2"><Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={ buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : '' }>{buyer.status}</Badge>{buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}</div></TableCell>
                         <TableCell className="text-right">
                                 <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
@@ -421,12 +453,12 @@ export default function BuyersPage() {
                                             <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                             <DropdownMenuPortal><DropdownMenuSubContent>
                                                 {buyer.assignedTo && (
-                                                    <React.Fragment key="unassign-fragment">
-                                                        <DropdownMenuItem key="unassign" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
+                                                    <div key="unassign-fragment">
+                                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
                                                             <UserX className="mr-2 h-4 w-4"/>Unassign
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuSeparator key="unassign-separator" />
-                                                    </React.Fragment>
+                                                        <DropdownMenuSeparator/>
+                                                    </div>
                                                 )}
                                                 {activeAgents.map(agent => (
                                                     <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
@@ -454,7 +486,7 @@ export default function BuyersPage() {
             {buyers.map(buyer => {
                 const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                 return (
-                    <Card key={buyer.id}>
+                    <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
                     <CardHeader><CardTitle className="flex justify-between items-start">
                         <div className="font-bold font-headline text-lg flex items-center gap-2">
                            {buyer.name}
@@ -492,12 +524,12 @@ export default function BuyersPage() {
                                         <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
                                         <DropdownMenuPortal><DropdownMenuSubContent>
                                             {buyer.assignedTo && (
-                                                <React.Fragment key="unassign-fragment">
-                                                    <DropdownMenuItem key="unassign" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
+                                                <div key="unassign-fragment">
+                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
                                                         <UserX className="mr-2 h-4 w-4"/>Unassign
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuSeparator key="unassign-separator" />
-                                                </React.Fragment>
+                                                    <DropdownMenuSeparator/>
+                                                </div>
                                             )}
                                             {activeAgents.map(agent => (
                                                 <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
