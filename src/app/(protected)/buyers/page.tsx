@@ -137,7 +137,7 @@ export default function BuyersPage() {
     };
 
     const handleDetailsClick = (buyer: Buyer) => {
-        const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+        const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
         setSelectedBuyer({ ...buyer, assignedAgentName: agent?.name });
         setIsDetailsOpen(true);
     }
@@ -274,7 +274,19 @@ export default function BuyersPage() {
     };
 
     const handleAssignAgentClick = (buyer: Buyer, agentId: string | null) => {
-        setAssignmentToConfirm({ buyer, agentId });
+        if (!agentId) {
+            // Unassign case
+            setAssignmentToConfirm({ buyer, agentId: null });
+            return;
+        }
+    
+        // Find actual user_id from teamMembers
+        const agent = teamMembers?.find(m => m.user_id === agentId);
+        if (agent) {
+            setAssignmentToConfirm({ buyer, agentId: agent.user_id });
+        } else {
+            console.warn("Agent not found in teamMembers");
+        }
     };
 
     const handleConfirmAssignment = async () => {
@@ -292,7 +304,7 @@ export default function BuyersPage() {
         let toastDescription = 'This buyer is now unassigned from any agent.';
 
         if (agentId) {
-            const agent = teamMembers.find(m => m.id === agentId);
+            const agent = teamMembers.find(m => m.user_id === agentId);
             if (agent) {
                 const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
                 const newActivity: Omit<Activity, 'id'> = {
@@ -389,7 +401,7 @@ export default function BuyersPage() {
             <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Area & Type</TableHead><TableHead>Budget & Size</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
                 {buyers.map(buyer => {
-                    const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+                    const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                     return (
                         <TableRow key={buyer.id} className="cursor-pointer">
                         <TableCell>
@@ -429,8 +441,8 @@ export default function BuyersPage() {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 {activeAgents.map(agent => (
-                                                    <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.id); }} disabled={buyer.assignedTo === agent.id}>
-                                                        {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
+                                                    <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
+                                                        {buyer.assignedTo === agent.user_id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
                                                     </DropdownMenuItem>
                                                 ))}
                                             </DropdownMenuSubContent></DropdownMenuPortal>
@@ -452,7 +464,7 @@ export default function BuyersPage() {
       return (
         <div className="space-y-4">
             {buyers.map(buyer => {
-                const agent = teamMembers?.find(m => m.id === buyer.assignedTo);
+                const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                 return (
                     <Card key={buyer.id}>
                     <CardHeader><CardTitle className="flex justify-between items-start">
@@ -496,8 +508,8 @@ export default function BuyersPage() {
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             {activeAgents.map(agent => (
-                                                <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.id); }} disabled={buyer.assignedTo === agent.id}>
-                                                    {buyer.assignedTo === agent.id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
+                                                <DropdownMenuItem key={agent.id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
+                                                    {buyer.assignedTo === agent.user_id ? <Check className="mr-2 h-4 w-4"/> : <div className="mr-2 h-4 w-4"/>}{agent.name}
                                                 </DropdownMenuItem>
                                             ))}
                                         </DropdownMenuSubContent></DropdownMenuPortal>
@@ -612,7 +624,7 @@ export default function BuyersPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to {assignmentToConfirm.agentId === null ? 'unassign this buyer' : `assign this buyer to ${activeAgents.find(a => a.id === assignmentToConfirm.agentId)?.name}`}?
+                            Are you sure you want to {assignmentToConfirm.agentId === null ? 'unassign this buyer' : `assign this buyer to ${activeAgents.find(a => a.user_id === assignmentToConfirm.agentId)?.name}`}?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

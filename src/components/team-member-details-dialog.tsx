@@ -32,7 +32,6 @@ interface TeamMemberDetailsDialogProps {
 
 const roleConfig: Record<string, { icon: React.ReactNode }> = {
     Admin: { icon: <Shield className="h-4 w-4" /> },
-    Editor: { icon: <Edit className="h-4 w-4" /> },
     Agent: { icon: <UserIcon className="h-4 w-4" /> },
 };
 
@@ -54,10 +53,10 @@ export function TeamMemberDetailsDialog({
   const memberStats = useMemo(() => {
     if (!member || !properties || !buyers) return { assignedBuyers: 0, soldProperties: 0, hotLeads: 0, followUps: 0 };
 
-    const assignedBuyers = buyers.filter(b => b.assignedTo === member.id).length;
-    const soldProperties = properties.filter(p => p.status === 'Sold' && p.soldByAgentId === member.id).length;
-    const hotLeads = buyers.filter(b => b.assignedTo === member.id && b.status === 'Hot Lead').length;
-    const followUps = buyers.filter(b => b.assignedTo === member.id && b.status === 'Follow Up').length;
+    const assignedBuyers = buyers.filter(b => b.assignedTo === member.user_id).length;
+    const soldProperties = properties.filter(p => p.status === 'Sold' && p.soldByAgentId === member.user_id).length;
+    const hotLeads = buyers.filter(b => b.assignedTo === member.user_id && b.status === 'Interested').length;
+    const followUps = buyers.filter(b => b.assignedTo === member.user_id && b.status === 'Follow Up').length;
 
     return { assignedBuyers, soldProperties, hotLeads, followUps };
   }, [member, properties, buyers]);
@@ -104,7 +103,7 @@ export function TeamMemberDetailsDialog({
             </Card>
              <Card>
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Hot Leads</CardTitle>
+                    <CardTitle className="text-sm font-medium">Interested Leads</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">{memberStats.hotLeads}</div>
