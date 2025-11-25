@@ -103,7 +103,6 @@ export default function BuyersPage() {
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
-    const [assignmentToConfirm, setAssignmentToConfirm] = useState<{ buyer: Buyer, agentId: string } | null>(null);
 
     useEffect(() => {
         if (!isAddBuyerOpen) setBuyerToEdit(null);
@@ -123,8 +122,7 @@ export default function BuyersPage() {
     };
 
     const handleDetailsClick = (buyer: Buyer) => {
-        const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
-        setSelectedBuyer({ ...buyer, assignedAgentName: agent?.name });
+        setSelectedBuyer({ ...buyer });
         setIsDetailsOpen(true);
     };
 
@@ -283,60 +281,15 @@ export default function BuyersPage() {
         setBuyerToEdit(null);
     };
 
-    const handleAssignAgentClick = (buyer: Buyer, agentId: string) => {
-        setAssignmentToConfirm({ buyer, agentId });
-    };
-
-    const handleConfirmAssignment = async () => {
-        if (!assignmentToConfirm || !profile.agency_id) return;
-    
-        const { buyer, agentId } = assignmentToConfirm;
-    
-        if (agentId === undefined) {
-            console.warn("Cannot assign undefined agent");
-            setAssignmentToConfirm(null);
-            return;
-        }
-    
-        const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
-    
-        if (agentId === "") {
-             await setDoc(buyerRef, { assignedTo: null }, { merge: true });
-            toast({ title: 'Buyer Unassigned', description: 'This buyer is now unassigned from any agent.' });
-        } else {
-            await updateDoc(buyerRef, { assignedTo: agentId });
-            const agent = teamMembers?.find(m => m.user_id === agentId);
-            if (agent) {
-                const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-                const newActivity: Omit<Activity, 'id'> = {
-                    userName: profile.name,
-                    userAvatar: profile.avatar,
-                    action: `assigned buyer to ${agent.name}`,
-                    target: buyer?.name || `Buyer #${buyer?.serial_no}`,
-                    targetType: 'Buyer',
-                    timestamp: new Date().toISOString(),
-                    agency_id: profile.agency_id,
-                };
-                await addDoc(activityLogRef, newActivity);
-                toast({ title: 'Buyer Assigned', description: `This buyer has been assigned to ${agent.name}.` });
-            }
-        }
-    
-        setAssignmentToConfirm(null);
-    };
-
     const getFilteredBuyers = (
-        sourceBuyers: Buyer[] | null,
-        isForMyBuyersTab: boolean = false,
-        isForAssignedBuyersTab: boolean = false
+        sourceBuyers: Buyer[] | null
     ) => {
         if (!sourceBuyers) return [];
         let filtered: Buyer[] = [...sourceBuyers];
 
         if (profile.role === 'Agent') {
-            if (isForAssignedBuyersTab) {
-                filtered = agencyBuyers?.filter(b => b.assignedTo === profile.user_id) || [];
-            }
+           // Agent sees only their own created buyers
+           filtered = filtered.filter(b => b.created_by === profile.user_id);
         }
 
         filtered = filtered.filter(b => !b.is_deleted);
@@ -365,10 +318,9 @@ export default function BuyersPage() {
         return filtered;
     };
 
-    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers, true, false), [searchQuery, activeTab, filters, agentBuyers]);
-    const filteredAgencyBuyersForAdmin = useMemo(() => getFilteredBuyers(agencyBuyers, false, false), [searchQuery, activeTab, filters, agencyBuyers]);
-    const filteredAgencyBuyersForAgent = useMemo(() => getFilteredBuyers(agencyBuyers, false, true), [searchQuery, activeTab, filters, agencyBuyers, profile.user_id]);
-
+    const filteredAgentBuyers = useMemo(() => getFilteredBuyers(agentBuyers), [searchQuery, activeTab, filters, agentBuyers]);
+    const filteredAgencyBuyersForAdmin = useMemo(() => getFilteredBuyers(agencyBuyers), [searchQuery, activeTab, filters, agencyBuyers]);
+    
     const handleTabChange = (value: string) => {
         const status = value as BuyerStatus | 'All';
         const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
@@ -391,20 +343,11 @@ export default function BuyersPage() {
                 </TableHeader>
                 <TableBody>
                     {buyers.map(buyer => {
-                        const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                         return (
                             <TableRow key={buyer.id} className="cursor-pointer">
                                 <TableCell onClick={() => handleDetailsClick(buyer)}>
                                     <div className="font-bold font-headline text-base flex items-center gap-2">
                                         {buyer.name}
-                                        {buyer.assignedTo && agent && (
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                                                </TooltipTrigger>
-                                                <TooltipContent>Assigned to {agent.name}</TooltipContent>
-                                            </Tooltip>
-                                        )}
                                     </div>
                                     <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                                         <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
@@ -451,26 +394,6 @@ export default function BuyersPage() {
                                                     </DropdownMenuSubContent>
                                                 </DropdownMenuPortal>
                                             </DropdownMenuSub>
-                                            {profile.role !== 'Agent' && !isAgentData && (
-                                                <DropdownMenuSub>
-                                                    <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
-                                                    <DropdownMenuPortal>
-                                                        <DropdownMenuSubContent>
-                                                            {buyer.assignedTo && ([
-                                                                <DropdownMenuItem key="unassign-item" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
-                                                                    <UserX className="mr-2 h-4 w-4" />Unassign
-                                                                </DropdownMenuItem>,
-                                                                <DropdownMenuSeparator key="unassign-separator" />
-                                                            ])}
-                                                            {activeAgents.map(agent => (
-                                                                <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
-                                                                    {buyer.assignedTo === agent.user_id ? <Check className="mr-2 h-4 w-4" /> : <div className="mr-2 h-4 w-4" />}{agent.name}
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuPortal>
-                                                </DropdownMenuSub>
-                                            )}
                                             {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -489,21 +412,12 @@ export default function BuyersPage() {
         return (
             <div className="space-y-4">
                 {buyers.map(buyer => {
-                    const agent = teamMembers?.find(m => m.user_id === buyer.assignedTo);
                     return (
                         <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
                                         {buyer.name}
-                                        {buyer.assignedTo && agent && (
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                                                </TooltipTrigger>
-                                                <TooltipContent>Assigned to {agent.name}</TooltipContent>
-                                            </Tooltip>
-                                        )}
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={`capitalize ${buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`}>{buyer.status}</Badge>
@@ -542,28 +456,6 @@ export default function BuyersPage() {
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
                                         </DropdownMenuSub>
-                                        {profile.role !== 'Agent' && !isAgentData && (
-                                            <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger><UserCheck />Assign Agent</DropdownMenuSubTrigger>
-                                                <DropdownMenuPortal>
-                                                    <DropdownMenuSubContent>
-                                                        {buyer.assignedTo && (
-                                                            <div key="unassign-fragment">
-                                                                <DropdownMenuItem key="unassign-item" onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, ""); }}>
-                                                                    <UserX className="mr-2 h-4 w-4" />Unassign
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator key="unassign-separator" />
-                                                            </div>
-                                                        )}
-                                                        {activeAgents.map(agent => (
-                                                            <DropdownMenuItem key={agent.user_id} onSelect={(e) => { e.stopPropagation(); handleAssignAgentClick(buyer, agent.user_id); }} disabled={buyer.assignedTo === agent.user_id}>
-                                                                {buyer.assignedTo === agent.user_id ? <Check className="mr-2 h-4 w-4" /> : <div className="mr-2 h-4 w-4" />}{agent.name}
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuSubContent>
-                                                </DropdownMenuPortal>
-                                            </DropdownMenuSub>
-                                        )}
                                         {(isAgentData || profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -716,18 +608,12 @@ export default function BuyersPage() {
                     ) : null}
 
                     {profile.role === 'Agent' ? (
-                        <Tabs defaultValue="agency-buyers" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="agency-buyers">
-                                    <Home className="mr-2 h-4 w-4" /> Assigned Buyers
-                                </TabsTrigger>
+                        <Tabs defaultValue="my-buyers" className="w-full">
+                            <TabsList className="grid w-full grid-cols-1">
                                 <TabsTrigger value="my-buyers">
                                     <Briefcase className="mr-2 h-4 w-4" /> My Buyers
                                 </TabsTrigger>
                             </TabsList>
-                            <TabsContent value="agency-buyers" className="mt-4">
-                                {renderContent(filteredAgencyBuyersForAgent, false)}
-                            </TabsContent>
                             <TabsContent value="my-buyers" className="mt-4">
                                 {renderContent(filteredAgentBuyers, true)}
                             </TabsContent>
@@ -764,24 +650,6 @@ export default function BuyersPage() {
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
             {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />)}
 
-            {assignmentToConfirm && (
-                <AlertDialog open={!!assignmentToConfirm} onOpenChange={() => setAssignmentToConfirm(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Confirm Assignment</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Are you sure you want to {assignmentToConfirm.agentId === "" ? 'unassign this buyer' : `assign this buyer to ${activeAgents.find(a => a.user_id === assignmentToConfirm.agentId)?.name}`}?
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setAssignmentToConfirm(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleConfirmAssignment}>
-                                Confirm
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
         </>
     );
 }

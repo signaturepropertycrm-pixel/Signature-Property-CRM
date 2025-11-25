@@ -110,8 +110,7 @@ export type Buyer = {
     agency_id: string;
     is_deleted?: boolean;
     last_follow_up_note?: string;
-    assignedTo?: string; // ID of the agent assigned to this buyer
-    assignedAgentName?: string; // Denormalized agent name for display
+    assignedTo?: string | null; // ID of the agent assigned to this buyer
 };
 
 export type FollowUpStatus = 'Scheduled';

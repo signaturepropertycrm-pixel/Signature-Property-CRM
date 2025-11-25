@@ -113,11 +113,10 @@ export function BuyerDetailsDialog({
             <div className="space-y-6 py-4">
 
               <div className="p-4 rounded-lg bg-muted/50">
-                  <h3 className="font-bold text-lg mb-4">Contact & Assignment</h3>
+                  <h3 className="font-bold text-lg mb-4">Contact Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <DetailItem icon={<Phone />} label="Phone Number" value={buyer.phone} />
                       <DetailItem icon={<Mail />} label="Email Address" value={buyer.email} />
-                      <DetailItem icon={<UserCheck />} label="Assigned Agent" value={buyer.assignedAgentName} />
                   </div>
               </div>
               

@@ -51,14 +51,15 @@ export function TeamMemberDetailsDialog({
   const { data: buyers } = useCollection<Buyer>(buyersQuery);
 
   const memberStats = useMemo(() => {
-    if (!member || !properties || !buyers) return { assignedBuyers: 0, soldProperties: 0, hotLeads: 0, followUps: 0 };
+    if (!member || !properties || !buyers) return { soldProperties: 0, hotLeads: 0, followUps: 0 };
 
-    const assignedBuyers = buyers.filter(b => b.assignedTo === member.user_id).length;
-    const soldProperties = properties.filter(p => p.status === 'Sold' && p.soldByAgentId === member.user_id).length;
-    const hotLeads = buyers.filter(b => b.assignedTo === member.user_id && b.status === 'Interested').length;
-    const followUps = buyers.filter(b => b.assignedTo === member.user_id && b.status === 'Follow Up').length;
+    const soldProperties = properties.filter(p => p.status === 'Sold' && p.sold_by_agent_id === member.user_id).length;
+    // Since assignment is removed, we check for buyers created by the agent
+    const agentBuyers = buyers.filter(b => b.created_by === member.user_id);
+    const hotLeads = agentBuyers.filter(b => b.status === 'Interested').length;
+    const followUps = agentBuyers.filter(b => b.status === 'Follow Up').length;
 
-    return { assignedBuyers, soldProperties, hotLeads, followUps };
+    return { soldProperties, hotLeads, followUps };
   }, [member, properties, buyers]);
 
 
@@ -84,16 +85,8 @@ export function TeamMemberDetailsDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 grid grid-cols-2 gap-4">
+        <div className="py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Buyers Assigned</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{memberStats.assignedBuyers}</div>
-                </CardContent>
-            </Card>
-             <Card>
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">Properties Sold</CardTitle>
                 </CardHeader>

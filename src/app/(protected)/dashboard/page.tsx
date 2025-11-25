@@ -228,20 +228,18 @@ export default function DashboardPage() {
   const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency]);
 
   const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
-  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading || abLoading;
+  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading;
 
 
   // KPIs specific to the logged-in agent
   const agentKpiData = useMemo(() => {
     if (profile.role !== 'Agent' || !profile.user_id) return [];
     
-    // An agent's properties can be ones they created personally or ones from the agency created by them
-    const agentSpecificProperties = agencyProperties?.filter(p => p.created_by === profile.user_id) || [];
-    const allAgentProperties = [...(agentProperties || []), ...agentSpecificProperties];
+    // An agent's properties are only the ones they created personally
+    const allAgentProperties = agentProperties || [];
 
-    // An agent's buyers are ones they created personally AND ones assigned to them from the agency
-    const assignedAgencyBuyers = allAgencyBuyers?.filter(b => b.assignedTo === profile.user_id) || [];
-    const allAgentBuyers = [...(agentBuyers || []), ...assignedAgencyBuyers];
+    // An agent's buyers are only the ones they created personally
+    const allAgentBuyers = agentBuyers || [];
 
     // Filter agency-level appointments and follow-ups for the current agent
     const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
@@ -249,7 +247,7 @@ export default function DashboardPage() {
 
     return calculateKpis(allAgentProperties, allAgentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency);
 
-  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, allAgencyBuyers, currency, profile.role, profile.name, profile.user_id]);
+  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, currency, profile.role, profile.name, profile.user_id]);
 
 
   return (
@@ -268,5 +266,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
