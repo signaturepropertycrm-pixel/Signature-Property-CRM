@@ -165,20 +165,23 @@ export default function BuyersPage() {
     
     const handleAssignAgent = async (buyer: Buyer, agentId: string | null) => {
         if (!profile.agency_id) return;
-
+    
         // Safety check to ensure `undefined` is never sent to Firestore.
         const newAssignedTo = agentId === undefined ? null : agentId;
-
+    
         const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await setDoc(docRef, { assignedTo: newAssignedTo }, { merge: true });
-        
+    
+        // Update local state to reflect the change immediately in the UI
         setSelectedBuyer(prev => prev ? { ...prev, assignedTo: newAssignedTo } : null);
-        
+    
         const agentName = activeAgents.find(a => a.user_id === newAssignedTo)?.name;
-        
-        toast({ 
-            title: newAssignedTo ? 'Buyer Assigned' : 'Buyer Unassigned', 
-            description: newAssignedTo ? `Buyer ${buyer.name} assigned to ${agentName}.` : `Buyer ${buyer.name} has been unassigned.` 
+    
+        toast({
+          title: newAssignedTo ? 'Buyer Assigned' : 'Buyer Unassigned',
+          description: newAssignedTo
+            ? `Buyer ${buyer.name} assigned to ${agentName}.`
+            : `Buyer ${buyer.name} has been unassigned.`
         });
     };
 
@@ -285,16 +288,8 @@ export default function BuyersPage() {
         filtered = filtered.filter(b => !b.is_deleted);
         
         if (profile.role === 'Agent') {
-            // For agents, only show buyers created by them, or assigned to them.
-            // "My Buyers" will show created, "Assigned" will show assigned.
-            if (activeTab === 'MyBuyers') {
-                return filtered.filter(b => b.created_by === profile.user_id);
-            }
-             if (activeTab === 'Assigned') {
-                return filtered.filter(b => b.assignedTo === profile.user_id);
-            }
-            // Default to assigned for agents if no specific tab is selected
-             return filtered.filter(b => b.assignedTo === profile.user_id);
+            // "My Buyers" will show created by agent.
+            return filtered.filter(b => b.created_by === profile.user_id);
         }
 
         // For Admin/Editor
@@ -479,7 +474,6 @@ export default function BuyersPage() {
     ];
 
     const tabsForAgent = [
-        { value: 'Assigned', label: 'Assigned Buyers', icon: <UserCheck className="mr-2 h-4 w-4"/> },
         { value: 'MyBuyers', label: 'My Buyers', icon: <Briefcase className="mr-2 h-4 w-4"/> },
     ];
 
@@ -605,7 +599,7 @@ export default function BuyersPage() {
                         )}
                     </div>
 
-                    {profile.role === 'Admin' ? (
+                    {profile.role === 'Admin' || profile.role === 'Editor' ? (
                         <>
                          <div className="w-full border-b">
                             <Select onValueChange={handleTabChange} defaultValue={activeTab}>
@@ -622,15 +616,12 @@ export default function BuyersPage() {
                          </div>
                         </>
                     ) : (
-                         <Tabs defaultValue="Assigned" value={activeTab} onValueChange={handleTabChange} className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
+                         <Tabs defaultValue="MyBuyers" value={activeTab} onValueChange={handleTabChange} className="w-full">
+                            <TabsList className="grid w-full grid-cols-1">
                                 {tabsForAgent.map(tab => (
                                     <TabsTrigger key={tab.value} value={tab.value}>{tab.icon}{tab.label}</TabsTrigger>
                                 ))}
                             </TabsList>
-                             <TabsContent value="Assigned" className="mt-4">
-                                {renderContent(filteredBuyers)}
-                            </TabsContent>
                              <TabsContent value="MyBuyers" className="mt-4">
                                 {renderContent(filteredBuyers)}
                             </TabsContent>
@@ -666,3 +657,5 @@ export default function BuyersPage() {
         </>
     );
 }
+
+    

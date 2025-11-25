@@ -170,12 +170,12 @@ export function BuyerDetailsDialog({
                                 <CommandEmpty>No agents found.</CommandEmpty>
                                 <CommandGroup>
                                     {buyer.assignedTo && (
-                                        <CommandItem key="unassign-agent" onSelect={() => onAssign(buyer, null)}>
+                                        <CommandItem key="unassign-agent" onSelect={() => { onAssign(buyer, null); setPopoverOpen(false); }}>
                                             Unassign
                                         </CommandItem>
                                     )}
                                     {activeAgents.map(agent => (
-                                        <CommandItem key={agent.user_id} onSelect={() => onAssign(buyer, agent.user_id)} disabled={buyer.assignedTo === agent.user_id}>
+                                        <CommandItem key={agent.user_id} onSelect={() => { onAssign(buyer, agent.user_id); setPopoverOpen(false); }} disabled={buyer.assignedTo === agent.user_id}>
                                             <Check className={buyer.assignedTo === agent.user_id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
                                             {agent.name}
                                         </CommandItem>
@@ -194,3 +194,5 @@ export function BuyerDetailsDialog({
     </>
   );
 }
+
+    
