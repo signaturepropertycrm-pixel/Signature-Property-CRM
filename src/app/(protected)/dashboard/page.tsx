@@ -241,10 +241,10 @@ export default function DashboardPage() {
   const { profile, isLoading: isProfileLoading } = useProfile();
   
   // Agency-wide data
-  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const agencyAppointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
-  const agencyFollowUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const agencyPropertiesQuery = useMemoFirebase(() => (profile.agency_id && profile.agency_id.trim() !== '' ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null), [profile.agency_id, firestore]);
+  const agencyAppointmentsQuery = useMemoFirebase(() => (profile.agency_id && profile.agency_id.trim() !== '' ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null), [profile.agency_id, firestore]);
+  const agencyFollowUpsQuery = useMemoFirebase(() => (profile.agency_id && profile.agency_id.trim() !== '' ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null), [profile.agency_id, firestore]);
+  const agencyBuyersQuery = useMemoFirebase(() => (profile.agency_id && profile.agency_id.trim() !== '' ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null), [profile.agency_id, firestore]);
   
   const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
@@ -301,5 +301,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
