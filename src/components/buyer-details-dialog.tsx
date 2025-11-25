@@ -84,7 +84,7 @@ export function BuyerDetailsDialog({
   
   const assignedAgentName = useMemo(() => {
     if (!buyer.assignedTo) return 'Unassigned';
-    return activeAgents.find(agent => agent.user_id === buyer.assignedTo)?.name || 'Unknown Agent';
+    return activeAgents.find(agent => agent.id === buyer.assignedTo)?.name || 'Unknown Agent';
   }, [buyer.assignedTo, activeAgents]);
 
 
@@ -175,8 +175,8 @@ export function BuyerDetailsDialog({
                                         </CommandItem>
                                     )}
                                     {activeAgents.map(agent => (
-                                        <CommandItem key={agent.user_id} onSelect={() => { onAssign(buyer, agent.user_id); setPopoverOpen(false); }} disabled={buyer.assignedTo === agent.user_id}>
-                                            <Check className={buyer.assignedTo === agent.user_id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
+                                        <CommandItem key={agent.id} onSelect={() => { onAssign(buyer, agent.id); setPopoverOpen(false); }} disabled={buyer.assignedTo === agent.id}>
+                                            <Check className={buyer.assignedTo === agent.id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
                                             {agent.name}
                                         </CommandItem>
                                     ))}

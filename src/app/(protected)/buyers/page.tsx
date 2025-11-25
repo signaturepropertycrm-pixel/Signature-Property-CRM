@@ -100,6 +100,24 @@ export default function BuyersPage() {
     useEffect(() => {
         if (!isAddBuyerOpen) setBuyerToEdit(null);
     }, [isAddBuyerOpen]);
+    
+    // When the dialog closes, clear the selected buyer to ensure fresh data is loaded next time
+    useEffect(() => {
+        if (!isDetailsOpen) {
+            setSelectedBuyer(null);
+        }
+    }, [isDetailsOpen]);
+
+    // When the master list of buyers changes, update the selected buyer if it exists
+    useEffect(() => {
+        if (selectedBuyer && allBuyers) {
+            const updatedBuyer = allBuyers.find(b => b.id === selectedBuyer.id);
+            if (updatedBuyer) {
+                setSelectedBuyer(updatedBuyer);
+            }
+        }
+    }, [allBuyers, selectedBuyer]);
+
 
     const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
         if (!minAmount || !minUnit) return 'N/A';
@@ -166,16 +184,22 @@ export default function BuyersPage() {
     const handleAssignAgent = async (buyer: Buyer, agentId: string | null) => {
         if (!profile.agency_id) return;
     
-        // Safety check to ensure `undefined` is never sent to Firestore.
+        // This is the safety check.
         const newAssignedTo = agentId === undefined ? null : agentId;
     
         const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await setDoc(docRef, { assignedTo: newAssignedTo }, { merge: true });
-    
-        // Update local state to reflect the change immediately in the UI
-        setSelectedBuyer(prev => prev ? { ...prev, assignedTo: newAssignedTo } : null);
-    
-        const agentName = activeAgents.find(a => a.user_id === newAssignedTo)?.name;
+        
+        // This is the crucial part: update the local state immediately
+        // so the dialog reflects the change without needing a full data refetch.
+        if (selectedBuyer) {
+            setSelectedBuyer({
+                ...selectedBuyer,
+                assignedTo: newAssignedTo,
+            });
+        }
+        
+        const agentName = activeAgents.find(a => a.id === newAssignedTo)?.name;
     
         toast({
           title: newAssignedTo ? 'Buyer Assigned' : 'Buyer Unassigned',
