@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -44,25 +43,6 @@ export function TeamMemberDetailsDialog({
   const { profile } = useProfile();
   const firestore = useFirestore();
 
-  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: properties } = useCollection<Property>(propertiesQuery);
-  
-  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: buyers } = useCollection<Buyer>(buyersQuery);
-
-  const memberStats = useMemo(() => {
-    if (!member || !properties || !buyers) return { soldProperties: 0, hotLeads: 0, followUps: 0 };
-
-    const soldProperties = properties.filter(p => p.status === 'Sold' && p.sold_by_agent_id === member.id).length;
-    // Since assignment is removed, we check for buyers created by the agent
-    const agentBuyers = buyers.filter(b => b.created_by === member.id);
-    const hotLeads = agentBuyers.filter(b => b.status === 'Interested').length;
-    const followUps = agentBuyers.filter(b => b.status === 'Follow Up').length;
-
-    return { soldProperties, hotLeads, followUps };
-  }, [member, properties, buyers]);
-
-
   if (!member) return null;
 
   return (
@@ -85,33 +65,7 @@ export function TeamMemberDetailsDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Properties Sold</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{memberStats.soldProperties}</div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Interested Leads</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{memberStats.hotLeads}</div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Follow-ups</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{memberStats.followUps}</div>
-                </CardContent>
-            </Card>
-        </div>
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <Button className="w-full" variant="outline" onClick={() => setIsOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
