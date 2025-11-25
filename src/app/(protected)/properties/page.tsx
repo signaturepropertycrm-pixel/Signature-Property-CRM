@@ -334,7 +334,7 @@ export default function PropertiesPage() {
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="hover:bg-accent/50 transition-colors cursor-pointer">
+            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
               <TableCell>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base">{prop.auto_title}</span>
@@ -405,7 +405,7 @@ export default function PropertiesPage() {
     return (
       <div className="space-y-4">
         {properties.map((prop) => (
-          <Card key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
+          <Card key={prop.id} className="cursor-pointer">
             <CardHeader>
               <CardTitle className="flex justify-between items-start">
                 <div className="flex items-center gap-2">
