@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -121,7 +120,7 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
       
-      {!isMobile && (
+      {isMobile === false && (
         <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground font-headline">Hello, {firstName}</h1>
             <p className="text-muted-foreground text-sm">Welcome back!</p>
@@ -234,5 +233,3 @@ export function AppHeader({
     </header>
   );
 }
-
-    

@@ -1,4 +1,3 @@
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -285,6 +284,8 @@ export default function BuyersPage() {
 
         const { buyer, agentId } = assignmentToConfirm;
         const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
+        
+        // The agentId here is the user_id of the agent from the teamMembers document
         await updateDoc(buyerRef, { assignedTo: agentId });
         
         let toastTitle = 'Buyer Unassigned';
@@ -627,5 +628,3 @@ export default function BuyersPage() {
     </>
   );
 }
-
-    
