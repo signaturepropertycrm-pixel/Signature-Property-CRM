@@ -19,7 +19,7 @@ import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
@@ -67,6 +67,7 @@ export function BuyerDetailsDialog({
   onAssign,
 }: BuyerDetailsDialogProps) {
   const { currency } = useCurrency();
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
     if (!minAmount || !minUnit) {
@@ -85,6 +86,11 @@ export function BuyerDetailsDialog({
     if (!buyer.assignedTo) return 'Unassigned';
     return activeAgents.find(agent => agent.user_id === buyer.assignedTo)?.name || 'Unknown Agent';
   }, [buyer.assignedTo, activeAgents]);
+
+  const handleSelect = (agentId: string | null) => {
+    onAssign(buyer, agentId);
+    setPopoverOpen(false); // Close popover after selection
+  }
 
   if (!buyer) return null;
 
@@ -157,19 +163,21 @@ export function BuyerDetailsDialog({
           </ScrollArea>
           <DialogFooter className="border-t pt-4 sm:justify-between">
             <div className="flex items-center gap-2">
-                <Popover>
+                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                     <PopoverTrigger asChild>
                         <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" />Assign Agent</Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-56 p-0">
                          <Command>
+                            <CommandInput placeholder="Search agents..." />
                             <CommandList>
+                                <CommandEmpty>No agents found.</CommandEmpty>
                                 <CommandGroup>
                                     {buyer.assignedTo && (
-                                        <CommandItem onSelect={() => onAssign(buyer, null)}>Unassign</CommandItem>
+                                        <CommandItem onSelect={() => handleSelect(null)}>Unassign</CommandItem>
                                     )}
                                     {activeAgents.map(agent => (
-                                        <CommandItem key={agent.id} onSelect={() => onAssign(buyer, agent.user_id)} disabled={buyer.assignedTo === agent.user_id}>
+                                        <CommandItem key={agent.user_id} onSelect={() => handleSelect(agent.user_id)} disabled={buyer.assignedTo === agent.user_id}>
                                             <Check className={buyer.assignedTo === agent.user_id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
                                             {agent.name}
                                         </CommandItem>

@@ -283,16 +283,22 @@ export default function BuyersPage() {
         let filtered: Buyer[] = [...sourceBuyers];
 
         filtered = filtered.filter(b => !b.is_deleted);
-
-        if (activeTab === 'MyBuyers' && profile.role === 'Agent') {
-            return filtered.filter(b => b.created_by === profile.user_id);
-        }
         
-        if (activeTab === 'Assigned' && profile.role === 'Agent') {
-            return filtered.filter(b => b.assignedTo === profile.user_id);
+        if (profile.role === 'Agent') {
+            // For agents, only show buyers created by them, or assigned to them.
+            // "My Buyers" will show created, "Assigned" will show assigned.
+            if (activeTab === 'MyBuyers') {
+                return filtered.filter(b => b.created_by === profile.user_id);
+            }
+             if (activeTab === 'Assigned') {
+                return filtered.filter(b => b.assignedTo === profile.user_id);
+            }
+            // Default to assigned for agents if no specific tab is selected
+             return filtered.filter(b => b.assignedTo === profile.user_id);
         }
 
-        if (activeTab && activeTab !== 'All' && activeTab !== 'MyBuyers' && activeTab !== 'Assigned') {
+        // For Admin/Editor
+        if (activeTab && activeTab !== 'All') {
             filtered = filtered.filter(b => b.status === activeTab);
         }
 
