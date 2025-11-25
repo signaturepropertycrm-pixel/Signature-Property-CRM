@@ -27,6 +27,7 @@ import {
   XCircle,
   Briefcase,
   Home,
+  UserCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -56,7 +57,10 @@ const calculateKpis = (
     buyers: Buyer[] | null,
     appointments: Appointment[] | null,
     followUps: FollowUp[] | null,
-    currency: string
+    currency: string,
+    agentId?: string,
+    allAgencyProperties?: Property[] | null,
+    allAgencyBuyers?: Buyer[] | null,
 ): KpiData[] => {
     const now = new Date();
     const last30Days = subDays(now, 30);
@@ -92,7 +96,12 @@ const calculateKpis = (
     const totalRevenue = safeProperties.filter(p => p.status === 'Sold' && p.total_commission).reduce((acc, p) => acc + (p.total_commission || 0), 0);
     const previousRevenue = totalRevenue - revenueInLast30Days;
 
-    return [
+    // Agent-specific KPIs
+    const assignedPropertiesCount = allAgencyProperties?.filter(p => p.assignedTo === agentId).length || 0;
+    const assignedBuyersCount = allAgencyBuyers?.filter(b => b.assignedTo === agentId).length || 0;
+
+
+    const kpis: KpiData[] = [
        {
         id: 'total-properties',
         title: 'Total Properties',
@@ -109,6 +118,30 @@ const calculateKpis = (
         color: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
         change: getChange(buyersInLast30Days, previousBuyersCount),
       },
+    ];
+
+    if (agentId) {
+        kpis.push(
+            {
+                id: 'assigned-properties',
+                title: 'Assigned Properties',
+                value: assignedPropertiesCount.toString(),
+                icon: Briefcase,
+                color: 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300',
+                change: 'From Agency',
+            },
+            {
+                id: 'assigned-buyers',
+                title: 'Assigned Buyers',
+                value: assignedBuyersCount.toString(),
+                icon: UserCheck,
+                color: 'bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-300',
+                change: 'From Agency',
+            }
+        );
+    }
+    
+    kpis.push(
       {
         id: 'properties-sold',
         title: 'Properties Sold (30d)',
@@ -164,8 +197,10 @@ const calculateKpis = (
         icon: XCircle,
         color: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300',
         change: 'Review reasons',
-      },
-    ];
+      }
+    );
+
+    return kpis;
 };
 
 const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolean }) => {
@@ -209,22 +244,22 @@ export default function DashboardPage() {
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const agencyAppointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const agencyFollowUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
+  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   
   const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
   const { data: agencyFollowUps, isLoading: afLoading } = useCollection<FollowUp>(agencyFollowUpsQuery);
-
-  // Agent-specific data
-  const agentPropertiesQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.role, profile.user_id, firestore]);
-  const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
-  
-  const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
-  const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
-
-  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: allAgencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
 
-  // KPIs for the entire agency
+  // Agent-specific data (only their created items)
+  const agentPropertiesQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id)) : null, [profile.role, profile.user_id, firestore, profile.agency_id]);
+  const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
+  
+  const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id)) : null, [profile.role, profile.user_id, firestore, profile.agency_id]);
+  const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
+
+
+  // KPIs for the entire agency (Admin view)
   const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency]);
 
   const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
@@ -245,24 +280,24 @@ export default function DashboardPage() {
     const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
     const agentSpecificFollowUps = agencyFollowUps?.filter(f => allAgentBuyers.some(b => b.id === f.buyerId)) || null;
 
-    return calculateKpis(allAgentProperties, allAgentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency);
+    return calculateKpis(allAgentProperties, allAgentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency, profile.user_id, agencyProperties, allAgencyBuyers);
 
-  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, currency, profile.role, profile.name, profile.user_id]);
+  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, currency, profile.role, profile.name, profile.user_id, agencyProperties, allAgencyBuyers]);
 
 
   return (
     <div className="flex flex-col gap-8">
-        {profile.role === 'Agent' && (
+        {profile.role === 'Agent' ? (
              <div className='space-y-4'>
                 <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Briefcase /> My Stats</h2>
                 <KpiGrid kpiData={agentKpiData} isLoading={isAgentDataLoading} />
              </div>
+        ) : (
+             <div className='space-y-4'>
+                <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Home /> Agency Stats</h2>
+                <KpiGrid kpiData={agencyKpiData} isLoading={isAgencyDataLoading} />
+            </div>
         )}
-
-        <div className='space-y-4'>
-            <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Home /> Agency Stats</h2>
-            <KpiGrid kpiData={agencyKpiData} isLoading={isAgencyDataLoading} />
-        </div>
     </div>
   );
 }

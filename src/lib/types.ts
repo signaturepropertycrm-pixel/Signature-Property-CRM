@@ -64,6 +64,7 @@ export type Property = {
     other?: string;
   };
   is_deleted?: boolean;
+  assignedTo?: string | null; // ID of the agent assigned to this property
   // Sale details
   sold_price?: number;
   sold_price_unit?: PriceUnit;
