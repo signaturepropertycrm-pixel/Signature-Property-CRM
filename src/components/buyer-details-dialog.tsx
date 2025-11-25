@@ -87,10 +87,6 @@ export function BuyerDetailsDialog({
     return activeAgents.find(agent => agent.user_id === buyer.assignedTo)?.name || 'Unknown Agent';
   }, [buyer.assignedTo, activeAgents]);
 
-  const handleSelect = (agentId: string | null) => {
-    onAssign(buyer, agentId);
-    setPopoverOpen(false); // Close popover after selection
-  }
 
   if (!buyer) return null;
 
@@ -174,7 +170,7 @@ export function BuyerDetailsDialog({
                                 <CommandEmpty>No agents found.</CommandEmpty>
                                 <CommandGroup>
                                     {buyer.assignedTo && (
-                                        <CommandItem onSelect={() => onAssign(buyer, null)}>
+                                        <CommandItem key="unassign-agent" onSelect={() => onAssign(buyer, null)}>
                                             Unassign
                                         </CommandItem>
                                     )}
