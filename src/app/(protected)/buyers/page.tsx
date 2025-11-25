@@ -1,3 +1,4 @@
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -164,10 +165,21 @@ export default function BuyersPage() {
     
     const handleAssignAgent = async (buyer: Buyer, agentId: string | null) => {
         if (!profile.agency_id) return;
+
+        // Safety check to ensure `undefined` is never sent to Firestore.
+        const newAssignedTo = agentId === undefined ? null : agentId;
+
         const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
-        await setDoc(docRef, { assignedTo: agentId }, { merge: true });
-        setSelectedBuyer(prev => prev ? { ...prev, assignedTo: agentId } : null);
-        toast({ title: 'Buyer Re-assigned', description: 'The assigned agent has been updated.' });
+        await setDoc(docRef, { assignedTo: newAssignedTo }, { merge: true });
+        
+        setSelectedBuyer(prev => prev ? { ...prev, assignedTo: newAssignedTo } : null);
+        
+        const agentName = activeAgents.find(a => a.user_id === newAssignedTo)?.name;
+        
+        toast({ 
+            title: newAssignedTo ? 'Buyer Assigned' : 'Buyer Unassigned', 
+            description: newAssignedTo ? `Buyer ${buyer.name} assigned to ${agentName}.` : `Buyer ${buyer.name} has been unassigned.` 
+        });
     };
 
     const handleStatusChange = async (buyer: Buyer, newStatus: BuyerStatus) => {
@@ -272,11 +284,15 @@ export default function BuyersPage() {
 
         filtered = filtered.filter(b => !b.is_deleted);
 
-        if (profile.role === 'Agent') {
-            filtered = filtered.filter(b => b.assignedTo === profile.user_id);
+        if (activeTab === 'MyBuyers' && profile.role === 'Agent') {
+            return filtered.filter(b => b.created_by === profile.user_id);
+        }
+        
+        if (activeTab === 'Assigned' && profile.role === 'Agent') {
+            return filtered.filter(b => b.assignedTo === profile.user_id);
         }
 
-        if (activeTab && activeTab !== 'All') {
+        if (activeTab && activeTab !== 'All' && activeTab !== 'MyBuyers' && activeTab !== 'Assigned') {
             filtered = filtered.filter(b => b.status === activeTab);
         }
 
@@ -302,11 +318,8 @@ export default function BuyersPage() {
     
     const filteredBuyers = useMemo(() => getFilteredBuyers(allBuyers), [searchQuery, activeTab, filters, allBuyers, profile.role, profile.user_id]);
 
-    const myBuyers = useMemo(() => (allBuyers || []).filter(b => !b.is_deleted && b.created_by === profile.user_id), [allBuyers, profile.user_id]);
-
     const handleTabChange = (value: string) => {
-        const status = value as BuyerStatus | 'All';
-        const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
+        const url = value === 'All' ? pathname : `${pathname}?status=${value}`;
         router.push(url);
     };
 
@@ -586,22 +599,24 @@ export default function BuyersPage() {
                         )}
                     </div>
 
-                    {isMobile ? (
-                        <div className="w-full">
-                            <Select value={activeTab} onValueChange={handleTabChange}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
+                    {profile.role === 'Admin' ? (
+                        <>
+                         <div className="w-full border-b">
+                            <Select onValueChange={handleTabChange} defaultValue={activeTab}>
+                                <SelectTrigger className="w-full md:w-64"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="All">All Statuses</SelectItem>
-                                    {buyerStatuses.map((status) => (
-                                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                                    {tabsForAdmin.map((tab) => (
+                                        <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-                    ) : null}
-                    
-                    {profile.role === 'Agent' ? (
-                         <Tabs defaultValue="Assigned" className="w-full">
+                         </div>
+                         <div className="mt-4">
+                            {renderContent(filteredBuyers)}
+                         </div>
+                        </>
+                    ) : (
+                         <Tabs defaultValue="Assigned" value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className="grid w-full grid-cols-2">
                                 {tabsForAgent.map(tab => (
                                     <TabsTrigger key={tab.value} value={tab.value}>{tab.icon}{tab.label}</TabsTrigger>
@@ -611,13 +626,9 @@ export default function BuyersPage() {
                                 {renderContent(filteredBuyers)}
                             </TabsContent>
                              <TabsContent value="MyBuyers" className="mt-4">
-                                {renderContent(myBuyers)}
+                                {renderContent(filteredBuyers)}
                             </TabsContent>
                          </Tabs>
-                    ) : (
-                        <div className="mt-4">
-                            {renderContent(filteredBuyers)}
-                        </div>
                     )}
                 </div>
             </TooltipProvider>
