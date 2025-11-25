@@ -71,7 +71,6 @@ export default function BuyersPage() {
     const router = useRouter();
     const pathname = usePathname();
     const { profile } = useProfile();
-    console.log("Agent User ID:", profile.user_id);
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
     const { isMoreMenuOpen } = useUI();
@@ -628,3 +627,5 @@ export default function BuyersPage() {
     </>
   );
 }
+
+    

@@ -94,7 +94,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             phone: phone,
             role: role, 
             avatar: avatar,
-            user_id: user.uid,
+            user_id: user.uid, // Always ensure user_id is the UID
             agency_id: userProfile.agency_id || '',
         };
         
@@ -128,3 +128,5 @@ export function useProfile() {
   }
   return context;
 }
+
+    

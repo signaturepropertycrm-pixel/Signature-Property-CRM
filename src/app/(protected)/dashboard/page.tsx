@@ -36,7 +36,7 @@ import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { Property, Buyer, Appointment, FollowUp, User, PriceUnit } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -207,12 +207,10 @@ export default function DashboardPage() {
   
   // Agency-wide data
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const agencyAppointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const agencyFollowUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
   
   const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
-  const { data: agencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
   const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
   const { data: agencyFollowUps, isLoading: afLoading } = useCollection<FollowUp>(agencyFollowUpsQuery);
 
@@ -223,23 +221,35 @@ export default function DashboardPage() {
   const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.role, profile.user_id, firestore]);
   const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
 
+  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: allAgencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
+
+  // KPIs for the entire agency
+  const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency]);
 
   const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
-  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading;
+  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading || abLoading;
 
-  const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, agencyBuyers, agencyAppointments, agencyFollowUps, currency]);
-  
+
+  // KPIs specific to the logged-in agent
   const agentKpiData = useMemo(() => {
-    if (profile.role !== 'Agent' || !profile.name) return [];
+    if (profile.role !== 'Agent' || !profile.user_id) return [];
     
-    // Filter agency-level data for the current agent
-    const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
-    const agentSpecificFollowUps = agencyFollowUps?.filter(f => f.buyerId && (agentBuyers?.some(b => b.id === f.buyerId))) || null; // Simplified logic
+    // An agent's properties can be ones they created personally or ones from the agency created by them
     const agentSpecificProperties = agencyProperties?.filter(p => p.created_by === profile.user_id) || [];
     const allAgentProperties = [...(agentProperties || []), ...agentSpecificProperties];
-    
-    return calculateKpis(allAgentProperties, agentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency);
-  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, agencyProperties, currency, profile.role, profile.name, profile.user_id]);
+
+    // An agent's buyers are ones they created personally AND ones assigned to them from the agency
+    const assignedAgencyBuyers = allAgencyBuyers?.filter(b => b.assignedTo === profile.user_id) || [];
+    const allAgentBuyers = [...(agentBuyers || []), ...assignedAgencyBuyers];
+
+    // Filter agency-level appointments and follow-ups for the current agent
+    const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
+    const agentSpecificFollowUps = agencyFollowUps?.filter(f => allAgentBuyers.some(b => b.id === f.buyerId)) || null;
+
+    return calculateKpis(allAgentProperties, allAgentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency);
+
+  }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, allAgencyBuyers, currency, profile.role, profile.name, profile.user_id]);
 
 
   return (
