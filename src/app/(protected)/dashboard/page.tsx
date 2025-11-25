@@ -210,7 +210,7 @@ const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolea
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {dataToShow.map((kpi, i) => (
                 isLoading ? 
-                <Skeleton key={i} className="h-[108px]" /> :
+                <Card key={i}><CardHeader className="pb-2"><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /><Skeleton className="h-3 w-1/3 mt-1" /></CardContent></Card> :
                 <Card key={kpi.id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
@@ -238,7 +238,7 @@ const KpiGrid = ({ kpiData, isLoading }: { kpiData: KpiData[], isLoading: boolea
 export default function DashboardPage() {
   const { currency } = useCurrency();
   const firestore = useFirestore();
-  const { profile } = useProfile();
+  const { profile, isLoading: isProfileLoading } = useProfile();
   
   // Agency-wide data
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
@@ -262,8 +262,8 @@ export default function DashboardPage() {
   // KPIs for the entire agency (Admin view)
   const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency]);
 
-  const isAgencyDataLoading = apLoading || abLoading || aaLoading || afLoading;
-  const isAgentDataLoading = agentPLoading || agentBLoading || aaLoading || afLoading;
+  const isAgencyDataLoading = isProfileLoading || apLoading || abLoading || aaLoading || afLoading;
+  const isAgentDataLoading = isProfileLoading || agentPLoading || agentBLoading || aaLoading || afLoading;
 
 
   // KPIs specific to the logged-in agent
@@ -301,3 +301,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
