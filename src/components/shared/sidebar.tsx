@@ -51,6 +51,7 @@ import { useProfile } from '@/context/profile-context';
 import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
+  { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Properties', status: 'All', href: '/properties' },
