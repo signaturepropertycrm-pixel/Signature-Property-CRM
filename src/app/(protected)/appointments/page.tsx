@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Appointment, AppointmentStatus } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
@@ -19,7 +19,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 
 
-export default function AppointmentsPage() {
+function AppointmentsPageContent() {
   const searchParams = useSearchParams();
   const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
@@ -37,8 +37,8 @@ export default function AppointmentsPage() {
 
   const handleSaveAppointment = async (appointment: Appointment) => {
     if (!profile.agency_id) return;
-    const collectionRef = firestore, 'agencies', profile.agency_id, 'appointments');
-    collection(
+    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
+    
     if (appointmentToEdit) {
         // It's an update (reschedule)
         const docRef = doc(collectionRef, appointment.id);
@@ -217,4 +217,13 @@ export default function AppointmentsPage() {
         )}
     </div>
   );
+}
+
+
+export default function AppointmentsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AppointmentsPageContent />
+        </Suspense>
+    );
 }
