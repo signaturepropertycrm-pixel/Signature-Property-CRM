@@ -193,7 +193,7 @@ export default function PropertiesPage() {
     } else if (activeTab === 'Recorded') {
       filtered = filtered.filter((p) => p.is_recorded);
     } else if (activeTab === 'For Rent') {
-      filtered = filtered.filter((p) => p.potential_rent_amount && p.potential_rent_amount > 0);
+      filtered = filtered.filter((p) => p.potential_rent_amount && p.potential_rent_amount > 0 && p.status === 'Available');
     }
 
     if (searchQuery) {
