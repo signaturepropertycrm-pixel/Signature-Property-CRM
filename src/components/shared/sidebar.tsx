@@ -51,7 +51,6 @@ import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
-  { href: '/dashboard', label: 'Dashboard', icon: <LineChart />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Properties', status: 'All', href: '/properties' },
       { label: 'Available', status: 'Available', href: '/properties?status=Available' },
@@ -109,13 +108,13 @@ export function AppSidebar() {
   const mobileNavItems = [
      { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
      { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
-     { href: '/dashboard', label: 'Dashboard', icon: <LineChart />, roles: ['Admin', 'Agent'], isCenter: true },
+     { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'], isCenter: true },
      { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
      { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent'], isSheet: true },
   ].filter(item => item.roles.includes(profile.role));
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/dashboard', '/properties', '/buyers', '/follow-ups', '/team'].includes(item.href) &&
+      !['/overview', '/properties', '/buyers', '/follow-ups', '/team'].includes(item.href) &&
       (!item.collapsible || ['/appointments'].includes(item.href)) && // Show collapsible appointments, but not others that are handled differently
       item.roles.includes(profile.role)
   );
@@ -317,5 +316,3 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
-
-    
