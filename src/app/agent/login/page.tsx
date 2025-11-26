@@ -64,7 +64,7 @@ function AgentLoginPageContent() {
       }
       // This will log the user in. The AuthGuard and ProfileProvider will handle role checks and redirection.
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/properties');
+      router.push('/overview');
     } catch (error: any) {
       console.error('Login Error:', error);
       toast({
