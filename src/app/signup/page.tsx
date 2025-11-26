@@ -130,7 +130,7 @@ function SignupPageContent() {
         title: 'Account Created!',
         description: 'You have been successfully registered.',
       });
-      router.push('/dashboard');
+      router.push('/properties');
 
     } catch (error: any) {
       console.error('Signup Error:', error);
