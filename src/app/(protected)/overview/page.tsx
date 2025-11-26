@@ -1,14 +1,14 @@
 'use client';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, query, where } from 'firebase/firestore';
-import type { Property, Buyer, User } from '@/lib/types';
+import type { Property, Buyer, Appointment, FollowUp } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO } from 'date-fns';
@@ -85,38 +85,52 @@ export default function OverviewPage() {
     }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id]);
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
     
-    const teamMembersQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [canFetch, firestore, profile.agency_id]);
-    const { data: teamMembers, isLoading: isTeamLoading } = useCollection<User>(teamMembersQuery);
+    const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id]);
+    const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+    
+    const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
+    const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
 
-    const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isTeamLoading;
+    const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading;
 
     // --- Memoized Stats ---
     const stats = useMemo(() => {
-        const filterLast30Days = (item: { created_at?: string; sale_date?: string; createdAt?: any; status?: string }) => {
-            const dateString = item.sale_date || item.created_at || (item.createdAt?.toDate ? item.createdAt.toDate().toISOString() : null);
+        const filterLast30Days = (item: { created_at?: string; sale_date?: string; createdAt?: any; date?: string; status?: string }) => {
+            const dateString = item.sale_date || item.created_at || item.date || (item.createdAt?.toDate ? item.createdAt.toDate().toISOString() : null);
             if (!dateString) return false;
             return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
         };
         
         const totalProperties = properties?.filter(p => !p.is_deleted).length || 0;
         const totalBuyers = buyers?.filter(b => !b.is_deleted).length || 0;
-        const totalAgents = teamMembers?.filter(m => m.status === 'Active').length || 0;
-        
-        const agentsAdded30d = teamMembers?.filter(m => m.status === 'Active' && filterLast30Days(m)).length || 0;
+
         const propertiesSold30d = properties?.filter(p => p.status === 'Sold' && filterLast30Days(p)).length || 0;
         const propertiesAdded30d = properties?.filter(filterLast30Days).length || 0;
         const buyersAdded30d = buyers?.filter(filterLast30Days).length || 0;
+        
+        const interestedBuyers = buyers?.filter(b => b.status === 'Interested' && !b.is_deleted).length || 0;
+        const followUpLeads = followUps?.length || 0;
+
+        const appointments30d = appointments?.filter(filterLast30Days).length || 0;
+        const completedAppointments30d = appointments?.filter(a => a.status === 'Completed' && filterLast30Days(a)).length || 0;
+        const cancelledAppointments30d = appointments?.filter(a => a.status === 'Cancelled' && filterLast30Days(a)).length || 0;
+        const upcomingAppointments = appointments?.filter(a => a.status === 'Scheduled' && new Date(a.date) >= now).length || 0;
+
 
         return {
             totalProperties,
             totalBuyers,
-            totalAgents,
-            agentsAdded30d,
             propertiesSold30d,
             propertiesAdded30d,
-            buyersAdded30d
+            buyersAdded30d,
+            interestedBuyers,
+            followUpLeads,
+            appointments30d,
+            completedAppointments30d,
+            cancelledAppointments30d,
+            upcomingAppointments
         };
-    }, [properties, buyers, teamMembers, last30DaysStart, now]);
+    }, [properties, buyers, followUps, appointments, last30DaysStart, now]);
 
     const statCardsData: StatCardProps[] = [
         {
@@ -147,38 +161,52 @@ export default function OverviewPage() {
             isLoading
         },
         {
-            title: "New Properties (30d)",
-            value: stats.propertiesAdded30d,
-            change: "Added in the last month",
-            icon: <ArrowUpRight className="h-4 w-4" />,
-            color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
-            href: "/properties",
+            title: "Interested Buyers",
+            value: stats.interestedBuyers,
+            change: `+${stats.buyersAdded30d} new leads this month`,
+            icon: <Star className="h-4 w-4" />,
+            color: "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300",
+            href: "/buyers?status=Interested",
             isLoading
         },
         {
-            title: "New Buyers (30d)",
-            value: stats.buyersAdded30d,
-            change: "Leads generated this month",
-            icon: <UserCheck className="h-4 w-4" />,
-            color: "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300",
-            href: "/buyers",
+            title: "Follow-up Leads",
+            value: stats.followUpLeads,
+            change: "Leads requiring action",
+            icon: <PhoneForwarded className="h-4 w-4" />,
+            color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
+            href: "/follow-ups",
+            isLoading
+        },
+        {
+            title: "Appointments (30d)",
+            value: stats.appointments30d,
+            change: `${stats.upcomingAppointments} upcoming`,
+            icon: <CalendarDays className="h-4 w-4" />,
+            color: "bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300",
+            href: "/appointments",
+            isLoading
+        },
+         {
+            title: "Completed (30d)",
+            value: stats.completedAppointments30d,
+            change: "Completed appointments",
+            icon: <CheckCheck className="h-4 w-4" />,
+            color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
+            href: "/appointments",
+            isLoading
+        },
+        {
+            title: "Cancelled (30d)",
+            value: stats.cancelledAppointments30d,
+            change: "Cancelled appointments",
+            icon: <XCircle className="h-4 w-4" />,
+            color: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300",
+            href: "/appointments",
             isLoading
         },
     ];
     
-    // Add agents card only for Admins
-    if(profile.role === 'Admin') {
-        statCardsData.splice(2, 0, {
-            title: "Total Agents",
-            value: stats.totalAgents,
-            change: `+${stats.agentsAdded30d} in last 30 days`,
-            icon: <UserPlus className="h-4 w-4" />,
-            color: "bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300",
-            href: "/team",
-            isLoading
-        });
-    }
-
     return (
         <div className="space-y-6">
             <div>
