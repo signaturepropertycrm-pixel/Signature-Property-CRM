@@ -37,8 +37,8 @@ export default function AppointmentsPage() {
 
   const handleSaveAppointment = async (appointment: Appointment) => {
     if (!profile.agency_id) return;
-    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
-    
+    const collectionRef = firestore, 'agencies', profile.agency_id, 'appointments');
+    collection(
     if (appointmentToEdit) {
         // It's an update (reschedule)
         const docRef = doc(collectionRef, appointment.id);
