@@ -45,7 +45,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
   const { data: userProfile, isLoading: isUserProfileLoading } = useDoc<any>(userDocRef);
 
-  const agencyDocRef = useMemoFirebase(() => (userProfile?.agency_id ? doc(firestore, 'agencies', userProfile.agency_id) : null), [userProfile, firestore]);
+  const agencyDocRef = useMemoFirebase(() => 
+    userProfile?.agency_id && userProfile.agency_id.trim() !== '' 
+      ? doc(firestore, 'agencies', userProfile.agency_id) 
+      : null, 
+    [userProfile, firestore]
+  );
   const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
   
   const agentDocRef = useMemoFirebase(() => (userProfile?.role === 'Agent' && user ? doc(firestore, 'agents', user.uid) : null), [userProfile, user, firestore]);

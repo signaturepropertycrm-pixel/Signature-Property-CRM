@@ -63,7 +63,7 @@ function LoginPageContent() {
         throw new Error('Auth service is not available.');
       }
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/properties');
+      router.push('/Properties');
     } catch (error: any) {
       console.error('Login Error:', error);
       toast({
