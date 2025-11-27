@@ -38,7 +38,9 @@ import {
   Briefcase,
   Home,
   Building,
-  ArchiveRestore
+  ArchiveRestore,
+  PackagePlus,
+  PackageCheck,
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
@@ -74,7 +76,6 @@ import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 function formatSize(value: number, unit: string) {
@@ -92,19 +93,6 @@ interface Filters {
   demandUnit: PriceUnit | 'All';
 }
 
-type FilterTab = 'All' | 'Available' | 'Rental' | 'For Rent' | 'Sold' | 'Recorded' | 'Rent Out';
-
-const propertyStatusLinks: { label: string; status: FilterTab }[] = [
-  { label: 'All', status: 'All' },
-  { label: 'Available', status: 'Available' },
-  { label: 'Rental', status: 'Rental' },
-  { label: 'For Rent', status: 'For Rent' },
-  { label: 'Sold', status: 'Sold' },
-  { label: 'Recorded', status: 'Recorded' },
-  { label: 'Rent Out', status: 'Rent Out' },
-];
-
-
 export default function PropertiesPage() {
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -113,8 +101,6 @@ export default function PropertiesPage() {
   const { profile } = useProfile();
   const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
-  const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
-  const activeTab = statusFilterFromURL || 'All';
   const { toast } = useToast();
   const { currency } = useCurrency();
   const firestore = useFirestore();
@@ -190,9 +176,8 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
-  const getFilteredProperties = (properties: Property[] | null) => {
-    if (!properties) return [];
-    let filtered = properties.filter((p) => !p.is_deleted);
+  const allFilteredProperties = useMemo(() => {
+    let filtered = allProperties.filter((p) => !p.is_deleted);
 
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
@@ -213,29 +198,7 @@ export default function PropertiesPage() {
     if (filters.maxDemand) filtered = filtered.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
     return filtered;
-  };
-  
-  const allFilteredProperties = useMemo(() => getFilteredProperties(allProperties), [searchQuery, filters, allProperties]);
-
-  const displayedProperties = useMemo(() => {
-    switch (activeTab) {
-      case 'Available':
-        return allFilteredProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-      case 'Rental':
-        return allFilteredProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (p.potential_rent_amount || 0) > 0);
-      case 'For Rent':
-        return allFilteredProperties.filter(p => p.status === 'Available' && p.is_for_rent);
-      case 'Sold':
-        return allFilteredProperties.filter(p => p.status === 'Sold');
-      case 'Recorded':
-        return allFilteredProperties.filter(p => p.is_recorded);
-      case 'Rent Out':
-        return allFilteredProperties.filter(p => p.status === 'Rent Out');
-      case 'All':
-      default:
-        return allFilteredProperties;
-    }
-  }, [allFilteredProperties, activeTab]);
+  }, [searchQuery, filters, allProperties]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -352,13 +315,6 @@ export default function PropertiesPage() {
     }
     setPropertyToEdit(null);
 };
-
-
-  const handleTabChange = (value: string) => {
-    const status = value as FilterTab;
-    const url = `${pathname}?status=${status}`;
-    router.push(url);
-  };
 
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
@@ -628,33 +584,30 @@ export default function PropertiesPage() {
                 </div>
               )}
             </div>
-  
-            <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
-                    {propertyStatusLinks.map(link => (
-                         <TabsTrigger key={link.status} value={link.status}>{link.label}</TabsTrigger>
-                    ))}
-                </TabsList>
-                {propertyStatusLinks.map(link => (
-                    <TabsContent key={link.status} value={link.status} className="mt-4">
-                        {renderContent(displayedProperties)}
-                    </TabsContent>
-                ))}
-            </Tabs>
+            
+            <div className="mt-6">
+              {renderContent(allFilteredProperties)}
+            </div>
 
           </div>
         </TooltipProvider>
   
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button onClick={handleOpenAddDialog} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                         <PlusCircle className="h-6 w-6" />
                         <span className="sr-only">Add Property</span>
                     </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left">Add Property</TooltipContent>
-            </Tooltip>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2 mb-2">
+                    <div className="flex flex-col gap-2">
+                         <Button variant="ghost" className="justify-start" onClick={() => { setPropertyToEdit(null); setIsAddPropertyOpen(true); }}>
+                            <PackagePlus className="mr-2 h-4 w-4" /> Add Property for Sale
+                        </Button>
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
   
         <AddPropertyDialog
@@ -685,3 +638,5 @@ export default function PropertiesPage() {
     );
   }
   
+
+    
