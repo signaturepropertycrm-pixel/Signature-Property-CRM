@@ -40,6 +40,7 @@ import {
   ArchiveRestore,
   PackagePlus,
   PackageCheck,
+  RotateCcw,
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
@@ -105,7 +106,6 @@ export default function PropertiesPage() {
   const { toast } = useToast();
   const { currency } = useCurrency();
   const firestore = useFirestore();
-  const activeTab = searchParams.get('status') || 'All Properties';
 
   const agencyPropertiesQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
@@ -203,26 +203,26 @@ export default function PropertiesPage() {
 
     const statusFilter = searchParams.get('status');
 
-    if (!statusFilter) {
+    if (!statusFilter || statusFilter === 'All Properties') {
         return baseProperties;
     }
-
+    
     return baseProperties.filter(p => {
         switch (statusFilter) {
             case 'Available':
                 return p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0);
             case 'Rental':
                 return p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0;
+            case 'For Rent':
+                return p.status === 'Available' && p.is_for_rent;
             case 'Sold':
                 return p.status === 'Sold';
             case 'Recorded':
                 return p.is_recorded;
-            case 'For Rent':
-                return p.status === 'Available' && p.is_for_rent;
             case 'Rent Out':
                 return p.status === 'Rent Out';
             default:
-                return true;
+                return true; 
         }
     });
 }, [searchQuery, filters, allProperties, searchParams]);
@@ -234,8 +234,8 @@ export default function PropertiesPage() {
   };
   
   const handleOpenAddDialog = (type: ListingType) => {
-    setPropertyToEdit(null);
     setListingType(type);
+    setPropertyToEdit(null);
     setIsAddPropertyOpen(true);
   }
 
@@ -301,6 +301,27 @@ export default function PropertiesPage() {
     await setDoc(docRef, { status: 'Rent Out' }, { merge: true });
     toast({ title: 'Property Marked as Rent Out' });
   };
+  
+  const handleMarkAsUnsold = async (prop: Property) => {
+    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
+    if (!collectionId) return;
+
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    await setDoc(docRef, { 
+      status: 'Available',
+      sold_price: null,
+      sold_price_unit: null,
+      sale_date: null,
+      sold_by_agent_id: null,
+      commission_from_buyer: null,
+      commission_from_buyer_unit: null,
+      commission_from_seller: null,
+      commission_from_seller_unit: null,
+      total_commission: null,
+      agent_share_percentage: null
+    }, { merge: true });
+    toast({ title: 'Property Status Updated', description: `${prop.serial_no} marked as Available again.` });
+  };
 
   const handleDelete = async (property: Property) => {
     const { collectionName, collectionId } = getPropertyCollectionInfo(property);
@@ -343,11 +364,6 @@ export default function PropertiesPage() {
     setPropertyToEdit(null);
   };
   
-  const handleTabChange = (value: string) => {
-      const url = value === 'All Properties' ? pathname : `${pathname}?status=${value}`;
-      router.push(url);
-  };
-
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
@@ -412,8 +428,11 @@ export default function PropertiesPage() {
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
                     )}
-                    {!prop.is_for_rent && prop.status === 'Available' && (
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                    {prop.status === 'Available' && !prop.is_for_rent && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                    )}
+                    {prop.status === 'Sold' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</DropdownMenuItem>
                     )}
                     {(profile.role === 'Admin') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
@@ -480,12 +499,15 @@ export default function PropertiesPage() {
                 <DropdownMenuContent align="end" className="glass-card">
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                  {prop.is_for_rent && prop.status === 'Available' && (
+                    {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
-                  )}
-                  {!prop.is_for_rent && prop.status === 'Available' && (
-                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
-                  )}
+                    )}
+                    {prop.status === 'Available' && !prop.is_for_rent && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
+                    )}
+                    {prop.status === 'Sold' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</DropdownMenuItem>
+                    )}
                   {(profile.role === 'Admin') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                   )}
@@ -678,5 +700,7 @@ export default function PropertiesPage() {
 
 
 
+
+    
 
     

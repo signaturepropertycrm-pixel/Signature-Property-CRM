@@ -166,7 +166,7 @@ export function MarkAsSoldDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-headline">Mark Property as Sold</DialogTitle>
           <DialogDescription>
