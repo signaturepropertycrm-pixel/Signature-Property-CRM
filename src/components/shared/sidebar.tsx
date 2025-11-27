@@ -51,30 +51,12 @@ import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
-  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All', status: 'All', href: '/properties?status=All'},
-      { label: 'Available', status: 'Available', href: '/properties?status=Available' },
-      { label: 'Rental', status: 'Rental', href: '/properties?status=Rental' },
-      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
-      { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
-      { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
-      { label: 'Rent Out', status: 'Rent Out', href: '/properties?status=Rent+Out' },
-  ]},
-  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All Buyers', status: 'All', href: '/buyers' },
-      ...buyerStatuses.map(s => ({label: s, status: s, href: `/buyers?status=${encodeURIComponent(s)}`}))
-  ]},
+  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin'], collapsible: true, links: [
-      { label: 'List Generator', href: '/tools/list-generator'},
-      { label: 'Post Generator', href: '/tools/post-generator', isNew: true },
-  ] },
+  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin'] },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
-  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All Appointments', type: 'All', href: '/appointments' },
-      { label: 'Buyer', type: 'Buyer', href: '/appointments?type=Buyer' },
-      { label: 'Owner', type: 'Owner', href: '/appointments?type=Owner' },
-  ] },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
@@ -89,7 +71,6 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
@@ -97,7 +78,7 @@ export function AppSidebar() {
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
     mainMenuItems.forEach(item => {
-        if (item.collapsible) {
+        if (item.href === '/properties' || item.href === '/buyers' || item.href === '/tools' || item.href === '/appointments') { // Simplified for this example
             initialState[item.href] = pathname.startsWith(item.href);
         }
     });
@@ -128,60 +109,13 @@ export function AppSidebar() {
 
     const isActive = pathname.startsWith(item.href);
 
-    if (item.collapsible && item.links) {
-      return (
-        <Collapsible key={item.href} open={openCollapsibles[item.href]} onOpenChange={() => toggleCollapsible(item.href)}>
-          <SidebarMenuItem className="relative">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    isActive={isActive}
-                    className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                  >
-                    {item.icon}
-                    <span className="flex-1 truncate">{item.label}</span>
-                    <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform duration-200", openCollapsibles[item.href] && "rotate-180")} />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="right" align="center">{item.label}</TooltipContent>
-            </Tooltip>
-            {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-          </SidebarMenuItem>
-          <CollapsibleContent asChild>
-            <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
-              <SidebarMenu className="pl-7">
-                {item.links.map((link: any) => {
-                   const currentStatus = searchParams.get('status') || (item.href === '/properties' ? 'All' : undefined);
-                   const currentType = searchParams.get('type');
-                   const isSubActive = isActive && ((link.status && currentStatus === link.status) || (link.type && currentType === link.type) || (!link.status && !link.type && !currentStatus && !currentType));
-
-                  return (
-                    <SidebarMenuItem key={link.href}>
-                      <Link href={link.href}>
-                        <SidebarMenuButton size="sm" isActive={isSubActive} className="w-full justify-start rounded-full text-xs">
-                          {link.label}
-                          {link.isNew && <Badge variant="destructive" className="ml-auto scale-75">SOON</Badge>}
-                        </SidebarMenuButton>
-                      </Link>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      );
-    }
-
     return (
       <SidebarMenuItem key={item.href} className="relative">
         <Tooltip>
           <TooltipTrigger asChild>
             <Link href={item.href}>
               <SidebarMenuButton
-                isActive={isActive && !item.collapsible}
+                isActive={isActive}
                 className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
               >
                 {item.icon}
@@ -191,7 +125,7 @@ export function AppSidebar() {
           </TooltipTrigger>
           <TooltipContent side="right" align="center">{item.label}</TooltipContent>
         </Tooltip>
-        {isActive && !item.collapsible && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
       </SidebarMenuItem>
     );
   };

@@ -106,10 +106,6 @@ export default function PropertiesPage() {
   const { currency } = useCurrency();
   const firestore = useFirestore();
 
-  const statusFilterFromURL = searchParams.get('status') || 'All';
-  const activeTab = statusFilterFromURL;
-
-
   const agencyPropertiesQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
@@ -206,24 +202,8 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     
-    switch (activeTab) {
-      case 'Available':
-        return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-      case 'Rental':
-        return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
-      case 'Sold':
-        return baseProperties.filter(p => p.status === 'Sold');
-      case 'Recorded':
-        return baseProperties.filter(p => p.is_recorded);
-      case 'For Rent':
-        return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
-      case 'Rent Out':
-        return baseProperties.filter(p => p.status === 'Rent Out');
-      case 'All':
-      default:
-        return baseProperties;
-    }
-  }, [searchQuery, filters, allProperties, activeTab]);
+    return baseProperties;
+  }, [searchQuery, filters, allProperties]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -366,8 +346,8 @@ export default function PropertiesPage() {
               <TableCell>
                 <div className="flex items-center gap-2">
                 <span className="font-bold font-headline text-base">
-                  {prop.auto_title}
-                </span>
+  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+</span>
                   {prop.is_recorded && (
                     <Tooltip>
                       <TooltipTrigger>
@@ -445,10 +425,10 @@ export default function PropertiesPage() {
             <CardHeader>
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-                        {prop.auto_title}
-                        {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
-                      </CardTitle>
+                    <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
+  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+  {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+</CardTitle>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
                           <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
                       </div>
@@ -508,17 +488,6 @@ export default function PropertiesPage() {
     const renderContent = (properties: Property[]) => {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
-
-    const tabs = [
-        { value: 'All', label: 'All' },
-        { value: 'Available', label: 'Available' },
-        { value: 'Rental', label: 'Rental' },
-        { value: 'For Rent', label: 'For Rent' },
-        { value: 'Sold', label: 'Sold' },
-        { value: 'Recorded', label: 'Recorded' },
-        { value: 'Rent Out', label: 'Rent Out' },
-    ];
-
 
     return (
       <>
@@ -625,18 +594,9 @@ export default function PropertiesPage() {
               )}
             </div>
             
-             <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 md:grid-cols-7">
-                    {tabs.map((tab) => (
-                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
-                    ))}
-                </TabsList>
-                {tabs.map((tab) => (
-                     <TabsContent key={tab.value} value={tab.value} className="mt-6">
-                        {renderContent(filteredProperties)}
-                    </TabsContent>
-                ))}
-             </Tabs>
+            <div className="mt-6">
+              {renderContent(filteredProperties)}
+            </div>
           </div>
         </TooltipProvider>
   
