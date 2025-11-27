@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect } from 'react';
@@ -23,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { generateAutoTitle } from '@/ai/flows/auto-title-generation';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +46,7 @@ const formSchema = z.object({
   custom_property_type: z.string().optional(),
   size_value: z.coerce.number().positive('Size must be positive'),
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
+  is_for_rent: z.boolean().default(false),
   road_size_ft: z.coerce.number().int().optional(),
   storey: z.string().optional(),
   meters: z.object({
@@ -89,6 +92,7 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   custom_property_type: '',
   size_value: undefined,
   size_unit: 'Marla' as const,
+  is_for_rent: false,
   road_size_ft: undefined,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
@@ -129,6 +133,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
+            is_for_rent: propertyToEdit.is_for_rent || false,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -492,6 +497,30 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 />
               </div>
             </div>
+            
+            <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <FormLabel>Mark as "For Rent" Only</FormLabel>
+                    <p className="text-[0.8rem] text-muted-foreground">
+                        This property will only appear in the "For Rent" tab.
+                    </p>
+                </div>
+                <FormField
+                    control={control}
+                    name="is_for_rent"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+            </div>
+
 
             <FormField
               control={control}

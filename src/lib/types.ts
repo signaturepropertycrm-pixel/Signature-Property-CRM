@@ -41,6 +41,7 @@ export type Property = {
   size_unit: SizeUnit;
   road_size_ft?: number;
   storey?: string;
+  is_for_rent?: boolean;
   meters?: {
     electricity: boolean;
     gas: boolean;

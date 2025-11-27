@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -90,14 +91,15 @@ interface Filters {
   demandUnit: PriceUnit | 'All';
 }
 
-type FilterTab = 'All' | 'Available' | 'For Rent' | 'Sold' | 'Recorded';
+type FilterTab = 'All' | 'Available' | 'Rental' | 'Sold' | 'Recorded' | 'For Rent';
+
 
 const propertyStatusLinks: { label: string; status: FilterTab }[] = [
-  { label: 'All Properties', status: 'All' },
   { label: 'Available', status: 'Available' },
-  { label: 'For Rent', status: 'For Rent' },
+  { label: 'Rental', status: 'Rental' },
   { label: 'Sold', status: 'Sold' },
   { label: 'Recorded', status: 'Recorded' },
+  { label: 'For Rent', status: 'For Rent' },
 ];
 
 export default function PropertiesPage() {
@@ -109,7 +111,7 @@ export default function PropertiesPage() {
   const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
-  const activeTab = statusFilterFromURL || 'All';
+  const activeTab = statusFilterFromURL || 'Available';
   const { toast } = useToast();
   const { currency } = useCurrency();
   const firestore = useFirestore();
@@ -191,13 +193,27 @@ export default function PropertiesPage() {
     if (!properties) return [];
     let filtered = properties.filter((p) => !p.is_deleted);
 
-    if (activeTab === 'For Rent') {
-      filtered = filtered.filter(p => p.listing_type === 'For Rent' && p.status === 'Available');
-    } else if (activeTab === 'Available' || activeTab === 'Sold') {
-      filtered = filtered.filter((p) => p.status === activeTab && p.listing_type === 'For Sale');
-    } else if (activeTab === 'Recorded') {
-      filtered = filtered.filter((p) => p.is_recorded);
+    switch(activeTab) {
+        case 'Available':
+            filtered = filtered.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+            break;
+        case 'Rental':
+            filtered = filtered.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
+            break;
+        case 'Sold':
+            filtered = filtered.filter(p => p.status === 'Sold');
+            break;
+        case 'Recorded':
+            filtered = filtered.filter(p => p.is_recorded);
+            break;
+        case 'For Rent':
+            filtered = filtered.filter(p => p.is_for_rent && p.status === 'Available');
+            break;
+        default:
+            // 'All' case or fallback
+            break;
     }
+
 
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
@@ -229,6 +245,7 @@ export default function PropertiesPage() {
   };
   
   const handleOpenAddDialog = (type: ListingType) => {
+    setPropertyToEdit(null);
     setCurrentListingType(type);
     setIsAddPropertyOpen(true);
     setIsAddPopoverOpen(false);

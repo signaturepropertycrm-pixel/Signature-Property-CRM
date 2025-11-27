@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -52,11 +53,11 @@ import { useUI } from '@/app/(protected)/layout';
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All Properties', status: 'All', href: '/properties' },
       { label: 'Available', status: 'Available', href: '/properties?status=Available' },
-      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
+      { label: 'Rental', status: 'Rental', href: '/properties?status=Rental' },
       { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
       { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
+      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
   ]},
   { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Buyers', status: 'All', href: '/buyers' },
