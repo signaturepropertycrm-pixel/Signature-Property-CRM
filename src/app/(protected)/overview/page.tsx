@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { PerformanceChart } from '@/components/performance-chart';
 
 interface StatCardProps {
     title: string;
@@ -253,7 +254,7 @@ export default function OverviewPage() {
     ];
     
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><TrendingUp/> Statistics</h1>
                 <p className="text-muted-foreground">A quick overview of your performance and key metrics in the last 30 days.</p>
@@ -263,6 +264,11 @@ export default function OverviewPage() {
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}
                 {profile.role === 'Admin' && adminCards.map(card => <StatCard key={card.title} {...card} />)}
             </div>
+            
+            <div className="grid grid-cols-1 gap-8 pt-8">
+                <PerformanceChart properties={properties || []} />
+            </div>
+
         </div>
     );
 }

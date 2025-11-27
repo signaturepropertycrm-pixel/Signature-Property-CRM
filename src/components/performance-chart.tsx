@@ -70,7 +70,7 @@ const CustomBar = (props: any) => {
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
 
    const chartData = React.useMemo(() => {
-    const soldProperties = properties.filter((p) => p.status === 'Sold' && p.sold_at && p.sold_price);
+    const soldProperties = properties.filter((p) => p.status === 'Sold' && p.sale_date && p.sold_price);
     
     const realDataExists = soldProperties.length > 0;
 
@@ -81,7 +81,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
     const salesByYear: { [year: string]: number } = {};
 
     soldProperties.forEach((p) => {
-        const year = new Date(p.sold_at!).getFullYear().toString();
+        const year = new Date(p.sale_date!).getFullYear().toString();
         if (!salesByYear[year]) {
           salesByYear[year] = 0;
         }
