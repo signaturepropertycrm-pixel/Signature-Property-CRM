@@ -152,6 +152,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
         ...propertyToEdit,
         ...finalValues,
         listing_type: 'For Rent' as const,
+        is_for_rent: true,
         demand_amount: values.potential_rent_amount, // For rent, demand is the rent amount
         demand_unit: values.potential_rent_unit,
         id: propertyToEdit?.id,

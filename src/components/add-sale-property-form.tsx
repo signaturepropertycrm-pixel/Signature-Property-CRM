@@ -32,6 +32,7 @@ import type { Property } from '@/lib/types';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
+import { Switch } from './ui/switch';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -46,6 +47,7 @@ const formSchema = z.object({
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
   road_size_ft: z.coerce.number().int().optional(),
   storey: z.string().optional(),
+  is_for_rent: z.boolean().default(false),
   meters: z.object({
     electricity: z.boolean().default(false),
     gas: z.boolean().default(false),
@@ -89,6 +91,7 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   custom_property_type: '',
   size_value: '' as any,
   size_unit: 'Marla' as const,
+  is_for_rent: false,
   road_size_ft: '' as any,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
@@ -129,6 +132,7 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
+            is_for_rent: propertyToEdit.is_for_rent || false,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -170,6 +174,7 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
         ...propertyToEdit,
         ...finalValues,
         listing_type: 'For Sale' as const,
+        is_for_rent: values.is_for_rent || false,
         id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
@@ -493,6 +498,30 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 />
               </div>
             </div>
+            
+            <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                    <FormLabel>Mark as "For Rent" Only</FormLabel>
+                    <p className="text-[0.8rem] text-muted-foreground">
+                        This property will only appear in the "For Rent" tab.
+                    </p>
+                </div>
+                <FormField
+                    control={control}
+                    name="is_for_rent"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                />
+            </div>
+
 
             <FormField
               control={control}

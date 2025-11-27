@@ -111,7 +111,7 @@ export default function PropertiesPage() {
   const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
-  const activeTab = statusFilterFromURL || 'All';
+  const activeTab = statusFilterFromURL || 'Available';
   const { toast } = useToast();
   const { currency } = useCurrency();
   const firestore = useFirestore();
@@ -213,9 +213,26 @@ export default function PropertiesPage() {
 
     return filtered;
   };
+  
+  const allFilteredProperties = useMemo(() => getFilteredProperties(allProperties), [searchQuery, filters, allProperties]);
 
-  const filteredAgentProperties = useMemo(() => getFilteredProperties(agentProperties), [searchQuery, filters, agentProperties]);
-  const filteredAgencyProperties = useMemo(() => getFilteredProperties(agencyProperties), [searchQuery, filters, agencyProperties]);
+  const displayedProperties = useMemo(() => {
+    switch (activeTab) {
+      case 'Available':
+        return allFilteredProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+      case 'Rental':
+        return allFilteredProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (p.potential_rent_amount || 0) > 0);
+      case 'For Rent':
+        return allFilteredProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+      case 'Sold':
+        return allFilteredProperties.filter(p => p.status === 'Sold');
+      case 'Recorded':
+        return allFilteredProperties.filter(p => p.is_recorded);
+      case 'All':
+      default:
+        return allFilteredProperties;
+    }
+  }, [allFilteredProperties, activeTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -331,12 +348,12 @@ export default function PropertiesPage() {
 
   const handleTabChange = (value: string) => {
     const status = value as FilterTab;
-    const url = status === 'All' ? pathname : `${pathname}?status=${status}`;
+    const url = `${pathname}?status=${status}`;
     router.push(url);
   };
 
-  const renderTable = (properties: Property[], isAgentData: boolean) => {
-    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
+  const renderTable = (properties: Property[]) => {
+    if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
       <Table>
@@ -396,20 +413,20 @@ export default function PropertiesPage() {
                   <DropdownMenuContent align="end" className="glass-card">
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                    {!prop.is_for_rent && (isAgentData || profile.role !== 'Agent') && (
+                    {!prop.is_for_rent && (profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
-                    {(isAgentData || profile.role === 'Admin') && (
+                    {(profile.role === 'Admin') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
-                    {(isAgentData || profile.role === 'Admin') && (
+                    {(profile.role === 'Admin') && (
                       prop.is_recorded ? (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
                       )
                     )}
-                    {(isAgentData || profile.role !== 'Agent') && (
+                    {(profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -422,8 +439,8 @@ export default function PropertiesPage() {
     );
   };
 
-  const renderCards = (properties: Property[], isAgentData: boolean) => {
-    if (isAgentLoading || isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
+  const renderCards = (properties: Property[]) => {
+    if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
       <div className="space-y-4">
@@ -464,20 +481,20 @@ export default function PropertiesPage() {
                 <DropdownMenuContent align="end" className="glass-card">
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                  {!prop.is_for_rent && (isAgentData || profile.role !== 'Agent') && (
+                  {!prop.is_for_rent && (profile.role !== 'Agent') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                   )}
-                  {(isAgentData || profile.role === 'Admin') && (
+                  {(profile.role === 'Admin') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                   )}
-                  {(isAgentData || profile.role === 'Admin') && (
+                  {(profile.role === 'Admin') && (
                     prop.is_recorded ? (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
                       )
                     )}
-                    {(isAgentData || profile.role !== 'Agent') && (
+                    {(profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -489,8 +506,8 @@ export default function PropertiesPage() {
       );
     };
   
-    const renderContent = (properties: Property[], isAgentData: boolean) => {
-      return isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>;
+    const renderContent = (properties: Property[]) => {
+      return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
   
     return (
@@ -598,28 +615,19 @@ export default function PropertiesPage() {
               )}
             </div>
   
-            {profile.role === 'Agent' ? (
-              <Tabs defaultValue="agency-properties" className="w-full mt-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="agency-properties">
-                    <Home className="mr-2 h-4 w-4" /> Agency Properties
-                  </TabsTrigger>
-                  <TabsTrigger value="my-properties">
-                    <Briefcase className="mr-2 h-4 w-4" /> My Properties
-                  </TabsTrigger>
+            <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full mt-6">
+                <TabsList>
+                    {propertyStatusLinks.map(link => (
+                         <TabsTrigger key={link.status} value={link.status}>{link.label}</TabsTrigger>
+                    ))}
                 </TabsList>
-                <TabsContent value="agency-properties" className="mt-4">
-                  {renderContent(filteredAgencyProperties, false)}
-                </TabsContent>
-                <TabsContent value="my-properties" className="mt-4">
-                  {renderContent(filteredAgentProperties, true)}
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="mt-6">
-                {renderContent(filteredAgencyProperties, false)}
-              </div>
-            )}
+                {propertyStatusLinks.map(link => (
+                    <TabsContent key={link.status} value={link.status} className="mt-4">
+                        {renderContent(displayedProperties)}
+                    </TabsContent>
+                ))}
+            </Tabs>
+
           </div>
         </TooltipProvider>
   
@@ -671,3 +679,4 @@ export default function PropertiesPage() {
   
 
   
+
