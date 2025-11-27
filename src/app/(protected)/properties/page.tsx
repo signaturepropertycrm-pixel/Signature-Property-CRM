@@ -36,6 +36,7 @@ import {
   CalendarPlus,
   Briefcase,
   Home,
+  Building,
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
@@ -149,6 +150,7 @@ export default function PropertiesPage() {
     demandUnit: 'All',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  const [isAddPopoverOpen, setIsAddPopoverOpen] = useState(false);
 
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
@@ -349,7 +351,9 @@ export default function PropertiesPage() {
             <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => handleRowClick(prop)}>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold font-headline text-base">{prop.auto_title}</span>
+                <span className="font-bold font-headline text-base">
+                  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                </span>
                   {prop.is_recorded && (
                     <Tooltip>
                       <TooltipTrigger>
@@ -421,22 +425,13 @@ export default function PropertiesPage() {
             <CardHeader>
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                        <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-                            <span>{prop.auto_title}</span>
-                            {prop.is_recorded && (
-                                <Tooltip>
-                                <TooltipTrigger>
-                                    <Video className="h-4 w-4 text-primary" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Video is recorded</p>
-                                </TooltipContent>
-                                </Tooltip>
-                            )}
-                        </CardTitle>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                            <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
-                        </div>
+                      <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
+                        {prop.auto_title}
+                        {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+                      </CardTitle>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                          <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                      </div>
                     </div>
                     <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground')}>
                         {prop.status}
@@ -632,10 +627,29 @@ export default function PropertiesPage() {
         </TooltipProvider>
   
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
-          <Button onClick={() => setIsAddPropertyOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-            <PlusCircle className="h-6 w-6" />
-            <span className="sr-only">Add Property</span>
-          </Button>
+          <Popover open={isAddPopoverOpen} onOpenChange={setIsAddPopoverOpen}>
+            <PopoverTrigger asChild>
+                <Button className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                    <PlusCircle className="h-6 w-6" />
+                    <span className="sr-only">Add Property</span>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-auto p-2">
+              <div className="flex flex-col gap-2">
+                <Button variant="ghost" onClick={() => { setIsAddPropertyOpen(true); setIsAddPopoverOpen(false); }}>Add Property for Sale</Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" disabled>
+                            Add Property for Rent <Badge variant="destructive" className="ml-2">Soon</Badge>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>This feature is coming soon!</p>
+                    </TooltipContent>
+                </Tooltip>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
   
         <AddPropertyDialog
@@ -666,5 +680,3 @@ export default function PropertiesPage() {
     );
   }
   
-
-    
