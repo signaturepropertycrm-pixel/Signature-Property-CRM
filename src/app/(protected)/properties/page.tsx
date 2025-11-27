@@ -111,7 +111,7 @@ export default function PropertiesPage() {
   const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
   const statusFilterFromURL = searchParams.get('status') as FilterTab | 'All' | null;
-  const activeTab = statusFilterFromURL || 'Available';
+  const activeTab = statusFilterFromURL || 'All';
   const { toast } = useToast();
   const { currency } = useCurrency();
   const firestore = useFirestore();
@@ -193,33 +193,11 @@ export default function PropertiesPage() {
     if (!properties) return [];
     let filtered = properties.filter((p) => !p.is_deleted);
 
-    switch(activeTab) {
-        case 'Available':
-            filtered = filtered.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-            break;
-        case 'Rental':
-            filtered = filtered.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
-            break;
-        case 'Sold':
-            filtered = filtered.filter(p => p.status === 'Sold');
-            break;
-        case 'Recorded':
-            filtered = filtered.filter(p => p.is_recorded);
-            break;
-        case 'For Rent':
-            filtered = filtered.filter(p => p.is_for_rent && p.status === 'Available');
-            break;
-        default:
-            // 'All' case or fallback
-            break;
-    }
-
-
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (prop) =>
-          prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
+          (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
           prop.address.toLowerCase().includes(lowercasedQuery) ||
           prop.area.toLowerCase().includes(lowercasedQuery) ||
           prop.serial_no.toLowerCase().includes(lowercasedQuery)
@@ -236,8 +214,9 @@ export default function PropertiesPage() {
     return filtered;
   };
 
-  const filteredAgentProperties = useMemo(() => getFilteredProperties(agentProperties), [searchQuery, filters, activeTab, agentProperties]);
-  const filteredAgencyProperties = useMemo(() => getFilteredProperties(agencyProperties), [searchQuery, filters, activeTab, agencyProperties]);
+  const filteredAgentProperties = useMemo(() => getFilteredProperties(agentProperties), [searchQuery, filters, agentProperties]);
+  const filteredAgencyProperties = useMemo(() => getFilteredProperties(agencyProperties), [searchQuery, filters, agencyProperties]);
+
 
   const handleRowClick = (prop: Property) => {
     setSelectedProperty(prop);
@@ -263,7 +242,7 @@ export default function PropertiesPage() {
 
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
-    setCurrentListingType(prop.listing_type || 'For Sale');
+    setCurrentListingType(prop.is_for_rent ? 'For Rent' : 'For Sale');
     setIsAddPropertyOpen(true);
   };
 
@@ -377,7 +356,7 @@ export default function PropertiesPage() {
               <TableCell>
                 <div className="flex items-center gap-2">
                 <span className="font-bold font-headline text-base">
-                  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                  {prop.auto_title}
                 </span>
                   {prop.is_recorded && (
                     <Tooltip>
@@ -403,7 +382,7 @@ export default function PropertiesPage() {
                     <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
                     {prop.status}
                     </Badge>
-                    {prop.listing_type === 'For Rent' && <Badge variant="secondary">For Rent</Badge>}
+                    {prop.is_for_rent && <Badge variant="secondary">For Rent</Badge>}
                 </div>
               </TableCell>
               <TableCell className="text-right">
@@ -417,7 +396,7 @@ export default function PropertiesPage() {
                   <DropdownMenuContent align="end" className="glass-card">
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                    {(isAgentData || profile.role !== 'Agent') && prop.listing_type === 'For Sale' && (
+                    {!prop.is_for_rent && (isAgentData || profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin') && (
@@ -465,7 +444,7 @@ export default function PropertiesPage() {
                         <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground')}>
                             {prop.status}
                         </Badge>
-                         {prop.listing_type === 'For Rent' && <Badge variant="secondary">For Rent</Badge>}
+                         {prop.is_for_rent && <Badge variant="secondary">For Rent</Badge>}
                     </div>
                 </div>
             </CardHeader>
@@ -485,7 +464,7 @@ export default function PropertiesPage() {
                 <DropdownMenuContent align="end" className="glass-card">
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                  {(isAgentData || profile.role !== 'Agent') && prop.listing_type === 'For Sale' && (
+                  {!prop.is_for_rent && (isAgentData || profile.role !== 'Agent') && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                   )}
                   {(isAgentData || profile.role === 'Admin') && (
@@ -521,9 +500,9 @@ export default function PropertiesPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="hidden md:block">
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
-                <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
+                <p className="text-muted-foreground">Manage your agency and personal properties.</p>
               </div>
-              {(profile.role === 'Admin') && (
+              {(profile.role === 'Admin' || profile.role === 'Editor') && (
                 <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                   <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                     <PopoverTrigger asChild>
@@ -618,27 +597,6 @@ export default function PropertiesPage() {
                 </div>
               )}
             </div>
-  
-            {isMobile ? (
-              <div className="w-full mt-4">
-                <Select value={activeTab} onValueChange={handleTabChange}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
-                  <SelectContent>
-                    {propertyStatusLinks.map(({ label, status }) => (
-                      <SelectItem key={status} value={status}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mt-4">
-                <TabsList>
-                    {propertyStatusLinks.map(link => (
-                        <TabsTrigger key={link.status} value={link.status}>{link.label}</TabsTrigger>
-                    ))}
-                </TabsList>
-              </Tabs>
-            )}
   
             {profile.role === 'Agent' ? (
               <Tabs defaultValue="agency-properties" className="w-full mt-6">
