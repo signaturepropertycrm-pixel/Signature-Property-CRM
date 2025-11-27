@@ -90,13 +90,13 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   custom_property_type: '',
   size_value: '' as any,
   size_unit: 'Marla' as const,
-  road_size_ft: '' as any,
+  road_size_ft: undefined,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
-  potential_rent_amount: '' as any,
+  potential_rent_amount: undefined,
   potential_rent_unit: 'Thousand' as const,
-  front_ft: '' as any,
-  length_ft: '' as any,
+  front_ft: undefined,
+  length_ft: undefined,
   demand_amount: '' as any,
   demand_unit: 'Lacs' as const,
   documents: '',
@@ -130,6 +130,10 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
+            road_size_ft: propertyToEdit.road_size_ft,
+            potential_rent_amount: propertyToEdit.potential_rent_amount,
+            front_ft: propertyToEdit.front_ft,
+            length_ft: propertyToEdit.length_ft,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
