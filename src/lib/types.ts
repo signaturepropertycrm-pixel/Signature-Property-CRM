@@ -25,10 +25,12 @@ export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type CommissionUnit = 'PKR' | '%';
 export type PropertyStatus = 'Available' | 'Sold';
+export type ListingType = 'For Sale' | 'For Rent';
 
 export type Property = {
   id: string;
   serial_no: string;
+  listing_type: ListingType;
   auto_title: string;
   owner_number: string;
   city: string;

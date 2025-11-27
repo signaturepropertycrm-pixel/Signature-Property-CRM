@@ -40,7 +40,7 @@ import {
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType } from '@/lib/types';
 import { useState, useMemo, useEffect } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -95,7 +95,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded' | 'For Rent';
 const propertyStatusLinks: { label: string; status: FilterTab }[] = [
   { label: 'All Properties', status: 'All' },
   { label: 'Available', status: 'Available' },
-  { label: 'Rental', status: 'For Rent' },
+  { label: 'For Rent', status: 'For Rent' },
   { label: 'Sold', status: 'Sold' },
   { label: 'Recorded', status: 'Recorded' },
 ];
@@ -132,6 +132,7 @@ export default function PropertiesPage() {
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [currentListingType, setCurrentListingType] = useState<ListingType>('For Sale');
   const [appointmentDetails, setAppointmentDetails] = useState<{
     contactType: AppointmentContactType;
     contactName: string;
@@ -190,12 +191,12 @@ export default function PropertiesPage() {
     if (!properties) return [];
     let filtered = properties.filter((p) => !p.is_deleted);
 
-    if (activeTab && (activeTab === 'Available' || activeTab === 'Sold')) {
-      filtered = filtered.filter((p) => p.status === activeTab);
+    if (activeTab === 'For Rent') {
+      filtered = filtered.filter(p => p.listing_type === 'For Rent' && p.status === 'Available');
+    } else if (activeTab === 'Available' || activeTab === 'Sold') {
+      filtered = filtered.filter((p) => p.status === activeTab && p.listing_type === 'For Sale');
     } else if (activeTab === 'Recorded') {
       filtered = filtered.filter((p) => p.is_recorded);
-    } else if (activeTab === 'For Rent') {
-      filtered = filtered.filter((p) => p.potential_rent_amount && p.potential_rent_amount > 0 && p.status === 'Available');
     }
 
     if (searchQuery) {
@@ -226,6 +227,12 @@ export default function PropertiesPage() {
     setSelectedProperty(prop);
     setIsDetailsOpen(true);
   };
+  
+  const handleOpenAddDialog = (type: ListingType) => {
+    setCurrentListingType(type);
+    setIsAddPropertyOpen(true);
+    setIsAddPopoverOpen(false);
+  }
 
   const handleMarkAsSold = (prop: Property) => {
     setSelectedProperty(prop);
@@ -239,6 +246,7 @@ export default function PropertiesPage() {
 
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
+    setCurrentListingType(prop.listing_type || 'For Sale');
     setIsAddPropertyOpen(true);
   };
 
@@ -374,9 +382,12 @@ export default function PropertiesPage() {
               <TableCell>{formatSize(prop.size_value, prop.size_unit)}</TableCell>
               <TableCell>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
               <TableCell>
-                <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
-                  {prop.status}
-                </Badge>
+                <div className="flex flex-col gap-1 items-start">
+                    <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
+                    {prop.status}
+                    </Badge>
+                    {prop.listing_type === 'For Rent' && <Badge variant="secondary">For Rent</Badge>}
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
@@ -389,7 +400,7 @@ export default function PropertiesPage() {
                   <DropdownMenuContent align="end" className="glass-card">
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                    {(isAgentData || profile.role !== 'Agent') && (
+                    {(isAgentData || profile.role !== 'Agent') && prop.listing_type === 'For Sale' && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
                     {(isAgentData || profile.role === 'Admin') && (
@@ -433,9 +444,12 @@ export default function PropertiesPage() {
                           <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
                       </div>
                     </div>
-                    <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground')}>
-                        {prop.status}
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-end">
+                        <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground')}>
+                            {prop.status}
+                        </Badge>
+                         {prop.listing_type === 'For Rent' && <Badge variant="secondary">For Rent</Badge>}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -454,7 +468,7 @@ export default function PropertiesPage() {
                 <DropdownMenuContent align="end" className="glass-card">
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                  {(isAgentData || profile.role !== 'Agent') && (
+                  {(isAgentData || profile.role !== 'Agent') && prop.listing_type === 'For Sale' && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                   )}
                   {(isAgentData || profile.role === 'Admin') && (
@@ -636,17 +650,8 @@ export default function PropertiesPage() {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-auto p-2">
               <div className="flex flex-col gap-2">
-                <Button variant="ghost" onClick={() => { setIsAddPropertyOpen(true); setIsAddPopoverOpen(false); }}>Add Property for Sale</Button>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" disabled>
-                            Add Property for Rent <Badge variant="destructive" className="ml-2">Soon</Badge>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>This feature is coming soon!</p>
-                    </TooltipContent>
-                </Tooltip>
+                <Button variant="ghost" onClick={() => handleOpenAddDialog('For Sale')}>Add Property for Sale</Button>
+                <Button variant="ghost" onClick={() => handleOpenAddDialog('For Rent')}>Add Property for Rent</Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -655,6 +660,7 @@ export default function PropertiesPage() {
         <AddPropertyDialog
           isOpen={isAddPropertyOpen}
           setIsOpen={setIsAddPropertyOpen}
+          listingType={currentListingType}
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
