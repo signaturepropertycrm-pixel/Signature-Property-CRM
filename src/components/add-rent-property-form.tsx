@@ -76,10 +76,10 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   address: '',
   property_type: 'House' as const,
   custom_property_type: '',
-  size_value: undefined,
+  size_value: '' as any,
   size_unit: 'Marla' as const,
   storey: '',
-  potential_rent_amount: undefined,
+  potential_rent_amount: '' as any,
   potential_rent_unit: 'Thousand' as const,
   documents: '',
   created_at: new Date().toISOString(),
@@ -444,3 +444,5 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     </Form>
   );
 }
+
+    

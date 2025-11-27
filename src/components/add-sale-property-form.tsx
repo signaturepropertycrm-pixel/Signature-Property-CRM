@@ -87,16 +87,16 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   address: '',
   property_type: 'House' as const,
   custom_property_type: '',
-  size_value: undefined,
+  size_value: '' as any,
   size_unit: 'Marla' as const,
-  road_size_ft: undefined,
+  road_size_ft: '' as any,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
-  potential_rent_amount: undefined,
+  potential_rent_amount: '' as any,
   potential_rent_unit: 'Thousand' as const,
-  front_ft: undefined,
-  length_ft: undefined,
-  demand_amount: undefined,
+  front_ft: '' as any,
+  length_ft: '' as any,
+  demand_amount: '' as any,
   demand_unit: 'Lacs' as const,
   documents: '',
   created_at: new Date().toISOString(),
@@ -583,3 +583,5 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     </Form>
   );
 }
+
+    
