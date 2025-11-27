@@ -183,7 +183,7 @@ export default function OverviewPage() {
             isLoading,
         },
         {
-            title: "For Rent Properties",
+            title: "Rental Properties",
             value: stats.propertiesForRent,
             change: "Currently available for rent",
             icon: <Building2 className="h-4 w-4" />,
