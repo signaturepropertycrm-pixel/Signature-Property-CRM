@@ -180,9 +180,38 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
-  const filteredProperties = useMemo(() => {
+ const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
+    // Sidebar navigation filter
+    const statusFilter = searchParams.get('status');
+    if (statusFilter) {
+        switch (statusFilter) {
+            case 'Available':
+                baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+                break;
+            case 'Rental':
+                baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
+                break;
+            case 'For Rent':
+                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.is_for_rent === true);
+                break;
+            case 'Sold':
+                baseProperties = baseProperties.filter(p => p.status === 'Sold');
+                break;
+            case 'Recorded':
+                baseProperties = baseProperties.filter(p => p.is_recorded);
+                break;
+            case 'Rent Out':
+                baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
+                break;
+            default:
+                 // "All Properties" or unhandled status shows all non-deleted
+                break;
+        }
+    }
+    
+    // Search query filter
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         baseProperties = baseProperties.filter(
@@ -194,6 +223,7 @@ export default function PropertiesPage() {
         );
     }
 
+    // Advanced filters from popover
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -201,30 +231,7 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    const statusFilter = searchParams.get('status');
-
-    if (!statusFilter || statusFilter === 'All Properties') {
-        return baseProperties;
-    }
-    
-    return baseProperties.filter(p => {
-        switch (statusFilter) {
-            case 'Available':
-                return p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0);
-            case 'Rental':
-                return p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0;
-            case 'For Rent':
-                return p.status === 'Available' && p.is_for_rent;
-            case 'Sold':
-                return p.status === 'Sold';
-            case 'Recorded':
-                return p.is_recorded;
-            case 'Rent Out':
-                return p.status === 'Rent Out';
-            default:
-                return true; 
-        }
-    });
+    return baseProperties;
 }, [searchQuery, filters, allProperties, searchParams]);
 
 
@@ -640,7 +647,7 @@ export default function PropertiesPage() {
             </div>
             
             <div className="mt-4">
-              {renderContent(filteredProperties)}
+               {renderContent(filteredProperties)}
             </div>
           </div>
         </TooltipProvider>
@@ -700,6 +707,8 @@ export default function PropertiesPage() {
 
 
 
+
+    
 
     
 
