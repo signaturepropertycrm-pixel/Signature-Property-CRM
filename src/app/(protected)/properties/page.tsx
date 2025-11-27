@@ -419,27 +419,28 @@ export default function PropertiesPage() {
         {properties.map((prop) => (
           <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
             <CardHeader>
-              <CardTitle className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold font-headline text-base">{prop.auto_title}</span>
-                  {prop.is_recorded && (
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Video className="h-4 w-4 text-primary" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Video is recorded</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-                <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground'}>
-                  {prop.status}
-                </Badge>
-              </CardTitle>
-              <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
-                <span className="truncate">{prop.address}</span>
+              <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-2">
+                      <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
+                        <span>{prop.auto_title}</span>
+                          {prop.is_recorded && (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Video className="h-4 w-4 text-primary" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Video is recorded</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                      </CardTitle>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                          <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                      </div>
+                  </div>
+                  <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-primary text-primary-foreground')}>
+                      {prop.status}
+                  </Badge>
               </div>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
