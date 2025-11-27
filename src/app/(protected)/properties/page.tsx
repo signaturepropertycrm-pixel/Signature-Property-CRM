@@ -203,7 +203,7 @@ export default function PropertiesPage() {
 
     const statusFilter = searchParams.get('status');
 
-    if (!statusFilter || statusFilter === 'All Properties') {
+    if (!statusFilter) {
         return baseProperties;
     }
 
@@ -677,3 +677,6 @@ export default function PropertiesPage() {
     
 
 
+
+
+    
