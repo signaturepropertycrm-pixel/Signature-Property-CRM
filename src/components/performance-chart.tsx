@@ -3,72 +3,68 @@
 
 import React from 'react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
   ResponsiveContainer,
-  AreaChart,
-  Area,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { Property } from '@/lib/types';
 import { useTheme } from 'next-themes';
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { useCurrency } from '@/context/currency-context';
+import { formatCurrency } from '@/lib/formatters';
 
-const demoData = [
-  { year: '2020', revenue: 15 },
-  { year: '2021', revenue: 25 },
-  { year: '2022', revenue: -10 },
-  { year: '2023', revenue: 40 },
-  { year: '2024', revenue: 30 },
-];
-
+// Generate demo data for the last 12 months
+const generateDemoData = () => {
+    const data = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+        const date = subMonths(now, i);
+        data.push({
+            month: format(date, "MMM '’'yy"),
+            revenue: Math.floor(Math.random() * (500000 - 50000 + 1)) + 50000,
+        });
+    }
+    return data;
+};
 
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
    const { theme } = useTheme();
+   const { currency } = useCurrency();
 
    const chartData = React.useMemo(() => {
-    const soldProperties = properties.filter((p) => p.status === 'Sold' && p.sale_date && p.sold_price);
+    const soldProperties = properties.filter((p) => p.status === 'Sold' && p.sale_date && p.total_commission);
     
-    const realDataExists = soldProperties.length > 0;
-
-    if (!realDataExists) {
-        return demoData;
+    if (soldProperties.length === 0) {
+        return generateDemoData();
     }
 
-    const salesByYear: { [year: string]: number } = {};
+    const monthlyRevenue: { [key: string]: number } = {};
+    const now = new Date();
 
+    for (let i = 11; i >= 0; i--) {
+        const date = subMonths(now, i);
+        const monthKey = format(date, "MMM '’'yy");
+        monthlyRevenue[monthKey] = 0;
+    }
+    
     soldProperties.forEach((p) => {
-        const year = new Date(p.sale_date!).getFullYear().toString();
-        if (!salesByYear[year]) {
-          salesByYear[year] = 0;
+        const saleDate = parseISO(p.sale_date!);
+        const monthKey = format(saleDate, "MMM '’'yy");
+        if (monthKey in monthlyRevenue) {
+            monthlyRevenue[monthKey] += p.total_commission!;
         }
-        salesByYear[year] += p.sold_price!;
-      });
+    });
 
-    const years = Object.keys(salesByYear).sort();
-    let previousYearRevenue = 0;
-
-    const realData = years.map((year) => {
-      const revenue = salesByYear[year];
-      const revenuePercentage =
-        previousYearRevenue === 0
-          ? 0
-          : ((revenue - previousYearRevenue) / previousYearRevenue) * 100;
-      
-      previousYearRevenue = revenue;
-
-      return {
-        year: year,
-        revenue: parseFloat(revenuePercentage.toFixed(2)),
-      };
-    }).slice(-5); // take last 5 years
-
-    return realData.length > 0 ? realData : demoData;
+    return Object.keys(monthlyRevenue).map(month => ({
+        month,
+        revenue: monthlyRevenue[month],
+    }));
     
   }, [properties]);
 
@@ -80,9 +76,9 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
             <div>
               <CardTitle className="font-headline text-2xl font-bold flex items-center gap-2">
                 <TrendingUp />
-                Performance Chart
+                Monthly Revenue
               </CardTitle>
-              <CardDescription>A visual representation of year-over-year revenue growth.</CardDescription>
+              <CardDescription>Revenue from commission over the last 12 months.</CardDescription>
             </div>
         </div>
       </CardHeader>
@@ -104,21 +100,22 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                 </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="year" tickLine={false} axisLine={false} />
+            <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={12} />
             <YAxis
-              tickFormatter={(value) => `${value}%`}
+              tickFormatter={(value) => formatCurrency(value as number, currency, { notation: 'compact' })}
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={80}
+              fontSize={12}
             />
             <Tooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                     return (
                         <div className="bg-background/80 backdrop-blur-sm border p-3 rounded-lg shadow-lg">
-                            <p className="font-bold text-lg mb-2">{`Year: ${label}`}</p>
-                            <p className={payload[0].value && payload[0].value > 0 ? "text-green-500" : "text-red-500"}>
-                                {`Revenue Growth: ${payload[0].value}%`}
+                            <p className="font-bold text-lg mb-2">{label}</p>
+                            <p className="text-primary">
+                                {`Revenue: ${formatCurrency(payload[0].value as number, currency)}`}
                             </p>
                         </div>
                     );
@@ -126,7 +123,6 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                 return null;
               }}
             />
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
              <Area 
                 type="monotone" 
                 dataKey="revenue" 
