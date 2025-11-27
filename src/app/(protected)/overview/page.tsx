@@ -126,7 +126,6 @@ export default function OverviewPage() {
         
         const newProperties30d = properties?.filter(filterLast30Days).length || 0;
         const newBuyers30d = buyers?.filter(filterLast30Days).length || 0;
-        const newAgents30d = teamMembers?.filter(m => m.status === 'Active' && filterLast30Days(m)).length || 0;
 
 
         return {
@@ -143,8 +142,6 @@ export default function OverviewPage() {
             soldInLast30DaysCount: soldInLast30Days.length,
             newProperties30d,
             newBuyers30d,
-            newAgents30d,
-            totalTeamMembers: teamMembers?.filter(m => m.status === 'Active').length || 0,
         };
     }, [properties, buyers, followUps, appointments, teamMembers, last30DaysStart, now]);
 
@@ -240,18 +237,6 @@ export default function OverviewPage() {
             isLoading
         },
     ];
-
-    const adminCards: StatCardProps[] = [
-        {
-            title: "Total Agents",
-            value: stats.totalTeamMembers,
-            change: `+${stats.newAgents30d} in last 30 days`,
-            icon: <UserCheck className="h-4 w-4" />,
-            color: "bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300",
-            href: "/team",
-            isLoading,
-        },
-    ];
     
     return (
         <div className="space-y-8">
@@ -262,7 +247,6 @@ export default function OverviewPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}
-                {profile.role === 'Admin' && adminCards.map(card => <StatCard key={card.title} {...card} />)}
             </div>
             
             <div className="grid grid-cols-1 gap-8 pt-8">
