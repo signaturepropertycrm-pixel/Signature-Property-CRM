@@ -181,15 +181,22 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
- const filteredProperties = useMemo(() => {
+  const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
-    let filtered = baseProperties;
+    // Apply popover filters first
+    let searchFiltered = baseProperties;
+    if (filters.area) searchFiltered = searchFiltered.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
+    if (filters.propertyType !== 'All') searchFiltered = searchFiltered.filter((p) => p.property_type === filters.propertyType);
+    if (filters.minSize) searchFiltered = searchFiltered.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.maxSize) searchFiltered = searchFiltered.filter((p) => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
+    if (filters.minDemand) searchFiltered = searchFiltered.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
+    if (filters.maxDemand) searchFiltered = searchFiltered.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    // Apply secondary search and popover filters
+    // Apply search query
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter(
+      searchFiltered = searchFiltered.filter(
         (prop) =>
           (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
           prop.address.toLowerCase().includes(lowercasedQuery) ||
@@ -198,15 +205,24 @@ export default function PropertiesPage() {
       );
     }
     
-    if (filters.area) filtered = filtered.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
-    if (filters.propertyType !== 'All') filtered = filtered.filter((p) => p.property_type === filters.propertyType);
-    if (filters.minSize) filtered = filtered.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    if (filters.maxSize) filtered = filtered.filter((p) => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
-    if (filters.minDemand) filtered = filtered.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
-    if (filters.maxDemand) filtered = filtered.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
-
-    return filtered;
-
+    // Then, apply tab-based filtering on the already filtered list
+    switch (activeTab) {
+        case 'Available':
+            return searchFiltered.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+        case 'Rental':
+            return searchFiltered.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
+        case 'For Rent':
+            return searchFiltered.filter(p => p.status === 'Available' && p.is_for_rent);
+        case 'Sold':
+            return searchFiltered.filter(p => p.status === 'Sold');
+        case 'Recorded':
+            return searchFiltered.filter(p => p.is_recorded);
+        case 'Rent Out':
+            return searchFiltered.filter(p => p.status === 'Rent Out');
+        case 'All':
+        default:
+            return searchFiltered;
+    }
   }, [searchQuery, filters, allProperties, activeTab]);
 
 
@@ -493,6 +509,16 @@ export default function PropertiesPage() {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
   
+    const TABS = [
+        { value: 'All', label: 'All' },
+        { value: 'Available', label: 'Available' },
+        { value: 'Rental', label: 'Rental' },
+        { value: 'For Rent', label: 'For Rent' },
+        { value: 'Sold', label: 'Sold' },
+        { value: 'Recorded', label: 'Recorded' },
+        { value: 'Rent Out', label: 'Rent Out' },
+    ];
+
     return (
       <>
         <TooltipProvider>
@@ -598,9 +624,16 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <div className="mt-6">
-                {renderContent(filteredProperties)}
-            </div>
+            <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="mt-4">
+              <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 md:grid-cols-7">
+                {TABS.map(tab => (
+                    <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                ))}
+              </TabsList>
+              <div className="mt-6">
+                 {renderContent(filteredProperties)}
+              </div>
+            </Tabs>
 
           </div>
         </TooltipProvider>
@@ -651,3 +684,5 @@ export default function PropertiesPage() {
     );
   }
   
+
+    
