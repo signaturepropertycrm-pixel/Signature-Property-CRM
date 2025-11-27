@@ -469,198 +469,199 @@ export default function PropertiesPage() {
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
-                    )
-                  )}
-                  {(isAgentData || profile.role !== 'Agent') && (
-                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
-  const renderContent = (properties: Property[], isAgentData: boolean) => {
-    return isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>;
-  };
-
-  return (
-    <>
-      <TooltipProvider>
-        <div className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="hidden md:block">
-              <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
-              <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
-            </div>
-            {(profile.role === 'Admin') && (
-              <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="grid gap-4">
-                      <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Filters</h4>
-                        <p className="text-sm text-muted-foreground">Refine your property search.</p>
+                      )
+                    )}
+                    {(isAgentData || profile.role !== 'Agent') && (
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      );
+    };
+  
+    const renderContent = (properties: Property[], isAgentData: boolean) => {
+      return isMobile ? renderCards(properties, isAgentData) : <Card><CardContent className="p-0">{renderTable(properties, isAgentData)}</CardContent></Card>;
+    };
+  
+    return (
+      <>
+        <TooltipProvider>
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="hidden md:block">
+                <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
+                <p className="text-muted-foreground">{activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your agency and personal properties.'}</p>
+              </div>
+              {(profile.role === 'Admin') && (
+                <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
+                  <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="grid gap-4">
+                        <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Filters</h4>
+                          <p className="text-sm text-muted-foreground">Refine your property search.</p>
+                        </div>
+                        <div className="grid gap-2">
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label htmlFor="area">Area</Label>
+                            <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label htmlFor="propertyType">Type</Label>
+                            <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                              <SelectTrigger className="col-span-2 h-8">
+                                <SelectValue placeholder="Property Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="All">All</SelectItem>
+                                <SelectItem value="House">House</SelectItem>
+                                <SelectItem value="Plot">Plot</SelectItem>
+                                <SelectItem value="Flat">Flat</SelectItem>
+                                <SelectItem value="Shop">Shop</SelectItem>
+                                <SelectItem value="Commercial">Commercial</SelectItem>
+                                <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Size</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                              <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={(e) => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                              <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={(e) => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label></Label>
+                            <div className="col-span-2">
+                              <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Unit" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="All">All Units</SelectItem>
+                                  <SelectItem value="Marla">Marla</SelectItem>
+                                  <SelectItem value="SqFt">SqFt</SelectItem>
+                                  <SelectItem value="Kanal">Kanal</SelectItem>
+                                  <SelectItem value="Acre">Acre</SelectItem>
+                                  <SelectItem value="Maraba">Maraba</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label>Demand</Label>
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                              <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={(e) => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                              <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={(e) => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 items-center gap-4">
+                            <Label></Label>
+                            <div className="col-span-2">
+                              <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Unit" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="All">All Units</SelectItem>
+                                  <SelectItem value="Lacs">Lacs</SelectItem>
+                                  <SelectItem value="Crore">Crore</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                            <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                          </div>
                       </div>
-                      <div className="grid gap-2">
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="area">Area</Label>
-                          <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor="propertyType">Type</Label>
-                          <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                            <SelectTrigger className="col-span-2 h-8">
-                              <SelectValue placeholder="Property Type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="All">All</SelectItem>
-                              <SelectItem value="House">House</SelectItem>
-                              <SelectItem value="Plot">Plot</SelectItem>
-                              <SelectItem value="Flat">Flat</SelectItem>
-                              <SelectItem value="Shop">Shop</SelectItem>
-                              <SelectItem value="Commercial">Commercial</SelectItem>
-                              <SelectItem value="Agricultural">Agricultural</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label>Size</Label>
-                          <div className="col-span-2 grid grid-cols-2 gap-2">
-                            <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={(e) => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                            <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={(e) => handleFilterChange('maxSize', e.target.value)} className="h-8" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label></Label>
-                          <div className="col-span-2">
-                            <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Unit" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="All">All Units</SelectItem>
-                                <SelectItem value="Marla">Marla</SelectItem>
-                                <SelectItem value="SqFt">SqFt</SelectItem>
-                                <SelectItem value="Kanal">Kanal</SelectItem>
-                                <SelectItem value="Acre">Acre</SelectItem>
-                                <SelectItem value="Maraba">Maraba</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label>Demand</Label>
-                          <div className="col-span-2 grid grid-cols-2 gap-2">
-                            <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={(e) => handleFilterChange('minDemand', e.target.value)} className="h-8" />
-                            <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={(e) => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 items-center gap-4">
-                          <Label></Label>
-                          <div className="col-span-2">
-                            <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Unit" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="All">All Units</SelectItem>
-                                <SelectItem value="Lacs">Lacs</SelectItem>
-                                <SelectItem value="Crore">Crore</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                          <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
-                        </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
-                <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
+                  <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
+                </div>
+              )}
+            </div>
+  
+            {isMobile && (
+              <div className="w-full">
+                <Select value={activeTab} onValueChange={handleTabChange}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
+                  <SelectContent>
+                    {propertyStatusLinks.map(({ label, status }) => (
+                      <SelectItem key={status} value={status}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+  
+            {profile.role === 'Agent' ? (
+              <Tabs defaultValue="agency-properties" className="w-full mt-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="agency-properties">
+                    <Home className="mr-2 h-4 w-4" /> Agency Properties
+                  </TabsTrigger>
+                  <TabsTrigger value="my-properties">
+                    <Briefcase className="mr-2 h-4 w-4" /> My Properties
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="agency-properties" className="mt-4">
+                  {renderContent(filteredAgencyProperties, false)}
+                </TabsContent>
+                <TabsContent value="my-properties" className="mt-4">
+                  {renderContent(filteredAgentProperties, true)}
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="mt-6">
+                {renderContent(filteredAgencyProperties, false)}
               </div>
             )}
           </div>
-
-          {isMobile && (
-            <div className="w-full">
-              <Select value={activeTab} onValueChange={handleTabChange}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
-                <SelectContent>
-                  {propertyStatusLinks.map(({ label, status }) => (
-                    <SelectItem key={status} value={status}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {profile.role === 'Agent' ? (
-            <Tabs defaultValue="agency-properties" className="w-full mt-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="agency-properties">
-                  <Home className="mr-2 h-4 w-4" /> Agency Properties
-                </TabsTrigger>
-                <TabsTrigger value="my-properties">
-                  <Briefcase className="mr-2 h-4 w-4" /> My Properties
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="agency-properties" className="mt-4">
-                {renderContent(filteredAgencyProperties, false)}
-              </TabsContent>
-              <TabsContent value="my-properties" className="mt-4">
-                {renderContent(filteredAgentProperties, true)}
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="mt-6">
-              {renderContent(filteredAgencyProperties, false)}
-            </div>
-          )}
+        </TooltipProvider>
+  
+        <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
+          <Button onClick={() => setIsAddPropertyOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+            <PlusCircle className="h-6 w-6" />
+            <span className="sr-only">Add Property</span>
+          </Button>
         </div>
-      </TooltipProvider>
-
-      <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
-        <Button onClick={() => setIsAddPropertyOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-          <PlusCircle className="h-6 w-6" />
-          <span className="sr-only">Add Property</span>
-        </Button>
-      </div>
-
-      <AddPropertyDialog
-        isOpen={isAddPropertyOpen}
-        setIsOpen={setIsAddPropertyOpen}
-        propertyToEdit={propertyToEdit}
-        totalProperties={allProperties.length}
-        onSave={handleSaveProperty}
-      />
-
-      {appointmentDetails && (
-        <SetAppointmentDialog
-          isOpen={isAppointmentOpen}
-          setIsOpen={setIsAppointmentOpen}
-          onSave={handleSaveAppointment}
-          appointmentDetails={appointmentDetails}
+  
+        <AddPropertyDialog
+          isOpen={isAddPropertyOpen}
+          setIsOpen={setIsAddPropertyOpen}
+          propertyToEdit={propertyToEdit}
+          totalProperties={allProperties.length}
+          onSave={handleSaveProperty}
         />
-      )}
-
-      {selectedProperty && (
-        <>
-          <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
-          <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
-          <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
-        </>
-      )}
-    </>
-  );
-}
+  
+        {appointmentDetails && (
+          <SetAppointmentDialog
+            isOpen={isAppointmentOpen}
+            setIsOpen={setIsAppointmentOpen}
+            onSave={handleSaveAppointment}
+            appointmentDetails={appointmentDetails}
+          />
+        )}
+  
+        {selectedProperty && (
+          <>
+            <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
+            <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
+            <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
+          </>
+        )}
+      </>
+    );
+  }
+  
