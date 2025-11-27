@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   Sidebar,
   SidebarHeader,
@@ -53,13 +52,13 @@ import { useUI } from '@/app/(protected)/layout';
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All Properties', href: '/properties?status=All'},
-      { label: 'Available', href: '/properties?status=Available' },
-      { label: 'Rental', href: '/properties?status=Rental' },
-      { label: 'For Rent', href: '/properties?status=For+Rent' },
-      { label: 'Sold', href: '/properties?status=Sold' },
-      { label: 'Recorded', href: '/properties?status=Recorded' },
-      { label: 'Rent Out', href: '/properties?status=Rent+Out' },
+      { label: 'All', status: 'All', href: '/properties?status=All'},
+      { label: 'Available', status: 'Available', href: '/properties?status=Available' },
+      { label: 'Rental', status: 'Rental', href: '/properties?status=Rental' },
+      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
+      { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
+      { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
+      { label: 'Rent Out', status: 'Rent Out', href: '/properties?status=Rent+Out' },
   ]},
   { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Buyers', status: 'All', href: '/buyers' },
@@ -90,6 +89,7 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
@@ -127,8 +127,6 @@ export function AppSidebar() {
     }
 
     const isActive = pathname.startsWith(item.href);
-    const fullUrl = pathname;
-
 
     if (item.collapsible && item.links) {
       return (
@@ -155,7 +153,8 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                   const isSubActive = fullUrl === link.href;
+                   const currentStatus = searchParams.get('status');
+                   const isSubActive = isActive && (currentStatus === link.status || (!currentStatus && link.status === 'All'));
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
