@@ -77,6 +77,7 @@ import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -122,7 +123,6 @@ export default function PropertiesPage() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
-  const [listingType, setListingType] = useState<'For Sale' | 'For Rent'>('For Sale');
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{
     contactType: AppointmentContactType;
@@ -142,7 +142,7 @@ export default function PropertiesPage() {
     demandUnit: 'All',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
-  const activeTab = 'All';
+  const activeTab = searchParams.get('status') || 'All';
 
 
   const allProperties = useMemo(() => {
@@ -179,11 +179,38 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
-  const filteredProperties = useMemo(() => {
+ const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
+
+    // Apply main tab filter first
+    switch (activeTab) {
+        case 'Available':
+            baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+            break;
+        case 'Rental':
+            baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
+            break;
+        case 'For Rent':
+            baseProperties = baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+            break;
+        case 'Sold':
+            baseProperties = baseProperties.filter(p => p.status === 'Sold');
+            break;
+        case 'Recorded':
+            baseProperties = baseProperties.filter(p => p.is_recorded);
+            break;
+        case 'Rent Out':
+            baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
+            break;
+        case 'All':
+        default:
+            // No status filter for 'All'
+            break;
+    }
 
     let filtered = baseProperties;
 
+    // Apply secondary search and popover filters
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -212,9 +239,8 @@ export default function PropertiesPage() {
     setIsDetailsOpen(true);
   };
   
-  const handleOpenAddDialog = (type: 'For Sale' | 'For Rent') => {
+  const handleOpenAddDialog = () => {
     setPropertyToEdit(null);
-    setListingType(type);
     setIsAddPropertyOpen(true);
   }
 
@@ -230,7 +256,6 @@ export default function PropertiesPage() {
 
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
-    setListingType(prop.listing_type || 'For Sale');
     setIsAddPropertyOpen(true);
   };
 
@@ -297,7 +322,6 @@ export default function PropertiesPage() {
     const isAgentAdding = profile.role === 'Agent';
     
     if (propertyToEdit && propertyData.id) {
-        // When editing, determine the correct collection based on the original property's creator
         const { collectionName, collectionId } = getPropertyCollectionInfo(propertyToEdit);
         if (!collectionId) return;
 
@@ -305,7 +329,6 @@ export default function PropertiesPage() {
         await setDoc(docRef, propertyData, { merge: true });
         toast({ title: 'Property Updated' });
     } else {
-        // When adding a new property
         const collectionName = isAgentAdding ? 'agents' : 'agencies';
         const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
         
@@ -316,8 +339,8 @@ export default function PropertiesPage() {
         
         await addDoc(collectionRef, { 
             ...restOfData,
-            created_by: profile.user_id, // Ensure created_by is set correctly
-            agency_id: profile.agency_id // Ensure agency_id is always present
+            created_by: profile.user_id,
+            agency_id: profile.agency_id
         });
         toast({ title: 'Property Added' });
     }
@@ -392,7 +415,7 @@ export default function PropertiesPage() {
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
                     )}
-                    {!prop.is_for_rent && (profile.role !== 'Agent') && (
+                    {!prop.is_for_rent && prop.status === 'Available' && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
                     {(profile.role === 'Admin') && (
@@ -463,7 +486,7 @@ export default function PropertiesPage() {
                   {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
                   )}
-                  {!prop.is_for_rent && (profile.role !== 'Agent') && (
+                  {!prop.is_for_rent && prop.status === 'Available' && (
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                   )}
                   {(profile.role === 'Admin') && (
@@ -492,6 +515,16 @@ export default function PropertiesPage() {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
   
+    const tabs = [
+      { value: 'All', label: 'All' },
+      { value: 'Available', label: 'Available' },
+      { value: 'Rental', label: 'Rental' },
+      { value: 'For Rent', label: 'For Rent' },
+      { value: 'Sold', label: 'Sold' },
+      { value: 'Recorded', label: 'Recorded' },
+      { value: 'Rent Out', label: 'Rent Out' },
+    ];
+
     return (
       <>
         <TooltipProvider>
@@ -597,32 +630,27 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <div className="mt-6">
-              {renderContent(filteredProperties)}
-            </div>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList className={cn("grid w-full", isMobile ? "grid-cols-3" : "md:grid-cols-7")}>
+                    {tabs.map(tab => (
+                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    ))}
+                </TabsList>
+                {tabs.map(tab => (
+                     <TabsContent key={tab.value} value={tab.value} className="mt-6">
+                        {renderContent(filteredProperties)}
+                    </TabsContent>
+                ))}
+            </Tabs>
 
           </div>
         </TooltipProvider>
   
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
-             <Popover>
-                <PopoverTrigger asChild>
-                    <Button className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                        <PlusCircle className="h-6 w-6" />
-                        <span className="sr-only">Add Property</span>
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2 mb-2">
-                    <div className="flex flex-col gap-2">
-                         <Button variant="ghost" className="justify-start" onClick={() => handleOpenAddDialog('For Sale')}>
-                            <PackagePlus className="mr-2 h-4 w-4" /> For Sale
-                        </Button>
-                        <Button variant="ghost" className="justify-start" onClick={() => handleOpenAddDialog('For Rent')}>
-                            <PackageCheck className="mr-2 h-4 w-4" /> For Rent
-                        </Button>
-                    </div>
-                </PopoverContent>
-            </Popover>
+            <Button onClick={handleOpenAddDialog} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                <PlusCircle className="h-6 w-6" />
+                <span className="sr-only">Add Property</span>
+            </Button>
         </div>
   
         <AddPropertyDialog
@@ -631,7 +659,6 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
-          listingType={listingType}
         />
   
         {appointmentDetails && (

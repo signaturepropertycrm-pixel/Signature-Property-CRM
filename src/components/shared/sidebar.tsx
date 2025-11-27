@@ -68,13 +68,13 @@ const mainMenuItems = [
   { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin'], collapsible: true, links: [
       { label: 'List Generator', href: '/tools/list-generator'},
       { label: 'Post Generator', href: '/tools/post-generator', isNew: true },
-  ]},
+  ] },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Appointments', type: 'All', href: '/appointments' },
       { label: 'Buyer', type: 'Buyer', href: '/appointments?type=Buyer' },
       { label: 'Owner', type: 'Owner', href: '/appointments?type=Owner' },
-  ]},
+  ] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
@@ -153,8 +153,8 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                   const currentStatus = searchParams.get('status');
-                   const isSubActive = isActive && (currentStatus === link.status || (!currentStatus && link.status === 'All'));
+                   const currentStatus = searchParams.get('status') || 'All';
+                   const isSubActive = isActive && currentStatus === link.status;
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
