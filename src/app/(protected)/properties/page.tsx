@@ -181,7 +181,7 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
-  const filteredProperties = useMemo(() => {
+ const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
     // Apply popover filters first
@@ -208,7 +208,7 @@ export default function PropertiesPage() {
     // Then, apply tab-based filtering on the already filtered list
     switch (activeTab) {
         case 'Available':
-            return searchFiltered.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+            return searchFiltered.filter(p => p.status === 'Available' && !p.is_for_rent && (p.potential_rent_amount === undefined || p.potential_rent_amount === null || p.potential_rent_amount === 0));
         case 'Rental':
             return searchFiltered.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
         case 'For Rent':
@@ -684,5 +684,7 @@ export default function PropertiesPage() {
     );
   }
   
+
+    
 
     
