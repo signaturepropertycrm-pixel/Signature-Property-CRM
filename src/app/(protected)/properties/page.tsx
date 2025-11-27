@@ -94,7 +94,7 @@ type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded' | 'For Rent';
 const propertyStatusLinks: { label: string; status: FilterTab }[] = [
   { label: 'All Properties', status: 'All' },
   { label: 'Available', status: 'Available' },
-  { label: 'For Rent', status: 'For Rent' },
+  { label: 'Rental', status: 'For Rent' },
   { label: 'Sold', status: 'Sold' },
   { label: 'Recorded', status: 'Recorded' },
 ];
