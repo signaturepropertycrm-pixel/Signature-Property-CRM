@@ -64,6 +64,18 @@ export function PropertyDetailsDialog({
 
   const hasVideoLinks = property.is_recorded && property.video_links && Object.values(property.video_links).some(link => !!link);
 
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'Sold':
+        return 'bg-green-600 hover:bg-green-700 text-white';
+      case 'Rent Out':
+        return 'bg-blue-600 hover:bg-blue-700 text-white';
+      default:
+        return 'bg-primary text-primary-foreground hover:bg-primary/90';
+    }
+  };
+
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -77,9 +89,7 @@ export function PropertyDetailsDialog({
                 </DialogDescription>
               </div>
               <Badge 
-                className={property.status === 'Sold' 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90'}
+                className={getStatusBadgeClass(property.status)}
               >
                 {property.status}
               </Badge>

@@ -53,12 +53,13 @@ import { useUI } from '@/app/(protected)/layout';
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'], collapsible: true, links: [
-      { label: 'All Properties', status: 'All', href: '/properties?status=All'},
-      { label: 'Available', status: 'Available', href: '/properties?status=Available' },
-      { label: 'Rental', status: 'Rental', href: '/properties?status=Rental' },
-      { label: 'Sold', status: 'Sold', href: '/properties?status=Sold' },
-      { label: 'Recorded', status: 'Recorded', href: '/properties?status=Recorded' },
-      { label: 'For Rent', status: 'For Rent', href: '/properties?status=For+Rent' },
+      { label: 'All Properties', href: '/properties?status=All'},
+      { label: 'Available', href: '/properties?status=Available' },
+      { label: 'Rental', href: '/properties?status=Rental' },
+      { label: 'For Rent', href: '/properties?status=For+Rent' },
+      { label: 'Sold', href: '/properties?status=Sold' },
+      { label: 'Recorded', href: '/properties?status=Recorded' },
+      { label: 'Rent Out', href: '/properties?status=Rent+Out' },
   ]},
   { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'], collapsible: true, links: [
       { label: 'All Buyers', status: 'All', href: '/buyers' },

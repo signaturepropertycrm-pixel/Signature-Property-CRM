@@ -24,7 +24,7 @@ export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | '
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type CommissionUnit = 'PKR' | '%';
-export type PropertyStatus = 'Available' | 'Sold';
+export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out';
 export type ListingType = 'For Sale' | 'For Rent';
 
 export type Property = {
@@ -41,7 +41,7 @@ export type Property = {
   size_unit: SizeUnit;
   road_size_ft?: number;
   storey?: string;
-  is_for_rent?: boolean;
+  is_for_rent: boolean;
   meters?: {
     electricity: boolean;
     gas: boolean;
