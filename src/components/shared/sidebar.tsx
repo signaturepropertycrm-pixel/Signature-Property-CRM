@@ -51,10 +51,42 @@ import { useUI } from '@/app/(protected)/layout';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
-  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
-  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
+  { 
+    href: '/properties', 
+    label: 'Properties', 
+    icon: <Building2 />, 
+    roles: ['Admin', 'Agent'],
+    subItems: [
+        { href: '/properties', label: 'All Properties' },
+        { href: '/properties?status=Available', label: 'Available' },
+        { href: '/properties?status=Rental', label: 'Rental' },
+        { href: '/properties?status=For%20Rent', label: 'For Rent' },
+        { href: '/properties?status=Sold', label: 'Sold' },
+        { href: '/properties?status=Recorded', label: 'Recorded' },
+        { href: '/properties?status=Rent%20Out', label: 'Rent Out' },
+    ]
+  },
+  { 
+    href: '/buyers', 
+    label: 'Buyers', 
+    icon: <Users />, 
+    roles: ['Admin', 'Agent'],
+    subItems: [
+        { href: '/buyers', label: 'All Buyers'},
+        ...buyerStatuses.map(status => ({ href: `/buyers?status=${encodeURIComponent(status)}`, label: status }))
+    ]
+  },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/tools', label: 'Tools', icon: <ClipboardList />, roles: ['Admin'] },
+  { 
+    href: '/tools', 
+    label: 'Tools', 
+    icon: <ClipboardList />, 
+    roles: ['Admin'],
+    subItems: [
+        { href: '/tools/list-generator', label: 'List Generator' },
+        { href: '/tools/post-generator', label: 'Post Generator' },
+    ]
+  },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
@@ -71,6 +103,7 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
@@ -78,7 +111,7 @@ export function AppSidebar() {
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
     mainMenuItems.forEach(item => {
-        if (item.href === '/properties' || item.href === '/buyers' || item.href === '/tools' || item.href === '/appointments') { // Simplified for this example
+        if (item.subItems) {
             initialState[item.href] = pathname.startsWith(item.href);
         }
     });
@@ -107,7 +140,62 @@ export function AppSidebar() {
       return null;
     }
 
-    const isActive = pathname.startsWith(item.href);
+    const isActive = !item.subItems && pathname.startsWith(item.href);
+    const isCollapsibleActive = item.subItems && pathname.startsWith(item.href);
+
+    if (item.subItems) {
+        return (
+            <Collapsible key={item.href} open={openCollapsibles[item.href] || false} onOpenChange={() => toggleCollapsible(item.href)}>
+                <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                            isActive={isCollapsibleActive}
+                            className="rounded-full justify-between transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                        >
+                            <div className="flex items-center gap-3">
+                                {item.icon}
+                                <span className="flex-1 truncate">{item.label}</span>
+                            </div>
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", (openCollapsibles[item.href] || false) && "rotate-180")} />
+                        </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                </SidebarMenuItem>
+                <CollapsibleContent>
+                    <SidebarMenu className="pl-6">
+                        {item.subItems.map((subItem: any) => {
+                            const currentStatus = searchParams.get('status');
+                            const subItemStatus = new URLSearchParams(subItem.href.split('?')[1]).get('status');
+                             const isSubItemActive = pathname === subItem.href.split('?')[0] && (
+                                !currentStatus && !subItemStatus || // Base path matches
+                                currentStatus === subItemStatus // Status matches
+                            );
+
+                            return (
+                                <SidebarMenuItem key={subItem.href} className="relative">
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Link href={subItem.href}>
+                                            <SidebarMenuButton
+                                                variant="ghost"
+                                                size="sm"
+                                                isActive={isSubItemActive}
+                                                className="rounded-full w-full justify-start transition-all duration-200 hover:bg-primary/10"
+                                            >
+                                                <span className="truncate">{subItem.label}</span>
+                                            </SidebarMenuButton>
+                                            </Link>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" align="center">{subItem.label}</TooltipContent>
+                                    </Tooltip>
+                                    {isSubItemActive && <div className="absolute left-[-1.5rem] top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
+                                </SidebarMenuItem>
+                            )
+                        })}
+                    </SidebarMenu>
+                </CollapsibleContent>
+            </Collapsible>
+        )
+    }
 
     return (
       <SidebarMenuItem key={item.href} className="relative">
