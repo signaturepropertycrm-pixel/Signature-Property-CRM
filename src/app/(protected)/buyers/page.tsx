@@ -316,11 +316,6 @@ export default function BuyersPage() {
             return filtered.filter(b => b.created_by === profile.user_id);
         }
 
-        // For Admin/Editor
-        if (activeTab && activeTab !== 'All') {
-            filtered = filtered.filter(b => b.status === activeTab);
-        }
-
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer =>
@@ -341,7 +336,7 @@ export default function BuyersPage() {
         return filtered;
     };
     
-    const filteredBuyers = useMemo(() => getFilteredBuyers(allBuyers), [searchQuery, activeTab, filters, allBuyers, profile.role, profile.user_id]);
+    const filteredBuyers = useMemo(() => getFilteredBuyers(allBuyers), [searchQuery, filters, allBuyers, profile.role, profile.user_id]);
 
     const handleTabChange = (value: string) => {
         const url = value === 'All' ? pathname : `${pathname}?status=${value}`;
@@ -509,7 +504,7 @@ export default function BuyersPage() {
                         <div className='hidden md:block'>
                             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
                             <p className="text-muted-foreground">
-                                {activeTab !== 'All' ? `Filtering by status: ${activeTab}` : 'Manage your buyer leads.'}
+                                Manage your buyer leads.
                             </p>
                         </div>
                         {(profile.role === 'Admin' || profile.role === 'Editor') && (
@@ -624,21 +619,9 @@ export default function BuyersPage() {
                     </div>
 
                     {profile.role === 'Admin' || profile.role === 'Editor' ? (
-                        <>
-                         <div className="w-full border-b">
-                            <Select onValueChange={handleTabChange} defaultValue={activeTab}>
-                                <SelectTrigger className="w-full md:w-64"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    {tabsForAdmin.map((tab) => (
-                                        <SelectItem key={tab.value} value={tab.value}>{tab.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                         </div>
                          <div className="mt-4">
                             {renderContent(filteredBuyers)}
                          </div>
-                        </>
                     ) : (
                          <Tabs defaultValue="MyBuyers" value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className="grid w-full grid-cols-1">
@@ -681,5 +664,7 @@ export default function BuyersPage() {
         </>
     );
 }
+
+    
 
     
