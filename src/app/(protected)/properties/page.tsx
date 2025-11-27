@@ -117,6 +117,8 @@ export default function PropertiesPage() {
 
   const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
+  const [listingType, setListingType] = useState<ListingType>('For Sale');
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -182,32 +184,6 @@ export default function PropertiesPage() {
  const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
-    // Apply main tab filter first
-    switch (activeTab) {
-        case 'Available':
-            baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-            break;
-        case 'Rental':
-            baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
-            break;
-        case 'For Rent':
-            baseProperties = baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
-            break;
-        case 'Sold':
-            baseProperties = baseProperties.filter(p => p.status === 'Sold');
-            break;
-        case 'Recorded':
-            baseProperties = baseProperties.filter(p => p.is_recorded);
-            break;
-        case 'Rent Out':
-            baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
-            break;
-        case 'All':
-        default:
-            // No status filter for 'All'
-            break;
-    }
-
     let filtered = baseProperties;
 
     // Apply secondary search and popover filters
@@ -239,8 +215,9 @@ export default function PropertiesPage() {
     setIsDetailsOpen(true);
   };
   
-  const handleOpenAddDialog = () => {
+  const handleOpenAddDialog = (type: ListingType) => {
     setPropertyToEdit(null);
+    setListingType(type);
     setIsAddPropertyOpen(true);
   }
 
@@ -255,6 +232,7 @@ export default function PropertiesPage() {
   };
 
   const handleEdit = (prop: Property) => {
+    setListingType(prop.listing_type);
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true);
   };
@@ -515,16 +493,6 @@ export default function PropertiesPage() {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
   
-    const tabs = [
-      { value: 'All', label: 'All' },
-      { value: 'Available', label: 'Available' },
-      { value: 'Rental', label: 'Rental' },
-      { value: 'For Rent', label: 'For Rent' },
-      { value: 'Sold', label: 'Sold' },
-      { value: 'Recorded', label: 'Recorded' },
-      { value: 'Rent Out', label: 'Rent Out' },
-    ];
-
     return (
       <>
         <TooltipProvider>
@@ -630,27 +598,28 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className={cn("grid w-full", isMobile ? "grid-cols-3" : "md:grid-cols-7")}>
-                    {tabs.map(tab => (
-                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
-                    ))}
-                </TabsList>
-                {tabs.map(tab => (
-                     <TabsContent key={tab.value} value={tab.value} className="mt-6">
-                        {renderContent(filteredProperties)}
-                    </TabsContent>
-                ))}
-            </Tabs>
+            <div className="mt-6">
+                {renderContent(filteredProperties)}
+            </div>
 
           </div>
         </TooltipProvider>
   
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
-            <Button onClick={handleOpenAddDialog} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                <PlusCircle className="h-6 w-6" />
-                <span className="sr-only">Add Property</span>
-            </Button>
+            <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
+                <PopoverTrigger asChild>
+                    <Button onClick={() => setIsAddMenuOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                        <PlusCircle className="h-6 w-6" />
+                        <span className="sr-only">Add Property</span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-2 mb-2">
+                    <div className="flex flex-col gap-2">
+                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Sale'); setIsAddMenuOpen(false); }}>For Sale</Button>
+                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Rent'); setIsAddMenuOpen(false); }}>For Rent</Button>
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
   
         <AddPropertyDialog
@@ -659,6 +628,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
+          listingType={listingType}
         />
   
         {appointmentDetails && (

@@ -38,7 +38,7 @@ export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, t
         <DialogHeader>
           <DialogTitle className="font-headline">{propertyToEdit ? 'Edit Property' : `Add New Property ${listingType}`}</DialogTitle>
           <DialogDescription>
-            {propertyToEdit ? 'Update the details for this property.' : `Fill in the details to add a new property ${listingType.toLowerCase()}.`}
+            {propertyToEdit ? 'Update the details for this property.' : `Fill in the details to add a new property ${listingType ? listingType.toLowerCase() : ''}.`}
           </DialogDescription>
         </DialogHeader>
         {listingType === 'For Sale' ? (
