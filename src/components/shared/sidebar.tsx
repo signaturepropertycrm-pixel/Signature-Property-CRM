@@ -140,7 +140,7 @@ export function AppSidebar() {
       return null;
     }
 
-    const isActive = !item.subItems && pathname.startsWith(item.href);
+    const isActive = !item.subItems && pathname === item.href;
     const isCollapsibleActive = item.subItems && pathname.startsWith(item.href);
 
     if (item.subItems) {
@@ -166,8 +166,8 @@ export function AppSidebar() {
                             const currentStatus = searchParams.get('status');
                             const subItemStatus = new URLSearchParams(subItem.href.split('?')[1]).get('status');
                              const isSubItemActive = pathname === subItem.href.split('?')[0] && (
-                                !currentStatus && !subItemStatus || // Base path matches
-                                currentStatus === subItemStatus // Status matches
+                                (!currentStatus && !subItemStatus && subItem.label === 'All Properties') || // Base path matches for "All"
+                                (currentStatus === subItemStatus) // Status matches
                             );
 
                             return (
