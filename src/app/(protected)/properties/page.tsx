@@ -183,7 +183,6 @@ export default function PropertiesPage() {
   const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
-    // Apply global search query first
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         baseProperties = baseProperties.filter(
@@ -195,7 +194,6 @@ export default function PropertiesPage() {
         );
     }
 
-    // Apply popover filters if any
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -203,25 +201,31 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    // Apply tab-based filtering
-    switch (activeTab) {
-        case 'Available':
-            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-        case 'Rental':
-            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
-        case 'Sold':
-            return baseProperties.filter(p => p.status === 'Sold');
-        case 'Recorded':
-            return baseProperties.filter(p => p.is_recorded);
-        case 'For Rent':
-            return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
-        case 'Rent Out':
-            return baseProperties.filter(p => p.status === 'Rent Out');
-        case 'All Properties':
-        default:
-            return baseProperties;
+    const statusFilter = searchParams.get('status');
+
+    if (!statusFilter || statusFilter === 'All Properties') {
+        return baseProperties;
     }
-  }, [searchQuery, filters, allProperties, activeTab]);
+
+    return baseProperties.filter(p => {
+        switch (statusFilter) {
+            case 'Available':
+                return p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0);
+            case 'Rental':
+                return p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0;
+            case 'Sold':
+                return p.status === 'Sold';
+            case 'Recorded':
+                return p.is_recorded;
+            case 'For Rent':
+                return p.status === 'Available' && p.is_for_rent;
+            case 'Rent Out':
+                return p.status === 'Rent Out';
+            default:
+                return true;
+        }
+    });
+}, [searchQuery, filters, allProperties, searchParams]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -508,17 +512,6 @@ export default function PropertiesPage() {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
 
-    const tabs = [
-        { value: 'All Properties', label: 'All Properties' },
-        { value: 'Available', label: 'Available' },
-        { value: 'Rental', label: 'Rental' },
-        { value: 'For Rent', label: 'For Rent' },
-        { value: 'Sold', label: 'Sold' },
-        { value: 'Recorded', label: 'Recorded' },
-        { value: 'Rent Out', label: 'Rent Out' },
-    ];
-
-
     return (
       <>
         <TooltipProvider>
@@ -624,20 +617,9 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
-                    {tabs.map(tab => (
-                        <TabsTrigger key={tab.value} value={tab.value}>
-                            {tab.label}
-                        </TabsTrigger>
-                    ))}
-                </TabsList>
-                {tabs.map(tab => (
-                    <TabsContent key={tab.value} value={tab.value} className="mt-4">
-                        {renderContent(filteredProperties)}
-                    </TabsContent>
-                ))}
-            </Tabs>
+            <div className="mt-4">
+              {renderContent(filteredProperties)}
+            </div>
           </div>
         </TooltipProvider>
   
@@ -693,4 +675,5 @@ export default function PropertiesPage() {
     
 
     
+
 
