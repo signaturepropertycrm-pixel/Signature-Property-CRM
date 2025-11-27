@@ -153,8 +153,10 @@ export function AppSidebar() {
             <div className="group-data-[state=expanded]:py-2 group-data-[state=collapsed]:hidden">
               <SidebarMenu className="pl-7">
                 {item.links.map((link: any) => {
-                   const currentStatus = searchParams.get('status') || 'All';
-                   const isSubActive = isActive && currentStatus === link.status;
+                   const currentStatus = searchParams.get('status') || (item.href === '/properties' ? 'All' : undefined);
+                   const currentType = searchParams.get('type');
+                   const isSubActive = isActive && ((link.status && currentStatus === link.status) || (link.type && currentType === link.type) || (!link.status && !link.type && !currentStatus && !currentType));
+
                   return (
                     <SidebarMenuItem key={link.href}>
                       <Link href={link.href}>
