@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -77,6 +76,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -122,6 +122,7 @@ export default function PropertiesPage() {
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [listingType, setListingType] = useState<'For Sale' | 'For Rent'>('For Sale');
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{
     contactType: AppointmentContactType;
@@ -141,6 +142,8 @@ export default function PropertiesPage() {
     demandUnit: 'All',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  const activeTab = 'All';
+
 
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
@@ -176,8 +179,10 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
-  const allFilteredProperties = useMemo(() => {
-    let filtered = allProperties.filter((p) => !p.is_deleted);
+  const filteredProperties = useMemo(() => {
+    let baseProperties = allProperties.filter(p => !p.is_deleted);
+
+    let filtered = baseProperties;
 
     if (searchQuery) {
       const lowercasedQuery = searchQuery.toLowerCase();
@@ -189,7 +194,7 @@ export default function PropertiesPage() {
           prop.serial_no.toLowerCase().includes(lowercasedQuery)
       );
     }
-
+    
     if (filters.area) filtered = filtered.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') filtered = filtered.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) filtered = filtered.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -198,7 +203,8 @@ export default function PropertiesPage() {
     if (filters.maxDemand) filtered = filtered.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
     return filtered;
-  }, [searchQuery, filters, allProperties]);
+
+  }, [searchQuery, filters, allProperties, activeTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -206,8 +212,9 @@ export default function PropertiesPage() {
     setIsDetailsOpen(true);
   };
   
-  const handleOpenAddDialog = () => {
+  const handleOpenAddDialog = (type: 'For Sale' | 'For Rent') => {
     setPropertyToEdit(null);
+    setListingType(type);
     setIsAddPropertyOpen(true);
   }
 
@@ -223,6 +230,7 @@ export default function PropertiesPage() {
 
   const handleEdit = (prop: Property) => {
     setPropertyToEdit(prop);
+    setListingType(prop.listing_type || 'For Sale');
     setIsAddPropertyOpen(true);
   };
 
@@ -314,7 +322,11 @@ export default function PropertiesPage() {
         toast({ title: 'Property Added' });
     }
     setPropertyToEdit(null);
-};
+  };
+  
+  const handleTabChange = (value: string) => {
+    router.push(`${pathname}?status=${value}`);
+  };
 
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
@@ -586,7 +598,7 @@ export default function PropertiesPage() {
             </div>
             
             <div className="mt-6">
-              {renderContent(allFilteredProperties)}
+              {renderContent(filteredProperties)}
             </div>
 
           </div>
@@ -602,8 +614,11 @@ export default function PropertiesPage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2 mb-2">
                     <div className="flex flex-col gap-2">
-                         <Button variant="ghost" className="justify-start" onClick={() => { setPropertyToEdit(null); setIsAddPropertyOpen(true); }}>
-                            <PackagePlus className="mr-2 h-4 w-4" /> Add Property for Sale
+                         <Button variant="ghost" className="justify-start" onClick={() => handleOpenAddDialog('For Sale')}>
+                            <PackagePlus className="mr-2 h-4 w-4" /> For Sale
+                        </Button>
+                        <Button variant="ghost" className="justify-start" onClick={() => handleOpenAddDialog('For Rent')}>
+                            <PackageCheck className="mr-2 h-4 w-4" /> For Rent
                         </Button>
                     </div>
                 </PopoverContent>
@@ -616,6 +631,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
+          listingType={listingType}
         />
   
         {appointmentDetails && (
@@ -638,5 +654,3 @@ export default function PropertiesPage() {
     );
   }
   
-
-    

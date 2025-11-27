@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect } from 'react';
@@ -24,10 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { generateAutoTitle } from '@/ai/flows/auto-title-generation';
-import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import type { Property } from '@/lib/types';
@@ -46,20 +43,14 @@ const formSchema = z.object({
   custom_property_type: z.string().optional(),
   size_value: z.coerce.number().positive('Size must be positive'),
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
-  is_for_rent: z.boolean().default(false),
-  road_size_ft: z.coerce.number().int().optional(),
   storey: z.string().optional(),
   meters: z.object({
     electricity: z.boolean().default(false),
     gas: z.boolean().default(false),
     water: z.boolean().default(false),
   }),
-  potential_rent_amount: z.coerce.number().optional(),
-  potential_rent_unit: z.enum(['Thousand', 'Lacs', 'Crore']).optional(),
-  front_ft: z.coerce.number().int().optional(),
-  length_ft: z.coerce.number().int().optional(),
-  demand_amount: z.coerce.number().positive('Demand must be positive'),
-  demand_unit: z.enum(['Lacs', 'Crore']).default('Lacs'),
+  potential_rent_amount: z.coerce.number().positive('Rent amount must be positive'),
+  potential_rent_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
   documents: z.string().optional(),
 }).refine(data => {
     if (data.property_type === 'Other') {
@@ -72,9 +63,9 @@ const formSchema = z.object({
 });
 
 
-type AddPropertyFormValues = z.infer<typeof formSchema>;
+type AddRentPropertyFormValues = z.infer<typeof formSchema>;
 
-interface AddPropertyFormProps {
+interface AddRentPropertyFormProps {
   setDialogOpen: (open: boolean) => void;
   onSave: (property: Omit<Property, 'id'>) => void;
   propertyToEdit?: Property | null;
@@ -90,18 +81,12 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   address: '',
   property_type: 'House' as const,
   custom_property_type: '',
-  size_value: undefined,
+  size_value: '' as any,
   size_unit: 'Marla' as const,
-  is_for_rent: false,
-  road_size_ft: undefined,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
-  potential_rent_amount: undefined,
+  potential_rent_amount: '' as any,
   potential_rent_unit: 'Thousand' as const,
-  front_ft: undefined,
-  length_ft: undefined,
-  demand_amount: undefined,
-  demand_unit: 'Lacs' as const,
   documents: '',
   created_at: new Date().toISOString(),
   created_by: userId || '',
@@ -109,15 +94,14 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
 });
 
 
-export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddPropertyFormProps) {
-  const { toast } = useToast();
+export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddRentPropertyFormProps) {
   const { user } = useUser();
   const { profile } = useProfile();
-  const form = useForm<AddPropertyFormValues>({
+  const form = useForm<AddRentPropertyFormValues>({
     resolver: zodResolver(formSchema),
   });
 
-  const { control, setValue, formState, reset } = form;
+  const { control, setValue, reset } = form;
   const watchedFields = useWatch({
     control,
     name: ['size_value', 'size_unit', 'property_type', 'area', 'custom_property_type'],
@@ -133,7 +117,6 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
-            is_for_rent: propertyToEdit.is_for_rent || false,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -164,7 +147,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     return () => clearTimeout(handler);
   }, [watchedFields, setValue]);
 
-  function onSubmit(values: AddPropertyFormValues) {
+  function onSubmit(values: AddRentPropertyFormValues) {
      const finalValues = {
         ...values,
         owner_number: formatPhoneNumber(values.owner_number),
@@ -174,6 +157,9 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
     const propertyData = {
         ...propertyToEdit,
         ...finalValues,
+        listing_type: 'For Rent' as const,
+        demand_amount: 0, // Not for sale
+        demand_unit: 'Lacs' as const, // Default value
         id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
@@ -203,7 +189,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   <FormItem>
                     <FormLabel>Serial No</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
+                      <Input {...field} readOnly className="bg-muted/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -222,7 +208,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 <FormItem>
                   <FormLabel>Auto-Generated Title</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
+                    <Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -320,7 +306,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                         <FormItem>
                             <FormLabel>Custom Property Type</FormLabel>
                             <FormControl>
-                            <Input {...field} value={field.value ?? ''} placeholder="e.g., Penthouse" />
+                            <Input {...field} placeholder="e.g., Penthouse" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -335,7 +321,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                     <FormItem>
                       <FormLabel>Property Size</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} placeholder="5" />
+                        <Input type="number" {...field} placeholder="5" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -365,63 +351,20 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 />
               </div>
             </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                control={control}
-                name="front_ft"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Front (ft)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} value={field.value ?? ''} placeholder="25" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={control}
-                name="length_ft"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Length (ft)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} value={field.value ?? ''} placeholder="45" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                control={control}
-                name="road_size_ft"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Road Size (ft)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} value={field.value ?? ''} placeholder="20" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
+            
+            <FormField
                 control={control}
                 name="storey"
                 render={({ field }) => (
-                  <FormItem>
+                    <FormItem>
                     <FormLabel>Storey</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value ?? ''} placeholder="Single, Double, etc." />
+                        <Input {...field} placeholder="Single, Double, etc." />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
+                    </FormItem>
                 )}
-              />
-            </div>
+            />
 
              <Separator />
             <h4 className="text-sm font-medium text-muted-foreground">Financials & Contact</h4>
@@ -430,46 +373,12 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={control}
-                  name="demand_amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Demand</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} placeholder="90" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={control}
-                  name="demand_unit"
-                  render={({ field }) => (
-                    <FormItem className="self-end">
-                      <FormLabel className="sr-only">Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Lacs">Lacs</SelectItem>
-                          <SelectItem value="Crore">Crore</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <FormField
-                  control={control}
                   name="potential_rent_amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Potential Rent</FormLabel>
+                      <FormLabel>Rent Amount</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} placeholder="30" />
+                        <Input type="number" {...field} placeholder="30" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -496,51 +405,26 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                   )}
                 />
               </div>
-            </div>
-            
-            <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                    <FormLabel>Mark as "For Rent" Only</FormLabel>
-                    <p className="text-[0.8rem] text-muted-foreground">
-                        This property will only appear in the "For Rent" tab.
-                    </p>
-                </div>
-                <FormField
-                    control={control}
-                    name="is_for_rent"
-                    render={({ field }) => (
-                        <FormItem>
+               <FormField
+                control={control}
+                name="owner_number"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Owner Number</FormLabel>
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="text-gray-500 sm:text-sm">+92</span>
+                        </div>
                         <FormControl>
-                            <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            />
+                        <Input {...field} placeholder="3001234567" className="pl-12" />
                         </FormControl>
-                        </FormItem>
-                    )}
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
                 />
             </div>
-
-
-            <FormField
-              control={control}
-              name="owner_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner Number</FormLabel>
-                  <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <span className="text-gray-500 sm:text-sm">+92</span>
-                    </div>
-                    <FormControl>
-                      <Input {...field} placeholder="3001234567" className="pl-12" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+            
             <Separator />
             <h4 className="text-sm font-medium text-muted-foreground">Utilities & Documents</h4>
 
@@ -593,7 +477,7 @@ export function AddPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalPr
                 <FormItem>
                   <FormLabel>Documents</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Registry, Fard, Transfer papers" />
+                    <Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

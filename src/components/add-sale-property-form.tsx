@@ -502,7 +502,7 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             
             <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                    <FormLabel>Mark as "For Rent"</FormLabel>
+                    <FormLabel>Mark as "For Rent" Only</FormLabel>
                     <p className="text-[0.8rem] text-muted-foreground">
                         This property will only appear in the "For Rent" tab.
                     </p>
@@ -613,5 +613,4 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     </Form>
   );
 }
-
     
