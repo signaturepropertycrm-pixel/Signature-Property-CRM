@@ -90,7 +90,7 @@ interface Filters {
   demandUnit: PriceUnit | 'All';
 }
 
-type FilterTab = 'All' | 'Available' | 'Sold' | 'Recorded' | 'For Rent';
+type FilterTab = 'All' | 'Available' | 'For Rent' | 'Sold' | 'Recorded';
 
 const propertyStatusLinks: { label: string; status: FilterTab }[] = [
   { label: 'All Properties', status: 'All' },
@@ -602,8 +602,8 @@ export default function PropertiesPage() {
               )}
             </div>
   
-            {isMobile && (
-              <div className="w-full">
+            {isMobile ? (
+              <div className="w-full mt-4">
                 <Select value={activeTab} onValueChange={handleTabChange}>
                   <SelectTrigger className="w-full"><SelectValue placeholder="Filter by status..." /></SelectTrigger>
                   <SelectContent>
@@ -613,6 +613,14 @@ export default function PropertiesPage() {
                   </SelectContent>
                 </Select>
               </div>
+            ) : (
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mt-4">
+                <TabsList>
+                    {propertyStatusLinks.map(link => (
+                        <TabsTrigger key={link.status} value={link.status}>{link.label}</TabsTrigger>
+                    ))}
+                </TabsList>
+              </Tabs>
             )}
   
             {profile.role === 'Agent' ? (
@@ -685,4 +693,6 @@ export default function PropertiesPage() {
       </>
     );
   }
+  
+
   
