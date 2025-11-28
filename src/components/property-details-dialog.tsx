@@ -82,7 +82,7 @@ export function PropertyDetailsDialog({
           <DialogHeader>
             <div className="flex items-start justify-between">
               <div>
-                <DialogTitle className="font-headline text-2xl">{property.auto_title}</DialogTitle>
+                <DialogTitle className="font-headline text-2xl">{property.auto_title || `${property.size_value} ${property.size_unit} ${property.property_type} in ${property.area}`}</DialogTitle>
                 <DialogDescription>
                   {property.address}
                 </DialogDescription>
