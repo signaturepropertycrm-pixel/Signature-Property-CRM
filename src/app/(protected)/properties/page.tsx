@@ -208,8 +208,6 @@ export default function PropertiesPage() {
                  // "All Properties" or unhandled status shows all non-deleted
                 break;
         }
-    } else {
-        // If no status filter is applied, show all non-deleted properties by default.
     }
     
     // Search query filter
