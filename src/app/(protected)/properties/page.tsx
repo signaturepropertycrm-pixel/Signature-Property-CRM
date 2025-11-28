@@ -180,6 +180,7 @@ export default function PropertiesPage() {
   };
 
  const filteredProperties = useMemo(() => {
+    // Start with all non-deleted properties
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
     // Sidebar navigation filter
@@ -187,12 +188,15 @@ export default function PropertiesPage() {
     if (statusFilter) {
         switch (statusFilter) {
             case 'Available':
+                // For Sale properties without rent
                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && (!p.potential_rent_amount || p.potential_rent_amount === 0));
                 break;
             case 'Rental':
+                // For Sale properties that also have a potential rent
                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && p.potential_rent_amount && p.potential_rent_amount > 0);
                 break;
             case 'For Rent':
+                 // Properties exclusively for rent
                  baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Rent');
                 break;
             case 'Sold':
