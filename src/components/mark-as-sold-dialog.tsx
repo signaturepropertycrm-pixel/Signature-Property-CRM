@@ -40,11 +40,11 @@ import { Card, CardContent } from './ui/card';
 const formSchema = z.object({
   sold_price: z.coerce.number().positive("Sold price is required"),
   sold_price_unit: z.enum(['Lacs', 'Crore']),
-  commission_from_buyer: z.coerce.number().min(0, "Commission cannot be negative").default(0),
-  commission_from_buyer_unit: z.enum(['PKR', '%']).default('PKR'),
-  commission_from_seller: z.coerce.number().min(0, "Commission cannot be negative").default(0),
-  commission_from_seller_unit: z.enum(['PKR', '%']).default('PKR'),
-  agent_share_percentage: z.coerce.number().min(0).max(100).default(0),
+  commission_from_buyer: z.coerce.number().min(0, "Commission cannot be negative").optional(),
+  commission_from_buyer_unit: z.enum(['PKR', '%']).optional(),
+  commission_from_seller: z.coerce.number().min(0, "Commission cannot be negative").optional(),
+  commission_from_seller_unit: z.enum(['PKR', '%']).optional(),
+  agent_share_percentage: z.coerce.number().min(0).max(100).optional(),
   sale_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   sold_by_agent_id: z.string().min(1, "You must select the agent who sold the property."),
 });
@@ -80,11 +80,6 @@ export function MarkAsSoldDialog({
       sold_price: property.demand_amount,
       sold_price_unit: property.demand_unit,
       sale_date: new Date().toISOString().split('T')[0],
-      commission_from_buyer: 0,
-      commission_from_buyer_unit: 'PKR',
-      commission_from_seller: 0,
-      commission_from_seller_unit: 'PKR',
-      agent_share_percentage: 0,
     },
   });
 
@@ -280,21 +275,6 @@ export function MarkAsSoldDialog({
                         )} />
                     </div>
                 </div>
-
-                <Card className="bg-muted/50">
-                    <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Calculator className="h-4 w-4" /> Total Commission</p>
-                            <p className="text-2xl font-bold font-headline">{formatCurrency(totalCommission, currency)}</p>
-                        </div>
-                        <div className="w-full md:w-48">
-                            <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
-                                <FormItem><FormLabel>Agent's Share (%)</FormLabel><FormControl><Input type="number" {...field} placeholder="e.g. 50" /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
-                    </CardContent>
-                </Card>
-
             </div>
             </ScrollArea>
             <div className="flex justify-end gap-2 pt-6 border-t">
