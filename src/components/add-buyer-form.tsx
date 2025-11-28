@@ -27,11 +27,15 @@ import { useEffect } from 'react';
 import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { buyerStatuses } from '@/lib/data';
+import { buyerStatuses, punjabCities } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
@@ -46,6 +50,7 @@ const formSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(buyerStatuses).default('New'),
   is_investor: z.boolean().optional().default(false),
+  city: z.string().optional(),
   area_preference: z.string().optional(),
   property_type_preference: z.string().optional(),
   size_min_value: z.coerce.number().optional(),
@@ -82,6 +87,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
             budget_max_unit: buyerToEdit.budget_max_unit || 'Lacs',
             name: buyerToEdit.name || '',
             email: buyerToEdit.email || '',
+            city: buyerToEdit.city || '',
             area_preference: buyerToEdit.area_preference || '',
             notes: buyerToEdit.notes || '',
             size_min_value: buyerToEdit.size_min_value,
@@ -95,6 +101,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         name: '',
         phone: '',
         email: '',
+        city: 'Lahore',
         area_preference: '',
         property_type_preference: '',
         notes: '',
@@ -227,6 +234,66 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>City</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            className={cn(
+                                                "w-full justify-between",
+                                                !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value
+                                                ? punjabCities.find(
+                                                    (city) => city === field.value
+                                                )
+                                                : "Select city"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search city..." />
+                                        <CommandList>
+                                            <CommandEmpty>No city found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {punjabCities.map((city) => (
+                                                    <CommandItem
+                                                        value={city}
+                                                        key={city}
+                                                        onSelect={() => {
+                                                            form.setValue("city", city)
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                city === field.value
+                                                                    ? "opacity-100"
+                                                                    : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {city}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
                     control={form.control}
                     name="area_preference"
                     render={({ field }) => (
@@ -239,6 +306,8 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         </FormItem>
                     )}
                     />
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                         control={form.control}
                         name="property_type_preference"

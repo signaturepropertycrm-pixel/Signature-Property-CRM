@@ -98,6 +98,7 @@ export type Buyer = {
     email?: string;
     status: BuyerStatus;
     is_investor?: boolean;
+    city?: string;
     area_preference?: string;
     property_type_preference?: PropertyType;
     budget_min_amount?: number;
