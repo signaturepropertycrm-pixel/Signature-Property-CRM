@@ -49,7 +49,7 @@ const formSchema = z.object({
     gas: z.boolean().default(false),
     water: z.boolean().default(false),
   }),
-  potential_rent_amount: z.coerce.number().positive('Rent amount must be positive'),
+  potential_rent_amount: z.coerce.number({invalid_type_error: "Rent amount must be a number."}).positive('Rent amount must be positive'),
   potential_rent_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
   documents: z.string().optional(),
 }).refine(data => {
@@ -116,7 +116,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
-            potential_rent_amount: propertyToEdit.potential_rent_amount || ('' as any),
+            potential_rent_amount: propertyToEdit.potential_rent_amount || '' as any,
             storey: propertyToEdit.storey || '',
         });
     } else {
@@ -358,9 +358,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 name="storey"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Storey</FormLabel>
+                    <FormLabel>Portion / Unit Details</FormLabel>
                     <FormControl>
-                        <Input {...field} placeholder="Single, Double, etc." />
+                        <Input {...field} value={field.value ?? ''} placeholder="e.g. Ground Portion, Upper Portion, Full House" />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
