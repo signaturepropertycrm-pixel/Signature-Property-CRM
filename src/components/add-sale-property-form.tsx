@@ -34,6 +34,10 @@ import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
 import { Switch } from './ui/switch';
 import { punjabCities } from '@/lib/data';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { cn } from '@/lib/utils';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -131,10 +135,10 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
-            road_size_ft: propertyToEdit.road_size_ft || '' as any,
-            potential_rent_amount: propertyToEdit.potential_rent_amount || '' as any,
-            front_ft: propertyToEdit.front_ft || '' as any,
-            length_ft: propertyToEdit.length_ft || '' as any,
+            road_size_ft: propertyToEdit.road_size_ft || undefined,
+            potential_rent_amount: propertyToEdit.potential_rent_amount || undefined,
+            front_ft: propertyToEdit.front_ft || undefined,
+            length_ft: propertyToEdit.length_ft || undefined,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -236,22 +240,62 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
              <h4 className="text-sm font-medium text-muted-foreground">Location Details</h4>
 
             <div className="grid md:grid-cols-2 gap-4">
-              <FormField
+               <FormField
                 control={control}
                 name="city"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>City</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {punjabCities.sort().map(city => (
-                          <SelectItem key={city} value={city}>{city}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value
+                                        ? punjabCities.find(
+                                            (city) => city === field.value
+                                        )
+                                        : "Select city"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search city..." />
+                                <CommandEmpty>No city found.</CommandEmpty>
+                                <CommandList>
+                                <CommandGroup>
+                                    {punjabCities.map((city) => (
+                                        <CommandItem
+                                            value={city}
+                                            key={city}
+                                            onSelect={() => {
+                                                form.setValue("city", city)
+                                            }}
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-4 w-4",
+                                                    city === field.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0"
+                                                )}
+                                            />
+                                            {city}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
