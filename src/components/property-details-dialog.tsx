@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -84,9 +83,12 @@ export function PropertyDetailsDialog({
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="font-headline text-2xl">{property.auto_title}</DialogTitle>
-                <DialogDescription>
-                  {property.address}
-                </DialogDescription>
+                <div className="mt-1">
+                    <div className="text-xs font-semibold text-muted-foreground">Address</div>
+                    <DialogDescription>
+                      {property.address}
+                    </DialogDescription>
+                </div>
               </div>
               <Badge 
                 className={getStatusBadgeClass(property.status)}
