@@ -77,7 +77,6 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 
 function formatSize(value: number, unit: string) {
@@ -188,13 +187,13 @@ export default function PropertiesPage() {
     if (statusFilter) {
         switch (statusFilter) {
             case 'Available':
-                baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+                baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && (!p.potential_rent_amount || p.potential_rent_amount === 0));
                 break;
             case 'Rental':
-                baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
+                baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && p.potential_rent_amount && p.potential_rent_amount > 0);
                 break;
             case 'For Rent':
-                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.is_for_rent === true);
+                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Rent');
                 break;
             case 'Sold':
                 baseProperties = baseProperties.filter(p => p.status === 'Sold');
@@ -209,6 +208,8 @@ export default function PropertiesPage() {
                  // "All Properties" or unhandled status shows all non-deleted
                 break;
         }
+    } else {
+        // If no status filter is applied, show all non-deleted properties by default.
     }
     
     // Search query filter
@@ -388,12 +389,12 @@ export default function PropertiesPage() {
         </TableHeader>
         <TableBody>
           {properties.map((prop) => (
-            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => handleRowClick(prop)}>
-              <TableCell>
+            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
+              <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex items-center gap-2">
                 <span className="font-bold font-headline text-base">
-  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-</span>
+                  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                </span>
                   {prop.is_recorded && (
                     <Tooltip>
                       <TooltipTrigger>
@@ -410,10 +411,10 @@ export default function PropertiesPage() {
                   <span className="truncate max-w-48">{prop.address}</span>
                 </div>
               </TableCell>
-              <TableCell>{prop.property_type}</TableCell>
-              <TableCell>{formatSize(prop.size_value, prop.size_unit)}</TableCell>
-              <TableCell>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
-              <TableCell>
+              <TableCell onClick={() => handleRowClick(prop)}>{prop.property_type}</TableCell>
+              <TableCell onClick={() => handleRowClick(prop)}>{formatSize(prop.size_value, prop.size_unit)}</TableCell>
+              <TableCell onClick={() => handleRowClick(prop)}>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
+              <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex flex-col gap-1 items-start">
                     <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground'}>
                     {prop.status}
@@ -475,9 +476,9 @@ export default function PropertiesPage() {
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
                     <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-  {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
-</CardTitle>
+                      {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                      {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+                    </CardTitle>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
                           <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
                       </div>
@@ -655,7 +656,7 @@ export default function PropertiesPage() {
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
             <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <PopoverTrigger asChild>
-                    <Button onClick={() => setIsAddMenuOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                    <Button className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                         <PlusCircle className="h-6 w-6" />
                         <span className="sr-only">Add Property</span>
                     </Button>
@@ -707,6 +708,8 @@ export default function PropertiesPage() {
 
 
 
+
+    
 
     
 
