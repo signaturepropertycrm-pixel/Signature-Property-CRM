@@ -116,6 +116,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
+            potential_rent_amount: propertyToEdit.potential_rent_amount || ('' as any),
             storey: propertyToEdit.storey || '',
         });
     } else {
