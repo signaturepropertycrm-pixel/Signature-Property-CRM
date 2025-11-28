@@ -303,19 +303,20 @@ export default function BuyersPage() {
         setBuyerToEdit(null);
     };
 
-    const getFilteredBuyers = (
-        sourceBuyers: Buyer[] | null
-    ) => {
-        if (!sourceBuyers) return [];
-        let filtered: Buyer[] = [...sourceBuyers];
-
-        filtered = filtered.filter(b => !b.is_deleted);
+    const filteredBuyers = useMemo(() => {
+        if (!allBuyers) return [];
+        let filtered: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
         if (profile.role === 'Agent') {
-            // "My Buyers" will show created by agent.
-            return filtered.filter(b => b.created_by === profile.user_id);
+            filtered = filtered.filter(b => b.created_by === profile.user_id);
         }
 
+        // Sidebar status filter from URL
+        if (statusFilterFromURL && statusFilterFromURL !== 'All') {
+            filtered = filtered.filter(b => b.status === statusFilterFromURL);
+        }
+        
+        // Search query filter
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer =>
@@ -324,8 +325,11 @@ export default function BuyersPage() {
                 buyer.serial_no.toLowerCase().includes(lowercasedQuery)
             );
         }
-
-        if (filters.status !== 'All') filtered = filtered.filter(b => b.status === filters.status);
+        
+        // Advanced filters from popover
+        if (filters.status !== 'All') {
+            filtered = filtered.filter(b => b.status === filters.status);
+        }
         if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
         if (filters.maxBudget) filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
@@ -334,9 +338,8 @@ export default function BuyersPage() {
         if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
 
         return filtered;
-    };
-    
-    const filteredBuyers = useMemo(() => getFilteredBuyers(allBuyers), [searchQuery, filters, allBuyers, profile.role, profile.user_id]);
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, statusFilterFromURL]);
+
 
     const handleTabChange = (value: string) => {
         const url = value === 'All' ? pathname : `${pathname}?status=${value}`;
@@ -360,8 +363,8 @@ export default function BuyersPage() {
                 <TableBody>
                     {buyers.map(buyer => {
                         return (
-                            <TableRow key={buyer.id} className="cursor-pointer">
-                                <TableCell onClick={() => handleDetailsClick(buyer)}>
+                            <TableRow key={buyer.id}>
+                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                                     <div className="font-bold font-headline text-base flex items-center gap-2">
                                         {buyer.name}
                                     </div>
@@ -370,19 +373,19 @@ export default function BuyersPage() {
                                         <span>{buyer.phone}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)}>
+                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                                     <div className="flex flex-col text-sm">
                                         <span>{buyer.area_preference}</span>
                                         <span className="text-muted-foreground">{buyer.property_type_preference}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)}>
+                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                                     <div className="flex flex-col text-sm">
                                         <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
                                         <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)}>
+                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                                     <div className="flex items-center gap-2">
                                         <Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}>{buyer.status}</Badge>
                                         {buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}
