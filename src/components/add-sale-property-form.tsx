@@ -33,6 +33,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
 import { Switch } from './ui/switch';
+import { punjabCities } from '@/lib/data';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -130,10 +131,10 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
             storey: propertyToEdit.storey || '',
-            road_size_ft: propertyToEdit.road_size_ft || ('' as any),
-            potential_rent_amount: propertyToEdit.potential_rent_amount || ('' as any),
-            front_ft: propertyToEdit.front_ft || ('' as any),
-            length_ft: propertyToEdit.length_ft || ('' as any),
+            road_size_ft: propertyToEdit.road_size_ft || '' as any,
+            potential_rent_amount: propertyToEdit.potential_rent_amount || '' as any,
+            front_ft: propertyToEdit.front_ft || '' as any,
+            length_ft: propertyToEdit.length_ft || '' as any,
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -246,11 +247,9 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Lahore">Lahore</SelectItem>
-                        <SelectItem value="Karachi">Karachi</SelectItem>
-                        <SelectItem value="Islamabad">Islamabad</SelectItem>
-                        <SelectItem value="Faisalabad">Faisalabad</SelectItem>
-                        <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
+                        {punjabCities.sort().map(city => (
+                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

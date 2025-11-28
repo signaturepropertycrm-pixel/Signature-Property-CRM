@@ -31,6 +31,7 @@ import type { Property } from '@/lib/types';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
+import { punjabCities } from '@/lib/data';
 
 const formSchema = z.object({
   serial_no: z.string().optional(),
@@ -231,11 +232,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Lahore">Lahore</SelectItem>
-                        <SelectItem value="Karachi">Karachi</SelectItem>
-                        <SelectItem value="Islamabad">Islamabad</SelectItem>
-                        <SelectItem value="Faisalabad">Faisalabad</SelectItem>
-                        <SelectItem value="Rawalpindi">Rawalpindi</SelectItem>
+                         {punjabCities.sort().map(city => (
+                          <SelectItem key={city} value={city}>{city}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
