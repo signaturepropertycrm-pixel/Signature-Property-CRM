@@ -617,6 +617,8 @@ export default function BuyersPage() {
                                         </div>
                                     </PopoverContent>
                                 </Popover>
+                                <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
+                                <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
                             </div>
                         )}
                     </div>
@@ -671,4 +673,5 @@ export default function BuyersPage() {
     
 
     
+
 
