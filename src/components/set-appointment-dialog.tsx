@@ -113,13 +113,16 @@ export function SetAppointmentDialog({
   }, [isOpen, appointmentDetails, appointmentToEdit, reset]);
 
   const onSubmit = (data: AppointmentFormValues) => {
-    const newAppointment: Appointment = {
-        ...data,
-        id: appointmentToEdit?.id || new Date().toISOString(), // simple unique id
-        status: 'Scheduled',
-        agency_id: profile.agency_id,
+    const isEditing = !!appointmentToEdit;
+    
+    const appointmentData: Appointment = {
+      ...data,
+      id: isEditing ? appointmentToEdit.id : new Date().toISOString(), // Keep old ID or generate temporary new one
+      status: 'Scheduled',
+      agency_id: profile.agency_id,
     };
-    onSave(newAppointment);
+  
+    onSave(appointmentData);
     setIsOpen(false);
   };
   

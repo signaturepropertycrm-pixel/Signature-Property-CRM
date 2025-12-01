@@ -46,7 +46,8 @@ function AppointmentsPageContent() {
         toast({ title: 'Appointment Rescheduled', description: `Appointment with ${appointment.contactName} has been updated.` });
     } else {
         // It's a new appointment
-        await addDoc(collectionRef, { ...appointment, id: undefined });
+        const { id, ...newAppointmentData } = appointment;
+        await addDoc(collectionRef, newAppointmentData);
         toast({ title: 'Appointment Set', description: `Appointment with ${appointment.contactName} has been scheduled.` });
     }
     setAppointmentToEdit(null);

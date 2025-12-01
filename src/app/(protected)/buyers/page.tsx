@@ -149,7 +149,8 @@ export default function BuyersPage() {
 
     const handleSaveAppointment = async (appointment: Appointment) => {
         if (!profile.agency_id) return;
-        const newAppointmentRef = await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), { ...appointment, id: undefined });
+        const { id, ...newAppointmentData } = appointment;
+        const newAppointmentRef = await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), newAppointmentData);
 
         const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
         const newActivity: Omit<Activity, 'id'> = {
@@ -673,5 +674,3 @@ export default function BuyersPage() {
     
 
     
-
-
