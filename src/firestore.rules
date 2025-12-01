@@ -9,14 +9,27 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    function isOwner(docId) {
+      return request.auth.uid == docId;
+    }
 
     // =================================
     // Collection Rules
     // =================================
     
-    // Default open rules: Allow read/write access to any authenticated user.
-    // This is a temporary, permissive rule to ensure the application is functional.
-    // We can tighten these rules later based on specific requirements.
+    // Admins can manage their own agency document
+    match /agencies/{agencyId} {
+      allow read, write: if isSignedIn() && isOwner(agencyId);
+    }
+    
+    // Agents can manage their own agent document
+    match /agents/{agentId} {
+      allow read, write: if isSignedIn() && isOwner(agentId);
+    }
+    
+    // Default open rules: Allow read/write access to any authenticated user for other paths.
+    // This is a permissive rule that can be tightened later.
     match /{document=**} {
       allow read, write: if isSignedIn();
     }
