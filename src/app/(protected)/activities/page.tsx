@@ -3,7 +3,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatDistanceToNow } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import {
   FilePlus,
   UserPlus,
@@ -12,12 +12,12 @@ import {
   CalendarPlus,
   ArrowRight,
 } from 'lucide-react';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, from 'react';
 import { Activity } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 
@@ -32,29 +32,22 @@ const getActionIcon = (action: string) => {
 
 
 export default function ActivitiesPage() {
-  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
   const { profile } = useProfile();
 
-  const activitiesQuery = useMemoFirebase(() => 
-    profile.agency_id ? query(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'), orderBy('timestamp', 'desc'), limit(50)) : null,
-    [firestore, profile.agency_id]
-  );
+  const activitiesQuery = useMemoFirebase(() => {
+    if (!profile.agency_id) return null;
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return query(
+        collection(firestore, 'agencies', profile.agency_id, 'activityLogs'), 
+        where('timestamp', '>=', sevenDaysAgo.toISOString()),
+        orderBy('timestamp', 'desc')
+    );
+  }, [firestore, profile.agency_id]);
+
   const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const filteredActivities = useMemo(() => {
-      if (!activities) return [];
-      if (profile.role === 'Agent') {
-          return activities.filter(activity => activity.userName === profile.name);
-      }
-      return activities;
-  }, [activities, profile.role, profile.name]);
-
-  const sortedActivities = filteredActivities ? [...filteredActivities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) : [];
+  
+  const sortedActivities = activities; // Already sorted by query
 
   return (
     <div className="space-y-6">
@@ -63,7 +56,7 @@ export default function ActivitiesPage() {
           Recent Activities
         </h1>
         <p className="text-muted-foreground">
-          {profile.role === 'Agent' ? 'A log of your recent major actions.' : 'A log of all major actions taken within the system.'}
+          A log of all major actions taken within the last 7 days.
         </p>
       </div>
 
@@ -73,11 +66,11 @@ export default function ActivitiesPage() {
           {isLoading && <div className="text-center py-20 text-muted-foreground">Loading activities...</div>}
           {!isLoading && (!sortedActivities || sortedActivities.length === 0) ? (
                 <div className="text-center py-20 text-muted-foreground">
-                    No activities recorded yet.
+                    No activities recorded in the last 7 days.
                 </div>
             ) : (
             <ul className="divide-y divide-border">
-              {sortedActivities.map((activity) => (
+              {sortedActivities?.map((activity) => (
                 <li key={activity.id} className="relative p-6 hover:bg-accent/50 transition-colors">
                   <div className="relative flex items-start gap-4">
                      <div className="absolute left-6 top-6 h-full w-px bg-border -translate-x-1/2" aria-hidden="true" />
@@ -102,7 +95,7 @@ export default function ActivitiesPage() {
                       )}
                       
                        <time dateTime={activity.timestamp} className="block flex-none text-xs text-muted-foreground mt-2">
-                        {isMounted ? formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true }) : null}
+                        {format(new Date(activity.timestamp), "PPpp")}
                       </time>
                     </div>
                      <div className="absolute right-0 top-0 text-muted-foreground">
