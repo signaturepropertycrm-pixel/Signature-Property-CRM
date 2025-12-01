@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -144,6 +143,10 @@ export default function PropertiesPage() {
     demandUnit: 'All',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  
+  const statusFilterFromUrl = searchParams.get('status');
+  const activeTab = statusFilterFromUrl || 'All';
+
 
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
@@ -179,54 +182,20 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
 
- const filteredProperties = useMemo(() => {
-    // Start with all non-deleted properties
+  const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
-    // Sidebar navigation filter
-    const statusFilter = searchParams.get('status');
-    if (statusFilter) {
-        switch (statusFilter) {
-            case 'Available':
-                // For Sale properties without rent
-                baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-                break;
-            case 'Rental':
-                // For Sale properties that also have a potential rent
-                baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Sale' && p.potential_rent_amount && p.potential_rent_amount > 0);
-                break;
-            case 'For Rent':
-                 // Properties exclusively for rent
-                 baseProperties = baseProperties.filter(p => p.status === 'Available' && p.listing_type === 'For Rent');
-                break;
-            case 'Sold':
-                baseProperties = baseProperties.filter(p => p.status === 'Sold');
-                break;
-            case 'Recorded':
-                baseProperties = baseProperties.filter(p => p.is_recorded);
-                break;
-            case 'Rent Out':
-                baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
-                break;
-            default:
-                 // "All Properties" or unhandled status shows all non-deleted
-                break;
-        }
-    }
-    
-    // Search query filter
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         baseProperties = baseProperties.filter(
             (prop) =>
-            (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
-            prop.address.toLowerCase().includes(lowercasedQuery) ||
-            prop.area.toLowerCase().includes(lowercasedQuery) ||
-            prop.serial_no.toLowerCase().includes(lowercasedQuery)
+                (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
+                prop.address.toLowerCase().includes(lowercasedQuery) ||
+                prop.area.toLowerCase().includes(lowercasedQuery) ||
+                prop.serial_no.toLowerCase().includes(lowercasedQuery)
         );
     }
 
-    // Advanced filters from popover
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -234,8 +203,33 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    return baseProperties;
-}, [searchQuery, filters, allProperties, searchParams]);
+    switch (activeTab) {
+        case 'All':
+            return baseProperties;
+        case 'Available':
+            return baseProperties.filter(p => 
+                p.status === 'Available' && 
+                !p.is_for_rent && 
+                (!p.potential_rent_amount || p.potential_rent_amount === 0)
+            );
+        case 'Rental':
+             return baseProperties.filter(p =>
+                p.status === 'Available' &&
+                !p.is_for_rent &&
+                p.potential_rent_amount && p.potential_rent_amount > 0
+            );
+        case 'For Rent':
+            return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+        case 'Sold':
+            return baseProperties.filter(p => p.status === 'Sold');
+        case 'Recorded':
+            return baseProperties.filter(p => p.is_recorded);
+        case 'Rent Out':
+            return baseProperties.filter(p => p.status === 'Rent Out');
+        default:
+            return baseProperties;
+    }
+  }, [searchQuery, filters, allProperties, activeTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -316,7 +310,7 @@ export default function PropertiesPage() {
     const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
 
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
     await setDoc(docRef, { 
       status: 'Available',
       sold_price: null,
@@ -700,21 +694,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-  
-
-    
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    
-
-    
