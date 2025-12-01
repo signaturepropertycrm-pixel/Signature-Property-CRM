@@ -100,14 +100,14 @@ export default function OverviewPage() {
 
     const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading || isTeamMembersLoading;
 
+    const filterLast30Days = (item: { created_at?: string; sale_date?: string; invitedAt?: any; date?: string; status?: string }) => {
+        const dateString = item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
+        if (!dateString) return false;
+        return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
+    };
+
     // --- Memoized Stats ---
     const stats = useMemo(() => {
-        const filterLast30Days = (item: { created_at?: string; sale_date?: string; invitedAt?: any; date?: string; status?: string }) => {
-            const dateString = item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
-            if (!dateString) return false;
-            return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
-        };
-        
         const totalProperties = properties?.filter(p => !p.is_deleted).length || 0;
         const totalBuyers = buyers?.filter(b => !b.is_deleted).length || 0;
         
