@@ -95,8 +95,8 @@ const mainMenuItems = [
     roles: ['Admin', 'Agent'],
     subItems: [
         { href: '/appointments', label: 'All Appointments' },
-        { href: '/appointments?type=Buyer', label: 'Buyer Appointments' },
-        { href: '/appointments?type=Owner', label: 'Owner Appointments' },
+        { href: '/appointments?type=Buyer', label: 'Buyer' },
+        { href: '/appointments?type=Owner', label: 'Owner' },
     ]
   },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
@@ -173,11 +173,16 @@ export function AppSidebar() {
                 <CollapsibleContent>
                     <SidebarMenu className="pl-6">
                         {item.subItems.map((subItem: any) => {
-                            const currentStatus = searchParams.get('status');
-                            const subItemStatus = new URLSearchParams(subItem.href.split('?')[1]).get('status');
-                             const isSubItemActive = pathname === subItem.href.split('?')[0] && (
-                                (!currentStatus && !subItemStatus && (subItem.label === 'All Properties' || subItem.label === 'All Buyers' || subItem.label === 'All Appointments')) || // Base path matches for "All"
-                                (currentStatus === subItemStatus) // Status matches
+                            const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+                            const subItemParams = new URLSearchParams(subItem.href.split('?')[1]);
+                            const paramKey = subItem.href.includes('status=') ? 'status' : 'type';
+
+                            const currentParamValue = currentParams.get(paramKey);
+                            const subItemParamValue = subItemParams.get(paramKey);
+
+                            const isSubItemActive = pathname === subItem.href.split('?')[0] && (
+                                (!currentParamValue && !subItemParamValue && (subItem.label === 'All Properties' || subItem.label === 'All Buyers' || subItem.label === 'All Appointments')) || 
+                                (currentParamValue === subItemParamValue)
                             );
 
                             return (
