@@ -37,16 +37,16 @@ function AppointmentsPageContent() {
 
   const handleSaveAppointment = async (appointment: Appointment) => {
     if (!profile.agency_id) return;
-    const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
     
     if (appointmentToEdit) {
         // It's an update (reschedule)
-        const docRef = doc(collectionRef, appointment.id);
+        const docRef = doc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment.id);
         await setDoc(docRef, appointment, { merge: true });
         toast({ title: 'Appointment Rescheduled', description: `Appointment with ${appointment.contactName} has been updated.` });
     } else {
         // It's a new appointment
         const { id, ...newAppointmentData } = appointment;
+        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
         await addDoc(collectionRef, newAppointmentData);
         toast({ title: 'Appointment Set', description: `Appointment with ${appointment.contactName} has been scheduled.` });
     }

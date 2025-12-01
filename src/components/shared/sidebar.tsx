@@ -88,7 +88,17 @@ const mainMenuItems = [
     ]
   },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
-  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
+  { 
+    href: '/appointments', 
+    label: 'Appointments', 
+    icon: <Calendar />, 
+    roles: ['Admin', 'Agent'],
+    subItems: [
+        { href: '/appointments', label: 'All Appointments' },
+        { href: '/appointments?type=Buyer', label: 'Buyer Appointments' },
+        { href: '/appointments?type=Owner', label: 'Owner Appointments' },
+    ]
+  },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
@@ -166,7 +176,7 @@ export function AppSidebar() {
                             const currentStatus = searchParams.get('status');
                             const subItemStatus = new URLSearchParams(subItem.href.split('?')[1]).get('status');
                              const isSubItemActive = pathname === subItem.href.split('?')[0] && (
-                                (!currentStatus && !subItemStatus && subItem.label === 'All Properties') || // Base path matches for "All"
+                                (!currentStatus && !subItemStatus && (subItem.label === 'All Properties' || subItem.label === 'All Buyers' || subItem.label === 'All Appointments')) || // Base path matches for "All"
                                 (currentStatus === subItemStatus) // Status matches
                             );
 
