@@ -23,7 +23,7 @@ export default function FollowUpsPage() {
   const { profile } = useProfile();
 
   const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  const filteredFollowUps = followUpsData?.filter(fu => fu.buyerId === buyerId) || [];
+  const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
   
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: buyersData, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
@@ -192,6 +192,8 @@ export default function FollowUpsPage() {
           buyer={selectedBuyer}
           isOpen={isDetailsOpen}
           setIsOpen={setIsDetailsOpen}
+          activeAgents={[]}
+          onAssign={() => {}}
         />
       )}
       {appointmentDetails && (
@@ -213,5 +215,3 @@ export default function FollowUpsPage() {
     </>
   );
 }
-
-    

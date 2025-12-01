@@ -25,8 +25,8 @@ interface BuyerDetailsDialogProps {
   buyer: Buyer;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  activeAgents: User[];
-  onAssign: (buyer: Buyer, agentId: string | null) => void;
+  activeAgents?: User[];
+  onAssign?: (buyer: Buyer, agentId: string | null) => void;
 }
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
@@ -63,8 +63,8 @@ export function BuyerDetailsDialog({
   buyer,
   isOpen,
   setIsOpen,
-  activeAgents,
-  onAssign,
+  activeAgents = [],
+  onAssign = () => {},
 }: BuyerDetailsDialogProps) {
   const { currency } = useCurrency();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -194,5 +194,3 @@ export function BuyerDetailsDialog({
     </>
   );
 }
-
-    
