@@ -33,7 +33,7 @@ import { AppointmentNotification, FollowUpNotification, Notification, ActivityNo
 import { NotificationAppointmentDialog } from '../notification-appointment-dialog';
 import { NotificationFollowupDialog } from '../notification-followup-dialog';
 import { NotificationActivityDialog } from '../notification-activity-dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
 
 const getNotificationIcon = (type: string) => {
     switch (type) {
