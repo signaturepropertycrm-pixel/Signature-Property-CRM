@@ -16,7 +16,7 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
-import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign } from 'lucide-react';
+import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
@@ -111,9 +111,9 @@ export function PropertyDetailsDialog({
               <div>
                   <h3 className="font-bold text-lg mb-4">Property Specification</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <DetailItem icon={<LandPlot />} label="Front" value={property.front_ft ? `${property.front_ft} ft` : 'N/A'} />
-                    <DetailItem icon={<LandPlot style={{transform: 'rotate(90deg)'}}/>} label="Length" value={property.length_ft ? `${property.length_ft} ft` : 'N/A'} />
-                    <DetailItem icon={<Ruler />} label="Road Size" value={property.road_size_ft ? `${property.road_size_ft} ft` : 'N/A'} />
+                    {!property.is_for_rent && <DetailItem icon={<LandPlot />} label="Front" value={property.front_ft ? `${property.front_ft} ft` : 'N/A'} />}
+                    {!property.is_for_rent && <DetailItem icon={<LandPlot style={{transform: 'rotate(90deg)'}}/>} label="Length" value={property.length_ft ? `${property.length_ft} ft` : 'N/A'} />}
+                    {!property.is_for_rent && <DetailItem icon={<Ruler />} label="Road Size" value={property.road_size_ft ? `${property.road_size_ft} ft` : 'N/A'} />}
                     <DetailItem icon={<Building />} label="Storey" value={property.storey} />
                   </div>
               </div>
@@ -123,12 +123,12 @@ export function PropertyDetailsDialog({
               <div>
                 <h3 className="font-bold text-lg mb-4">Financials</h3>
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <DetailItem icon={<Wallet />} label="Demand" value={formatPrice(property.demand_amount, property.demand_unit)} />
-                    <DetailItem icon={<Briefcase />} label="Potential Rent" value={formatPrice(property.potential_rent_amount, property.potential_rent_unit)} />
+                    <DetailItem icon={<Wallet />} label={property.is_for_rent ? "Rent" : "Demand"} value={formatPrice(property.demand_amount, property.demand_unit)} />
+                    {!property.is_for_rent && <DetailItem icon={<Briefcase />} label="Potential Rent" value={formatPrice(property.potential_rent_amount, property.potential_rent_unit)} />}
                  </div>
               </div>
               
-              {property.status === 'Sold' && (
+              {property.status === 'Sold' && !property.is_for_rent && (
                 <>
                   <Separator />
                   <div>
@@ -147,7 +147,7 @@ export function PropertyDetailsDialog({
               <Separator />
 
               <div>
-                <h3 className="font-bold text-lg mb-4">Utilities & Documents</h3>
+                <h3 className="font-bold text-lg mb-4">Utilities & Notes</h3>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-semibold mb-2">Meters</h4>
@@ -158,8 +158,8 @@ export function PropertyDetailsDialog({
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Documents</h4>
-                    <div className="text-sm">{property.documents || 'N/A'}</div>
+                    <h4 className="font-semibold mb-2">{property.is_for_rent ? 'Message' : 'Documents'}</h4>
+                    <div className="text-sm">{property.is_for_rent ? (property.message || 'N/A') : (property.documents || 'N/A')}</div>
                   </div>
                 </div>
               </div>

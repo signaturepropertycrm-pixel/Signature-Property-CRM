@@ -1,5 +1,4 @@
 
-
 export type UserRole = 'Admin' | 'Agent';
 
 export type User = {
@@ -54,6 +53,7 @@ export type Property = {
   demand_amount: number;
   demand_unit: 'Lacs' | 'Crore' | 'Thousand';
   documents?: string;
+  message?: string; // New field for rent properties
   status: PropertyStatus;
   is_recorded: boolean;
   created_at: string;
@@ -203,5 +203,3 @@ export interface ActivityNotification extends BaseNotification {
 }
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
-
-    

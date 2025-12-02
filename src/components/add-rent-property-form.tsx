@@ -56,7 +56,7 @@ const formSchema = z.object({
   }),
   demand_amount: z.coerce.number({invalid_type_error: "Rent amount must be a number."}).positive('Rent amount must be positive'),
   demand_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
-  documents: z.string().optional(),
+  message: z.string().optional(),
 }).refine(data => {
     if (data.property_type === 'Other') {
         return !!data.custom_property_type && data.custom_property_type.length > 0;
@@ -92,7 +92,7 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   meters: { electricity: false, gas: false, water: false },
   demand_amount: null,
   demand_unit: 'Thousand' as const,
-  documents: '',
+  message: '',
   created_at: new Date().toISOString(),
   created_by: userId || '',
   agency_id: agencyId || '',
@@ -124,6 +124,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             demand_amount: propertyToEdit.demand_amount || null,
             size_value: propertyToEdit.size_value || null,
             storey: propertyToEdit.storey || '',
+            message: propertyToEdit.message || '',
         });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -472,7 +473,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             </div>
             
             <Separator />
-            <h4 className="text-sm font-medium text-muted-foreground">Utilities & Documents</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">Utilities & Notes</h4>
 
             <FormItem>
               <FormLabel>Meters</FormLabel>
@@ -518,12 +519,12 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             
             <FormField
               control={control}
-              name="documents"
+              name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Documents</FormLabel>
+                  <FormLabel>Message / Notes</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Registry, Fard, Transfer papers" />
+                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Only for small families, no pets allowed, etc." />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
