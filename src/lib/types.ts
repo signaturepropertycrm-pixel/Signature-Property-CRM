@@ -184,16 +184,15 @@ export interface InvitationNotification extends BaseNotification {
 
 export interface AppointmentNotification extends BaseNotification {
     type: 'appointment';
-    appointmentId: string;
-    contactName: string;
+    appointment: Appointment;
     reminderType: 'day' | 'hour' | 'minute';
 }
 
 export interface FollowUpNotification extends BaseNotification {
     type: 'followup';
-    followUpId: string;
-    buyerName: string;
+    followUp: FollowUp;
 }
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification;
+
 

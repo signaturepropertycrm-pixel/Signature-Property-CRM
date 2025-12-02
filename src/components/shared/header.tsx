@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -29,6 +30,9 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatDistanceToNow } from 'date-fns';
+import { AppointmentNotification, FollowUpNotification, Notification } from '@/lib/types';
+import { NotificationAppointmentDialog } from '../notification-appointment-dialog';
+import { NotificationFollowupDialog } from '../notification-followup-dialog';
 
 const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -61,8 +65,12 @@ export function AppHeader({
   const auth = useAuth();
   const { user } = useUser();
   const { toggleSidebar } = useSidebar();
-  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation } = useNotifications();
+  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation, markAsRead } = useNotifications();
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
+
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
+  const [isFollowupDialogOpen, setIsFollowupDialogOpen] = useState(false);
 
   const displayName = profile.name || 'User';
   const displayImage = profile.avatar || user?.photoURL;
@@ -104,8 +112,23 @@ export function AppHeader({
     }
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    setSelectedNotification(notification);
+    if (notification.type === 'appointment') {
+        setIsAppointmentDialogOpen(true);
+    } else if (notification.type === 'followup') {
+        setIsFollowupDialogOpen(true);
+    }
+    if (!notification.isRead) {
+        markAsRead(notification.id);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
 
   return (
+    <>
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 sm:px-6">
       
       {isMobile === false && (
@@ -137,7 +160,7 @@ export function AppHeader({
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full relative">
                     <Bell className="h-5 w-5" />
-                    {notifications && notifications.length > 0 && (
+                    {unreadCount > 0 && (
                         <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
                     )}
                     <span className="sr-only">Notifications</span>
@@ -153,7 +176,12 @@ export function AppHeader({
                     </DropdownMenuItem>
                 ) : notifications && notifications.length > 0 ? (
                     notifications.map(notification => (
-                         <DropdownMenuItem key={notification.id} className="flex justify-between items-start gap-3" onSelect={(e) => e.preventDefault()}>
+                         <DropdownMenuItem 
+                            key={notification.id} 
+                            className={cn("flex justify-between items-start gap-3 cursor-pointer", notification.isRead && "opacity-60")} 
+                            onSelect={(e) => e.preventDefault()}
+                            onClick={() => handleNotificationClick(notification)}
+                         >
                             <div className="flex-shrink-0 pt-1">{getNotificationIcon(notification.type)}</div>
                             <div className="flex-1">
                                 <p className="font-semibold">{notification.title}</p>
@@ -164,10 +192,10 @@ export function AppHeader({
                                 <div className="flex items-center gap-1 w-20 justify-end">
                                     {updatingInvite === notification.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                                         <>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleReject(notification.id, notification.agencyId)}>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={(e) => {e.stopPropagation(); handleReject(notification.id, (notification as any).agencyId)}}>
                                                 <X className="h-4 w-4" />
                                             </Button>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={() => handleAccept(notification.id, notification.agencyId)}>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={(e) => {e.stopPropagation(); handleAccept(notification.id, (notification as any).agencyId)}}>
                                                 <Check className="h-4 w-4" />
                                             </Button>
                                         </>
@@ -215,5 +243,22 @@ export function AppHeader({
         </DropdownMenu>
       </div>
     </header>
+    {selectedNotification?.type === 'appointment' && (
+        <NotificationAppointmentDialog 
+            isOpen={isAppointmentDialogOpen}
+            setIsOpen={setIsAppointmentDialogOpen}
+            notification={selectedNotification as AppointmentNotification}
+            onClose={() => markAsRead(selectedNotification.id)}
+        />
+    )}
+    {selectedNotification?.type === 'followup' && (
+        <NotificationFollowupDialog 
+            isOpen={isFollowupDialogOpen}
+            setIsOpen={setIsFollowupDialogOpen}
+            notification={selectedNotification as FollowUpNotification}
+            onClose={() => markAsRead(selectedNotification.id)}
+        />
+    )}
+    </>
   );
 }

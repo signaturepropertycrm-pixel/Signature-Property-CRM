@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,7 +11,9 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, UserRole, Appointment, FollowUp } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { isBefore, sub, isAfter, isToday, parseISO } from 'date-fns';
+import { isBefore, sub, isAfter, isToday, parseISO, startOfToday } from 'date-fns';
+
+const NOTIFICATION_READ_STATUS_KEY = 'signaturecrm_read_notifications';
 
 export const useNotifications = () => {
     const firestore = useFirestore();
@@ -36,16 +39,40 @@ export const useNotifications = () => {
     const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
     const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id]);
 
+    const getReadStatus = (): string[] => {
+        try {
+            const saved = localStorage.getItem(NOTIFICATION_READ_STATUS_KEY);
+            return saved ? JSON.parse(saved) : [];
+        } catch (error) {
+            return [];
+        }
+    };
+    
+    const markAsRead = (notificationId: string) => {
+        const readIds = getReadStatus();
+        if (!readIds.includes(notificationId)) {
+            const newReadIds = [...readIds, notificationId];
+            localStorage.setItem(NOTIFICATION_READ_STATUS_KEY, JSON.stringify(newReadIds));
+            setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
+        }
+    };
+
     useEffect(() => {
         if (!canFetch) {
             setIsLoading(false);
             return;
         }
         
+        const readIds = getReadStatus();
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
         let loadingStates = { invitations: true, appointments: true, followups: true };
         const updateLoading = () => setIsLoading(Object.values(loadingStates).some(s => s));
+
+        const updateAndSortNotifications = () => {
+            allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+            setNotifications(allNotifications);
+        };
 
         // Invitations
         if(invitationsQuery) {
@@ -56,7 +83,7 @@ export const useNotifications = () => {
                     title: `Invitation to join ${doc.data().agency_name}`,
                     description: `You have been invited to join as a ${doc.data().role}.`,
                     timestamp: doc.data().invitedAt?.toDate() || new Date(),
-                    isRead: false,
+                    isRead: readIds.includes(doc.id),
                     agencyId: doc.data().agency_id,
                     agencyName: doc.data().agency_name,
                     role: doc.data().role,
@@ -64,7 +91,7 @@ export const useNotifications = () => {
                 } as InvitationNotification));
                 
                 allNotifications = [...allNotifications.filter(n => n.type !== 'invitation'), ...invitationNotifications];
-                setNotifications(allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+                updateAndSortNotifications();
                 loadingStates.invitations = false;
                 updateLoading();
             }, (error) => {
@@ -88,7 +115,7 @@ export const useNotifications = () => {
                 const appointmentNotifications: AppointmentNotification[] = [];
 
                 snapshot.docs.forEach(doc => {
-                    const appt = doc.data() as Appointment;
+                    const appt = { id: doc.id, ...doc.data() } as Appointment;
                     if (appt.status !== 'Scheduled') return;
 
                     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
@@ -102,9 +129,8 @@ export const useNotifications = () => {
                                 title,
                                 description: `With ${appt.contactName} at ${appt.time}`,
                                 timestamp: new Date(),
-                                isRead: false,
-                                appointmentId: appt.id,
-                                contactName: appt.contactName,
+                                isRead: readIds.includes(id),
+                                appointment: appt,
                                 reminderType
                             });
                         }
@@ -116,7 +142,7 @@ export const useNotifications = () => {
                 });
                 
                 allNotifications = [...allNotifications.filter(n => n.type !== 'appointment'), ...appointmentNotifications];
-                setNotifications(allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+                updateAndSortNotifications();
                 loadingStates.appointments = false;
                 updateLoading();
             });
@@ -130,26 +156,25 @@ export const useNotifications = () => {
             const unsubFollowUps = onSnapshot(followUpsQuery, (snapshot) => {
                 const followUpNotifications: FollowUpNotification[] = [];
                 snapshot.docs.forEach(doc => {
-                    const followUp = doc.data() as FollowUp;
+                    const followUp = { id: doc.id, ...doc.data() } as FollowUp;
                     if (followUp.status !== 'Scheduled') return;
 
                     const reminderDate = parseISO(followUp.nextReminder);
-                    if (isToday(reminderDate) || isBefore(reminderDate, new Date())) {
+                    if (isToday(reminderDate) || isBefore(reminderDate, startOfToday())) {
                         followUpNotifications.push({
                             id: followUp.id,
                             type: 'followup',
                             title: 'Follow-up Due Today',
                             description: `Follow up with ${followUp.buyerName}.`,
                             timestamp: reminderDate,
-                            isRead: false,
-                            followUpId: followUp.id,
-                            buyerName: followUp.buyerName
+                            isRead: readIds.includes(followUp.id),
+                            followUp: followUp
                         });
                     }
                 });
 
                 allNotifications = [...allNotifications.filter(n => n.type !== 'followup'), ...followUpNotifications];
-                setNotifications(allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()));
+                updateAndSortNotifications();
                 loadingStates.followups = false;
                 updateLoading();
             });
@@ -189,5 +214,5 @@ export const useNotifications = () => {
     };
 
 
-    return { notifications, isLoading, acceptInvitation, rejectInvitation };
+    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead };
 };
