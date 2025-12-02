@@ -1,22 +1,35 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow an agency admin to write to their own agency document
-    match /agencies/{agencyId} {
-      allow write: if request.auth != null && request.auth.uid == agencyId;
-      allow read: if request.auth != null;
+    // Users can read their own user document and update it.
+    // They cannot delete it or create one for someone else.
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Signup needs this
     }
 
-    // Allow an agent to write to their own agent document
-    match /agents/{agentId} {
-       allow write: if request.auth != null && request.auth.uid == agentId;
-       allow read: if request.auth != null;
+    // Admins can manage their own agency document.
+    match /agencies/{agencyId} {
+      allow read, write: if request.auth != null && request.auth.uid == agencyId;
     }
     
-    // ✅ Fallback: Allow authenticated users to access any other valid path
+    // Admins can manage subcollections within their own agency.
+    match /agencies/{agencyId}/{subcollection}/{docId} {
+       allow read, write: if request.auth != null && get(/databases/$(database)/documents/agencies/$(agencyId)).data.ownerId == request.auth.uid;
+    }
+
+    // Agents can manage documents within their own agent collection.
+    match /agents/{agentId}/{subcollection}/{docId} {
+       allow read, write: if request.auth != null && request.auth.uid == agentId;
+    }
+    
+    // Fallback: Default deny for any path not explicitly matched.
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }
+
+    

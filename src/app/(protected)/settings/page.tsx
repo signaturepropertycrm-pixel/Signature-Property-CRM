@@ -202,36 +202,35 @@ export default function SettingsPage() {
 
   const handleAvatarSave = (dataUrl: string) => {
     if (!user) return;
-        
-    const collectionName = profile.role === 'Admin' ? 'agencies' : 'agents';
-    const docId = profile.role === 'Admin' ? profile.agency_id : user.uid;
-    if (!docId) return;
 
-    const docRef = doc(firestore, collectionName, docId);
+    // A user can always update their own user document
+    const docRef = doc(firestore, 'users', user.uid);
     const dataToUpdate = { avatar: dataUrl };
 
     updateDoc(docRef, dataToUpdate)
-        .then(() => {
-            if (auth.currentUser) {
-                return updateProfile(auth.currentUser, { photoURL: dataUrl });
-            }
-        })
-        .then(() => {
-            setProfile({ ...profile, avatar: dataUrl });
-            toast({
-                title: "Profile Picture Updated",
-                description: "Your new avatar has been saved."
-            });
-            setIsAvatarDialogOpen(false);
-        })
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: docRef.path,
-                operation: 'update',
-                requestResourceData: dataToUpdate,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+      .then(() => {
+        if (auth.currentUser) {
+          // Also update the photoURL in Firebase Auth profile
+          return updateProfile(auth.currentUser, { photoURL: dataUrl });
+        }
+      })
+      .then(() => {
+        // Update the local context
+        setProfile({ ...profile, avatar: dataUrl });
+        toast({
+          title: "Profile Picture Updated",
+          description: "Your new avatar has been saved."
         });
+        setIsAvatarDialogOpen(false);
+      })
+      .catch(serverError => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: dataToUpdate,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   }
 
   const handleBackup = () => {
@@ -1139,3 +1138,5 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
+
+    
