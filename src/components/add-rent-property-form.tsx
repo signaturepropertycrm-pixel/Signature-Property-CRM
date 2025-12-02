@@ -54,8 +54,8 @@ const formSchema = z.object({
     gas: z.boolean().default(false),
     water: z.boolean().default(false),
   }),
-  potential_rent_amount: z.coerce.number({invalid_type_error: "Rent amount must be a number."}).positive('Rent amount must be positive'),
-  potential_rent_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
+  demand_amount: z.coerce.number({invalid_type_error: "Rent amount must be a number."}).positive('Rent amount must be positive'),
+  demand_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
   documents: z.string().optional(),
 }).refine(data => {
     if (data.property_type === 'Other') {
@@ -90,8 +90,8 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   size_unit: 'Marla' as const,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
-  potential_rent_amount: '' as any,
-  potential_rent_unit: 'Thousand' as const,
+  demand_amount: '' as any,
+  demand_unit: 'Thousand' as const,
   documents: '',
   created_at: new Date().toISOString(),
   created_by: userId || '',
@@ -120,8 +120,8 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             owner_number: propertyToEdit.owner_number.replace('+92', ''),
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
-            potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
-            potential_rent_amount: propertyToEdit.potential_rent_amount || undefined,
+            demand_unit: propertyToEdit.demand_unit ?? 'Thousand',
+            demand_amount: propertyToEdit.demand_amount || undefined,
             storey: propertyToEdit.storey || '',
         });
     } else {
@@ -164,8 +164,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
         ...propertyToEdit,
         ...finalValues,
         listing_type: 'For Rent' as const,
-        demand_amount: 0, // Not for sale
-        demand_unit: 'Lacs' as const, // Default value
+        is_for_rent: true,
+        potential_rent_amount: 0,
+        potential_rent_unit: 'Thousand' as const,
         id: propertyToEdit?.id,
         serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
@@ -195,7 +196,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                   <FormItem>
                     <FormLabel>Serial No</FormLabel>
                     <FormControl>
-                      <Input {...field} readOnly className="bg-muted/50" />
+                      <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -214,7 +215,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 <FormItem>
                   <FormLabel>Auto-Generated Title</FormLabel>
                   <FormControl>
-                    <Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
+                    <Input {...field} value={field.value ?? ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -350,7 +351,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                         <FormItem>
                             <FormLabel>Custom Property Type</FormLabel>
                             <FormControl>
-                            <Input {...field} placeholder="e.g., Penthouse" />
+                            <Input {...field} value={field.value ?? ''} placeholder="e.g., Penthouse" />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -417,7 +418,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={control}
-                  name="potential_rent_amount"
+                  name="demand_amount"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Rent Amount</FormLabel>
@@ -430,7 +431,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 />
                 <FormField
                   control={control}
-                  name="potential_rent_unit"
+                  name="demand_unit"
                   render={({ field }) => (
                     <FormItem className="self-end">
                       <FormLabel className="sr-only">Unit</FormLabel>
@@ -521,7 +522,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 <FormItem>
                   <FormLabel>Documents</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="e.g. Registry, Fard, Transfer papers" />
+                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Registry, Fard, Transfer papers" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -539,3 +540,5 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     </Form>
   );
 }
+
+    

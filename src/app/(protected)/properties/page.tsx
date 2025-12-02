@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -205,19 +206,11 @@ export default function PropertiesPage() {
 
     switch (activeTab) {
         case 'All':
-            return baseProperties;
+            return baseProperties.filter(p => !p.is_for_rent);
         case 'Available':
-            return baseProperties.filter(p => 
-                p.status === 'Available' && 
-                !p.is_for_rent && 
-                (!p.potential_rent_amount || p.potential_rent_amount === 0)
-            );
+            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
         case 'Rental':
-             return baseProperties.filter(p =>
-                p.status === 'Available' &&
-                !p.is_for_rent &&
-                p.potential_rent_amount && p.potential_rent_amount > 0
-            );
+            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
         case 'For Rent':
             return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
         case 'Sold':
@@ -227,7 +220,7 @@ export default function PropertiesPage() {
         case 'Rent Out':
             return baseProperties.filter(p => p.status === 'Rent Out');
         default:
-            return baseProperties;
+            return baseProperties.filter(p => !p.is_for_rent); // Default to 'All' logic
     }
   }, [searchQuery, filters, allProperties, activeTab]);
 
@@ -254,7 +247,7 @@ export default function PropertiesPage() {
   };
 
   const handleEdit = (prop: Property) => {
-    setListingType(prop.listing_type);
+    setListingType(prop.is_for_rent ? 'For Rent' : 'For Sale');
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true);
   };
@@ -306,11 +299,19 @@ export default function PropertiesPage() {
     toast({ title: 'Property Marked as Rent Out' });
   };
   
+  const handleMarkAsAvailableForRent = async (prop: Property) => {
+    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
+    if (!collectionId) return;
+    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    await setDoc(docRef, { status: 'Available' }, { merge: true });
+    toast({ title: 'Property Marked as Available for Rent' });
+  };
+
   const handleMarkAsUnsold = async (prop: Property) => {
     const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
 
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
     await setDoc(docRef, { 
       status: 'Available',
       sold_price: null,
@@ -432,6 +433,9 @@ export default function PropertiesPage() {
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
                     )}
+                    {prop.is_for_rent && prop.status === 'Rent Out' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</DropdownMenuItem>
+                    )}
                     {prop.status === 'Available' && !prop.is_for_rent && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
@@ -505,6 +509,9 @@ export default function PropertiesPage() {
                   <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
+                    )}
+                    {prop.is_for_rent && prop.status === 'Rent Out' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</DropdownMenuItem>
                     )}
                     {prop.status === 'Available' && !prop.is_for_rent && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
@@ -694,3 +701,5 @@ export default function PropertiesPage() {
       </>
     );
   }
+
+    

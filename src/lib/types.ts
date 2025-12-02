@@ -52,7 +52,7 @@ export type Property = {
   front_ft?: number;
   length_ft?: number;
   demand_amount: number;
-  demand_unit: 'Lacs' | 'Crore';
+  demand_unit: 'Lacs' | 'Crore' | 'Thousand';
   documents?: string;
   status: PropertyStatus;
   is_recorded: boolean;
@@ -203,3 +203,5 @@ export interface ActivityNotification extends BaseNotification {
 }
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
+
+    
