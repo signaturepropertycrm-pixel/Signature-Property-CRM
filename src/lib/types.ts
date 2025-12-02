@@ -22,7 +22,6 @@ export type User = {
 export type PropertyType = 'House' | 'Plot' | 'Flat' | 'Shop' | 'Commercial' | 'Agricultural' | 'Other' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
-export type CommissionUnit = 'PKR' | '%';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out';
 export type ListingType = 'For Sale' | 'For Rent';
 
@@ -76,9 +75,9 @@ export type Property = {
   rent_out_date?: string; // New field for rent out date
   sold_by_agent_id?: string;
   commission_from_buyer?: number;
-  commission_from_buyer_unit?: CommissionUnit;
+  commission_from_buyer_unit?: PriceUnit;
   commission_from_seller?: number;
-  commission_from_seller_unit?: CommissionUnit;
+  commission_from_seller_unit?: PriceUnit;
   total_commission?: number;
   agent_share_percentage?: number;
 };
