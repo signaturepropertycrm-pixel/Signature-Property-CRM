@@ -158,7 +158,7 @@ export type Activity = {
     action: string;
     target: string;
     targetType: 'Property' | 'Buyer' | 'Appointment' | 'User';
-    details?: any;
+    details: { from: string; to: string } | null;
     timestamp: string;
     agency_id: string;
 };
@@ -172,6 +172,7 @@ export interface BaseNotification {
     description: string;
     timestamp: Date;
     isRead: boolean;
+    isDeleted?: boolean;
 }
 
 export interface InvitationNotification extends BaseNotification {
@@ -199,5 +200,3 @@ export interface ActivityNotification extends BaseNotification {
 }
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
-
-

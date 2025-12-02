@@ -222,22 +222,18 @@ export const useNotifications = () => {
         // Activities
         if(activitiesQuery) {
             const unsubActivities = onSnapshot(activitiesQuery, (snapshot) => {
-                const activityNotifications: ActivityNotification[] = [];
-                snapshot.docs.forEach(doc => {
-                    const activity = { id: doc.id, ...doc.data() } as Activity;
-                    // Only show notifications for status updates by other users
-                    if (activity.action.includes('updated the status') && activity.userName !== profile.name) {
-                        activityNotifications.push({
-                            id: activity.id,
-                            type: 'activity',
-                            title: `${activity.userName} updated status`,
-                            description: `${activity.target}: ${activity.details.from} -> ${activity.details.to}`,
-                            timestamp: new Date(activity.timestamp),
-                            isRead: readIds.includes(activity.id),
-                            activity
-                        });
-                    }
-                });
+                const activityNotifications: ActivityNotification[] = snapshot.docs.map(doc => {
+                     const activity = { id: doc.id, ...doc.data() } as Activity;
+                     return {
+                        id: activity.id,
+                        type: 'activity',
+                        title: `${activity.userName} ${activity.action}`,
+                        description: activity.target || '',
+                        timestamp: new Date(activity.timestamp),
+                        isRead: readIds.includes(activity.id),
+                        activity
+                     }
+                }).filter(n => n.activity.userName !== profile.name); // Filter out user's own actions
                 
                 allNotifications = [...allNotifications.filter(n => n.type !== 'activity'), ...activityNotifications];
                 updateAndSortNotifications();

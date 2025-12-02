@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Appointment, AppointmentStatus } from '@/lib/types';
+import { Appointment, AppointmentStatus, Activity } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams } from 'next/navigation';
@@ -35,6 +36,21 @@ function AppointmentsPageContent() {
   const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
 
+  const logActivity = async (action: string, target: string, details: any = null) => {
+    if (!profile.agency_id) return;
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const newActivity: Omit<Activity, 'id'> = {
+      userName: profile.name,
+      action,
+      target,
+      targetType: 'Appointment',
+      details,
+      timestamp: new Date().toISOString(),
+      agency_id: profile.agency_id,
+    };
+    await addDoc(activityLogRef, newActivity);
+  };
+
   const handleSaveAppointment = async (appointment: Appointment) => {
     if (!profile.agency_id) return;
     
@@ -43,20 +59,23 @@ function AppointmentsPageContent() {
         const docRef = doc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment.id);
         await setDoc(docRef, appointment, { merge: true });
         toast({ title: 'Appointment Rescheduled', description: `Appointment with ${appointment.contactName} has been updated.` });
+        await logActivity('rescheduled appointment', appointment.contactName);
     } else {
         // It's a new appointment
         const { id, ...newAppointmentData } = appointment;
         const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
         await addDoc(collectionRef, newAppointmentData);
         toast({ title: 'Appointment Set', description: `Appointment with ${appointment.contactName} has been scheduled.` });
+        await logActivity('set a new appointment', appointment.contactName);
     }
     setAppointmentToEdit(null);
   };
 
-  const handleDeleteAppointment = async (id: string) => {
+  const handleDeleteAppointment = async (appointment: Appointment) => {
     if (!profile.agency_id) return;
-    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'appointments', id));
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'appointments', appointment.id));
     toast({ title: 'Appointment Deleted', variant: 'destructive' });
+    await logActivity('deleted an appointment', appointment.contactName);
   };
   
   const handleReschedule = (appointment: Appointment) => {
@@ -71,9 +90,13 @@ function AppointmentsPageContent() {
 
   const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
       if (!profile.agency_id) return;
+      const appointment = appointmentsData?.find(a => a.id === appointmentId);
+      if (!appointment) return;
+
       const docRef = doc(firestore, 'agencies', profile.agency_id, 'appointments', appointmentId);
       await setDoc(docRef, { status, notes: notes || '' }, { merge: true });
       toast({ title: 'Appointment Updated', description: `Status has been changed to ${status}.` });
+      await logActivity('updated appointment status', appointment.contactName, { from: appointment.status, to: status });
   };
 
   const statusConfig: { [key in AppointmentStatus]: { variant: 'default' | 'secondary' | 'destructive', icon?: React.ComponentType<{ className?: string }> } } = {
@@ -152,7 +175,7 @@ function AppointmentsPageContent() {
                             <Edit />
                             Reschedule
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleDeleteAppointment(appt.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                        <DropdownMenuItem onSelect={() => handleDeleteAppointment(appt)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                             <Trash2 />
                             Delete
                         </DropdownMenuItem>
