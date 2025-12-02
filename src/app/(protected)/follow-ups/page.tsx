@@ -3,9 +3,9 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, CalendarPlus, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { Phone, MessageSquare, CalendarPlus, CheckCircle, Clock, Trash2, Bookmark } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { FollowUp, Buyer, Appointment, AppointmentContactType, Activity } from '@/lib/types';
+import { FollowUp, Buyer, Appointment, AppointmentContactType, Activity, BuyerStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
@@ -17,6 +17,8 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { buyerStatuses } from '@/lib/data';
 
 
 export default function FollowUpsPage() {
@@ -157,30 +159,29 @@ export default function FollowUpsPage() {
         setBuyerForFollowUp(null);
   };
   
-  const handleDeleteFollowUp = async (e: React.MouseEvent, followUp: FollowUp) => {
-    e.stopPropagation();
-    if (!profile.agency_id) return;
-
-    try {
-        const batch = writeBatch(firestore);
-
-        // Delete the follow-up document
-        const followUpRef = doc(firestore, 'agencies', profile.agency_id, 'followUps', followUp.id);
-        batch.delete(followUpRef);
-
-        // Update the buyer's status back to 'Interested'
-        const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', followUp.buyerId);
-        batch.update(buyerRef, { status: 'Interested' });
+    const handleChangeStatus = async (followUp: FollowUp, newStatus: BuyerStatus) => {
+        if (!profile.agency_id) return;
+        const buyer = buyersData?.find(b => b.id === followUp.buyerId);
+        if (!buyer) return;
         
-        await batch.commit();
+        try {
+            const batch = writeBatch(firestore);
 
-        await logActivity('deleted a follow-up for', followUp.buyerName, 'FollowUp');
-        toast({ title: 'Follow-up Deleted', description: 'The buyer status has been reset to "Interested".' });
-    } catch (error) {
-        toast({ title: 'Error', description: 'Could not delete the follow-up.', variant: 'destructive' });
-        console.error("Error deleting follow-up: ", error);
-    }
-  };
+            const followUpRef = doc(firestore, 'agencies', profile.agency_id, 'followUps', followUp.id);
+            batch.delete(followUpRef);
+
+            const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', followUp.buyerId);
+            batch.update(buyerRef, { status: newStatus });
+            
+            await batch.commit();
+
+            await logActivity('updated buyer status from follow-up', followUp.buyerName, 'Buyer', { from: 'Follow Up', to: newStatus });
+            toast({ title: 'Status Updated', description: `${buyer.name}'s status has been changed to "${newStatus}".` });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not update status.', variant: 'destructive' });
+            console.error("Error updating status from follow-up: ", error);
+        }
+    };
 
 
   return (
@@ -218,23 +219,22 @@ export default function FollowUpsPage() {
                   <p className="text-sm border-t pt-3">{followUp.notes}</p>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon" onClick={(e) => e.stopPropagation()}><Trash2 /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the follow-up and reset the buyer's status to "Interested". This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={(e) => handleDeleteFollowUp(e, followUp)}>Confirm Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={(e) => e.stopPropagation()}>
+                            <Bookmark />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                        {buyerStatuses
+                            .filter(status => status !== 'Follow Up')
+                            .map(status => (
+                                <DropdownMenuItem key={status} onSelect={() => handleChangeStatus(followUp, status)}>
+                                    {status}
+                                </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button variant="outline" size="icon" onClick={(e) => handleWhatsAppClick(e, followUp.buyerPhone)}><MessageSquare /></Button>
                   <Button variant="outline" size="icon" onClick={(e) => handleOpenReschedule(e, followUp)}><CalendarPlus /></Button>
                   <Button size="icon" onClick={(e) => handleSetAppointment(e, followUp)}><CheckCircle /></Button>
@@ -273,3 +273,5 @@ export default function FollowUpsPage() {
     </>
   );
 }
+
+    
