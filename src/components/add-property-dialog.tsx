@@ -1,3 +1,4 @@
+
 'use client';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +14,7 @@ import { AddRentPropertyForm } from './add-rent-property-form';
 import { PlusCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import type { Property, ListingType } from '@/lib/types';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 interface AddPropertyDialogProps {
     isOpen: boolean;
@@ -25,6 +26,10 @@ interface AddPropertyDialogProps {
 }
 
 export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, totalProperties, listingType }: AddPropertyDialogProps) {
+
+    const totalSaleProperties = useMemo(() => totalProperties, [totalProperties]);
+    const totalRentProperties = useMemo(() => totalProperties, [totalProperties]);
+
 
     useEffect(() => {
         if (!isOpen) {
@@ -42,9 +47,9 @@ export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, t
           </DialogDescription>
         </DialogHeader>
         {listingType === 'For Sale' ? (
-          <AddSalePropertyForm setDialogOpen={setIsOpen} onSave={onSave} propertyToEdit={propertyToEdit} totalProperties={totalProperties} />
+          <AddSalePropertyForm setDialogOpen={setIsOpen} onSave={onSave} propertyToEdit={propertyToEdit} totalProperties={totalSaleProperties} />
         ) : (
-          <AddRentPropertyForm setDialogOpen={setIsOpen} onSave={onSave} propertyToEdit={propertyToEdit} totalProperties={totalProperties} />
+          <AddRentPropertyForm setDialogOpen={setIsOpen} onSave={onSave} propertyToEdit={propertyToEdit} totalProperties={totalRentProperties} />
         )}
       </DialogContent>
     </Dialog>

@@ -78,7 +78,7 @@ interface AddRentPropertyFormProps {
 }
 
 const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined, agencyId: string | undefined) => ({
-  serial_no: `P-${totalProperties + 1}`,
+  serial_no: `RP-${totalProperties + 1}`,
   auto_title: '',
   owner_number: '',
   city: 'Lahore',
@@ -169,7 +169,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
         potential_rent_amount: 0,
         potential_rent_unit: 'Thousand' as const,
         id: propertyToEdit?.id,
-        serial_no: propertyToEdit?.serial_no || `P-${totalProperties + 1}`,
+        serial_no: propertyToEdit?.serial_no || `RP-${totalProperties + 1}`,
         status: propertyToEdit?.status || 'Available',
         created_at: propertyToEdit?.created_at || new Date().toISOString(),
         created_by: propertyToEdit?.created_by || user?.uid || '',
@@ -541,5 +541,3 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     </Form>
   );
 }
-
-    
