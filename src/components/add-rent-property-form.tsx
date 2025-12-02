@@ -86,11 +86,11 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   address: '',
   property_type: 'House' as const,
   custom_property_type: '',
-  size_value: '' as any,
+  size_value: null,
   size_unit: 'Marla' as const,
   storey: '',
   meters: { electricity: false, gas: false, water: false },
-  demand_amount: '' as any,
+  demand_amount: null,
   demand_unit: 'Thousand' as const,
   documents: '',
   created_at: new Date().toISOString(),
@@ -121,7 +121,8 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             demand_unit: propertyToEdit.demand_unit ?? 'Thousand',
-            demand_amount: propertyToEdit.demand_amount || undefined,
+            demand_amount: propertyToEdit.demand_amount || null,
+            size_value: propertyToEdit.size_value || null,
             storey: propertyToEdit.storey || '',
         });
     } else {
@@ -366,7 +367,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                     <FormItem>
                       <FormLabel>Property Size</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="5" />
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="5" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -423,7 +424,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                     <FormItem>
                       <FormLabel>Rent Amount</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} placeholder="30" />
+                        <Input type="number" {...field} value={field.value ?? ''} placeholder="30" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
