@@ -412,7 +412,17 @@ export default function PropertiesPage() {
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                  <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                   <Badge
+                    variant="default"
+                    className={cn(
+                      'font-mono',
+                      prop.serial_no.startsWith('RP')
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                        : 'bg-primary/20 text-primary hover:bg-primary/30'
+                    )}
+                  >
+                    {prop.serial_no}
+                  </Badge>
                   <span className="truncate max-w-48">{prop.address}</span>
                 </div>
               </TableCell>
@@ -487,7 +497,17 @@ export default function PropertiesPage() {
                       {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
                     </CardTitle>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                          <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{prop.serial_no}</Badge>
+                         <Badge
+                            variant="default"
+                            className={cn(
+                              'font-mono',
+                              prop.serial_no.startsWith('RP')
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                : 'bg-primary/20 text-primary hover:bg-primary/30'
+                            )}
+                          >
+                            {prop.serial_no}
+                          </Badge>
                       </div>
                     </div>
                     <div className="flex flex-col gap-1 items-end">
