@@ -11,7 +11,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, UserRole, Appointment, FollowUp, Activity, ActivityNotification } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { isBefore, sub, isAfter, isToday, parseISO, startOfToday } from 'date-fns';
+import { isBefore, sub, isAfter, isToday, parseISO, startOfToday, differenceInHours } from 'date-fns';
 
 const NOTIFICATION_READ_STATUS_KEY = 'signaturecrm_read_notifications';
 const DELETED_NOTIFICATIONS_KEY = 'signaturecrm_deleted_notifications';
@@ -104,8 +104,12 @@ export const useNotifications = () => {
         let loadingStates = { invitations: true, appointments: true, followups: true, activities: true };
         const updateLoading = () => setIsLoading(Object.values(loadingStates).some(s => s));
 
-        const updateAndSortNotifications = () => {
-             allNotifications = allNotifications.filter(n => !deletedIds.includes(n.id));
+        const updateAndSortNotifications = (newNotifs: Notification[], type: NotificationType) => {
+             allNotifications = [
+                ...allNotifications.filter(n => n.type !== type),
+                ...newNotifs
+             ].filter(n => !deletedIds.includes(n.id));
+
              allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
             setNotifications(allNotifications);
         };
@@ -126,8 +130,7 @@ export const useNotifications = () => {
                     email: doc.data().email,
                 } as InvitationNotification));
                 
-                allNotifications = [...allNotifications.filter(n => n.type !== 'invitation'), ...invitationNotifications];
-                updateAndSortNotifications();
+                updateAndSortNotifications(invitationNotifications, 'invitation');
                 loadingStates.invitations = false;
                 updateLoading();
             }, (error) => {
@@ -144,10 +147,6 @@ export const useNotifications = () => {
         if(appointmentsQuery) {
              const unsubAppointments = onSnapshot(appointmentsQuery, (snapshot) => {
                 const now = new Date();
-                const dayAhead = sub(now, { days: -1 });
-                const hourAhead = sub(now, { hours: -1 });
-                const fifteenMinutesAhead = sub(now, { minutes: -15 });
-
                 const appointmentNotifications: AppointmentNotification[] = [];
 
                 snapshot.docs.forEach(doc => {
@@ -155,30 +154,36 @@ export const useNotifications = () => {
                     if (appt.status !== 'Scheduled' || (profile.role === 'Agent' && appt.agentName !== profile.name)) return;
 
                     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
+                    if (isBefore(apptDateTime, now)) return; // Don't show for past appointments
+
+                    const hoursUntil = differenceInHours(apptDateTime, now);
                     
-                    const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', boundary: Date, title: string) => {
+                    const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
                         const id = `${appt.id}-${reminderType}`;
-                        if (isAfter(apptDateTime, now) && isBefore(apptDateTime, boundary)) {
-                             appointmentNotifications.push({
-                                id,
-                                type: 'appointment',
-                                title,
-                                description: `With ${appt.contactName} at ${appt.time}`,
-                                timestamp: new Date(),
-                                isRead: readIds.includes(id),
-                                appointment: appt,
-                                reminderType
-                            });
-                        }
+                        appointmentNotifications.push({
+                            id,
+                            type: 'appointment',
+                            title,
+                            description: `With ${appt.contactName} at ${appt.time}`,
+                            timestamp: new Date(),
+                            isRead: readIds.includes(id),
+                            appointment: appt,
+                            reminderType
+                        });
                     };
 
-                    checkAndAddReminder('day', dayAhead, 'Appointment in 24 hours');
-                    checkAndAddReminder('hour', hourAhead, 'Appointment in 1 hour');
-                    checkAndAddReminder('minute', fifteenMinutesAhead, 'Appointment in 15 minutes');
+                    if (hoursUntil > 1 && hoursUntil <= 24) {
+                        checkAndAddReminder('day', 'Appointment in 24 hours');
+                    }
+                    if (hoursUntil <= 1 && differenceInHours(apptDateTime, now) > 0.25) { // more than 15 mins away
+                        checkAndAddReminder('hour', 'Appointment in 1 hour');
+                    }
+                    if (differenceInHours(apptDateTime, now) <= 0.25 && isAfter(apptDateTime, now)) { // less than 15 mins away
+                        checkAndAddReminder('minute', 'Appointment in 15 minutes');
+                    }
                 });
                 
-                allNotifications = [...allNotifications.filter(n => n.type !== 'appointment'), ...appointmentNotifications];
-                updateAndSortNotifications();
+                updateAndSortNotifications(appointmentNotifications, 'appointment');
                 loadingStates.appointments = false;
                 updateLoading();
             });
@@ -209,8 +214,7 @@ export const useNotifications = () => {
                     }
                 });
 
-                allNotifications = [...allNotifications.filter(n => n.type !== 'followup'), ...followUpNotifications];
-                updateAndSortNotifications();
+                updateAndSortNotifications(followUpNotifications, 'followup');
                 loadingStates.followups = false;
                 updateLoading();
             });
@@ -235,8 +239,7 @@ export const useNotifications = () => {
                      }
                 }).filter(n => n.activity.userName !== profile.name); // Filter out user's own actions
                 
-                allNotifications = [...allNotifications.filter(n => n.type !== 'activity'), ...activityNotifications];
-                updateAndSortNotifications();
+                updateAndSortNotifications(activityNotifications, 'activity');
                 loadingStates.activities = false;
                 updateLoading();
             });

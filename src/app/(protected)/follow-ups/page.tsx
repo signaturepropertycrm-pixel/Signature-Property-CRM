@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { FollowUp, Buyer, Appointment, AppointmentContactType } from '@/lib/types';
+import { FollowUp, Buyer, Appointment, AppointmentContactType, Activity } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
@@ -35,6 +35,21 @@ export default function FollowUpsPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
+  
+  const logActivity = async (action: string, target: string, targetType: Activity['targetType'], details: any = null) => {
+    if (!profile.agency_id) return;
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const newActivity: Omit<Activity, 'id'> = {
+      userName: profile.name,
+      action,
+      target,
+      targetType,
+      details,
+      timestamp: new Date().toISOString(),
+      agency_id: profile.agency_id,
+    };
+    await addDoc(activityLogRef, newActivity);
+  };
   
   const handlePhoneClick = (e: React.MouseEvent, phone?: string) => {
     e.stopPropagation();
@@ -96,6 +111,7 @@ export default function FollowUpsPage() {
   const handleSaveAppointment = async (appointment: Appointment) => {
       if (!profile.agency_id) return;
       await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), appointment);
+      await logActivity('scheduled an appointment', appointment.contactName, 'Appointment');
   };
   
   const handleOpenStatusUpdate = (e: React.MouseEvent, followUp: FollowUp) => {
@@ -126,12 +142,17 @@ export default function FollowUpsPage() {
         
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
         const existingFollowUp = followUpsData?.find(fu => fu.buyerId === buyerId);
+        let action = 'scheduled a follow-up';
+        
         if (existingFollowUp) {
             await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp);
+            action = 'rescheduled a follow-up';
         } else {
             await addDoc(followUpsCollection, newFollowUp);
         }
         
+        await logActivity(action, buyer.name, 'FollowUp');
+
         toast({
             title: "Follow-up Updated",
             description: `A new follow-up has been scheduled for ${buyer.name}.`

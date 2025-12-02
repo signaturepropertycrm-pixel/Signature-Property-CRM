@@ -157,7 +157,7 @@ export type Activity = {
     userAvatar?: string;
     action: string;
     target: string;
-    targetType: 'Property' | 'Buyer' | 'Appointment' | 'User';
+    targetType: 'Property' | 'Buyer' | 'Appointment' | 'User' | 'FollowUp';
     details: { from: string; to: string } | null;
     timestamp: string;
     agency_id: string;
