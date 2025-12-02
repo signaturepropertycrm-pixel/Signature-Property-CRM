@@ -55,7 +55,15 @@ const mainMenuItems = [
     href: '/properties', 
     label: 'Properties', 
     icon: <Building2 />, 
-    roles: ['Admin', 'Agent']
+    roles: ['Admin', 'Agent'],
+    subItems: [
+        { href: '/properties', label: 'All Properties'},
+        { href: '/properties?status=Available', label: 'Available (Sale)' },
+        { href: '/properties?status=Rental', label: 'Available (Rent)' },
+        { href: '/properties?status=Sold', label: 'Sold' },
+        { href: '/properties?status=Rent+Out', label: 'Rent Out' },
+        { href: '/properties?status=Recorded', label: 'Recorded' },
+    ]
   },
   { 
     href: '/buyers', 
@@ -170,11 +178,12 @@ export function AppSidebar() {
 
                             const currentParamValue = currentParams.get(paramKey);
                             const subItemParamValue = subItemParams.get(paramKey);
+                            
+                            const isRootPath = subItem.href.split('?')[0] === pathname;
+                            const areParamsMatching = subItemParamValue === currentParamValue;
+                            const isAllActive = subItem.href === pathname && !currentParams.has('status') && !currentParams.has('type');
 
-                            const isSubItemActive = pathname === subItem.href.split('?')[0] && (
-                                (!currentParamValue && !subItemParamValue && (subItem.label === 'All Properties' || subItem.label === 'All Buyers' || subItem.label === 'All Appointments')) || 
-                                (currentParamValue === subItemParamValue)
-                            );
+                            const isSubItemActive = isRootPath && (areParamsMatching || isAllActive);
 
                             return (
                                 <SidebarMenuItem key={subItem.href} className="relative">

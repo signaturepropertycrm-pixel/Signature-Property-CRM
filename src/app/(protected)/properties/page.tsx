@@ -108,6 +108,8 @@ export default function PropertiesPage() {
   const { currency } = useCurrency();
   const firestore = useFirestore();
 
+  const statusFilterFromURL = searchParams.get('status');
+
   const agencyPropertiesQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
@@ -120,8 +122,7 @@ export default function PropertiesPage() {
   const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
   
-  const [activeMainTab, setActiveMainTab] = useState<'For Sale' | 'For Rent'>('For Sale');
-  const [activeSubTab, setActiveSubTab] = useState('All');
+  const [listingType, setListingType] = useState<ListingType>('For Sale');
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
@@ -187,10 +188,7 @@ export default function PropertiesPage() {
   const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
-    // 1. Primary Filter: Main Tab (For Sale vs For Rent)
-    baseProperties = baseProperties.filter(p => activeMainTab === 'For Rent' ? p.is_for_rent : !p.is_for_rent);
-
-    // 2. Secondary Filter: Search Query
+    // 1. Primary Filter: Search Query
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         baseProperties = baseProperties.filter(
@@ -202,7 +200,7 @@ export default function PropertiesPage() {
         );
     }
 
-    // 3. Tertiary Filter: Advanced Filters Popover
+    // 2. Secondary Filter: Advanced Filters Popover
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -210,24 +208,27 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    // 4. Final Filter: Sub-tabs
-    switch (activeSubTab) {
-        case 'All':
-            return baseProperties;
-        case 'Available':
-            return baseProperties.filter(p => p.status === 'Available' && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-        case 'Rental': // Investment properties
-            return baseProperties.filter(p => p.status === 'Available' && p.potential_rent_amount && p.potential_rent_amount > 0);
-        case 'Sold':
-            return baseProperties.filter(p => p.status === 'Sold');
-        case 'Recorded':
-            return baseProperties.filter(p => p.is_recorded);
-        case 'Rent Out':
-            return baseProperties.filter(p => p.status === 'Rent Out');
-        default:
-            return baseProperties;
+    // 3. Final Filter: URL Status Param
+    if (statusFilterFromURL) {
+        switch (statusFilterFromURL) {
+            case 'Available':
+                return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
+            case 'Rental':
+                return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+            case 'Sold':
+                return baseProperties.filter(p => p.status === 'Sold');
+            case 'Rent Out':
+                return baseProperties.filter(p => p.status === 'Rent Out');
+            case 'Recorded':
+                return baseProperties.filter(p => p.is_recorded);
+            default:
+                return baseProperties;
+        }
     }
-  }, [searchQuery, filters, allProperties, activeMainTab, activeSubTab]);
+    
+    return baseProperties;
+
+  }, [searchQuery, filters, allProperties, statusFilterFromURL]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -236,7 +237,7 @@ export default function PropertiesPage() {
   };
   
   const handleOpenAddDialog = (type: ListingType) => {
-    setActiveMainTab(type);
+    setListingType(type);
     setPropertyToEdit(null);
     setIsAddPropertyOpen(true);
   }
@@ -252,7 +253,7 @@ export default function PropertiesPage() {
   };
 
   const handleEdit = (prop: Property) => {
-    setActiveMainTab(prop.is_for_rent ? 'For Rent' : 'For Sale');
+    setListingType(prop.is_for_rent ? 'For Rent' : 'For Sale');
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true);
   };
@@ -548,22 +549,6 @@ export default function PropertiesPage() {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
 
-    const saleSubTabs = [
-        { value: 'All', label: 'All Properties' },
-        { value: 'Available', label: 'Available' },
-        { value: 'Rental', label: 'Rental' },
-        { value: 'Recorded', label: 'Recorded' },
-        { value: 'Sold', label: 'Sold' },
-    ];
-    
-    const rentSubTabs = [
-        { value: 'All', label: 'All Rent Properties' },
-        { value: 'Recorded', label: 'Recorded' },
-        { value: 'Rent Out', label: 'Rent Out' },
-    ];
-
-    const currentSubTabs = activeMainTab === 'For Sale' ? saleSubTabs : rentSubTabs;
-
     return (
       <>
         <TooltipProvider>
@@ -669,24 +654,10 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <Tabs value={activeMainTab} onValueChange={(value) => { setActiveMainTab(value as 'For Sale' | 'For Rent'); setActiveSubTab('All'); }}>
-              <TabsList>
-                <TabsTrigger value="For Sale">For Sale</TabsTrigger>
-                <TabsTrigger value="For Rent">For Rent</TabsTrigger>
-              </TabsList>
-              <TabsContent value={activeMainTab}>
-                <Tabs defaultValue="All" value={activeSubTab} onValueChange={setActiveSubTab}>
-                    <TabsList>
-                        {currentSubTabs.map(tab => (
-                            <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={activeSubTab} className="mt-4">
-                        {renderContent(filteredProperties)}
-                    </TabsContent>
-                </Tabs>
-              </TabsContent>
-            </Tabs>
+            <div className="mt-4">
+              {renderContent(filteredProperties)}
+            </div>
+
           </div>
         </TooltipProvider>
   
@@ -713,7 +684,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
-          listingType={activeMainTab}
+          listingType={listingType}
         />
   
         {appointmentDetails && (
