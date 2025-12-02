@@ -171,14 +171,14 @@ export const useNotifications = () => {
                             reminderType
                         });
                     };
-
+                    
                     if (hoursUntil > 1 && hoursUntil <= 24) {
                         checkAndAddReminder('day', 'Appointment in 24 hours');
                     }
-                    if (hoursUntil > 0.25 && hoursUntil <= 1) { // 15 mins to 1 hour
+                    if (hoursUntil <= 1 && hoursUntil > 0.25) { // 1 hour to 15 mins
                         checkAndAddReminder('hour', 'Appointment in 1 hour');
                     }
-                    if (hoursUntil > 0 && hoursUntil <= 0.25) { // less than 15 mins away
+                    if (hoursUntil <= 0.25 && hoursUntil >= 0) { // 15 mins to now
                         checkAndAddReminder('minute', 'Appointment in 15 minutes');
                     }
                 });
@@ -203,49 +203,20 @@ export const useNotifications = () => {
 
                     const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
                     
-                    // Logic for "Due Today"
-                    if (isToday(reminderDateTime) && isAfter(now, reminderDateTime)) {
+                    // Only create notifications for reminders that are today and in the future, or are past due today.
+                    if (isToday(reminderDateTime)) {
                         const id = `${followUp.id}-today`;
                         if (!followUpNotifications.some(n => n.id === id)) {
-                            followUpNotifications.push({
+                             followUpNotifications.push({
                                 id,
                                 type: 'followup',
                                 title: 'Follow-up Due Today',
                                 description: `Follow up with ${followUp.buyerName}.`,
-                                timestamp: startOfToday(), // Consistent timestamp for today's items
+                                timestamp: reminderDateTime,
                                 isRead: readIds.includes(id),
                                 followUp,
                                 reminderType: 'day'
                             });
-                        }
-                    }
-
-                    // Logic for upcoming reminders
-                    if (isBefore(now, reminderDateTime)) {
-                        const hoursUntil = differenceInHours(reminderDateTime, now);
-
-                        const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
-                            const id = `${followUp.id}-${reminderType}`;
-                            followUpNotifications.push({
-                                id,
-                                type: 'followup',
-                                title: title,
-                                description: `Follow up with ${followUp.buyerName}.`,
-                                timestamp: reminderDateTime,
-                                isRead: readIds.includes(id),
-                                followUp,
-                                reminderType
-                            });
-                        };
-
-                        if (hoursUntil > 1 && hoursUntil <= 24) {
-                            checkAndAddReminder('day', 'Follow-up in 24 hours');
-                        }
-                        if (hoursUntil > 0.25 && hoursUntil <= 1) {
-                            checkAndAddReminder('hour', 'Follow-up in 1 hour');
-                        }
-                        if (hoursUntil > 0 && hoursUntil <= 0.25) {
-                            checkAndAddReminder('minute', 'Follow-up in 15 minutes');
                         }
                     }
                 });
