@@ -3,16 +3,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ✅ OVERRIDE: Allow avatar update only – no auth needed
+    // ✅ This rule allows reading from the 'teamMembers' collection group
+    // when querying by 'email' and 'status'. This also enables the required
+    // composite index for the notifications query.
+    match /{path=**}/teamMembers/{memberId} {
+      allow list: if request.query.email == request.auth.token.email
+                  && request.query.status == 'Pending';
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
     match /agencies/{agencyId} {
-      allow update: if request.resource.data.keys().hasOnly(['avatar']);
+       allow read, write: if request.auth.uid == agencyId;
     }
 
-    match /agents/{agentId} {
-      allow update: if request.resource.data.keys().hasOnly(['avatar']);
+     match /agents/{agentId} {
+       allow read, write: if request.auth.uid == agentId;
     }
 
-    // ✅ Your old rules – untouched
+    // Fallback rules
     match /{path=**} {
       allow read, write: if request.auth != null && path.size() % 2 == 1;
     }
@@ -22,5 +33,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
