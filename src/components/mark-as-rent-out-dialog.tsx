@@ -22,8 +22,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Property, User } from '@/lib/types';
-import { formatCurrency } from '@/lib/formatters';
+import { Property, User, PriceUnit } from '@/lib/types';
+import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc } from 'firebase/firestore';
@@ -36,12 +36,17 @@ import { Calculator } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { Card, CardContent } from './ui/card';
 
+const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
+
 const formSchema = z.object({
   rent_out_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   rented_by_agent_id: z.string().min(1, "You must select the agent."),
   rent_commission_from_tenant: z.coerce.number().min(0).optional(),
+  rent_commission_from_tenant_unit: z.enum(priceUnits).default('Thousand'),
   rent_commission_from_owner: z.coerce.number().min(0).optional(),
+  rent_commission_from_owner_unit: z.enum(priceUnits).default('Thousand'),
   rent_agent_share: z.coerce.number().min(0).optional(),
+  rent_agent_share_unit: z.enum(priceUnits).default('Thousand'),
 });
 
 type MarkAsRentOutFormValues = z.infer<typeof formSchema>;
@@ -76,10 +81,10 @@ export function MarkAsRentOutDialog({
   const watchFields = useWatch({ control: form.control });
 
   const totalCommission = useMemo(() => {
-      const tenantCommission = watchFields.rent_commission_from_tenant || 0;
-      const ownerCommission = watchFields.rent_commission_from_owner || 0;
+      const tenantCommission = formatUnit(watchFields.rent_commission_from_tenant || 0, watchFields.rent_commission_from_tenant_unit || 'Thousand');
+      const ownerCommission = formatUnit(watchFields.rent_commission_from_owner || 0, watchFields.rent_commission_from_owner_unit || 'Thousand');
       return tenantCommission + ownerCommission;
-  }, [watchFields.rent_commission_from_tenant, watchFields.rent_commission_from_owner]);
+  }, [watchFields.rent_commission_from_tenant, watchFields.rent_commission_from_tenant_unit, watchFields.rent_commission_from_owner, watchFields.rent_commission_from_owner_unit]);
 
 
   useEffect(() => {
@@ -88,8 +93,11 @@ export function MarkAsRentOutDialog({
             rent_out_date: new Date().toISOString().split('T')[0],
             rented_by_agent_id: '',
             rent_commission_from_tenant: 0,
+            rent_commission_from_tenant_unit: 'Thousand',
             rent_commission_from_owner: 0,
+            rent_commission_from_owner_unit: 'Thousand',
             rent_agent_share: 0,
+            rent_agent_share_unit: 'Thousand',
         });
     }
   }, [isOpen, property, form]);
@@ -101,9 +109,12 @@ export function MarkAsRentOutDialog({
         rent_out_date: values.rent_out_date,
         rented_by_agent_id: values.rented_by_agent_id,
         rent_commission_from_tenant: values.rent_commission_from_tenant,
+        rent_commission_from_tenant_unit: values.rent_commission_from_tenant_unit,
         rent_commission_from_owner: values.rent_commission_from_owner,
+        rent_commission_from_owner_unit: values.rent_commission_from_owner_unit,
         rent_total_commission: totalCommission,
         rent_agent_share: values.rent_agent_share,
+        rent_agent_share_unit: values.rent_agent_share_unit,
     };
     onUpdateProperty(updatedProperty);
     
@@ -182,26 +193,63 @@ export function MarkAsRentOutDialog({
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Commission Details (PKR)</h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="rent_commission_from_tenant" render={({field}) => (
-                        <FormItem>
-                        <FormLabel>From Tenant</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g. 10000" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name="rent_commission_from_owner" render={({field}) => (
-                        <FormItem>
-                        <FormLabel>From Owner</FormLabel>
-                        <FormControl><Input type="number" placeholder="e.g. 10000" {...field} /></FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        <FormField control={form.control} name="rent_commission_from_tenant" render={({field}) => (
+                            <FormItem>
+                            <FormLabel>From Tenant</FormLabel>
+                            <FormControl><Input type="number" placeholder="e.g. 10000" {...field} /></FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )} />
+                         <FormField control={form.control} name="rent_commission_from_tenant_unit" render={({field}) => (
+                            <FormItem className="self-end">
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        )} />
+                    </div>
+                     <div className="grid grid-cols-2 gap-2">
+                        <FormField control={form.control} name="rent_commission_from_owner" render={({field}) => (
+                            <FormItem>
+                            <FormLabel>From Owner</FormLabel>
+                            <FormControl><Input type="number" placeholder="e.g. 10000" {...field} /></FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )} />
+                         <FormField control={form.control} name="rent_commission_from_owner_unit" render={({field}) => (
+                            <FormItem className="self-end">
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        )} />
+                     </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
                      <FormField control={form.control} name="rent_agent_share" render={({field}) => (
                         <FormItem>
                         <FormLabel>Agent's Share</FormLabel>
                         <FormControl><Input type="number" placeholder="e.g. 5000" {...field} /></FormControl>
                         <FormMessage />
+                        </FormItem>
+                    )} />
+                     <FormField control={form.control} name="rent_agent_share_unit" render={({field}) => (
+                        <FormItem className="self-end">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {priceUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                         </FormItem>
                     )} />
                 </div>
