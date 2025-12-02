@@ -33,6 +33,7 @@ import { AppointmentNotification, FollowUpNotification, Notification, ActivityNo
 import { NotificationAppointmentDialog } from '../notification-appointment-dialog';
 import { NotificationFollowupDialog } from '../notification-followup-dialog';
 import { NotificationActivityDialog } from '../notification-activity-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -67,7 +68,7 @@ export function AppHeader({
   const auth = useAuth();
   const { user } = useUser();
   const { toggleSidebar } = useSidebar();
-  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
 
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -116,18 +117,25 @@ export function AppHeader({
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    setSelectedNotification(notification);
-    if (notification.type === 'appointment') {
-        setIsAppointmentDialogOpen(true);
-    } else if (notification.type === 'followup') {
-        setIsFollowupDialogOpen(true);
-    } else if (notification.type === 'activity') {
-        setIsActivityDialogOpen(true);
+    if (notification.type !== 'invitation') {
+        setSelectedNotification(notification);
+        if (notification.type === 'appointment') {
+            setIsAppointmentDialogOpen(true);
+        } else if (notification.type === 'followup') {
+            setIsFollowupDialogOpen(true);
+        } else if (notification.type === 'activity') {
+            setIsActivityDialogOpen(true);
+        }
     }
     if (!notification.isRead) {
         markAsRead(notification.id);
     }
   };
+  
+  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation();
+    deleteNotification(notificationId);
+  }
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -192,7 +200,7 @@ export function AppHeader({
                         {notifications.map(notification => (
                             <DropdownMenuItem 
                                 key={notification.id} 
-                                className={cn("flex justify-between items-start gap-3 cursor-pointer", notification.isRead && "opacity-60")} 
+                                className={cn("flex justify-between items-start gap-3 cursor-pointer group", notification.isRead && "opacity-60")} 
                                 onSelect={(e) => e.preventDefault()}
                                 onClick={() => handleNotificationClick(notification)}
                             >
@@ -202,7 +210,7 @@ export function AppHeader({
                                     <p className="text-xs text-muted-foreground">{notification.description}</p>
                                     <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(notification.timestamp, { addSuffix: true })}</p>
                                 </div>
-                                {notification.type === 'invitation' && (
+                                {notification.type === 'invitation' ? (
                                     <div className="flex items-center gap-1 w-20 justify-end">
                                         {updatingInvite === notification.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                                             <>
@@ -215,6 +223,17 @@ export function AppHeader({
                                             </>
                                         )}
                                     </div>
+                                ) : (
+                                   <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                             <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeleteNotification(e, notification.id)}>
+                                                <X className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="left"><p>Delete</p></TooltipContent>
+                                    </Tooltip>
+                                   </TooltipProvider>
                                 )}
                             </DropdownMenuItem>
                         ))}

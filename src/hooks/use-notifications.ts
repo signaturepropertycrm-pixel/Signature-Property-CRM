@@ -14,6 +14,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { isBefore, sub, isAfter, isToday, parseISO, startOfToday } from 'date-fns';
 
 const NOTIFICATION_READ_STATUS_KEY = 'signaturecrm_read_notifications';
+const DELETED_NOTIFICATIONS_KEY = 'signaturecrm_deleted_notifications';
+
 
 export const useNotifications = () => {
     const firestore = useFirestore();
@@ -50,29 +52,44 @@ export const useNotifications = () => {
         );
     }, [canFetch, firestore, profile.agency_id]);
 
-    const getReadStatus = (): string[] => {
+    const getStoredIds = (key: string): string[] => {
         try {
-            const saved = localStorage.getItem(NOTIFICATION_READ_STATUS_KEY);
+            const saved = localStorage.getItem(key);
             return saved ? JSON.parse(saved) : [];
         } catch (error) {
             return [];
         }
     };
     
+    const setStoredIds = (key: string, ids: string[]) => {
+        localStorage.setItem(key, JSON.stringify(ids));
+    };
+
+
     const markAsRead = (notificationId: string) => {
-        const readIds = getReadStatus();
+        const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
         if (!readIds.includes(notificationId)) {
             const newReadIds = [...readIds, notificationId];
-            localStorage.setItem(NOTIFICATION_READ_STATUS_KEY, JSON.stringify(newReadIds));
+            setStoredIds(NOTIFICATION_READ_STATUS_KEY, newReadIds);
             setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
         }
     };
 
     const markAllAsRead = () => {
         const allIds = notifications.map(n => n.id);
-        localStorage.setItem(NOTIFICATION_READ_STATUS_KEY, JSON.stringify(allIds));
+        setStoredIds(NOTIFICATION_READ_STATUS_KEY, allIds);
         setNotifications(prev => prev.map(n => ({...n, isRead: true})));
-    }
+    };
+    
+    const deleteNotification = (notificationId: string) => {
+        const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
+        if (!deletedIds.includes(notificationId)) {
+            const newDeletedIds = [...deletedIds, notificationId];
+            setStoredIds(DELETED_NOTIFICATIONS_KEY, newDeletedIds);
+        }
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    };
+
 
     useEffect(() => {
         if (!canFetch) {
@@ -80,14 +97,16 @@ export const useNotifications = () => {
             return;
         }
         
-        const readIds = getReadStatus();
+        const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
+        const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
         let loadingStates = { invitations: true, appointments: true, followups: true, activities: true };
         const updateLoading = () => setIsLoading(Object.values(loadingStates).some(s => s));
 
         const updateAndSortNotifications = () => {
-            allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+             allNotifications = allNotifications.filter(n => !deletedIds.includes(n.id));
+             allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
             setNotifications(allNotifications);
         };
 
@@ -183,7 +202,7 @@ export const useNotifications = () => {
                             type: 'followup',
                             title: 'Follow-up Due Today',
                             description: `Follow up with ${followUp.buyerName}.`,
-                            timestamp: reminderDate,
+                            timestamp: startOfToday(),
                             isRead: readIds.includes(followUp.id),
                             followUp: followUp
                         });
@@ -249,7 +268,7 @@ export const useNotifications = () => {
         await batch.commit().catch((error) => {
             throw new FirestorePermissionError({ operation: 'write', path: `batch write for invitation` });
         });
-        setNotifications(prev => prev.filter(n => n.id !== invitationId));
+        deleteNotification(invitationId);
     };
 
     const rejectInvitation = async (invitationId: string, agencyId: string) => {
@@ -257,9 +276,9 @@ export const useNotifications = () => {
         await deleteDoc(invRef).catch((error) => {
             throw new FirestorePermissionError({ operation: 'delete', path: invRef.path });
         });
-        setNotifications(prev => prev.filter(n => n.id !== invitationId));
+        deleteNotification(invitationId);
     };
 
 
-    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead };
+    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification };
 };
