@@ -21,14 +21,19 @@ interface AddPropertyDialogProps {
     setIsOpen: (open: boolean) => void;
     onSave: (property: Omit<Property, 'id'> & { id?: string }) => void;
     propertyToEdit: Property | null;
-    totalProperties: number;
+    allProperties: Property[]; // Changed from totalProperties to allProperties
     listingType: ListingType;
 }
 
-export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, totalProperties, listingType }: AddPropertyDialogProps) {
+export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, allProperties, listingType }: AddPropertyDialogProps) {
 
-    const totalSaleProperties = useMemo(() => totalProperties, [totalProperties]);
-    const totalRentProperties = useMemo(() => totalProperties, [totalProperties]);
+    const totalSaleProperties = useMemo(() => {
+        return allProperties.filter(p => p.listing_type === 'For Sale').length;
+    }, [allProperties]);
+
+    const totalRentProperties = useMemo(() => {
+        return allProperties.filter(p => p.listing_type === 'For Rent').length;
+    }, [allProperties]);
 
 
     useEffect(() => {
