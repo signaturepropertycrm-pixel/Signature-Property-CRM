@@ -23,20 +23,23 @@ interface AddFollowUpDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   buyer: Buyer;
-  onSave: (buyerId: string, notes: string, nextReminder: string) => void;
+  onSave: (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => void;
 }
 
 const formSchema = z.object({
   notes: z.string().min(1, "Follow-up notes are required."),
-  nextReminder: z.string().min(1, "Reminder date is required."),
+  nextReminderDate: z.string().min(1, "Reminder date is required."),
+  nextReminderTime: z.string().min(1, "Reminder time is required."),
 });
 
 type FollowUpFormValues = z.infer<typeof formSchema>;
 
-const getDefaultDate = () => {
+const getDefaultDateTime = () => {
     const date = new Date();
     date.setDate(date.getDate() + 3);
-    return date.toISOString().split('T')[0];
+    const defaultDate = date.toISOString().split('T')[0];
+    const defaultTime = '12:00';
+    return { defaultDate, defaultTime };
 }
 
 export function AddFollowUpDialog({
@@ -45,25 +48,30 @@ export function AddFollowUpDialog({
   buyer,
   onSave,
 }: AddFollowUpDialogProps) {
+  const { defaultDate, defaultTime } = getDefaultDateTime();
+
   const form = useForm<FollowUpFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
         notes: '',
-        nextReminder: getDefaultDate(),
+        nextReminderDate: defaultDate,
+        nextReminderTime: defaultTime,
     }
   });
 
   useEffect(() => {
     if (buyer) {
+        const { defaultDate, defaultTime } = getDefaultDateTime();
         form.reset({ 
             notes: buyer.last_follow_up_note || '', 
-            nextReminder: getDefaultDate(),
+            nextReminderDate: defaultDate,
+            nextReminderTime: defaultTime,
         });
     }
-  }, [buyer, form, isOpen]);
+  }, [buyer, form, isOpen, defaultDate, defaultTime]);
 
   const onSubmit = (data: FollowUpFormValues) => {
-    onSave(buyer.id, data.notes, data.nextReminder);
+    onSave(buyer.id, data.notes, data.nextReminderDate, data.nextReminderTime);
     setIsOpen(false);
   };
 
@@ -92,19 +100,34 @@ export function AddFollowUpDialog({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="nextReminder"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Next Reminder Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="nextReminderDate"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Next Reminder Date</FormLabel>
+                        <FormControl>
+                            <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="nextReminderTime"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Next Reminder Time</FormLabel>
+                        <FormControl>
+                            <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
               </>
 
             <DialogFooter className="pt-4">

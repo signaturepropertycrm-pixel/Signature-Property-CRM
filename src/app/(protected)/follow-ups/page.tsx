@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, MessageSquare, CalendarPlus, CheckCircle } from 'lucide-react';
+import { Phone, MessageSquare, CalendarPlus, CheckCircle, Clock } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { FollowUp, Buyer, Appointment, AppointmentContactType, Activity } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -123,7 +123,7 @@ export default function FollowUpsPage() {
       }
   };
 
-  const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
+  const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => {
         if (!profile.agency_id || !buyersData) return;
         const buyer = buyersData.find(b => b.id === buyerId);
         if (!buyer) return;
@@ -134,7 +134,8 @@ export default function FollowUpsPage() {
             buyerPhone: buyer.phone,
             propertyInterest: buyer.area_preference || 'General',
             lastContactDate: new Date().toISOString(),
-            nextReminder: nextReminder,
+            nextReminderDate: nextReminderDate,
+            nextReminderTime: nextReminderTime,
             status: 'Scheduled',
             notes: notes,
             agency_id: profile.agency_id
@@ -193,7 +194,7 @@ export default function FollowUpsPage() {
                 <CardContent className="flex-1 space-y-3">
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p><strong>Last Contact:</strong> {new Date(followUp.lastContactDate).toLocaleDateString()}</p>
-                    <p><strong>Next Reminder:</strong> {new Date(followUp.nextReminder).toLocaleDateString()}</p>
+                    <p className="flex items-center gap-1.5"><strong>Next Reminder:</strong> {new Date(followUp.nextReminderDate).toLocaleDateString()} <Clock className="h-4 w-4 inline-block" /> {followUp.nextReminderTime}</p>
                   </div>
                   <p className="text-sm border-t pt-3">{followUp.notes}</p>
                 </CardContent>

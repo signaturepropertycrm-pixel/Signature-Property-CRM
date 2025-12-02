@@ -165,7 +165,7 @@ export const useNotifications = () => {
                             type: 'appointment',
                             title,
                             description: `With ${appt.contactName} at ${appt.time}`,
-                            timestamp: new Date(),
+                            timestamp: apptDateTime,
                             isRead: readIds.includes(id),
                             appointment: appt,
                             reminderType
@@ -175,10 +175,10 @@ export const useNotifications = () => {
                     if (hoursUntil > 1 && hoursUntil <= 24) {
                         checkAndAddReminder('day', 'Appointment in 24 hours');
                     }
-                    if (hoursUntil <= 1 && differenceInHours(apptDateTime, now) > 0.25) { // more than 15 mins away
+                    if (hoursUntil > 0.25 && hoursUntil <= 1) { // 15 mins to 1 hour
                         checkAndAddReminder('hour', 'Appointment in 1 hour');
                     }
-                    if (differenceInHours(apptDateTime, now) <= 0.25 && isAfter(apptDateTime, now)) { // less than 15 mins away
+                    if (hoursUntil <= 0.25 && isAfter(apptDateTime, now)) { // less than 15 mins away
                         checkAndAddReminder('minute', 'Appointment in 15 minutes');
                     }
                 });
@@ -195,23 +195,41 @@ export const useNotifications = () => {
         // Follow-ups
         if(followUpsQuery) {
             const unsubFollowUps = onSnapshot(followUpsQuery, (snapshot) => {
+                const now = new Date();
                 const followUpNotifications: FollowUpNotification[] = [];
                 snapshot.docs.forEach(doc => {
                     const followUp = { id: doc.id, ...doc.data() } as FollowUp;
                     if (followUp.status !== 'Scheduled') return;
 
-                    const reminderDate = parseISO(followUp.nextReminder);
-                    if (isToday(reminderDate) || isBefore(reminderDate, startOfToday())) {
+                    const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
+                    if (isBefore(reminderDateTime, now)) return;
+                    
+                    const hoursUntil = differenceInHours(reminderDateTime, now);
+
+                     const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
+                        const id = `${followUp.id}-${reminderType}`;
                         followUpNotifications.push({
-                            id: followUp.id,
+                            id,
                             type: 'followup',
-                            title: 'Follow-up Due Today',
+                            title: title,
                             description: `Follow up with ${followUp.buyerName}.`,
-                            timestamp: startOfToday(),
-                            isRead: readIds.includes(followUp.id),
-                            followUp: followUp
+                            timestamp: reminderDateTime,
+                            isRead: readIds.includes(id),
+                            followUp: followUp,
+                            reminderType
                         });
+                    };
+
+                    if (hoursUntil > 1 && hoursUntil <= 24) {
+                        checkAndAddReminder('day', 'Follow-up in 24 hours');
                     }
+                     if (hoursUntil > 0.25 && hoursUntil <= 1) {
+                        checkAndAddReminder('hour', 'Follow-up in 1 hour');
+                    }
+                    if (hoursUntil <= 0.25 && isAfter(reminderDateTime, now)) {
+                        checkAndAddReminder('minute', 'Follow-up in 15 minutes');
+                    }
+
                 });
 
                 updateAndSortNotifications(followUpNotifications, 'followup');

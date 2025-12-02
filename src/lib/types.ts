@@ -127,7 +127,8 @@ export type FollowUp = {
     buyerPhone?: string;
     propertyInterest: string;
     lastContactDate: string;
-    nextReminder: string;
+    nextReminderDate: string;
+    nextReminderTime: string;
     status: FollowUpStatus;
     notes: string;
     agency_id: string;
@@ -192,6 +193,7 @@ export interface AppointmentNotification extends BaseNotification {
 export interface FollowUpNotification extends BaseNotification {
     type: 'followup';
     followUp: FollowUp;
+    reminderType: 'day' | 'hour' | 'minute';
 }
 
 export interface ActivityNotification extends BaseNotification {

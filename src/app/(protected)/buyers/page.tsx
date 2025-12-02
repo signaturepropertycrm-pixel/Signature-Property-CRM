@@ -233,7 +233,7 @@ export default function BuyersPage() {
         }
     };
 
-    const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminder: string) => {
+    const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => {
         if (!profile.agency_id || !allBuyers) return;
         const buyer = allBuyers.find(b => b.id === buyerId);
         if (!buyer) return;
@@ -244,7 +244,8 @@ export default function BuyersPage() {
             buyerPhone: buyer.phone,
             propertyInterest: buyer.area_preference || 'General',
             lastContactDate: new Date().toISOString(),
-            nextReminder: nextReminder,
+            nextReminderDate: nextReminderDate,
+            nextReminderTime: nextReminderTime,
             status: 'Scheduled',
             notes: notes,
             agency_id: profile.agency_id
