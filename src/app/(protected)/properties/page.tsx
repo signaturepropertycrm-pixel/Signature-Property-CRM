@@ -78,6 +78,8 @@ import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -117,7 +119,10 @@ export default function PropertiesPage() {
 
   const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
-  const [listingType, setListingType] = useState<ListingType>('For Sale');
+  
+  const [activeMainTab, setActiveMainTab] = useState<'For Sale' | 'For Rent'>('For Sale');
+  const [activeSubTab, setActiveSubTab] = useState('All');
+  
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -145,10 +150,6 @@ export default function PropertiesPage() {
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   
-  const statusFilterFromUrl = searchParams.get('status');
-  const activeTab = statusFilterFromUrl || 'All';
-
-
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
     return Array.from(new Map(combined.map((p) => [p.id, p])).values());
@@ -186,6 +187,10 @@ export default function PropertiesPage() {
   const filteredProperties = useMemo(() => {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
 
+    // 1. Primary Filter: Main Tab (For Sale vs For Rent)
+    baseProperties = baseProperties.filter(p => activeMainTab === 'For Rent' ? p.is_for_rent : !p.is_for_rent);
+
+    // 2. Secondary Filter: Search Query
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
         baseProperties = baseProperties.filter(
@@ -197,6 +202,7 @@ export default function PropertiesPage() {
         );
     }
 
+    // 3. Tertiary Filter: Advanced Filters Popover
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
     if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
@@ -204,15 +210,14 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
-    switch (activeTab) {
+    // 4. Final Filter: Sub-tabs
+    switch (activeSubTab) {
         case 'All':
-            return baseProperties.filter(p => !p.is_for_rent);
+            return baseProperties;
         case 'Available':
-            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && (!p.potential_rent_amount || p.potential_rent_amount === 0));
-        case 'Rental':
-            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent && p.potential_rent_amount && p.potential_rent_amount > 0);
-        case 'For Rent':
-            return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+            return baseProperties.filter(p => p.status === 'Available' && (!p.potential_rent_amount || p.potential_rent_amount === 0));
+        case 'Rental': // Investment properties
+            return baseProperties.filter(p => p.status === 'Available' && p.potential_rent_amount && p.potential_rent_amount > 0);
         case 'Sold':
             return baseProperties.filter(p => p.status === 'Sold');
         case 'Recorded':
@@ -220,9 +225,9 @@ export default function PropertiesPage() {
         case 'Rent Out':
             return baseProperties.filter(p => p.status === 'Rent Out');
         default:
-            return baseProperties.filter(p => !p.is_for_rent); // Default to 'All' logic
+            return baseProperties;
     }
-  }, [searchQuery, filters, allProperties, activeTab]);
+  }, [searchQuery, filters, allProperties, activeMainTab, activeSubTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -231,7 +236,7 @@ export default function PropertiesPage() {
   };
   
   const handleOpenAddDialog = (type: ListingType) => {
-    setListingType(type);
+    setActiveMainTab(type);
     setPropertyToEdit(null);
     setIsAddPropertyOpen(true);
   }
@@ -247,7 +252,7 @@ export default function PropertiesPage() {
   };
 
   const handleEdit = (prop: Property) => {
-    setListingType(prop.is_for_rent ? 'For Rent' : 'For Sale');
+    setActiveMainTab(prop.is_for_rent ? 'For Rent' : 'For Sale');
     setPropertyToEdit(prop);
     setIsAddPropertyOpen(true);
   };
@@ -416,7 +421,6 @@ export default function PropertiesPage() {
                     <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground'}>
                     {prop.status}
                     </Badge>
-                    {prop.is_for_rent && <Badge variant="secondary">For Rent</Badge>}
                 </div>
               </TableCell>
               <TableCell className="text-right">
@@ -487,7 +491,6 @@ export default function PropertiesPage() {
                         <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground')}>
                             {prop.status}
                         </Badge>
-                         {prop.is_for_rent && <Badge variant="secondary">For Rent</Badge>}
                     </div>
                 </div>
             </CardHeader>
@@ -544,6 +547,22 @@ export default function PropertiesPage() {
     const renderContent = (properties: Property[]) => {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
     };
+
+    const saleSubTabs = [
+        { value: 'All', label: 'All Properties' },
+        { value: 'Available', label: 'Available' },
+        { value: 'Rental', label: 'Rental' },
+        { value: 'Recorded', label: 'Recorded' },
+        { value: 'Sold', label: 'Sold' },
+    ];
+    
+    const rentSubTabs = [
+        { value: 'All', label: 'All Rent Properties' },
+        { value: 'Recorded', label: 'Recorded' },
+        { value: 'Rent Out', label: 'Rent Out' },
+    ];
+
+    const currentSubTabs = activeMainTab === 'For Sale' ? saleSubTabs : rentSubTabs;
 
     return (
       <>
@@ -650,9 +669,24 @@ export default function PropertiesPage() {
               )}
             </div>
             
-            <div className="mt-4">
-               {renderContent(filteredProperties)}
-            </div>
+            <Tabs value={activeMainTab} onValueChange={(value) => { setActiveMainTab(value as 'For Sale' | 'For Rent'); setActiveSubTab('All'); }}>
+              <TabsList>
+                <TabsTrigger value="For Sale">For Sale</TabsTrigger>
+                <TabsTrigger value="For Rent">For Rent</TabsTrigger>
+              </TabsList>
+              <TabsContent value={activeMainTab}>
+                <Tabs defaultValue="All" value={activeSubTab} onValueChange={setActiveSubTab}>
+                    <TabsList>
+                        {currentSubTabs.map(tab => (
+                            <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <TabsContent value={activeSubTab} className="mt-4">
+                        {renderContent(filteredProperties)}
+                    </TabsContent>
+                </Tabs>
+              </TabsContent>
+            </Tabs>
           </div>
         </TooltipProvider>
   
@@ -679,7 +713,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           totalProperties={allProperties.length}
           onSave={handleSaveProperty}
-          listingType={listingType}
+          listingType={activeMainTab}
         />
   
         {appointmentDetails && (
@@ -701,5 +735,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    

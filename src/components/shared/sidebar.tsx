@@ -55,16 +55,7 @@ const mainMenuItems = [
     href: '/properties', 
     label: 'Properties', 
     icon: <Building2 />, 
-    roles: ['Admin', 'Agent'],
-    subItems: [
-        { href: '/properties', label: 'All Properties' },
-        { href: '/properties?status=Available', label: 'Available' },
-        { href: '/properties?status=Rental', label: 'Rental' },
-        { href: '/properties?status=For%20Rent', label: 'For Rent' },
-        { href: '/properties?status=Sold', label: 'Sold' },
-        { href: '/properties?status=Recorded', label: 'Recorded' },
-        { href: '/properties?status=Rent%20Out', label: 'Rent Out' },
-    ]
+    roles: ['Admin', 'Agent']
   },
   { 
     href: '/buyers', 
@@ -356,5 +347,3 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
-
-    
