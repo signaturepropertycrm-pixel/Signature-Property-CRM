@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { collection, collectionGroup, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
@@ -23,6 +23,11 @@ export const useNotifications = () => {
     const { profile } = useProfile();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const forceRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+    }, []);
 
     const canFetch = !!firestore && !!user && !!profile.agency_id;
 
@@ -36,10 +41,10 @@ export const useNotifications = () => {
             );
         }
         return null;
-    }, [firestore, user?.email]);
+    }, [firestore, user?.email, refreshKey]);
 
-    const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
-    const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id]);
+    const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id, refreshKey]);
+    const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id, refreshKey]);
     
     const activitiesQuery = useMemoFirebase(() => {
         if(!canFetch) return null;
@@ -50,7 +55,7 @@ export const useNotifications = () => {
             orderBy('timestamp', 'desc'),
             limit(10)
         );
-    }, [canFetch, firestore, profile.agency_id]);
+    }, [canFetch, firestore, profile.agency_id, refreshKey]);
 
     const getStoredIds = (key: string): string[] => {
         try {
@@ -97,6 +102,7 @@ export const useNotifications = () => {
             return;
         }
         
+        setIsLoading(true);
         const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
@@ -154,7 +160,7 @@ export const useNotifications = () => {
                     if (appt.status !== 'Scheduled' || (profile.role === 'Agent' && appt.agentName !== profile.name)) return;
 
                     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
-                    if (isBefore(apptDateTime, now)) return; // Don't show for past appointments
+                    if (isBefore(apptDateTime, now)) return;
 
                     const hoursUntil = differenceInHours(apptDateTime, now);
                     
@@ -175,10 +181,10 @@ export const useNotifications = () => {
                     if (hoursUntil > 1 && hoursUntil <= 24) {
                         checkAndAddReminder('day', 'Appointment in 24 hours');
                     }
-                    if (hoursUntil <= 1 && hoursUntil > 0.25) { // 1 hour to 15 mins
+                    if (hoursUntil <= 1 && hoursUntil > 0.25) {
                         checkAndAddReminder('hour', 'Appointment in 1 hour');
                     }
-                    if (hoursUntil <= 0.25 && hoursUntil >= 0) { // 15 mins to now
+                    if (hoursUntil <= 0.25 && hoursUntil >= 0) {
                         checkAndAddReminder('minute', 'Appointment in 15 minutes');
                     }
                 });
@@ -203,7 +209,7 @@ export const useNotifications = () => {
                     if (followUp.status !== 'Scheduled') return;
 
                     const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
-                    if (isBefore(reminderDateTime, now)) return; // Don't show for past follow-ups
+                    if (isBefore(reminderDateTime, now)) return;
                     
                     const hoursUntil = differenceInHours(reminderDateTime, now);
 
@@ -220,15 +226,19 @@ export const useNotifications = () => {
                             reminderType
                         });
                     };
-
-                    if (hoursUntil > 1 && hoursUntil <= 24) {
-                        checkAndAddReminder('day', 'Follow-up in 24 hours');
-                    }
-                    if (hoursUntil <= 1 && hoursUntil > 0.25) {
-                        checkAndAddReminder('hour', 'Follow-up in 1 hour');
-                    }
-                    if (hoursUntil <= 0.25 && hoursUntil >= 0) {
-                        checkAndAddReminder('minute', 'Follow-up in 15 minutes');
+                    
+                    if (isToday(reminderDateTime) && isAfter(reminderDateTime, now)) {
+                         checkAndAddReminder('day', 'Follow-up Due Today');
+                    } else {
+                        if (hoursUntil > 1 && hoursUntil <= 24) {
+                            checkAndAddReminder('day', 'Follow-up in 24 hours');
+                        }
+                        if (hoursUntil <= 1 && hoursUntil > 0.25) {
+                            checkAndAddReminder('hour', 'Follow-up in 1 hour');
+                        }
+                        if (hoursUntil <= 0.25 && hoursUntil >= 0) {
+                            checkAndAddReminder('minute', 'Follow-up in 15 minutes');
+                        }
                     }
                 });
 
@@ -255,7 +265,7 @@ export const useNotifications = () => {
                         isRead: readIds.includes(activity.id),
                         activity
                      }
-                }).filter(n => n.activity.userName !== profile.name); // Filter out user's own actions
+                }).filter(n => n.activity.userName !== profile.name);
                 
                 updateAndSortNotifications(activityNotifications, 'activity');
                 loadingStates.activities = false;
@@ -271,7 +281,7 @@ export const useNotifications = () => {
         return () => {
             unsubscribers.forEach(unsub => unsub());
         };
-    }, [canFetch, firestore, user, profile.agency_id, profile.name]);
+    }, [canFetch, firestore, user, profile.agency_id, profile.name, refreshKey]);
     
     
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
@@ -297,5 +307,5 @@ export const useNotifications = () => {
     };
 
 
-    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification };
+    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh };
 };

@@ -1,5 +1,4 @@
 
-
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2, Menu, CalendarClock, Phone, CheckCheck, Edit } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2, Menu, CalendarClock, Phone, CheckCheck, Edit, RotateCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
@@ -34,7 +33,7 @@ import { AppointmentNotification, FollowUpNotification, Notification, ActivityNo
 import { NotificationAppointmentDialog } from '../notification-appointment-dialog';
 import { NotificationFollowupDialog } from '../notification-followup-dialog';
 import { NotificationActivityDialog } from '../notification-activity-dialog';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '../ui/tooltip';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 
 const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -69,7 +68,7 @@ export function AppHeader({
   const auth = useAuth();
   const { user } = useUser();
   const { toggleSidebar } = useSidebar();
-  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh } = useNotifications();
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
 
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
@@ -183,12 +182,18 @@ export function AppHeader({
             <DropdownMenuContent align="end" className="glass-card w-96">
                 <div className="flex items-center justify-between pr-2">
                     <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                    {unreadCount > 0 && (
-                        <Button variant="ghost" size="sm" className="text-xs" onClick={markAllAsRead}>
-                            <CheckCheck className="mr-1 h-3 w-3" />
-                            Mark all as read
+                    <div className="flex items-center">
+                        <Button variant="ghost" size="sm" className="text-xs" onClick={forceRefresh}>
+                            <RotateCw className="mr-1 h-3 w-3" />
+                            Refresh
                         </Button>
-                    )}
+                        {unreadCount > 0 && (
+                            <Button variant="ghost" size="sm" className="text-xs" onClick={markAllAsRead}>
+                                <CheckCheck className="mr-1 h-3 w-3" />
+                                Mark all as read
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <DropdownMenuSeparator />
                 {areNotificationsLoading ? (
