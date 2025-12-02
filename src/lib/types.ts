@@ -163,7 +163,7 @@ export type Activity = {
     agency_id: string;
 };
 
-export type NotificationType = 'invitation' | 'appointment' | 'followup';
+export type NotificationType = 'invitation' | 'appointment' | 'followup' | 'activity';
 
 export interface BaseNotification {
     id: string;
@@ -193,6 +193,11 @@ export interface FollowUpNotification extends BaseNotification {
     followUp: FollowUp;
 }
 
-export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification;
+export interface ActivityNotification extends BaseNotification {
+    type: 'activity';
+    activity: Activity;
+}
+
+export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
 
 

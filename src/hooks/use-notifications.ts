@@ -4,11 +4,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useAuth } from '@/firebase/provider';
-import { collection, collectionGroup, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, UserRole, Appointment, FollowUp } from '@/lib/types';
+import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, UserRole, Appointment, FollowUp, Activity, ActivityNotification } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { isBefore, sub, isAfter, isToday, parseISO, startOfToday } from 'date-fns';
@@ -38,6 +38,17 @@ export const useNotifications = () => {
 
     const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
     const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id]);
+    
+    const activitiesQuery = useMemoFirebase(() => {
+        if(!canFetch) return null;
+        const oneDayAgo = sub(new Date(), { days: 1 });
+        return query(
+            collection(firestore, 'agencies', profile.agency_id, 'activityLogs'),
+            where('timestamp', '>=', oneDayAgo.toISOString()),
+            orderBy('timestamp', 'desc'),
+            limit(10)
+        );
+    }, [canFetch, firestore, profile.agency_id]);
 
     const getReadStatus = (): string[] => {
         try {
@@ -57,6 +68,12 @@ export const useNotifications = () => {
         }
     };
 
+    const markAllAsRead = () => {
+        const allIds = notifications.map(n => n.id);
+        localStorage.setItem(NOTIFICATION_READ_STATUS_KEY, JSON.stringify(allIds));
+        setNotifications(prev => prev.map(n => ({...n, isRead: true})));
+    }
+
     useEffect(() => {
         if (!canFetch) {
             setIsLoading(false);
@@ -66,7 +83,7 @@ export const useNotifications = () => {
         const readIds = getReadStatus();
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
-        let loadingStates = { invitations: true, appointments: true, followups: true };
+        let loadingStates = { invitations: true, appointments: true, followups: true, activities: true };
         const updateLoading = () => setIsLoading(Object.values(loadingStates).some(s => s));
 
         const updateAndSortNotifications = () => {
@@ -116,13 +133,13 @@ export const useNotifications = () => {
 
                 snapshot.docs.forEach(doc => {
                     const appt = { id: doc.id, ...doc.data() } as Appointment;
-                    if (appt.status !== 'Scheduled') return;
+                    if (appt.status !== 'Scheduled' || (profile.role === 'Agent' && appt.agentName !== profile.name)) return;
 
                     const apptDateTime = new Date(`${appt.date}T${appt.time}`);
                     
                     const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', boundary: Date, title: string) => {
                         const id = `${appt.id}-${reminderType}`;
-                        if (isAfter(apptDateTime, now) && isBefore(apptDateTime, boundary) && !allNotifications.some(n => n.id === id)) {
+                        if (isAfter(apptDateTime, now) && isBefore(apptDateTime, boundary)) {
                              appointmentNotifications.push({
                                 id,
                                 type: 'appointment',
@@ -183,12 +200,42 @@ export const useNotifications = () => {
             loadingStates.followups = false;
         }
 
+        // Activities
+        if(activitiesQuery) {
+            const unsubActivities = onSnapshot(activitiesQuery, (snapshot) => {
+                const activityNotifications: ActivityNotification[] = [];
+                snapshot.docs.forEach(doc => {
+                    const activity = { id: doc.id, ...doc.data() } as Activity;
+                    // Only show notifications for status updates by other users
+                    if (activity.action.includes('updated the status') && activity.userName !== profile.name) {
+                        activityNotifications.push({
+                            id: activity.id,
+                            type: 'activity',
+                            title: `${activity.userName} updated status`,
+                            description: `${activity.target}: ${activity.details.from} -> ${activity.details.to}`,
+                            timestamp: new Date(activity.timestamp),
+                            isRead: readIds.includes(activity.id),
+                            activity
+                        });
+                    }
+                });
+                
+                allNotifications = [...allNotifications.filter(n => n.type !== 'activity'), ...activityNotifications];
+                updateAndSortNotifications();
+                loadingStates.activities = false;
+                updateLoading();
+            });
+            unsubscribers.push(unsubActivities);
+        } else {
+            loadingStates.activities = false;
+        }
+
         updateLoading();
 
         return () => {
             unsubscribers.forEach(unsub => unsub());
         };
-    }, [canFetch, firestore, user, profile.agency_id]);
+    }, [canFetch, firestore, user, profile.agency_id, profile.name]);
     
     
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
@@ -214,5 +261,5 @@ export const useNotifications = () => {
     };
 
 
-    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead };
+    return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead };
 };
