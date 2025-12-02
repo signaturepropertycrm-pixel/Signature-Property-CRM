@@ -77,6 +77,7 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/analytics', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
   { 
     href: '/tools', 
     label: 'Tools', 
