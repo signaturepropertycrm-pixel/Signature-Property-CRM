@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,6 +6,8 @@ import { useFirestore } from '@/firebase/provider';
 import { collectionGroup, query, where, onSnapshot, DocumentData, QuerySnapshot, FirestoreError } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { useMemoFirebase } from '@/firebase/hooks';
+
+// DEPRECATED: This logic is now part of use-notifications.ts
 
 export interface Invitation {
     id: string;
@@ -21,16 +24,12 @@ export const useInvitations = (userEmail: string | null | undefined) => {
     const [isLoading, setIsLoading] = useState(true);
 
     const invitationsQuery = useMemoFirebase(() => {
-        if (userEmail) {
-            // This query requires a manual index in Firestore.
-            // Since we can't create it programmatically, we are disabling this functionality for now.
-            // To re-enable, create a composite index on the 'teamMembers' collection group
-            // for 'email' ASC and 'status' ASC.
-            return null;
-            // return query(
-            //     collectionGroup(firestore, 'teamMembers'), 
-            //     where('email', '==', userEmail)
-            // );
+        if (userEmail && firestore) {
+            return query(
+                collectionGroup(firestore, 'teamMembers'), 
+                where('email', '==', userEmail),
+                where('status', '==', 'Pending')
+            );
         }
         return null;
     }, [firestore, userEmail]);
@@ -49,8 +48,7 @@ export const useInvitations = (userEmail: string | null | undefined) => {
                     .map(doc => ({
                         id: doc.id,
                         ...doc.data()
-                    }))
-                    .filter(item => item.status === 'Pending') as Invitation[];
+                    })) as Invitation[];
                 
                 setInvitations(fetchedInvitations);
                 setIsLoading(false);

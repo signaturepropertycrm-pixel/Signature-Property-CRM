@@ -162,3 +162,38 @@ export type Activity = {
     timestamp: string;
     agency_id: string;
 };
+
+export type NotificationType = 'invitation' | 'appointment' | 'followup';
+
+export interface BaseNotification {
+    id: string;
+    type: NotificationType;
+    title: string;
+    description: string;
+    timestamp: Date;
+    isRead: boolean;
+}
+
+export interface InvitationNotification extends BaseNotification {
+    type: 'invitation';
+    agencyId: string;
+    agencyName: string;
+    role: UserRole;
+    email: string;
+}
+
+export interface AppointmentNotification extends BaseNotification {
+    type: 'appointment';
+    appointmentId: string;
+    contactName: string;
+    reminderType: 'day' | 'hour' | 'minute';
+}
+
+export interface FollowUpNotification extends BaseNotification {
+    type: 'followup';
+    followUpId: string;
+    buyerName: string;
+}
+
+export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification;
+

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -13,20 +14,34 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2, Menu } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Moon, Search, Settings, Sun, User, MessageSquare, Check, X, Loader2, Menu, CalendarClock, Phone } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Input } from '../ui/input';
 import { useProfile } from '@/context/profile-context';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { signOut } from 'firebase/auth';
-import { useInvitations } from '@/hooks/use-invitations';
+import { useNotifications } from '@/hooks/use-notifications';
 import { doc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { formatDistanceToNow } from 'date-fns';
+
+const getNotificationIcon = (type: string) => {
+    switch (type) {
+        case 'invitation':
+            return <User className="h-4 w-4 text-blue-500" />;
+        case 'appointment':
+            return <CalendarClock className="h-4 w-4 text-green-500" />;
+        case 'followup':
+            return <Phone className="h-4 w-4 text-purple-500" />;
+        default:
+            return <Bell className="h-4 w-4" />;
+    }
+};
 
 export function AppHeader({ 
   searchable,
@@ -46,9 +61,8 @@ export function AppHeader({
   const auth = useAuth();
   const { user } = useUser();
   const { toggleSidebar } = useSidebar();
-  const { invitations, isLoading: areInvitesLoading } = useInvitations(user?.email);
+  const { notifications, isLoading: areNotificationsLoading, acceptInvitation, rejectInvitation } = useNotifications();
   const [updatingInvite, setUpdatingInvite] = useState<string | null>(null);
-  const [actionedInvitations, setActionedInvitations] = useState<Record<string, 'accepted' | 'rejected'>>({});
 
   const displayName = profile.name || 'User';
   const displayImage = profile.avatar || user?.photoURL;
@@ -62,58 +76,32 @@ export function AppHeader({
     router.push('/login');
   };
 
-  const handleAccept = (invitationId: string, agencyId: string) => {
+  const handleAccept = async (invitationId: string, agencyId: string) => {
     if (!user) return;
     setUpdatingInvite(invitationId);
-    
-    const batch = writeBatch(firestore);
-
-    // 1. Update the team member document in the agency
-    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-    batch.update(invRef, { status: 'Active', id: user.uid });
-
-    // 2. Update the agent's main user document to include the agency_id
-    const userRef = doc(firestore, 'users', user.uid);
-    batch.update(userRef, { agency_id: agencyId });
-
-    batch.commit()
-      .then(() => {
+    try {
+        await acceptInvitation(invitationId, agencyId, user.uid);
         toast({ title: 'Invitation Accepted!', description: 'You have joined the agency.' });
-        setActionedInvitations(prev => ({...prev, [invitationId]: 'accepted'}));
-        // Optional: Force a profile reload or page refresh
         window.location.reload();
-      })
-      .catch((error) => {
-        const contextualError = new FirestorePermissionError({
-          operation: 'write',
-          path: `batch write for ${invRef.path} and ${userRef.path}`,
-        });
-        errorEmitter.emit('permission-error', contextualError);
-      })
-      .finally(() => {
+    } catch (error) {
+        console.error("Error accepting invitation:", error);
+        toast({ title: 'Error', description: 'Could not accept invitation.', variant: 'destructive' });
+    } finally {
         setUpdatingInvite(null);
-      });
+    }
   };
 
-  const handleReject = (invitationId: string, agencyId: string) => {
+  const handleReject = async (invitationId: string, agencyId: string) => {
     setUpdatingInvite(invitationId);
-    const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-
-    deleteDoc(invRef)
-      .then(() => {
+    try {
+        await rejectInvitation(invitationId, agencyId);
         toast({ title: 'Invitation Rejected' });
-        setActionedInvitations(prev => ({...prev, [invitationId]: 'rejected'}));
-      })
-      .catch((error) => {
-        const contextualError = new FirestorePermissionError({
-          operation: 'delete',
-          path: invRef.path,
-        });
-        errorEmitter.emit('permission-error', contextualError);
-      })
-      .finally(() => {
+    } catch (error) {
+        console.error("Error rejecting invitation:", error);
+        toast({ title: 'Error', description: 'Could not reject invitation.', variant: 'destructive' });
+    } finally {
         setUpdatingInvite(null);
-      });
+    }
   };
 
 
@@ -149,51 +137,47 @@ export function AppHeader({
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full relative">
                     <Bell className="h-5 w-5" />
-                    {invitations && invitations.length > 0 && (
+                    {notifications && notifications.length > 0 && (
                         <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
                     )}
-                    <span className="sr-only">Invitations</span>
+                    <span className="sr-only">Notifications</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass-card w-80">
-                <DropdownMenuLabel>Pending Invitations</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="glass-card w-96">
+                <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {areInvitesLoading ? (
+                {areNotificationsLoading ? (
                      <DropdownMenuItem disabled>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Loading...
                     </DropdownMenuItem>
-                ) : invitations && invitations.length > 0 ? (
-                    invitations.map(invite => {
-                        const actionTaken = actionedInvitations[invite.id];
-                        return (
-                         <DropdownMenuItem key={invite.id} className={cn("flex justify-between items-center", actionTaken && "opacity-50")} onSelect={(e) => e.preventDefault()} disabled={!!actionTaken}>
-                            <div>
-                                <p className="font-semibold">{invite.agency_name}</p>
-                                <p className="text-xs text-muted-foreground">wants to add you as an {invite.role}</p>
+                ) : notifications && notifications.length > 0 ? (
+                    notifications.map(notification => (
+                         <DropdownMenuItem key={notification.id} className="flex justify-between items-start gap-3" onSelect={(e) => e.preventDefault()}>
+                            <div className="flex-shrink-0 pt-1">{getNotificationIcon(notification.type)}</div>
+                            <div className="flex-1">
+                                <p className="font-semibold">{notification.title}</p>
+                                <p className="text-xs text-muted-foreground">{notification.description}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{formatDistanceToNow(notification.timestamp, { addSuffix: true })}</p>
                             </div>
-                            <div className="flex items-center gap-1 w-20 justify-end">
-                                {updatingInvite === invite.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 
-                                 actionTaken ? (
-                                    <span className={cn("text-xs font-semibold", actionTaken === 'accepted' ? 'text-green-600' : 'text-red-600')}>
-                                      {actionTaken === 'accepted' ? 'Accepted' : 'Rejected'}
-                                    </span>
-                                 ) : (
-                                    <>
-                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleReject(invite.id, invite.agency_id)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={() => handleAccept(invite.id, invite.agency_id)}>
-                                            <Check className="h-4 w-4" />
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
+                            {notification.type === 'invitation' && (
+                                <div className="flex items-center gap-1 w-20 justify-end">
+                                    {updatingInvite === notification.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                        <>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={() => handleReject(notification.id, notification.agencyId)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={() => handleAccept(notification.id, notification.agencyId)}>
+                                                <Check className="h-4 w-4" />
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </DropdownMenuItem>
-                        )
-                    })
+                    ))
                 ) : (
-                    <DropdownMenuItem disabled>No pending invitations</DropdownMenuItem>
+                    <DropdownMenuItem disabled>No new notifications</DropdownMenuItem>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>
