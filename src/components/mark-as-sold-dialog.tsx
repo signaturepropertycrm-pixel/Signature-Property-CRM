@@ -47,6 +47,7 @@ const formSchema = z.object({
   commission_from_buyer_unit: z.enum(priceUnits).default('Lacs'),
   commission_from_seller: z.coerce.number().min(0, "Commission cannot be negative").optional(),
   commission_from_seller_unit: z.enum(priceUnits).default('Lacs'),
+  agent_commission_pkr: z.coerce.number().min(0).optional(),
   agent_share_percentage: z.coerce.number().min(0).max(100).optional(),
   sale_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   sold_by_agent_id: z.string().min(1, "You must select the agent who sold the property."),
@@ -89,6 +90,7 @@ export function MarkAsSoldDialog({
   });
 
   const watchFields = useWatch({ control: form.control });
+  const { setValue } = form;
 
   const totalCommission = useMemo(() => {
       const buyerCommissionAmount = watchFields.commission_from_buyer || 0;
@@ -100,8 +102,19 @@ export function MarkAsSoldDialog({
       const sellerCommissionBase = formatUnit(sellerCommissionAmount, sellerCommissionUnit);
       
       return buyerCommissionBase + sellerCommissionBase;
-  }, [watchFields]);
+  }, [watchFields.commission_from_buyer, watchFields.commission_from_buyer_unit, watchFields.commission_from_seller, watchFields.commission_from_seller_unit]);
   
+   useEffect(() => {
+    const agentCommissionPkr = watchFields.agent_commission_pkr || 0;
+    if (totalCommission > 0 && agentCommissionPkr > 0) {
+      const percentage = (agentCommissionPkr / totalCommission) * 100;
+      setValue('agent_share_percentage', parseFloat(percentage.toFixed(2)));
+    } else {
+      setValue('agent_share_percentage', 0);
+    }
+  }, [watchFields.agent_commission_pkr, totalCommission, setValue]);
+
+
   useEffect(() => {
     if (isOpen) {
         form.reset({
@@ -113,6 +126,7 @@ export function MarkAsSoldDialog({
             commission_from_buyer_unit: 'Lacs',
             commission_from_seller: 0,
             commission_from_seller_unit: 'Lacs',
+            agent_commission_pkr: 0,
             agent_share_percentage: 0,
         });
     }
@@ -141,16 +155,19 @@ export function MarkAsSoldDialog({
     onUpdateProperty(updatedProperty);
     
     // Create activity log
-    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-    const newActivity = {
-        userName: profile.name,
-        action: `marked property as "Sold"`,
-        target: `${property.serial_no} to ${agent.name} for ${formatCurrency(soldPriceInBaseUnit, currency)}`,
-        targetType: 'Property',
-        timestamp: new Date().toISOString(),
-        agency_id: profile.agency_id,
-    };
-    await addDoc(activityLogRef, newActivity);
+    if (profile.agency_id) {
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity = {
+            userName: profile.name,
+            action: `marked property as "Sold"`,
+            target: `${property.serial_no} to ${agent.name} for ${formatCurrency(soldPriceInBaseUnit, currency)}`,
+            targetType: 'Property',
+            timestamp: new Date().toISOString(),
+            agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
+    }
+
 
     toast({
       title: 'Property Marked as Sold',
@@ -303,15 +320,23 @@ export function MarkAsSoldDialog({
                         )} />
                     </div>
                 </div>
-
-                 <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
-                    <FormItem>
-                        <FormLabel>Agent's Share (%)</FormLabel>
-                        <FormControl><Input type="number" {...field} placeholder="e.g. 50" /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )} />
-
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="agent_commission_pkr" render={({field}) => (
+                        <FormItem>
+                            <FormLabel>Agent's Commission (PKR)</FormLabel>
+                            <FormControl><Input type="number" {...field} placeholder="e.g. 200000" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
+                        <FormItem>
+                            <FormLabel>Agent's Share (%)</FormLabel>
+                            <FormControl><Input type="number" {...field} readOnly className="bg-muted/50" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                </div>
               </div>
             </ScrollArea>
             <div className="flex justify-between items-center gap-2 pt-6 border-t mt-6">
