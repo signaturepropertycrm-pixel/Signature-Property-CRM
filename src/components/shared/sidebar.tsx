@@ -57,12 +57,12 @@ const mainMenuItems = [
     icon: <Building2 />, 
     roles: ['Admin', 'Agent'],
     subItems: [
-        { href: '/properties', label: 'All Properties'},
-        { href: '/properties?status=Available', label: 'Available (Sale)' },
-        { href: '/properties?status=Rental', label: 'Available (Rent)' },
-        { href: '/properties?status=Sold', label: 'Sold' },
-        { href: '/properties?status=Rent+Out', label: 'Rent Out' },
-        { href: '/properties?status=Recorded', label: 'Recorded' },
+        { href: '/properties', label: 'For Sale - All' },
+        { href: '/properties?status=Available', label: 'For Sale - Available' },
+        { href: '/properties?status=Sold', label: 'For Sale - Sold' },
+        { href: '/properties?status=Rental', label: 'For Rent - Available' },
+        { href: '/properties?status=Rent Out', label: 'For Rent - Rent Out' },
+        { href: '/properties?status=Recorded', label: 'Recorded (All)' },
     ]
   },
   { 
@@ -172,18 +172,22 @@ export function AppSidebar() {
                 <CollapsibleContent>
                     <SidebarMenu className="pl-6">
                         {item.subItems.map((subItem: any) => {
-                            const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
-                            const subItemParams = new URLSearchParams(subItem.href.split('?')[1]);
-                            const paramKey = subItem.href.includes('status=') ? 'status' : 'type';
+                            const currentUrlParams = new URLSearchParams(Array.from(searchParams.entries()));
+                            const subItemUrlParams = new URLSearchParams(subItem.href.split('?')[1] || '');
 
-                            const currentParamValue = currentParams.get(paramKey);
-                            const subItemParamValue = subItemParams.get(paramKey);
-                            
-                            const isRootPath = subItem.href.split('?')[0] === pathname;
-                            const areParamsMatching = subItemParamValue === currentParamValue;
-                            const isAllActive = subItem.href === pathname && !currentParams.has('status') && !currentParams.has('type');
+                            const isRootPathMatch = subItem.href.split('?')[0] === pathname;
+                            const hasUrlParams = currentUrlParams.has('status') || currentUrlParams.has('type');
 
-                            const isSubItemActive = isRootPath && (areParamsMatching || isAllActive);
+                            let isSubItemActive = false;
+                            if (isRootPathMatch) {
+                                if (hasUrlParams) {
+                                    // If URL has params, find the sub-item that matches
+                                    isSubItemActive = subItemUrlParams.toString() === currentUrlParams.toString();
+                                } else {
+                                    // If URL has no params, only the base sub-item link (without params) is active
+                                    isSubItemActive = subItem.href === pathname;
+                                }
+                            }
 
                             return (
                                 <SidebarMenuItem key={subItem.href} className="relative">
