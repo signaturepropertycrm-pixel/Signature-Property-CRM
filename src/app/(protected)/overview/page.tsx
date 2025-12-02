@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -100,21 +100,26 @@ export default function OverviewPage() {
 
     const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading || isTeamMembersLoading;
 
-    const filterLast30Days = (item: { created_at?: string; sale_date?: string; invitedAt?: any; date?: string; status?: string }) => {
-        const dateString = item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
+    const filterLast30Days = (item: { created_at?: string; sale_date?: string; rent_out_date?: string, invitedAt?: any; date?: string; status?: string }) => {
+        const dateString = item.rent_out_date || item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
         if (!dateString) return false;
         return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
     };
 
     // --- Memoized Stats ---
     const stats = useMemo(() => {
-        const totalProperties = properties?.filter(p => !p.is_deleted).length || 0;
-        const totalBuyers = buyers?.filter(b => !b.is_deleted).length || 0;
+        const totalProperties = properties?.filter(p => !p.is_deleted && !p.is_for_rent).length || 0;
+        const totalSaleBuyers = buyers?.filter(b => !b.is_deleted && b.listing_type === 'For Sale').length || 0;
+        const totalRentBuyers = buyers?.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length || 0;
         
         const soldInLast30Days = properties?.filter(p => p.status === 'Sold' && p.sale_date && filterLast30Days(p)) || [];
         const revenue30d = soldInLast30Days.reduce((sum, prop) => sum + (prop.total_commission || 0), 0);
+        
+        const rentOutInLast30Days = properties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
+        const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + formatUnit(prop.demand_amount, prop.demand_unit), 0);
 
-        const propertiesForRent = properties?.filter(p => p.status === 'Available' && p.potential_rent_amount && p.potential_rent_amount > 0).length || 0;
+
+        const propertiesForRent = properties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
 
         const interestedBuyers = buyers?.filter(b => b.status === 'Interested' && !b.is_deleted).length || 0;
         const followUpLeads = followUps?.length || 0;
@@ -124,14 +129,17 @@ export default function OverviewPage() {
         const cancelledAppointments30d = appointments?.filter(a => a.status === 'Cancelled' && filterLast30Days(a)).length || 0;
         const upcomingAppointments = appointments?.filter(a => a.status === 'Scheduled' && new Date(a.date) >= now).length || 0;
         
-        const newProperties30d = properties?.filter(filterLast30Days).length || 0;
-        const newBuyers30d = buyers?.filter(filterLast30Days).length || 0;
+        const newProperties30d = properties?.filter(p => !p.is_for_rent && filterLast30Days(p)).length || 0;
+        const newBuyers30d = buyers?.filter(b => b.listing_type === 'For Sale' && filterLast30Days(b)).length || 0;
+        const newRentBuyers30d = buyers?.filter(b => b.listing_type === 'For Rent' && filterLast30Days(b)).length || 0;
 
 
         return {
             totalProperties,
-            totalBuyers,
+            totalSaleBuyers,
+            totalRentBuyers,
             revenue30d,
+            rentRevenue30d,
             propertiesForRent,
             interestedBuyers,
             followUpLeads,
@@ -142,35 +150,63 @@ export default function OverviewPage() {
             soldInLast30DaysCount: soldInLast30Days.length,
             newProperties30d,
             newBuyers30d,
+            newRentBuyers30d
         };
     }, [properties, buyers, followUps, appointments, teamMembers, last30DaysStart, now]);
 
     const statCardsData: StatCardProps[] = [
         {
-            title: "Total Properties",
+            title: "Sale Properties",
             value: stats.totalProperties,
             change: `+${stats.newProperties30d} in last 30 days`,
             icon: <Home className="h-4 w-4" />,
             color: "bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300",
-            href: "/properties",
+            href: "/properties?status=All (Sale)",
             isLoading
         },
         {
-            title: "Total Buyers",
-            value: stats.totalBuyers,
+            title: "Sale Buyers",
+            value: stats.totalSaleBuyers,
             change: `+${stats.newBuyers30d} in last 30 days`,
             icon: <Users className="h-4 w-4" />,
             color: "bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300",
-            href: "/buyers",
+            href: "/buyers?type=For+Sale",
             isLoading
         },
         {
-            title: "Revenue (30d)",
+            title: "Rental Properties",
+            value: stats.propertiesForRent,
+            change: "Currently available",
+            icon: <Building2 className="h-4 w-4" />,
+            color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
+            href: "/properties?status=Available (Rent)",
+            isLoading
+        },
+        {
+            title: "Rent Buyers",
+            value: stats.totalRentBuyers,
+            change: `+${stats.newRentBuyers30d} new in 30 days`,
+            icon: <Briefcase className="h-4 w-4" />,
+            color: "bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-300",
+            href: "/buyers?type=For+Rent",
+            isLoading
+        },
+        {
+            title: "Sale Revenue (30d)",
             value: formatCurrency(stats.revenue30d, currency, { notation: 'compact' }),
             change: `From ${stats.soldInLast30DaysCount} sales`,
             icon: <DollarSign className="h-4 w-4" />,
             color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
             href: "/properties?status=Sold",
+            isLoading
+        },
+        {
+            title: "Rent Revenue (30d)",
+            value: formatCurrency(stats.rentRevenue30d, currency, { notation: 'compact' }),
+            change: "From new rentals",
+            icon: <DollarSign className="h-4 w-4" />,
+            color: "bg-lime-100 dark:bg-lime-900 text-lime-600 dark:text-lime-300",
+            href: "/properties?status=Rent Out",
             isLoading
         },
         {
@@ -181,15 +217,6 @@ export default function OverviewPage() {
             color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
             href: "/properties?status=Sold",
             isLoading,
-        },
-        {
-            title: "Rental Properties",
-            value: stats.propertiesForRent,
-            change: "Currently available for rent",
-            icon: <Building2 className="h-4 w-4" />,
-            color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
-            href: "/properties?status=For Rent",
-            isLoading
         },
         {
             title: "Interested Buyers",

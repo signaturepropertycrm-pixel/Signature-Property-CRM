@@ -73,6 +73,7 @@ export type Property = {
   sold_price?: number;
   sold_price_unit?: PriceUnit;
   sale_date?: string;
+  rent_out_date?: string; // New field for rent out date
   sold_by_agent_id?: string;
   commission_from_buyer?: number;
   commission_from_buyer_unit?: CommissionUnit;

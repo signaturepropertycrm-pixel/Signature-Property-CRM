@@ -303,7 +303,7 @@ export default function PropertiesPage() {
     const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
     const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-    await setDoc(docRef, { status: 'Rent Out' }, { merge: true });
+    await setDoc(docRef, { status: 'Rent Out', rent_out_date: new Date().toISOString() }, { merge: true });
     toast({ title: 'Property Marked as Rent Out' });
   };
   
@@ -311,7 +311,7 @@ export default function PropertiesPage() {
     const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
     const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-    await setDoc(docRef, { status: 'Available' }, { merge: true });
+    await setDoc(docRef, { status: 'Available', rent_out_date: null }, { merge: true });
     toast({ title: 'Property Marked as Available for Rent' });
   };
 
