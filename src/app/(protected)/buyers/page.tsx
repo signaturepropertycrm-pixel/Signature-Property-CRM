@@ -97,6 +97,11 @@ export default function BuyersPage() {
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
 
+    const buyerFollowUp = useMemo(() => {
+        if (!buyerForFollowUp || !followUps) return null;
+        return followUps.find(fu => fu.buyerId === buyerForFollowUp.id);
+    }, [buyerForFollowUp, followUps]);
+
     useEffect(() => {
         if (!isAddBuyerOpen) setBuyerToEdit(null);
     }, [isAddBuyerOpen]);
@@ -233,17 +238,16 @@ export default function BuyersPage() {
         }
     };
 
-    const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => {
+    const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string, existingFollowUp?: FollowUp | null) => {
         if (!profile.agency_id || !allBuyers) return;
         const buyer = allBuyers.find(b => b.id === buyerId);
         if (!buyer) return;
 
-        const newFollowUp: Omit<FollowUp, 'id'> = {
+        const newFollowUpData: Partial<FollowUp> = {
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
             propertyInterest: buyer.area_preference || 'General',
-            lastContactDate: new Date().toISOString(),
             nextReminderDate: nextReminderDate,
             nextReminderTime: nextReminderTime,
             status: 'Scheduled',
@@ -252,17 +256,18 @@ export default function BuyersPage() {
         };
 
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
-
-        if (!profile.agency_id) return;
         const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
 
         let action = 'scheduled a follow-up';
-        const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
         if (existingFollowUp) {
-            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp, { merge: true });
+            newFollowUpData.lastContactDate = existingFollowUp.nextReminderDate;
+            newFollowUpData.lastContactTime = existingFollowUp.nextReminderTime;
+            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUpData, { merge: true });
             action = 'rescheduled a follow-up';
         } else {
-            await addDoc(followUpsCollection, newFollowUp);
+            newFollowUpData.lastContactDate = new Date().toISOString().split('T')[0];
+            newFollowUpData.lastContactTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            await addDoc(followUpsCollection, newFollowUpData);
         }
         
         await logActivity(action, buyer.name, 'FollowUp');
@@ -649,7 +654,7 @@ export default function BuyersPage() {
                 onSave={handleSaveBuyer}
             />
 
-            {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} onSave={handleSaveFollowUp} />)}
+            {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
             {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
 

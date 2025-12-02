@@ -15,7 +15,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { Buyer } from '@/lib/types';
+import { Buyer, FollowUp } from '@/lib/types';
 import { useEffect } from 'react';
 import { Input } from './ui/input';
 
@@ -23,7 +23,8 @@ interface AddFollowUpDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   buyer: Buyer;
-  onSave: (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => void;
+  existingFollowUp?: FollowUp | null;
+  onSave: (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string, existingFollowUp?: FollowUp | null) => void;
 }
 
 const formSchema = z.object({
@@ -46,6 +47,7 @@ export function AddFollowUpDialog({
   isOpen,
   setIsOpen,
   buyer,
+  existingFollowUp,
   onSave,
 }: AddFollowUpDialogProps) {
   const { defaultDate, defaultTime } = getDefaultDateTime();
@@ -63,15 +65,15 @@ export function AddFollowUpDialog({
     if (buyer) {
         const { defaultDate, defaultTime } = getDefaultDateTime();
         form.reset({ 
-            notes: buyer.last_follow_up_note || '', 
+            notes: existingFollowUp?.notes || buyer.last_follow_up_note || '', 
             nextReminderDate: defaultDate,
             nextReminderTime: defaultTime,
         });
     }
-  }, [buyer, form, isOpen, defaultDate, defaultTime]);
+  }, [buyer, existingFollowUp, form, isOpen, defaultDate, defaultTime]);
 
   const onSubmit = (data: FollowUpFormValues) => {
-    onSave(buyer.id, data.notes, data.nextReminderDate, data.nextReminderTime);
+    onSave(buyer.id, data.notes, data.nextReminderDate, data.nextReminderTime, existingFollowUp);
     setIsOpen(false);
   };
 

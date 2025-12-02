@@ -35,6 +35,11 @@ export default function FollowUpsPage() {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
   const { toast } = useToast();
+
+  const currentFollowUp = useMemo(() => {
+    if (!buyerForFollowUp || !followUpsData) return null;
+    return followUpsData.find(fu => fu.buyerId === buyerForFollowUp.id);
+  }, [buyerForFollowUp, followUpsData]);
   
   const logActivity = async (action: string, target: string, targetType: Activity['targetType'], details: any = null) => {
     if (!profile.agency_id) return;
@@ -114,7 +119,7 @@ export default function FollowUpsPage() {
       await logActivity('scheduled an appointment', appointment.contactName, 'Appointment');
   };
   
-  const handleOpenStatusUpdate = (e: React.MouseEvent, followUp: FollowUp) => {
+  const handleOpenReschedule = (e: React.MouseEvent, followUp: FollowUp) => {
       e.stopPropagation();
       const buyer = buyersData?.find(b => b.id === followUp.buyerId);
       if (buyer) {
@@ -123,17 +128,16 @@ export default function FollowUpsPage() {
       }
   };
 
-  const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string) => {
+  const handleSaveFollowUp = async (buyerId: string, notes: string, nextReminderDate: string, nextReminderTime: string, existingFollowUp?: FollowUp | null) => {
         if (!profile.agency_id || !buyersData) return;
         const buyer = buyersData.find(b => b.id === buyerId);
         if (!buyer) return;
 
-        const newFollowUp: Omit<FollowUp, 'id'> = {
+        const newFollowUpData: Partial<FollowUp> = {
             buyerId: buyer.id,
             buyerName: buyer.name,
             buyerPhone: buyer.phone,
             propertyInterest: buyer.area_preference || 'General',
-            lastContactDate: new Date().toISOString(),
             nextReminderDate: nextReminderDate,
             nextReminderTime: nextReminderTime,
             status: 'Scheduled',
@@ -142,18 +146,22 @@ export default function FollowUpsPage() {
         };
         
         const followUpsCollection = collection(firestore, 'agencies', profile.agency_id, 'followUps');
-        const existingFollowUp = followUpsData?.find(fu => fu.buyerId === buyerId);
+        const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+
         let action = 'scheduled a follow-up';
-        
         if (existingFollowUp) {
-            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp);
+            newFollowUpData.lastContactDate = existingFollowUp.nextReminderDate;
+            newFollowUpData.lastContactTime = existingFollowUp.nextReminderTime;
+            await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUpData, { merge: true });
             action = 'rescheduled a follow-up';
         } else {
-            await addDoc(followUpsCollection, newFollowUp);
+            newFollowUpData.lastContactDate = new Date().toISOString().split('T')[0];
+            newFollowUpData.lastContactTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            await addDoc(followUpsCollection, newFollowUpData);
         }
         
         await logActivity(action, buyer.name, 'FollowUp');
-
+        
         toast({
             title: "Follow-up Updated",
             description: `A new follow-up has been scheduled for ${buyer.name}.`
@@ -187,13 +195,13 @@ export default function FollowUpsPage() {
                       <CardDescription>{followUp.propertyInterest}</CardDescription>
                     </div>
                     <Badge variant="secondary">
-                      Scheduled
+                      {followUp.status}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-3">
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p><strong>Last Contact:</strong> {new Date(followUp.lastContactDate).toLocaleDateString()}</p>
+                    <p><strong>Last Contact:</strong> {new Date(followUp.lastContactDate).toLocaleDateString()} {followUp.lastContactTime && `- ${followUp.lastContactTime}`}</p>
                     <p className="flex items-center gap-1.5"><strong>Next Reminder:</strong> {new Date(followUp.nextReminderDate).toLocaleDateString()} <Clock className="h-4 w-4 inline-block" /> {followUp.nextReminderTime}</p>
                   </div>
                   <p className="text-sm border-t pt-3">{followUp.notes}</p>
@@ -201,7 +209,7 @@ export default function FollowUpsPage() {
                 <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="icon" onClick={(e) => handlePhoneClick(e, followUp.buyerPhone)}><Phone /></Button>
                   <Button variant="outline" size="icon" onClick={(e) => handleWhatsAppClick(e, followUp.buyerPhone)}><MessageSquare /></Button>
-                  <Button variant="outline" size="icon" onClick={(e) => handleOpenStatusUpdate(e, followUp)}><CalendarPlus /></Button>
+                  <Button variant="outline" size="icon" onClick={(e) => handleOpenReschedule(e, followUp)}><CalendarPlus /></Button>
                   <Button size="icon" onClick={(e) => handleSetAppointment(e, followUp)}><CheckCircle /></Button>
                 </CardFooter>
               </Card>
@@ -231,6 +239,7 @@ export default function FollowUpsPage() {
               isOpen={isFollowUpOpen}
               setIsOpen={setIsFollowUpOpen}
               buyer={buyerForFollowUp}
+              existingFollowUp={currentFollowUp}
               onSave={handleSaveFollowUp}
           />
       )}

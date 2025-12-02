@@ -118,7 +118,7 @@ export type Buyer = {
     assignedTo?: string | null; // ID of the agent assigned to this buyer
 };
 
-export type FollowUpStatus = 'Scheduled';
+export type FollowUpStatus = 'Scheduled' | 'Completed';
 
 export type FollowUp = {
     id: string;
@@ -127,6 +127,7 @@ export type FollowUp = {
     buyerPhone?: string;
     propertyInterest: string;
     lastContactDate: string;
+    lastContactTime?: string;
     nextReminderDate: string;
     nextReminderTime: string;
     status: FollowUpStatus;
