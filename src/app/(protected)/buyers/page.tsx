@@ -117,6 +117,21 @@ export default function BuyersPage() {
             }
         }
     }, [allBuyers, selectedBuyer]);
+    
+    const logActivity = async (action: string, target: string, targetType: Activity['targetType'], details: any = null) => {
+        if (!profile.agency_id) return;
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity: Omit<Activity, 'id'> = {
+        userName: profile.name,
+        action,
+        target,
+        targetType,
+        details,
+        timestamp: new Date().toISOString(),
+        agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
+    };
 
 
     const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
@@ -151,18 +166,7 @@ export default function BuyersPage() {
         if (!profile.agency_id) return;
         const { id, ...newAppointmentData } = appointment;
         const newAppointmentRef = await addDoc(collection(firestore, 'agencies', profile.agency_id, 'appointments'), newAppointmentData);
-
-        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-        const newActivity: Omit<Activity, 'id'> = {
-            userName: profile.name,
-            userAvatar: profile.avatar,
-            action: `scheduled an appointment for buyer`,
-            target: appointment.contactName || 'N/A',
-            targetType: 'Appointment',
-            timestamp: new Date().toISOString(),
-            agency_id: profile.agency_id,
-        };
-        await addDoc(activityLogRef, newActivity);
+        await logActivity('scheduled an appointment for buyer', appointment.contactName || 'N/A', 'Appointment');
     };
 
     const handleDelete = async (buyer: Buyer) => {
@@ -219,19 +223,8 @@ export default function BuyersPage() {
 
             const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
             await setDoc(docRef, { status: newStatus }, { merge: true });
-
-            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-            const newActivity: Omit<Activity, 'id'> = {
-                userName: profile.name,
-                userAvatar: profile.avatar,
-                action: `updated the status`,
-                target: buyer.name,
-                targetType: 'Buyer',
-                details: { from: buyer.status, to: newStatus },
-                timestamp: new Date().toISOString(),
-                agency_id: profile.agency_id,
-            };
-            await addDoc(activityLogRef, newActivity);
+            
+            await logActivity('updated the status', buyer.name, 'Buyer', { from: buyer.status, to: newStatus });
 
             if (buyer.status === 'Follow Up' && followUps && profile.agency_id) {
                 const followUpToDelete = followUps.find(fu => fu.buyerId === buyer.id);
@@ -262,13 +255,16 @@ export default function BuyersPage() {
         if (!profile.agency_id) return;
         const buyerDocRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
 
+        let action = 'scheduled a follow-up';
         const existingFollowUp = followUps?.find(fu => fu.buyerId === buyerId);
         if (existingFollowUp) {
             await setDoc(doc(followUpsCollection, existingFollowUp.id), newFollowUp, { merge: true });
+            action = 'rescheduled a follow-up';
         } else {
             await addDoc(followUpsCollection, newFollowUp);
         }
-
+        
+        await logActivity(action, buyer.name, 'FollowUp');
         await setDoc(buyerDocRef, { status: 'Follow Up', last_follow_up_note: notes }, { merge: true });
 
         toast({ title: "Follow-up Scheduled", description: `A follow-up has been created for ${buyer.name}.` });
@@ -287,18 +283,7 @@ export default function BuyersPage() {
             const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
             const { id, ...restOfData } = buyerData;
             const newDocRef = await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
-
-            const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-            const newActivity: Omit<Activity, 'id'> = {
-                userName: profile.name,
-                userAvatar: profile.avatar,
-                action: 'added a new buyer',
-                target: buyerData.name,
-                targetType: 'Buyer',
-                timestamp: new Date().toISOString(),
-                agency_id: profile.agency_id,
-            };
-            await addDoc(activityLogRef, newActivity);
+            await logActivity('added a new buyer', buyerData.name, 'Buyer');
             toast({ title: 'Buyer Added' });
         }
         setBuyerToEdit(null);
@@ -670,6 +655,8 @@ export default function BuyersPage() {
         </>
     );
 }
+
+    
 
     
 
