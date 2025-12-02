@@ -202,34 +202,52 @@ export const useNotifications = () => {
                     if (followUp.status !== 'Scheduled') return;
 
                     const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
-                    if (isBefore(reminderDateTime, now)) return;
                     
-                    const hoursUntil = differenceInHours(reminderDateTime, now);
-
-                     const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
-                        const id = `${followUp.id}-${reminderType}`;
-                        followUpNotifications.push({
-                            id,
-                            type: 'followup',
-                            title: title,
-                            description: `Follow up with ${followUp.buyerName}.`,
-                            timestamp: reminderDateTime,
-                            isRead: readIds.includes(id),
-                            followUp: followUp,
-                            reminderType
-                        });
-                    };
-
-                    if (hoursUntil > 1 && hoursUntil <= 24) {
-                        checkAndAddReminder('day', 'Follow-up in 24 hours');
-                    }
-                     if (hoursUntil > 0.25 && hoursUntil <= 1) {
-                        checkAndAddReminder('hour', 'Follow-up in 1 hour');
-                    }
-                    if (hoursUntil > 0 && hoursUntil <= 0.25) {
-                        checkAndAddReminder('minute', 'Follow-up in 15 minutes');
+                    // Logic for "Due Today"
+                    if (isToday(reminderDateTime) && isAfter(now, reminderDateTime)) {
+                        const id = `${followUp.id}-today`;
+                        if (!followUpNotifications.some(n => n.id === id)) {
+                            followUpNotifications.push({
+                                id,
+                                type: 'followup',
+                                title: 'Follow-up Due Today',
+                                description: `Follow up with ${followUp.buyerName}.`,
+                                timestamp: startOfToday(), // Consistent timestamp for today's items
+                                isRead: readIds.includes(id),
+                                followUp,
+                                reminderType: 'day'
+                            });
+                        }
                     }
 
+                    // Logic for upcoming reminders
+                    if (isBefore(now, reminderDateTime)) {
+                        const hoursUntil = differenceInHours(reminderDateTime, now);
+
+                        const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
+                            const id = `${followUp.id}-${reminderType}`;
+                            followUpNotifications.push({
+                                id,
+                                type: 'followup',
+                                title: title,
+                                description: `Follow up with ${followUp.buyerName}.`,
+                                timestamp: reminderDateTime,
+                                isRead: readIds.includes(id),
+                                followUp,
+                                reminderType
+                            });
+                        };
+
+                        if (hoursUntil > 1 && hoursUntil <= 24) {
+                            checkAndAddReminder('day', 'Follow-up in 24 hours');
+                        }
+                        if (hoursUntil > 0.25 && hoursUntil <= 1) {
+                            checkAndAddReminder('hour', 'Follow-up in 1 hour');
+                        }
+                        if (hoursUntil > 0 && hoursUntil <= 0.25) {
+                            checkAndAddReminder('minute', 'Follow-up in 15 minutes');
+                        }
+                    }
                 });
 
                 updateAndSortNotifications(followUpNotifications, 'followup');
