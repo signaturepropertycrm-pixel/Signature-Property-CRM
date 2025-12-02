@@ -197,27 +197,38 @@ export const useNotifications = () => {
             const unsubFollowUps = onSnapshot(followUpsQuery, (snapshot) => {
                 const now = new Date();
                 const followUpNotifications: FollowUpNotification[] = [];
+
                 snapshot.docs.forEach(doc => {
                     const followUp = { id: doc.id, ...doc.data() } as FollowUp;
                     if (followUp.status !== 'Scheduled') return;
 
                     const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
+                    if (isBefore(reminderDateTime, now)) return; // Don't show for past follow-ups
                     
-                    // Only create notifications for reminders that are today and in the future, or are past due today.
-                    if (isToday(reminderDateTime)) {
-                        const id = `${followUp.id}-today`;
-                        if (!followUpNotifications.some(n => n.id === id)) {
-                             followUpNotifications.push({
-                                id,
-                                type: 'followup',
-                                title: 'Follow-up Due Today',
-                                description: `Follow up with ${followUp.buyerName}.`,
-                                timestamp: reminderDateTime,
-                                isRead: readIds.includes(id),
-                                followUp,
-                                reminderType: 'day'
-                            });
-                        }
+                    const hoursUntil = differenceInHours(reminderDateTime, now);
+
+                     const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
+                        const id = `${followUp.id}-${reminderType}`;
+                        followUpNotifications.push({
+                            id,
+                            type: 'followup',
+                            title,
+                            description: `Follow up with ${followUp.buyerName}.`,
+                            timestamp: reminderDateTime,
+                            isRead: readIds.includes(id),
+                            followUp,
+                            reminderType
+                        });
+                    };
+
+                    if (hoursUntil > 1 && hoursUntil <= 24) {
+                        checkAndAddReminder('day', 'Follow-up in 24 hours');
+                    }
+                    if (hoursUntil <= 1 && hoursUntil > 0.25) {
+                        checkAndAddReminder('hour', 'Follow-up in 1 hour');
+                    }
+                    if (hoursUntil <= 0.25 && hoursUntil >= 0) {
+                        checkAndAddReminder('minute', 'Follow-up in 15 minutes');
                     }
                 });
 
