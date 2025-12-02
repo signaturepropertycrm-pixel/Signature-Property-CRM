@@ -98,13 +98,13 @@ export const useNotifications = () => {
         }
         
         const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
-        const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
         let loadingStates = { invitations: true, appointments: true, followups: true, activities: true };
         const updateLoading = () => setIsLoading(Object.values(loadingStates).some(s => s));
 
-        const updateAndSortNotifications = (newNotifs: Notification[], type: NotificationType) => {
+        const updateAndSortNotifications = (newNotifs: Notification[], type: Notification['type']) => {
+             const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
              allNotifications = [
                 ...allNotifications.filter(n => n.type !== type),
                 ...newNotifs
@@ -178,7 +178,7 @@ export const useNotifications = () => {
                     if (hoursUntil > 0.25 && hoursUntil <= 1) { // 15 mins to 1 hour
                         checkAndAddReminder('hour', 'Appointment in 1 hour');
                     }
-                    if (hoursUntil <= 0.25 && isAfter(apptDateTime, now)) { // less than 15 mins away
+                    if (hoursUntil > 0 && hoursUntil <= 0.25) { // less than 15 mins away
                         checkAndAddReminder('minute', 'Appointment in 15 minutes');
                     }
                 });
@@ -226,7 +226,7 @@ export const useNotifications = () => {
                      if (hoursUntil > 0.25 && hoursUntil <= 1) {
                         checkAndAddReminder('hour', 'Follow-up in 1 hour');
                     }
-                    if (hoursUntil <= 0.25 && isAfter(reminderDateTime, now)) {
+                    if (hoursUntil > 0 && hoursUntil <= 0.25) {
                         checkAndAddReminder('minute', 'Follow-up in 15 minutes');
                     }
 
