@@ -181,10 +181,10 @@ export const useNotifications = () => {
                     if (hoursUntil > 1 && hoursUntil <= 24) {
                         checkAndAddReminder('day', 'Appointment in 24 hours');
                     }
-                    if (hoursUntil <= 1 && hoursUntil > 0.25) {
+                    if (hoursUntil > 0.25 && hoursUntil <= 1) {
                         checkAndAddReminder('hour', 'Appointment in 1 hour');
                     }
-                    if (hoursUntil <= 0.25 && hoursUntil >= 0) {
+                    if (hoursUntil >= 0 && hoursUntil <= 0.25) {
                         checkAndAddReminder('minute', 'Appointment in 15 minutes');
                     }
                 });
@@ -210,7 +210,7 @@ export const useNotifications = () => {
 
                     const reminderDateTime = new Date(`${followUp.nextReminderDate}T${followUp.nextReminderTime}`);
                     if (isBefore(reminderDateTime, now)) return;
-                    
+
                     const hoursUntil = differenceInHours(reminderDateTime, now);
 
                      const checkAndAddReminder = (reminderType: 'day' | 'hour' | 'minute', title: string) => {
@@ -227,18 +227,14 @@ export const useNotifications = () => {
                         });
                     };
                     
-                    if (isToday(reminderDateTime) && isAfter(reminderDateTime, now)) {
-                         checkAndAddReminder('day', 'Follow-up Due Today');
-                    } else {
-                        if (hoursUntil > 1 && hoursUntil <= 24) {
-                            checkAndAddReminder('day', 'Follow-up in 24 hours');
-                        }
-                        if (hoursUntil <= 1 && hoursUntil > 0.25) {
-                            checkAndAddReminder('hour', 'Follow-up in 1 hour');
-                        }
-                        if (hoursUntil <= 0.25 && hoursUntil >= 0) {
-                            checkAndAddReminder('minute', 'Follow-up in 15 minutes');
-                        }
+                    if (hoursUntil > 1 && hoursUntil <= 24) {
+                        checkAndAddReminder('day', 'Follow-up in 24 hours');
+                    }
+                    if (hoursUntil > 0.25 && hoursUntil <= 1) {
+                        checkAndAddReminder('hour', 'Follow-up in 1 hour');
+                    }
+                    if (hoursUntil >= 0 && hoursUntil <= 0.25) {
+                        checkAndAddReminder('minute', 'Follow-up in 15 minutes');
                     }
                 });
 
