@@ -79,6 +79,8 @@ export type Property = {
   commission_from_seller?: number;
   commission_from_seller_unit?: PriceUnit;
   total_commission?: number;
+  agent_commission_amount?: number;
+  agent_commission_unit?: PriceUnit;
   agent_share_percentage?: number;
 };
 

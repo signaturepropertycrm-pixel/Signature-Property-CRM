@@ -47,7 +47,8 @@ const formSchema = z.object({
   commission_from_buyer_unit: z.enum(priceUnits).default('Lacs'),
   commission_from_seller: z.coerce.number().min(0, "Commission cannot be negative").optional(),
   commission_from_seller_unit: z.enum(priceUnits).default('Lacs'),
-  agent_commission_pkr: z.coerce.number().min(0).optional(),
+  agent_commission_amount: z.coerce.number().min(0).optional(),
+  agent_commission_unit: z.enum(priceUnits).default('Lacs'),
   agent_share_percentage: z.coerce.number().min(0).max(100).optional(),
   sale_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   sold_by_agent_id: z.string().min(1, "You must select the agent who sold the property."),
@@ -86,6 +87,7 @@ export function MarkAsSoldDialog({
       sale_date: new Date().toISOString().split('T')[0],
       commission_from_buyer_unit: 'Lacs',
       commission_from_seller_unit: 'Lacs',
+      agent_commission_unit: 'Lacs',
     },
   });
 
@@ -105,14 +107,17 @@ export function MarkAsSoldDialog({
   }, [watchFields.commission_from_buyer, watchFields.commission_from_buyer_unit, watchFields.commission_from_seller, watchFields.commission_from_seller_unit]);
   
    useEffect(() => {
-    const agentCommissionPkr = watchFields.agent_commission_pkr || 0;
-    if (totalCommission > 0 && agentCommissionPkr > 0) {
-      const percentage = (agentCommissionPkr / totalCommission) * 100;
+    const agentCommissionAmount = watchFields.agent_commission_amount || 0;
+    const agentCommissionUnit = watchFields.agent_commission_unit || 'Lacs';
+
+    if (totalCommission > 0 && agentCommissionAmount > 0) {
+      const agentCommissionBase = formatUnit(agentCommissionAmount, agentCommissionUnit);
+      const percentage = (agentCommissionBase / totalCommission) * 100;
       setValue('agent_share_percentage', parseFloat(percentage.toFixed(2)));
     } else {
       setValue('agent_share_percentage', 0);
     }
-  }, [watchFields.agent_commission_pkr, totalCommission, setValue]);
+  }, [watchFields.agent_commission_amount, watchFields.agent_commission_unit, totalCommission, setValue]);
 
 
   useEffect(() => {
@@ -126,7 +131,8 @@ export function MarkAsSoldDialog({
             commission_from_buyer_unit: 'Lacs',
             commission_from_seller: 0,
             commission_from_seller_unit: 'Lacs',
-            agent_commission_pkr: 0,
+            agent_commission_amount: 0,
+            agent_commission_unit: 'Lacs',
             agent_share_percentage: 0,
         });
     }
@@ -150,6 +156,8 @@ export function MarkAsSoldDialog({
         commission_from_seller: values.commission_from_seller,
         commission_from_seller_unit: values.commission_from_seller_unit,
         total_commission: totalCommission,
+        agent_commission_amount: values.agent_commission_amount,
+        agent_commission_unit: values.agent_commission_unit,
         agent_share_percentage: values.agent_share_percentage,
     };
     onUpdateProperty(updatedProperty);
@@ -322,13 +330,31 @@ export function MarkAsSoldDialog({
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="agent_commission_pkr" render={({field}) => (
-                        <FormItem>
-                            <FormLabel>Agent's Commission (PKR)</FormLabel>
-                            <FormControl><Input type="number" {...field} placeholder="e.g. 200000" /></FormControl>
+                    <div className="grid grid-cols-2 gap-2">
+                        <FormField control={form.control} name="agent_commission_amount" render={({field}) => (
+                            <FormItem>
+                                <FormLabel>Agent's Commission</FormLabel>
+                                <FormControl><Input type="number" {...field} placeholder="e.g. 2" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                         <FormField control={form.control} name="agent_commission_unit" render={({field}) => (
+                            <FormItem className="self-end">
+                            <FormLabel className="sr-only">Unit</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {priceUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
-                        </FormItem>
-                    )} />
+                            </FormItem>
+                        )} />
+                    </div>
                     <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
                         <FormItem>
                             <FormLabel>Agent's Share (%)</FormLabel>
