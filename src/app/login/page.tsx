@@ -193,12 +193,12 @@ function LoginPageContent() {
                   </Link>
                 </div>
                  <div className="mt-2 text-center text-sm">
-                  Don&apos;t Have an Agent Account?{' '}
+                  Don&apos;t have an agent account?{' '}
                   <Link
                     href="/agent/signup"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
-                    Create An account
+                    Create an Account
                   </Link>
                 </div>
               </form>
