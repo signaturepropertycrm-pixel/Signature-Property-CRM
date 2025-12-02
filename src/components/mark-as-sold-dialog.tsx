@@ -161,7 +161,7 @@ export function MarkAsSoldDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Mark Property as Sold</DialogTitle>
           <DialogDescription>
@@ -170,11 +170,9 @@ export function MarkAsSoldDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <ScrollArea className="max-h-[65vh] p-1">
-            <div className="space-y-6 px-4">
-                <Separator />
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="space-y-6">
                 <h4 className="text-sm font-medium text-muted-foreground">Sale Information</h4>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid grid-cols-2 gap-2">
                         <FormField
@@ -275,13 +273,33 @@ export function MarkAsSoldDialog({
                         )} />
                     </div>
                 </div>
-            </div>
+
+                 <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
+                    <FormItem>
+                        <FormLabel>Agent's Share (%)</FormLabel>
+                        <FormControl><Input type="number" {...field} placeholder="e.g. 50" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
+
+              </div>
             </ScrollArea>
-            <div className="flex justify-end gap-2 pt-6 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Save & Mark as Sold</Button>
+            <div className="flex justify-between items-center gap-2 pt-6 border-t mt-6">
+               <Card className="flex-1">
+                    <CardContent className="p-3">
+                        <div className="flex items-center gap-2">
+                            <Calculator className="text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">Total Commission:</p>
+                            <p className="font-bold text-lg">{formatCurrency(totalCommission, currency)}</p>
+                        </div>
+                    </CardContent>
+               </Card>
+               <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+                    Cancel
+                </Button>
+                <Button type="submit">Save & Mark as Sold</Button>
+               </div>
             </div>
           </form>
         </Form>
