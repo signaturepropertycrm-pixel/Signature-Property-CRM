@@ -57,10 +57,11 @@ const mainMenuItems = [
     icon: <Building2 />, 
     roles: ['Admin', 'Agent'],
     subItems: [
-        { href: '/properties', label: 'All (Sale)' },
-        { href: '/properties?status=Available', label: 'Available (Sale)' },
+        { href: '/properties?status=All (Sale)', label: 'All (Sale)' },
+        { href: '/properties?status=Available (Sale)', label: 'Available (Sale)' },
         { href: '/properties?status=Sold', label: 'Sold' },
-        { href: '/properties?status=Rental', label: 'Available (Rent)' },
+        { href: '/properties?status=All (Rent)', label: 'All (Rent)' },
+        { href: '/properties?status=Available (Rent)', label: 'Available (Rent)' },
         { href: '/properties?status=Rent Out', label: 'Rent Out' },
         { href: '/properties?status=Recorded', label: 'Recorded' },
     ]
@@ -177,22 +178,38 @@ export function AppSidebar() {
 
                             const isRootPathMatch = subItem.href.split('?')[0] === pathname;
                             
-                            let isSubItemActive = false;
-                            
+                             let isSubItemActive = false;
+
                             if (isRootPathMatch) {
                                 const subItemStatus = subItemUrlParams.get('status');
                                 const currentStatus = currentUrlParams.get('status');
                                 const subItemType = subItemUrlParams.get('type');
                                 const currentType = currentUrlParams.get('type');
 
-                                if (subItemStatus !== null) { // It's a status filter link
+                                // Check for a specific filter match first
+                                if (subItemStatus !== null) {
                                     isSubItemActive = subItemStatus === currentStatus;
-                                } else if (subItemType !== null) { // It's a type filter link
+                                } else if (subItemType !== null) {
                                     isSubItemActive = subItemType === currentType;
-                                } else { // It's a base link (e.g., /properties, /buyers)
-                                    isSubItemActive = !currentStatus && !currentType;
+                                } 
+                                // If no specific filter match, check if this is the base link for the current path
+                                else if (!currentStatus && !currentType) {
+                                     // Special handling for /properties to default to 'All (Sale)'
+                                    if (pathname === '/properties' && subItem.href === '/properties?status=All (Sale)') {
+                                        isSubItemActive = true;
+                                    } 
+                                    // For other base links like /buyers
+                                    else if (pathname === subItem.href) {
+                                        isSubItemActive = true;
+                                    }
                                 }
                             }
+                            
+                            // A separate check for the main '/properties' link without status
+                            if (pathname === '/properties' && !currentUrlParams.has('status') && subItem.href === '/properties?status=All (Sale)') {
+                                isSubItemActive = true;
+                            }
+
 
                             return (
                                 <SidebarMenuItem key={subItem.href} className="relative">

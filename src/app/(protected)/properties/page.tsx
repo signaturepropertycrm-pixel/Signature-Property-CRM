@@ -209,28 +209,26 @@ export default function PropertiesPage() {
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
 
     // 3. Final Filter: URL Status Param
-    if (statusFilterFromURL) {
-        switch (statusFilterFromURL) {
-            case 'Available (Sale)':
-                return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
-            case 'Available (Rent)':
-                 return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
-            case 'Sold':
-                return baseProperties.filter(p => p.status === 'Sold');
-            case 'Rent Out':
-                return baseProperties.filter(p => p.status === 'Rent Out');
-            case 'Recorded':
-                return baseProperties.filter(p => p.is_recorded);
-            case 'All (Sale)':
-                 return baseProperties.filter(p => !p.is_for_rent);
-            case 'All (Rent)':
-                return baseProperties.filter(p => p.is_for_rent);
-            default:
-                return baseProperties.filter(p => !p.is_for_rent);
-        }
+    const currentStatusFilter = statusFilterFromURL || 'All (Sale)';
+
+    switch (currentStatusFilter) {
+        case 'All (Sale)':
+            return baseProperties.filter(p => !p.is_for_rent);
+        case 'Available (Sale)':
+            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
+        case 'Sold':
+            return baseProperties.filter(p => p.status === 'Sold' && !p.is_for_rent);
+        case 'All (Rent)':
+            return baseProperties.filter(p => p.is_for_rent);
+        case 'Available (Rent)':
+             return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+        case 'Rent Out':
+            return baseProperties.filter(p => p.status === 'Rent Out');
+        case 'Recorded':
+            return baseProperties.filter(p => p.is_recorded);
+        default:
+             return baseProperties.filter(p => !p.is_for_rent);
     }
-    
-    return baseProperties.filter(p => !p.is_for_rent);
 
   }, [searchQuery, filters, allProperties, statusFilterFromURL]);
 
@@ -710,4 +708,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
