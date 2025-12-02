@@ -87,6 +87,14 @@ export default function BuyersPage() {
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
     const activeAgents = useMemo(() => teamMembers?.filter(m => m.status === 'Active') || [], [teamMembers]);
+    
+    const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
+        if (!allBuyers) return { totalSaleBuyers: 0, totalRentBuyers: 0 };
+        return {
+            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale').length,
+            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent').length
+        };
+    }, [allBuyers]);
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
@@ -302,7 +310,8 @@ export default function BuyersPage() {
         let filtered: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
         // 1. Primary filter by Listing Type (from tabs)
-        filtered = filtered.filter(b => b.listing_type === activeTab);
+        // This also handles legacy buyers that don't have listing_type set (defaults them to 'For Sale')
+        filtered = filtered.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
         if (profile.role === 'Agent') {
             filtered = filtered.filter(b => b.created_by === profile.user_id);
@@ -366,7 +375,17 @@ export default function BuyersPage() {
                                         {buyer.name}
                                     </div>
                                     <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                        <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                        <Badge
+                                            variant="default"
+                                            className={cn(
+                                            'font-mono',
+                                            buyer.serial_no.startsWith('RB')
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                                : 'bg-primary/20 text-primary hover:bg-primary/30'
+                                            )}
+                                        >
+                                            {buyer.serial_no}
+                                        </Badge>
                                         <span>{buyer.phone}</span>
                                     </div>
                                 </TableCell>
@@ -441,7 +460,17 @@ export default function BuyersPage() {
                                     </div>
                                 </CardTitle>
                                 <div className="text-xs text-muted-foreground flex items-center gap-2 -mt-2 px-6">
-                                    <Badge variant="default" className="font-mono bg-primary/20 text-primary hover:bg-primary/30">{buyer.serial_no}</Badge>
+                                     <Badge
+                                        variant="default"
+                                        className={cn(
+                                        'font-mono',
+                                        buyer.serial_no.startsWith('RB')
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                            : 'bg-primary/20 text-primary hover:bg-primary/30'
+                                        )}
+                                    >
+                                        {buyer.serial_no}
+                                    </Badge>
                                 </div>
                             </CardHeader>
                             <CardContent className="grid grid-cols-2 gap-4 text-sm">
@@ -641,7 +670,8 @@ export default function BuyersPage() {
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
                 setIsOpen={setIsAddBuyerOpen}
-                totalBuyers={allBuyers?.length || 0}
+                totalSaleBuyers={totalSaleBuyers}
+                totalRentBuyers={totalRentBuyers}
                 buyerToEdit={buyerToEdit}
                 onSave={handleSaveBuyer}
             />
@@ -653,9 +683,3 @@ export default function BuyersPage() {
         </>
     );
 }
-
-    
-
-    
-
-    

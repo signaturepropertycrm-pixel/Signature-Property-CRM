@@ -16,12 +16,20 @@ import { useEffect } from 'react';
 interface AddBuyerDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    totalBuyers: number;
+    totalSaleBuyers: number;
+    totalRentBuyers: number;
     buyerToEdit?: Buyer | null;
     onSave: (buyer: Omit<Buyer, 'id'>) => void;
 }
 
-export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerDialogProps) {
+export function AddBuyerDialog({ 
+    isOpen, 
+    setIsOpen, 
+    totalSaleBuyers, 
+    totalRentBuyers,
+    buyerToEdit, 
+    onSave 
+}: AddBuyerDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -32,7 +40,13 @@ export function AddBuyerDialog({ isOpen, setIsOpen, totalBuyers, buyerToEdit, on
             {buyerToEdit ? 'Update the details for this buyer.' : 'Fill in the details for the new buyer lead.'}
           </DialogDescription>
         </DialogHeader>
-        <AddBuyerForm setDialogOpen={setIsOpen} totalBuyers={totalBuyers} buyerToEdit={buyerToEdit} onSave={onSave} />
+        <AddBuyerForm 
+            setDialogOpen={setIsOpen} 
+            totalSaleBuyers={totalSaleBuyers} 
+            totalRentBuyers={totalRentBuyers} 
+            buyerToEdit={buyerToEdit} 
+            onSave={onSave} 
+        />
       </DialogContent>
     </Dialog>
   );

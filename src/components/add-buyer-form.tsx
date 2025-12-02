@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -72,12 +72,19 @@ type AddBuyerFormValues = z.infer<typeof formSchema>;
 
 interface AddBuyerFormProps {
   setDialogOpen: (open: boolean) => void;
-  totalBuyers: number;
+  totalSaleBuyers: number;
+  totalRentBuyers: number;
   buyerToEdit?: Buyer | null;
   onSave: (buyer: Omit<Buyer, 'id'> & { id?: string }) => void;
 }
 
-const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string, agencyId?: string): AddBuyerFormValues => {
+const getInitialFormValues = (
+    listingType: ListingType, 
+    totalSaleBuyers: number, 
+    totalRentBuyers: number, 
+    buyerToEdit: Buyer | null | undefined, 
+    userId?: string
+): AddBuyerFormValues => {
     if (buyerToEdit) {
         const phoneWithoutCode = buyerToEdit.phone.replace(buyerToEdit.country_code || '+92', '');
         return {
@@ -102,6 +109,10 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
             listing_type: buyerToEdit.listing_type || 'For Sale',
         };
     }
+
+    const serialPrefix = listingType === 'For Rent' ? 'RB' : 'B';
+    const nextSerialNum = listingType === 'For Rent' ? totalRentBuyers + 1 : totalSaleBuyers + 1;
+
     return {
         name: '',
         listing_type: 'For Sale',
@@ -114,7 +125,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
         notes: '',
         status: 'New',
         is_investor: false,
-        serial_no: `B-${totalBuyers + 1}`,
+        serial_no: `${serialPrefix}-${nextSerialNum}`,
         size_min_unit: 'Marla',
         size_max_unit: 'Marla',
         budget_min_unit: 'Lacs',
@@ -129,27 +140,37 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
 };
 
 
-export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }: AddBuyerFormProps) {
+export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, buyerToEdit, onSave }: AddBuyerFormProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const { profile } = useProfile();
+  
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getInitialFormValues(totalBuyers, buyerToEdit, user?.uid, profile.agency_id)
+    defaultValues: getInitialFormValues('For Sale', totalSaleBuyers, totalRentBuyers, buyerToEdit, user?.uid)
   });
 
-  const { reset } = form;
+  const { reset, setValue, watch, control } = form;
+  const watchedListingType = watch('listing_type');
 
   useEffect(() => {
-    reset(getInitialFormValues(totalBuyers, buyerToEdit, user?.uid, profile.agency_id));
-  }, [buyerToEdit, totalBuyers, user, profile.agency_id, reset]);
+    if (!buyerToEdit) {
+        const serialPrefix = watchedListingType === 'For Rent' ? 'RB' : 'B';
+        const nextSerialNum = watchedListingType === 'For Rent' ? totalRentBuyers + 1 : totalSaleBuyers + 1;
+        setValue('serial_no', `${serialPrefix}-${nextSerialNum}`);
+    }
+  }, [watchedListingType, totalSaleBuyers, totalRentBuyers, setValue, buyerToEdit]);
+
+  useEffect(() => {
+    reset(getInitialFormValues(watchedListingType, totalSaleBuyers, totalRentBuyers, buyerToEdit, user?.uid));
+  }, [buyerToEdit, totalSaleBuyers, totalRentBuyers, user, profile.agency_id, reset]);
 
   function onSubmit(values: AddBuyerFormValues) {
      const buyerData = {
         ...buyerToEdit, // Keep original data like ID, created_at, etc.
         ...values, // Overwrite with new form values
         phone: formatPhoneNumber(values.phone, values.country_code),
-        serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
+        serial_no: form.getValues('serial_no'), // Use the dynamically set serial number
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
         created_by: buyerToEdit?.created_by || user?.uid || '',
