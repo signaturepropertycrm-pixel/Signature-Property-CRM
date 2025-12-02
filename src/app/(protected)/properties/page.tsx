@@ -48,6 +48,7 @@ import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactTyp
 import { useState, useMemo, useEffect } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
+import { MarkAsRentOutDialog } from '@/components/mark-as-rent-out-dialog';
 import { RecordVideoDialog } from '@/components/record-video-dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import {
@@ -129,6 +130,7 @@ export default function PropertiesPage() {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isSoldOpen, setIsSoldOpen] = useState(false);
+  const [isRentOutOpen, setIsRentOutOpen] = useState(false);
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
@@ -248,6 +250,11 @@ export default function PropertiesPage() {
     setSelectedProperty(prop);
     setIsSoldOpen(true);
   };
+  
+  const handleMarkAsRentOut = (prop: Property) => {
+    setSelectedProperty(prop);
+    setIsRentOutOpen(true);
+  };
 
   const handleRecordVideo = (prop: Property) => {
     setSelectedProperty(prop);
@@ -298,20 +305,20 @@ export default function PropertiesPage() {
     const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
     await setDoc(docRef, updatedProperty, { merge: true });
   };
-
-  const handleMarkAsRentOut = async (prop: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
-    if (!collectionId) return;
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-    await setDoc(docRef, { status: 'Rent Out', rent_out_date: new Date().toISOString() }, { merge: true });
-    toast({ title: 'Property Marked as Rent Out' });
-  };
   
   const handleMarkAsAvailableForRent = async (prop: Property) => {
     const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
     if (!collectionId) return;
     const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-    await setDoc(docRef, { status: 'Available', rent_out_date: null }, { merge: true });
+    await setDoc(docRef, { 
+        status: 'Available', 
+        rent_out_date: null,
+        rented_by_agent_id: null,
+        rent_commission_from_tenant: null,
+        rent_commission_from_owner: null,
+        rent_total_commission: null,
+        rent_agent_share: null
+    }, { merge: true });
     toast({ title: 'Property Marked as Available for Rent' });
   };
 
@@ -331,6 +338,8 @@ export default function PropertiesPage() {
       commission_from_seller: null,
       commission_from_seller_unit: null,
       total_commission: null,
+      agent_commission_amount: null,
+      agent_commission_unit: null,
       agent_share_percentage: null
     }, { merge: true });
     toast({ title: 'Property Status Updated', description: `${prop.serial_no} marked as Available again.` });
@@ -552,7 +561,7 @@ export default function PropertiesPage() {
                     prop.is_recorded ? (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                     ) : (
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { estopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
                       )
                     )}
                     {(profile.role !== 'Agent') && (
@@ -722,6 +731,7 @@ export default function PropertiesPage() {
           <>
             <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
             <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
+            <MarkAsRentOutDialog property={selectedProperty} isOpen={isRentOutOpen} setIsOpen={setIsRentOutOpen} onUpdateProperty={handleUpdateProperty} />
             <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
           </>
         )}

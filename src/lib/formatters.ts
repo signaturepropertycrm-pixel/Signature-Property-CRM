@@ -39,6 +39,9 @@ export const formatCurrency = (
          if (value >= 100000) {
               return `${symbol} ${Number((value / 100000).toFixed(2))}Lac`;
          }
+         if (value >= 1000) {
+              return `${symbol} ${Number((value / 1000).toFixed(1))}k`;
+         }
          return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD', // using USD as a base for formatting, but with custom symbol
