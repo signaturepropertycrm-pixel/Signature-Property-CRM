@@ -2,7 +2,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ✅ Fallback: Allow authenticated users to access any valid path
+    // Allow an agency admin to write to their own agency document
+    match /agencies/{agencyId} {
+      allow write: if request.auth != null && request.auth.uid == agencyId;
+      allow read: if request.auth != null;
+    }
+
+    // Allow an agent to write to their own agent document
+    match /agents/{agentId} {
+       allow write: if request.auth != null && request.auth.uid == agentId;
+       allow read: if request.auth != null;
+    }
+    
+    // ✅ Fallback: Allow authenticated users to access any other valid path
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
