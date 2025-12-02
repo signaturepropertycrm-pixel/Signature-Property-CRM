@@ -57,12 +57,12 @@ const mainMenuItems = [
     icon: <Building2 />, 
     roles: ['Admin', 'Agent'],
     subItems: [
-        { href: '/properties', label: 'For Sale - All' },
-        { href: '/properties?status=Available', label: 'For Sale - Available' },
-        { href: '/properties?status=Sold', label: 'For Sale - Sold' },
-        { href: '/properties?status=Rental', label: 'For Rent - Available' },
-        { href: '/properties?status=Rent Out', label: 'For Rent - Rent Out' },
-        { href: '/properties?status=Recorded', label: 'Recorded (All)' },
+        { href: '/properties', label: 'All (Sale)' },
+        { href: '/properties?status=Available', label: 'Available (Sale)' },
+        { href: '/properties?status=Sold', label: 'Sold' },
+        { href: '/properties?status=Rental', label: 'Available (Rent)' },
+        { href: '/properties?status=Rent Out', label: 'Rent Out' },
+        { href: '/properties?status=Recorded', label: 'Recorded' },
     ]
   },
   { 
@@ -176,16 +176,21 @@ export function AppSidebar() {
                             const subItemUrlParams = new URLSearchParams(subItem.href.split('?')[1] || '');
 
                             const isRootPathMatch = subItem.href.split('?')[0] === pathname;
-                            const hasUrlParams = currentUrlParams.has('status') || currentUrlParams.has('type');
-
+                            
                             let isSubItemActive = false;
+                            
                             if (isRootPathMatch) {
-                                if (hasUrlParams) {
-                                    // If URL has params, find the sub-item that matches
-                                    isSubItemActive = subItemUrlParams.toString() === currentUrlParams.toString();
-                                } else {
-                                    // If URL has no params, only the base sub-item link (without params) is active
-                                    isSubItemActive = subItem.href === pathname;
+                                const subItemStatus = subItemUrlParams.get('status');
+                                const currentStatus = currentUrlParams.get('status');
+                                const subItemType = subItemUrlParams.get('type');
+                                const currentType = currentUrlParams.get('type');
+                                
+                                if (subItemStatus !== null) { // It's a status-based link
+                                    isSubItemActive = subItemStatus === currentStatus;
+                                } else if (subItemType !== null) { // It's a type-based link
+                                    isSubItemActive = subItemType === currentType;
+                                } else { // It's a base link (e.g., /properties, /buyers)
+                                     isSubItemActive = !currentStatus && !currentType;
                                 }
                             }
 
