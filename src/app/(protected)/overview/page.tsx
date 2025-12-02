@@ -109,7 +109,7 @@ export default function OverviewPage() {
     // --- Memoized Stats ---
     const stats = useMemo(() => {
         const totalProperties = properties?.filter(p => !p.is_deleted && !p.is_for_rent).length || 0;
-        const totalSaleBuyers = buyers?.filter(b => !b.is_deleted && b.listing_type === 'For Sale').length || 0;
+        const totalSaleBuyers = buyers?.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).length || 0;
         const totalRentBuyers = buyers?.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length || 0;
         
         const soldInLast30Days = properties?.filter(p => p.status === 'Sold' && p.sale_date && filterLast30Days(p)) || [];
@@ -174,7 +174,7 @@ export default function OverviewPage() {
             isLoading
         },
         {
-            title: "Rental Properties",
+            title: "Rent Properties",
             value: stats.propertiesForRent,
             change: "Currently available",
             icon: <Building2 className="h-4 w-4" />,
