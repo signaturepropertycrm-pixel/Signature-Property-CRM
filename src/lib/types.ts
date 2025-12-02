@@ -73,6 +73,9 @@ export type Property = {
   sold_price_unit?: PriceUnit;
   sale_date?: string;
   sold_by_agent_id?: string;
+  buyerId?: string | null;
+  buyerName?: string | null;
+  buyerSerialNo?: string | null;
   commission_from_buyer?: number;
   commission_from_buyer_unit?: PriceUnit;
   commission_from_seller?: number;

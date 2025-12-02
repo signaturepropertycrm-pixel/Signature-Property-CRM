@@ -22,20 +22,23 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Property, PriceUnit, User } from '@/lib/types';
+import { Property, PriceUnit, User, Buyer } from '@/lib/types';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
-import { Calculator } from 'lucide-react';
+import { Calculator, Check, ChevronsUpDown } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { Card, CardContent } from './ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { cn } from '@/lib/utils';
 
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 
@@ -52,6 +55,7 @@ const formSchema = z.object({
   agent_share_percentage: z.coerce.number().min(0).max(100).optional(),
   sale_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   sold_by_agent_id: z.string().min(1, "You must select the agent who sold the property."),
+  buyerId: z.string().min(1, "You must select a buyer."),
 });
 
 type MarkAsSoldFormValues = z.infer<typeof formSchema>;
@@ -76,8 +80,12 @@ export function MarkAsSoldDialog({
 
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
   const { data: teamMembers } = useCollection<User>(teamMembersQuery);
-
   const activeAgents = teamMembers?.filter(m => m.status === 'Active') || [];
+  
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: buyers } = useCollection<Buyer>(buyersQuery);
+  const availableBuyers = buyers?.filter(b => b.status !== 'Deal Closed' && !b.is_deleted) || [];
+
 
   const form = useForm<MarkAsSoldFormValues>({
     resolver: zodResolver(formSchema),
@@ -134,13 +142,15 @@ export function MarkAsSoldDialog({
             agent_commission_amount: 0,
             agent_commission_unit: 'Lacs',
             agent_share_percentage: 0,
+            buyerId: '',
         });
     }
   }, [isOpen, property, form]);
 
   async function onSubmit(values: MarkAsSoldFormValues) {
     const agent = activeAgents.find(a => a.id === values.sold_by_agent_id);
-    if (!agent) return;
+    const buyer = availableBuyers.find(b => b.id === values.buyerId);
+    if (!agent || !buyer) return;
 
     const soldPriceInBaseUnit = formatUnit(values.sold_price, values.sold_price_unit);
 
@@ -151,6 +161,9 @@ export function MarkAsSoldDialog({
         sold_price_unit: values.sold_price_unit,
         sale_date: values.sale_date,
         sold_by_agent_id: values.sold_by_agent_id,
+        buyerId: buyer.id,
+        buyerName: buyer.name,
+        buyerSerialNo: buyer.serial_no,
         commission_from_buyer: values.commission_from_buyer,
         commission_from_buyer_unit: values.commission_from_buyer_unit,
         commission_from_seller: values.commission_from_seller,
@@ -160,26 +173,40 @@ export function MarkAsSoldDialog({
         agent_commission_unit: values.agent_commission_unit,
         agent_share_percentage: values.agent_share_percentage,
     };
-    onUpdateProperty(updatedProperty);
     
-    // Create activity log
+    // Use a batch to update property and buyer atomically
+    const batch = writeBatch(firestore);
+    
+    // 1. Update Property
+    const propertyRef = doc(firestore, 'agencies', property.agency_id, 'properties', property.id);
+    batch.set(propertyRef, updatedProperty);
+
+    // 2. Update Buyer status
+    const buyerRef = doc(firestore, 'agencies', buyer.agency_id, 'buyers', buyer.id);
+    batch.update(buyerRef, { status: 'Deal Closed' });
+
+    // 3. Create activity log
     if (profile.agency_id) {
-        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const activityLogRef = doc(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'));
         const newActivity = {
             userName: profile.name,
-            action: `marked property as "Sold"`,
-            target: `${property.serial_no} to ${agent.name} for ${formatCurrency(soldPriceInBaseUnit, currency)}`,
+            action: `marked property as "Sold" to ${buyer.name}`,
+            target: `${property.serial_no} for ${formatCurrency(soldPriceInBaseUnit, currency)}`,
             targetType: 'Property',
             timestamp: new Date().toISOString(),
             agency_id: profile.agency_id,
         };
-        await addDoc(activityLogRef, newActivity);
+        batch.set(activityLogRef, newActivity);
     }
-
+    
+    await batch.commit();
+    
+    // The onUpdateProperty will be called by the parent listener,
+    // so we don't need to call it here to avoid a double update.
 
     toast({
       title: 'Property Marked as Sold',
-      description: `${property.auto_title} has been updated.`,
+      description: `${property.auto_title} has been updated and buyer status is now Deal Closed.`,
     });
     setIsOpen(false);
   }
@@ -250,28 +277,86 @@ export function MarkAsSoldDialog({
                     />
                 </div>
                 
-                 <FormField
-                    control={form.control}
-                    name="sold_by_agent_id"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Sold by Agent</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="sold_by_agent_id"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Sold by Agent</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an agent..." />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {activeAgents.map(agent => (
+                                            <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="buyerId"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Sold to Buyer</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
                                 <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select an agent..." />
-                                    </SelectTrigger>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value
+                                        ? availableBuyers.find((buyer) => buyer.id === field.value)?.name
+                                        : "Select a buyer..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
                                 </FormControl>
-                                <SelectContent>
-                                    {activeAgents.map(agent => (
-                                        <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search buyer..." />
+                                    <CommandList>
+                                    <CommandEmpty>No buyers found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {availableBuyers.map((buyer) => (
+                                        <CommandItem
+                                            value={buyer.name}
+                                            key={buyer.id}
+                                            onSelect={() => {
+                                                form.setValue("buyerId", buyer.id)
+                                            }}
+                                        >
+                                            <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                buyer.id === field.value ? "opacity-100" : "opacity-0"
+                                            )}
+                                            />
+                                            {buyer.name} ({buyer.serial_no})
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                                </PopoverContent>
+                            </Popover>
                             <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Commission Details</h4>

@@ -5,10 +5,10 @@ import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Property } from '@/lib/types';
+import { Property, Buyer } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
@@ -41,12 +41,21 @@ export default function AnalyticsPage() {
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
   );
-  const { data: properties, isLoading } = useCollection<Property>(propertiesQuery);
+  const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+  
+  const buyersQuery = useMemoFirebase(
+    () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null),
+    [profile.agency_id, firestore]
+  );
+  const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
     if (!profile.agency_id) return;
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
-    await setDoc(docRef, updatedProperty, { merge: true });
+    const batch = writeBatch(firestore);
+    batch.set(docRef, updatedProperty, { merge: true });
+    await batch.commit();
     toast({ title: 'Property Updated', description: `${updatedProperty.serial_no} details have been updated.` });
   };
   
@@ -54,6 +63,9 @@ export default function AnalyticsPage() {
     const isForRent = prop.is_for_rent;
     let dataToReset: Partial<Property> = { status: 'Available' };
 
+    const batch = writeBatch(firestore);
+    const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
+    
     if (isForRent) {
         dataToReset = {
             ...dataToReset,
@@ -74,6 +86,9 @@ export default function AnalyticsPage() {
             sold_price_unit: null,
             sale_date: null,
             sold_by_agent_id: null,
+            buyerId: null,
+            buyerName: null,
+            buyerSerialNo: null,
             commission_from_buyer: null,
             commission_from_buyer_unit: null,
             commission_from_seller: null,
@@ -83,15 +98,22 @@ export default function AnalyticsPage() {
             agent_commission_unit: null,
             agent_share_percentage: null,
         };
+        // Revert buyer's status if they were linked to this sale
+        if (prop.buyerId) {
+            const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', prop.buyerId);
+            batch.update(buyerRef, { status: 'Interested' }); // Or 'Follow Up', depending on desired logic
+        }
     }
+    
+    batch.update(propRef, dataToReset);
+    await batch.commit();
 
-    await handleUpdateProperty({ ...prop, ...dataToReset });
     toast({ title: 'Status Reverted', description: `${prop.serial_no} is now marked as Available.` });
   };
 
 
   const salesReportData = useMemo(() => {
-    if (!properties) return { rows: [], totals: { soldPrice: 0, totalCommission: 0, agentShare: 0, agencyProfit: 0 } };
+    if (!properties || !buyers) return { rows: [], totals: { soldPrice: 0, totalCommission: 0, agentShare: 0, agencyProfit: 0 } };
     const soldProperties = properties.filter(p => p.status === 'Sold' && !p.is_for_rent);
     
     let totals = { soldPrice: 0, totalCommission: 0, agentShare: 0, agencyProfit: 0 };
@@ -112,7 +134,7 @@ export default function AnalyticsPage() {
     });
     
     return { rows, totals };
-  }, [properties]);
+  }, [properties, buyers]);
 
   const rentalReportData = useMemo(() => {
     if (!properties) return { rows: [], totals: { monthlyRent: 0, totalCommission: 0, agentShare: 0, agencyProfit: 0 } };
@@ -155,11 +177,12 @@ export default function AnalyticsPage() {
     const title = isSales ? 'Sales Performance Report' : 'Rental Performance Report';
     
     const head = isSales 
-      ? [['Property', 'Sale Date', 'Sold Price', 'Total Commission', 'Agent\'s Share', 'Agency Profit']]
+      ? [['Property', 'Buyer', 'Sale Date', 'Sold Price', 'Total Commission', 'Agent\'s Share', 'Agency Profit']]
       : [['Property', 'Rent Out Date', 'Monthly Rent', 'Total Commission', 'Agent\'s Share', 'Agency Profit']];
       
     const body = data.rows.map(p => isSales ? [
         `${p.auto_title}\n${p.serial_no}`,
+        `${p.buyerName || '-'}\n${p.buyerSerialNo || '-'}`,
         p.sale_date ? new Date(p.sale_date).toLocaleDateString() : 'N/A',
         formatCurrency(p.sold_price || 0, currency),
         formatCurrency(p.total_commission || 0, currency),
@@ -175,7 +198,7 @@ export default function AnalyticsPage() {
     ]);
 
     const totalsRow = isSales ? [
-      { content: 'Total', colSpan: 2, styles: { fontStyle: 'bold' } },
+      { content: 'Total', colSpan: 3, styles: { fontStyle: 'bold' } },
       formatCurrency(data.totals.soldPrice, currency),
       formatCurrency(data.totals.totalCommission, currency),
       formatCurrency(data.totals.agentShare, currency),
@@ -201,7 +224,7 @@ export default function AnalyticsPage() {
     doc.save(`${type}_report.pdf`);
   };
 
-  if (isLoading) {
+  if (isPropertiesLoading || isBuyersLoading) {
     return <div>Loading reports...</div>;
   }
 
@@ -242,6 +265,7 @@ export default function AnalyticsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Property</TableHead>
+                    <TableHead>Buyer</TableHead>
                     <TableHead>Sale Date</TableHead>
                     <TableHead>Sold Price</TableHead>
                     <TableHead>Total Commission</TableHead>
@@ -256,6 +280,10 @@ export default function AnalyticsPage() {
                             <TableCell>
                                 <div className="font-medium">{p.auto_title}</div>
                                 <div className="text-sm text-muted-foreground">{p.serial_no}</div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="font-medium">{p.buyerName || '-'}</div>
+                                <div className="text-sm text-muted-foreground">{p.buyerSerialNo || '-'}</div>
                             </TableCell>
                             <TableCell>{p.sale_date ? new Date(p.sale_date).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>{formatCurrency(p.sold_price || 0, currency)}</TableCell>
@@ -276,7 +304,7 @@ export default function AnalyticsPage() {
                 </TableBody>
                 <TableFooter>
                     <TableRow>
-                        <TableCell colSpan={2} className="font-bold">Total</TableCell>
+                        <TableCell colSpan={3} className="font-bold">Total</TableCell>
                         <TableCell className="font-bold">{formatCurrency(salesReportData.totals.soldPrice, currency)}</TableCell>
                         <TableCell className="font-bold">{formatCurrency(salesReportData.totals.totalCommission, currency)}</TableCell>
                         <TableCell className="font-bold">{formatCurrency(salesReportData.totals.agentShare, currency)}</TableCell>
