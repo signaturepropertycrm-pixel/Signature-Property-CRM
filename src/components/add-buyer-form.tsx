@@ -24,7 +24,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
-import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
+import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit, ListingType } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { buyerStatuses, punjabCities, countryCodes } from '@/lib/data';
@@ -45,6 +45,7 @@ const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 const formSchema = z.object({
   id: z.string().optional(),
   serial_no: z.string().optional(),
+  listing_type: z.enum(['For Sale', 'For Rent']),
   name: z.string().min(1, 'Buyer name is required'),
   country_code: z.string().default('+92'),
   phone: z.string().min(1, 'Phone number is required'),
@@ -98,10 +99,12 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
             budget_min_amount: buyerToEdit.budget_min_amount || null,
             budget_max_amount: buyerToEdit.budget_max_amount || null,
             is_investor: buyerToEdit.is_investor || false,
+            listing_type: buyerToEdit.listing_type || 'For Sale',
         };
     }
     return {
         name: '',
+        listing_type: 'For Sale',
         country_code: '+92',
         phone: '',
         email: '',
@@ -185,6 +188,27 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                 <h4 className="text-sm font-medium text-muted-foreground">Contact Information</h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="listing_type"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Buyer Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select buyer type" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="For Sale">For Sale</SelectItem>
+                                <SelectItem value="For Rent">For Rent</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                     <FormField
                     control={form.control}
                     name="name"
@@ -198,7 +222,10 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         </FormItem>
                     )}
                     />
-                    <FormItem>
+                   
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <div className="flex gap-2">
                            <FormField
@@ -231,8 +258,6 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         </div>
                         <FormMessage>{form.formState.errors.phone?.message}</FormMessage>
                     </FormItem>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                     control={form.control}
                     name="email"

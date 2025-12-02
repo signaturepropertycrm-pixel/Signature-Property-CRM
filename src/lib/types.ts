@@ -94,6 +94,7 @@ export type BuyerStatus =
 export type Buyer = {
     id: string;
     serial_no: string;
+    listing_type: ListingType;
     name: string;
     country_code: string;
     phone: string;

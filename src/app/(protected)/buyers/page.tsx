@@ -10,7 +10,7 @@ import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, 
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -72,7 +72,9 @@ export default function BuyersPage() {
     const { toast } = useToast();
     const { currency } = useCurrency();
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
-    const activeTab = statusFilterFromURL || 'All';
+    const listingTypeFilterFromURL = searchParams.get('type') as ListingType | null;
+
+    const activeTab = listingTypeFilterFromURL || 'For Sale';
     const firestore = useFirestore();
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
@@ -299,6 +301,9 @@ export default function BuyersPage() {
         if (!allBuyers) return [];
         let filtered: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
+        // 1. Primary filter by Listing Type (from tabs)
+        filtered = filtered.filter(b => b.listing_type === activeTab);
+
         if (profile.role === 'Agent') {
             filtered = filtered.filter(b => b.created_by === profile.user_id);
         }
@@ -330,11 +335,11 @@ export default function BuyersPage() {
         if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
 
         return filtered;
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, statusFilterFromURL]);
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, statusFilterFromURL, activeTab]);
 
 
     const handleTabChange = (value: string) => {
-        const url = value === 'All' ? pathname : `${pathname}?status=${value}`;
+        const url = `${pathname}?type=${value}`;
         router.push(url);
     };
 
@@ -482,15 +487,6 @@ export default function BuyersPage() {
         return isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
     };
 
-    const tabsForAdmin = [
-        { value: 'All', label: 'All Buyers', icon: null },
-        ...buyerStatuses.map(status => ({ value: status, label: status, icon: null }))
-    ];
-
-    const tabsForAgent = [
-        { value: 'MyBuyers', label: 'My Buyers', icon: <Briefcase className="mr-2 h-4 w-4"/> },
-    ];
-
     return (
         <>
             <TooltipProvider>
@@ -499,7 +495,7 @@ export default function BuyersPage() {
                         <div className='hidden md:block'>
                             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
                             <p className="text-muted-foreground">
-                                Manage your buyer leads.
+                                Manage your buyer leads for sale and rent.
                             </p>
                         </div>
                         {(profile.role === 'Admin' || profile.role === 'Editor') && (
@@ -614,23 +610,19 @@ export default function BuyersPage() {
                             </div>
                         )}
                     </div>
-
-                    {profile.role === 'Admin' || profile.role === 'Editor' ? (
-                         <div className="mt-4">
+                    
+                     <Tabs defaultValue="For Sale" value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
+                            <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="For Sale" className="mt-4">
                             {renderContent(filteredBuyers)}
-                         </div>
-                    ) : (
-                         <Tabs defaultValue="MyBuyers" value={activeTab} onValueChange={handleTabChange} className="w-full">
-                            <TabsList className="grid w-full grid-cols-1">
-                                {tabsForAgent.map(tab => (
-                                    <TabsTrigger key={tab.value} value={tab.value}>{tab.icon}{tab.label}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                             <TabsContent value="MyBuyers" className="mt-4">
-                                {renderContent(filteredBuyers)}
-                            </TabsContent>
-                         </Tabs>
-                    )}
+                        </TabsContent>
+                        <TabsContent value="For Rent" className="mt-4">
+                             {renderContent(filteredBuyers)}
+                        </TabsContent>
+                     </Tabs>
                 </div>
             </TooltipProvider>
 
