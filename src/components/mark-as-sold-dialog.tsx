@@ -41,9 +41,7 @@ const formSchema = z.object({
   sold_price: z.coerce.number().positive("Sold price is required"),
   sold_price_unit: z.enum(['Lacs', 'Crore']),
   commission_from_buyer: z.coerce.number().min(0, "Commission cannot be negative").optional(),
-  commission_from_buyer_unit: z.enum(['PKR', '%']).optional(),
   commission_from_seller: z.coerce.number().min(0, "Commission cannot be negative").optional(),
-  commission_from_seller_unit: z.enum(['PKR', '%']).optional(),
   agent_share_percentage: z.coerce.number().min(0).max(100).optional(),
   sale_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   sold_by_agent_id: z.string().min(1, "You must select the agent who sold the property."),
@@ -86,18 +84,8 @@ export function MarkAsSoldDialog({
   const watchFields = useWatch({ control: form.control });
 
   const totalCommission = useMemo(() => {
-      const soldPrice = formatUnit(watchFields.sold_price || 0, watchFields.sold_price_unit || 'Lacs');
-      
-      let buyerCommission = watchFields.commission_from_buyer || 0;
-      if(watchFields.commission_from_buyer_unit === '%') {
-          buyerCommission = (soldPrice * buyerCommission) / 100;
-      }
-
-      let sellerCommission = watchFields.commission_from_seller || 0;
-      if(watchFields.commission_from_seller_unit === '%') {
-          sellerCommission = (soldPrice * sellerCommission) / 100;
-      }
-      
+      const buyerCommission = watchFields.commission_from_buyer || 0;
+      const sellerCommission = watchFields.commission_from_seller || 0;
       return buyerCommission + sellerCommission;
   }, [watchFields]);
   
@@ -109,9 +97,7 @@ export function MarkAsSoldDialog({
             sale_date: new Date().toISOString().split('T')[0],
             sold_by_agent_id: '',
             commission_from_buyer: 0,
-            commission_from_buyer_unit: 'PKR',
             commission_from_seller: 0,
-            commission_from_seller_unit: 'PKR',
             agent_share_percentage: 0,
         });
     }
@@ -131,9 +117,9 @@ export function MarkAsSoldDialog({
         sale_date: values.sale_date,
         sold_by_agent_id: values.sold_by_agent_id,
         commission_from_buyer: values.commission_from_buyer,
-        commission_from_buyer_unit: values.commission_from_buyer_unit,
+        commission_from_buyer_unit: 'PKR',
         commission_from_seller: values.commission_from_seller,
-        commission_from_seller_unit: values.commission_from_seller_unit,
+        commission_from_seller_unit: 'PKR',
         total_commission: totalCommission,
         agent_share_percentage: values.agent_share_percentage,
     };
@@ -143,7 +129,6 @@ export function MarkAsSoldDialog({
     const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
     const newActivity = {
         userName: profile.name,
-        userAvatar: profile.avatar,
         action: `marked property as "Sold"`,
         target: `${property.serial_no} to ${agent.name} for ${formatCurrency(soldPriceInBaseUnit, currency)}`,
         targetType: 'Property',
@@ -249,29 +234,23 @@ export function MarkAsSoldDialog({
                 />
 
                 <Separator />
-                <h4 className="text-sm font-medium text-muted-foreground">Commission Details</h4>
+                <h4 className="text-sm font-medium text-muted-foreground">Commission Details (PKR)</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="grid grid-cols-2 gap-2">
-                        <FormField control={form.control} name="commission_from_buyer" render={({field}) => (
-                            <FormItem><FormLabel>From Buyer</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="commission_from_buyer_unit" render={({field}) => (
-                            <FormItem className="self-end"><FormLabel className="sr-only">Unit</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>
-                                <SelectItem value="PKR">PKR</SelectItem><SelectItem value="%">%</SelectItem>
-                            </SelectContent></Select><FormMessage /></FormItem>
-                        )} />
-                    </div>
-                     <div className="grid grid-cols-2 gap-2">
-                        <FormField control={form.control} name="commission_from_seller" render={({field}) => (
-                            <FormItem><FormLabel>From Seller</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="commission_from_seller_unit" render={({field}) => (
-                            <FormItem className="self-end"><FormLabel className="sr-only">Unit</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>
-                                <SelectItem value="PKR">PKR</SelectItem><SelectItem value="%">%</SelectItem>
-                            </SelectContent></Select><FormMessage /></FormItem>
-                        )} />
-                    </div>
+                     <FormField control={form.control} name="commission_from_buyer" render={({field}) => (
+                        <FormItem>
+                          <FormLabel>From Buyer (PKR)</FormLabel>
+                          <FormControl><Input type="number" placeholder="e.g. 100000" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="commission_from_seller" render={({field}) => (
+                        <FormItem>
+                          <FormLabel>From Seller (PKR)</FormLabel>
+                          <FormControl><Input type="number" placeholder="e.g. 100000" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                    )} />
                 </div>
 
                  <FormField control={form.control} name="agent_share_percentage" render={({field}) => (
