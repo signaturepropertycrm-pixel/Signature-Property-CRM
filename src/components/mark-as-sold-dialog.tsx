@@ -84,7 +84,14 @@ export function MarkAsSoldDialog({
   
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: buyers } = useCollection<Buyer>(buyersQuery);
-  const availableBuyers = buyers?.filter(b => b.status !== 'Deal Closed' && !b.is_deleted) || [];
+  
+  const availableBuyers = useMemo(() => {
+    return buyers?.filter(b => 
+      b.status !== 'Deal Closed' && 
+      !b.is_deleted && 
+      (!b.listing_type || b.listing_type === 'For Sale') // Filter for sale buyers
+    ) || [];
+  }, [buyers]);
 
 
   const form = useForm<MarkAsSoldFormValues>({

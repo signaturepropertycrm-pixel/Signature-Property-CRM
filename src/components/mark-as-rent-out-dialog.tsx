@@ -22,25 +22,29 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Property, User, PriceUnit } from '@/lib/types';
+import { Property, User, PriceUnit, Buyer } from '@/lib/types';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, writeBatch } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { Calculator } from 'lucide-react';
+import { Calculator, Check, ChevronsUpDown } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { Card, CardContent } from './ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
+import { cn } from '@/lib/utils';
 
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 
 const formSchema = z.object({
   rent_out_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   rented_by_agent_id: z.string().min(1, "You must select the agent."),
+  buyerId: z.string().optional(),
   rent_commission_from_tenant: z.coerce.number().min(0).optional(),
   rent_commission_from_tenant_unit: z.enum(priceUnits).default('Thousand'),
   rent_commission_from_owner: z.coerce.number().min(0).optional(),
@@ -71,8 +75,18 @@ export function MarkAsRentOutDialog({
 
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
   const { data: teamMembers } = useCollection<User>(teamMembersQuery);
-
   const activeAgents = teamMembers?.filter(m => m.status === 'Active') || [];
+  
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: buyers } = useCollection<Buyer>(buyersQuery);
+  
+  const availableRentBuyers = useMemo(() => {
+    return buyers?.filter(b => 
+      b.status !== 'Deal Closed' && 
+      !b.is_deleted && 
+      b.listing_type === 'For Rent'
+    ) || [];
+  }, [buyers]);
 
   const form = useForm<MarkAsRentOutFormValues>({
     resolver: zodResolver(formSchema),
@@ -92,6 +106,7 @@ export function MarkAsRentOutDialog({
         form.reset({
             rent_out_date: new Date().toISOString().split('T')[0],
             rented_by_agent_id: '',
+            buyerId: '',
             rent_commission_from_tenant: 0,
             rent_commission_from_tenant_unit: 'Thousand',
             rent_commission_from_owner: 0,
@@ -103,11 +118,16 @@ export function MarkAsRentOutDialog({
   }, [isOpen, property, form]);
 
   async function onSubmit(values: MarkAsRentOutFormValues) {
+    const buyer = values.buyerId ? availableRentBuyers.find(b => b.id === values.buyerId) : null;
+    
     const updatedProperty: Property = {
         ...property,
         status: 'Rent Out',
         rent_out_date: values.rent_out_date,
         rented_by_agent_id: values.rented_by_agent_id,
+        buyerId: buyer?.id || null,
+        buyerName: buyer?.name || null,
+        buyerSerialNo: buyer?.serial_no || null,
         rent_commission_from_tenant: values.rent_commission_from_tenant,
         rent_commission_from_tenant_unit: values.rent_commission_from_tenant_unit,
         rent_commission_from_owner: values.rent_commission_from_owner,
@@ -116,10 +136,22 @@ export function MarkAsRentOutDialog({
         rent_agent_share: values.rent_agent_share,
         rent_agent_share_unit: values.rent_agent_share_unit,
     };
-    onUpdateProperty(updatedProperty);
     
+    const batch = writeBatch(firestore);
+    
+    // 1. Update Property
+    const propertyRef = doc(firestore, 'agencies', property.agency_id, 'properties', property.id);
+    batch.set(propertyRef, updatedProperty);
+
+    // 2. Update Buyer status if a buyer was selected
+    if (buyer) {
+      const buyerRef = doc(firestore, 'agencies', buyer.agency_id, 'buyers', buyer.id);
+      batch.update(buyerRef, { status: 'Deal Closed' });
+    }
+
+    // 3. Create activity log
     if (profile.agency_id) {
-        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const activityLogRef = doc(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'));
         const newActivity = {
             userName: profile.name,
             action: `marked property as "Rent Out"`,
@@ -128,8 +160,10 @@ export function MarkAsRentOutDialog({
             timestamp: new Date().toISOString(),
             agency_id: profile.agency_id,
         };
-        await addDoc(activityLogRef, newActivity);
+        batch.set(activityLogRef, newActivity);
     }
+    
+    await batch.commit();
 
     toast({
       title: 'Property Marked as Rent Out',
@@ -189,6 +223,62 @@ export function MarkAsRentOutDialog({
                         )}
                     />
                 </div>
+                 <FormField
+                        control={form.control}
+                        name="buyerId"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Rented To</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                        "w-full justify-between",
+                                        !field.value && "text-muted-foreground"
+                                    )}
+                                    >
+                                    {field.value
+                                        ? availableRentBuyers.find((buyer) => buyer.id === field.value)?.name
+                                        : "Select a tenant..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                    <CommandInput placeholder="Search tenant..." />
+                                    <CommandList>
+                                    <CommandEmpty>No tenants found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {availableRentBuyers.map((buyer) => (
+                                        <CommandItem
+                                            value={buyer.name}
+                                            key={buyer.id}
+                                            onSelect={() => {
+                                                form.setValue("buyerId", buyer.id)
+                                            }}
+                                        >
+                                            <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                buyer.id === field.value ? "opacity-100" : "opacity-0"
+                                            )}
+                                            />
+                                            {buyer.name} ({buyer.serial_no})
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Commission Details (PKR)</h4>
