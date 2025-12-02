@@ -96,7 +96,7 @@ function LoginPageContent() {
 
         <Card className="glass-card shadow-2xl hover:shadow-primary/20">
           <CardHeader>
-            <CardTitle>Agency Login</CardTitle>
+            <CardTitle>Login</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -193,12 +193,12 @@ function LoginPageContent() {
                   </Link>
                 </div>
                  <div className="mt-2 text-center text-sm">
-                  Are you an Agent?{' '}
+                  Don&apos;t Have an Agent Account?{' '}
                   <Link
-                    href="/agent/login"
+                    href="/agent/signup"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
-                    Login here
+                    Create An account
                   </Link>
                 </div>
               </form>
