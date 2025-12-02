@@ -27,7 +27,7 @@ import { useEffect } from 'react';
 import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
-import { buyerStatuses, punjabCities } from '@/lib/data';
+import { buyerStatuses, punjabCities, countryCodes } from '@/lib/data';
 import { Checkbox } from './ui/checkbox';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
@@ -46,6 +46,7 @@ const formSchema = z.object({
   id: z.string().optional(),
   serial_no: z.string().optional(),
   name: z.string().min(1, 'Buyer name is required'),
+  country_code: z.string().default('+92'),
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email().optional().or(z.literal('')),
   status: z.enum(buyerStatuses).default('New'),
@@ -77,9 +78,11 @@ interface AddBuyerFormProps {
 
 const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | undefined, userId?: string, agencyId?: string): AddBuyerFormValues => {
     if (buyerToEdit) {
+        const phoneWithoutCode = buyerToEdit.phone.replace(buyerToEdit.country_code || '+92', '');
         return {
             ...buyerToEdit,
-            phone: buyerToEdit.phone.replace('+92', ''),
+            country_code: buyerToEdit.country_code || '+92',
+            phone: phoneWithoutCode,
             property_type_preference: buyerToEdit.property_type_preference || '',
             size_min_unit: buyerToEdit.size_min_unit || 'Marla',
             size_max_unit: buyerToEdit.size_max_unit || 'Marla',
@@ -99,6 +102,7 @@ const getInitialFormValues = (totalBuyers: number, buyerToEdit: Buyer | null | u
     }
     return {
         name: '',
+        country_code: '+92',
         phone: '',
         email: '',
         city: 'Lahore',
@@ -141,7 +145,7 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
      const buyerData = {
         ...buyerToEdit, // Keep original data like ID, created_at, etc.
         ...values, // Overwrite with new form values
-        phone: formatPhoneNumber(values.phone),
+        phone: formatPhoneNumber(values.phone, values.country_code),
         serial_no: buyerToEdit?.serial_no || `B-${totalBuyers + 1}`,
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
         is_deleted: buyerToEdit?.is_deleted || false,
@@ -194,24 +198,39 @@ export function AddBuyerForm({ setDialogOpen, totalBuyers, buyerToEdit, onSave }
                         </FormItem>
                     )}
                     />
-                    <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                        <FormItem>
+                    <FormItem>
                         <FormLabel>Phone Number</FormLabel>
-                        <div className="relative">
-                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                <span className="text-gray-500 sm:text-sm">+92</span>
-                            </div>
-                            <FormControl>
-                                <Input {...field} placeholder="3001234567" className="pl-12" />
-                            </FormControl>
+                        <div className="flex gap-2">
+                           <FormField
+                            control={form.control}
+                            name="country_code"
+                            render={({ field }) => (
+                                <FormItem className="w-1/3">
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
+                                    </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    <FormControl>
+                                        <Input {...field} placeholder="3001234567" />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                            />
                         </div>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
+                        <FormMessage>{form.formState.errors.phone?.message}</FormMessage>
+                    </FormItem>
                 </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField

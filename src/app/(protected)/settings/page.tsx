@@ -57,6 +57,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { formatPhoneNumber } from '@/lib/utils';
+import { countryCodes } from '@/lib/data';
 
 
 const passwordFormSchema = z.object({
@@ -92,6 +93,7 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+  const [countryCode, setCountryCode] = useState('+92');
 
 
   const passwordForm = useForm<PasswordFormValues>({
@@ -116,8 +118,16 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Remove +92 for editing
-    setLocalProfile({ ...profile, phone: profile.phone?.replace('+92', '') });
+    // Extract country code and phone number
+    const phone = profile.phone || '';
+    const selectedCountry = countryCodes.find(c => phone.startsWith(c.dial_code));
+    if (selectedCountry) {
+        setCountryCode(selectedCountry.dial_code);
+        setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
+    } else {
+        setCountryCode('+92');
+        setLocalProfile({ ...profile, phone: phone.replace(/^\+92/, '') });
+    }
   }, [profile]);
 
 
@@ -127,7 +137,7 @@ export default function SettingsPage() {
 
     const formattedProfile = {
         ...localProfile,
-        phone: formatPhoneNumber(localProfile.phone),
+        phone: formatPhoneNumber(localProfile.phone, countryCode),
     };
 
     const isUserAdmin = profile.role === 'Admin';
@@ -552,11 +562,14 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                 <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <span className="text-gray-500 sm:text-sm">+92</span>
-                    </div>
-                    <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="pl-12" placeholder="3001234567" />
+                 <div className="flex gap-2">
+                    <Select value={countryCode} onValueChange={setCountryCode}>
+                        <SelectTrigger className="w-1/3"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="flex-1" placeholder="3001234567" />
                   </div>
               </div>
               <div className="space-y-2">
@@ -1138,5 +1151,3 @@ function AvatarCropDialog({
     </Dialog>
   );
 }
-
-    

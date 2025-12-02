@@ -31,6 +31,7 @@ export type Property = {
   serial_no: string;
   listing_type: ListingType;
   auto_title: string;
+  country_code: string;
   owner_number: string;
   city: string;
   area: string;
@@ -94,6 +95,7 @@ export type Buyer = {
     id: string;
     serial_no: string;
     name: string;
+    country_code: string;
     phone: string;
     email?: string;
     status: BuyerStatus;

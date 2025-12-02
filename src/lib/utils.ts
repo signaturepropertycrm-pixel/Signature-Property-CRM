@@ -6,37 +6,31 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Formats a phone number to the +92 standard.
- * - Removes leading '0'.
- * - Removes any existing '+92' or '92' to avoid duplication.
- * - Removes all spaces and hyphens.
- * - Ensures the final number starts with '+92'.
+ * Formats a phone number based on the selected country code.
+ * - Removes leading '0' if the country code is '+92'.
+ * - Removes any existing country code from the number to avoid duplication.
+ * - Removes all non-digit characters.
+ * - Prepends the selected country code.
  * @param phone The raw phone number string.
+ * @param countryCode The selected country code (e.g., '+92').
  * @returns The formatted phone number string.
  */
-export function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phone: string, countryCode: string = '+92'): string {
   if (!phone) return '';
   
-  // Remove all non-digit characters except for a leading '+'
-  let cleaned = phone.replace(/[^\d+]/g, '');
+  // Remove all non-digit characters from the phone number
+  let cleaned = phone.replace(/\D/g, '');
 
-  // Handle cases where number might start with 0092
-  if (cleaned.startsWith('0092')) {
-    cleaned = cleaned.substring(4);
-  }
-  // Handle cases where number might start with +92
-  else if (cleaned.startsWith('+92')) {
-    cleaned = cleaned.substring(3);
-  }
-  // Handle cases where number might start with 92
-  else if (cleaned.startsWith('92')) {
-    cleaned = cleaned.substring(2);
-  }
-  // Handle cases where number might start with 0
-  else if (cleaned.startsWith('0')) {
+  // If the selected country code is for Pakistan, remove leading zero if present
+  if (countryCode === '+92' && cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1);
   }
 
-  // At this point, 'cleaned' should be the number without any prefix (e.g., 3291400106)
-  return `+92${cleaned}`;
+  // Remove any country code prefix from the cleaned number to avoid duplication
+  if (cleaned.startsWith('92')) {
+      cleaned = cleaned.substring(2);
+  }
+
+  // Combine the country code and the cleaned number
+  return `${countryCode}${cleaned}`;
 }

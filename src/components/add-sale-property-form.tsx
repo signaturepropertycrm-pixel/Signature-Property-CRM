@@ -33,7 +33,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumber } from '@/lib/utils';
 import { Switch } from './ui/switch';
-import { punjabCities } from '@/lib/data';
+import { punjabCities, countryCodes } from '@/lib/data';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 const formSchema = z.object({
   serial_no: z.string().optional(),
   auto_title: z.string().optional(),
+  country_code: z.string().default('+92'),
   owner_number: z.string().min(1, 'Owner number is required'),
   city: z.string().default('Lahore'),
   area: z.string().min(1, 'Area is required'),
@@ -87,6 +88,7 @@ interface AddSalePropertyFormProps {
 const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined, agencyId: string | undefined) => ({
   serial_no: `P-${totalProperties + 1}`,
   auto_title: '',
+  country_code: '+92',
   owner_number: '',
   city: 'Lahore',
   area: '',
@@ -128,9 +130,11 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
    useEffect(() => {
     if (propertyToEdit) {
         const isStandardType = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural'].includes(propertyToEdit.property_type);
+        const phoneWithoutCode = propertyToEdit.owner_number.replace(propertyToEdit.country_code || '+92', '');
         reset({
             ...propertyToEdit,
-            owner_number: propertyToEdit.owner_number.replace('+92', ''),
+            country_code: propertyToEdit.country_code || '+92',
+            owner_number: phoneWithoutCode,
             property_type: isStandardType ? propertyToEdit.property_type : 'Other',
             custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
             potential_rent_unit: propertyToEdit.potential_rent_unit ?? 'Thousand',
@@ -174,7 +178,7 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
   function onSubmit(values: AddSalePropertyFormValues) {
      const finalValues = {
         ...values,
-        owner_number: formatPhoneNumber(values.owner_number),
+        owner_number: formatPhoneNumber(values.owner_number, values.country_code),
         property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
     };
 
@@ -271,7 +275,6 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                             <Command>
                                 <CommandInput placeholder="Search city..." />
-                                <CommandEmpty>No city found.</CommandEmpty>
                                 <CommandList>
                                 <CommandGroup>
                                     {punjabCities.map((city) => (
@@ -545,24 +548,39 @@ export function AddSalePropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
               </div>
             </div>
 
-            <FormField
-              control={control}
-              name="owner_number"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner Number</FormLabel>
-                  <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <span className="text-gray-500 sm:text-sm">+92</span>
-                    </div>
-                    <FormControl>
-                      <Input {...field} placeholder="3001234567" className="pl-12" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <FormItem>
+                <FormLabel>Owner Number</FormLabel>
+                <div className="flex gap-2">
+                    <FormField
+                    control={control}
+                    name="country_code"
+                    render={({ field }) => (
+                        <FormItem className="w-1/3">
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
+                            </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={control}
+                    name="owner_number"
+                    render={({ field }) => (
+                        <FormItem className="flex-1">
+                            <FormControl>
+                                <Input {...field} placeholder="3001234567" />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                <FormMessage>{form.formState.errors.owner_number?.message}</FormMessage>
+            </FormItem>
 
             <Separator />
             <h4 className="text-sm font-medium text-muted-foreground">Utilities & Documents</h4>
