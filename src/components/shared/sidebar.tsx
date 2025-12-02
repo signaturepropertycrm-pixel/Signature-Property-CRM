@@ -185,12 +185,14 @@ export function AppSidebar() {
                                 const subItemType = subItemUrlParams.get('type');
                                 const currentType = currentUrlParams.get('type');
                                 
-                                if (subItemStatus !== null) { // It's a status-based link
-                                    isSubItemActive = subItemStatus === currentStatus;
-                                } else if (subItemType !== null) { // It's a type-based link
-                                    isSubItemActive = subItemType === currentType;
-                                } else { // It's a base link (e.g., /properties, /buyers)
-                                     isSubItemActive = !currentStatus && !currentType;
+                                const isFilterLink = subItemStatus !== null || subItemType !== null;
+                                const isBaseLink = !isFilterLink;
+                                const hasCurrentFilter = currentStatus !== null || currentType !== null;
+
+                                if (isFilterLink) {
+                                    isSubItemActive = subItemStatus === currentStatus || subItemType === currentType;
+                                } else if (isBaseLink) {
+                                    isSubItemActive = !hasCurrentFilter;
                                 }
                             }
 
