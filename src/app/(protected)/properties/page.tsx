@@ -216,7 +216,8 @@ export default function PropertiesPage() {
                 (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
                 prop.address.toLowerCase().includes(lowercasedQuery) ||
                 prop.area.toLowerCase().includes(lowercasedQuery) ||
-                prop.serial_no.toLowerCase().includes(lowercasedQuery)
+                prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
+                (prop.video_links && Object.values(prop.video_links).some(link => link && link.toLowerCase().includes(lowercasedQuery)))
         );
     }
 
@@ -450,7 +451,7 @@ export default function PropertiesPage() {
                   <span className="font-bold font-headline text-base flex items-center gap-2">
                     {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
                     {prop.is_recorded && (
-                      <Tooltip>
+                       <Tooltip>
                         <TooltipTrigger asChild>
                            <Video className="h-4 w-4 text-primary" />
                         </TooltipTrigger>
@@ -826,6 +827,7 @@ export default function PropertiesPage() {
   }
 
     
+
 
 
 
