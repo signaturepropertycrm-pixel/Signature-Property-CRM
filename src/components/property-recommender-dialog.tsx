@@ -43,20 +43,18 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
     
     let score = 0;
     let reasons: string[] = [];
-    let criteriaCount = 0;
 
-    // 1. Property Type Match (Weight: 30)
+    // 1. Property Type Match (Strict)
     if (buyer.property_type_preference) {
-        criteriaCount++;
-        if (buyer.property_type_preference.toLowerCase() === property.property_type.toLowerCase()) {
-            score += 30;
-            reasons.push('Exact property type match.');
+        if (buyer.property_type_preference.toLowerCase() !== property.property_type.toLowerCase()) {
+            return null; // Strict: if type doesn't match, don't recommend at all.
         }
+        score += 30;
+        reasons.push('Property type match.');
     }
 
-    // 2. Area Match (Weight: 25)
+    // 2. Area Match (Flexible)
     if (buyer.area_preference) {
-        criteriaCount++;
         const buyerAreas = buyer.area_preference.toLowerCase().split(',').map(a => a.trim());
         if (buyerAreas.some(area => property.area.toLowerCase().includes(area))) {
             score += 25;
@@ -64,13 +62,12 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
         }
     }
 
-    // 3. Budget Match (Weight: 25)
+    // 3. Budget Match (Flexible)
     const buyerMinBudget = formatUnit(buyer.budget_min_amount || 0, buyer.budget_min_unit || 'Thousand');
     const buyerMaxBudget = formatUnit(buyer.budget_max_amount || 0, buyer.budget_max_unit || 'Lacs');
     const propertyDemand = formatUnit(property.demand_amount, property.demand_unit);
     
     if (buyerMinBudget > 0 && buyerMaxBudget > 0) {
-        criteriaCount++;
         if (propertyDemand >= buyerMinBudget && propertyDemand <= buyerMaxBudget) {
             score += 25;
             reasons.push('Falls within budget.');
@@ -80,24 +77,26 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
         }
     }
 
-    // 4. Size Match (Weight: 20)
+    // 4. Size Match (Flexible)
     const buyerMinSize = buyer.size_min_value || 0;
     const buyerMaxSize = buyer.size_max_value || 0;
     const propertySize = property.size_value;
 
     if (buyerMinSize > 0 && buyerMaxSize > 0 && property.size_unit === (buyer.size_min_unit || buyer.size_max_unit)) {
-        criteriaCount++;
         if (propertySize >= buyerMinSize && propertySize <= buyerMaxSize) {
             score += 20;
             reasons.push('Size preference matched.');
+        } else if (propertySize >= buyerMinSize * 0.9 && propertySize <= buyerMaxSize * 1.1) {
+            score += 10; // Partial score for close size
+            reasons.push('Close to size preference.');
         }
     }
 
     // Normalize score
-    const maxScore = criteriaCount * 25; // Simple average weight
-    const finalScore = Math.min(100, Math.round((score / (25+25+30+20)) * 100));
+    const maxScore = 30 + 25 + 25 + 20; // Sum of max scores for each criteria
+    const finalScore = Math.min(100, Math.round((score / maxScore) * 100));
 
-    if (finalScore < 30) return null;
+    if (finalScore < 10) return null; // Lower threshold to show more options
 
     return { ...property, matchScore: finalScore, matchReasons: reasons };
 };
@@ -226,4 +225,5 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
+
 
