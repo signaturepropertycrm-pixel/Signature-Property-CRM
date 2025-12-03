@@ -53,6 +53,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   );
   const { data: agencyProfile, isLoading: isAgencyLoading } = useDoc<any>(agencyDocRef);
   
+  const teamMemberDocRef = useMemoFirebase(() =>
+    userProfile?.agency_id && userProfile.agency_id.trim() !== '' && user
+        ? doc(firestore, 'agencies', userProfile.agency_id, 'teamMembers', user.uid)
+        : null,
+    [userProfile, user, firestore]
+  );
+  const { data: teamMemberProfile, isLoading: isTeamMemberLoading } = useDoc<any>(teamMemberDocRef);
+  
   const agentDocRef = useMemoFirebase(() => (userProfile?.role === 'Agent' && user ? doc(firestore, 'agents', user.uid) : null), [userProfile, user, firestore]);
   const { data: agentProfile, isLoading: isAgentProfileLoading } = useDoc<any>(agentDocRef);
 
@@ -81,8 +89,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         
         let name = userProfile.name || user.displayName || 'User';
         let phone = userProfile.phone || '';
-        // Prioritize the avatar from the specific profile documents (agent/agency) over the general user profile or auth object
-        let avatar = agentProfile?.avatar || agencyProfile?.avatar || userProfile.avatar || user.photoURL || '';
+        // Prioritize the avatar from the team member record, then agency, then user profile, then auth object.
+        let avatar = teamMemberProfile?.avatar || agencyProfile?.avatar || userProfile.avatar || user.photoURL || '';
 
         // Specific profiles can override details
         if (role === 'Agent' && agentProfile) {
@@ -106,7 +114,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfileState(newProfileData);
         localStorage.setItem('app-profile', JSON.stringify(newProfileData));
     }
-  }, [user, userProfile, agencyProfile, agentProfile, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading]);
+  }, [user, userProfile, agencyProfile, agentProfile, teamMemberProfile, isAuthLoading, isUserProfileLoading, isAgencyLoading, isAgentProfileLoading, isTeamMemberLoading]);
 
 
   const setProfile = (newProfile: Partial<ProfileData>) => {
@@ -117,7 +125,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const isLoading = isAuthLoading || isUserProfileLoading || (!!userProfile?.agency_id && isAgencyLoading);
+  const isLoading = isAuthLoading || isUserProfileLoading || (!!userProfile?.agency_id && (isAgencyLoading || isTeamMemberLoading));
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
