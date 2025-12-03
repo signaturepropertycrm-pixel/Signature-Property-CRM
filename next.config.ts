@@ -40,4 +40,4 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-// Inert comment to force cache invalidation
+// Inert comment to force cache invalidation - 2
