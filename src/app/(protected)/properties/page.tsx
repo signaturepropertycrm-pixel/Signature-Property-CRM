@@ -79,7 +79,7 @@ import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { cn } from '@/lib/utils';
+import { cn, formatPhoneNumber } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/firebase/auth/use-user';
@@ -453,24 +453,74 @@ export default function PropertiesPage() {
 
   const handleExport = (type: 'For Sale' | 'For Rent') => {
     const propertiesToExport = sortProperties(
-        allProperties.filter(p => p.listing_type === type)
+        allProperties.filter(p => (p.listing_type === type || (!p.listing_type && type === 'For Sale')) && !p.is_deleted)
     );
 
     if (propertiesToExport.length === 0) {
       toast({ title: 'No Data', description: `There are no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
       return;
     }
-    const headers = ['serial_no', 'auto_title', 'property_type', 'area', 'address', 'size_value', 'size_unit', 'demand_amount', 'demand_unit', 'status', 'owner_number'];
+
+    const headers = type === 'For Sale'
+        ? ['Sr No', 'Video Record', 'Date', 'Number', 'City', 'Area', 'Address', 'Property Type', 'Size', 'Road Size', 'Storey', 'Utilities', 'Potential Rent', 'Front', 'Length', 'Demand', 'Documents', 'Status']
+        : ['Sr No', 'Video Record', 'Date', 'Number', 'City', 'Area', 'Address', 'Property Type', 'Size', 'Storey', 'Utilities', 'Rent', 'Status'];
+
     const csvContent = [
       headers.join(','),
-      ...propertiesToExport.map(p => headers.map(header => `"${p[header as keyof Property] || ''}"`).join(','))
+      ...propertiesToExport.map(p => {
+        const demandValue = p.demand_unit === 'Crore' ? `${p.demand_amount} Cr` : `${p.demand_amount} Lacs`;
+        const potentialRentValue = p.potential_rent_amount ? formatUnit(p.potential_rent_amount, p.potential_rent_unit || 'Thousand') : '';
+        const utilities = [
+            p.meters?.electricity && 'Electricity',
+            p.meters?.gas && 'Gas',
+            p.meters?.water && 'Water'
+        ].filter(Boolean).join('/');
+
+        const row = type === 'For Sale'
+            ? [
+                `"${p.serial_no}"`,
+                `"${p.is_recorded ? '✔' : ''}"`,
+                `"${new Date(p.created_at).toLocaleDateString()}"`,
+                `"${formatPhoneNumber(p.owner_number, p.country_code).replace('+', '')}"`,
+                `"${p.city}"`,
+                `"${p.area}"`,
+                `"${p.address}"`,
+                `"${p.property_type}"`,
+                `"${p.size_value} ${p.size_unit}"`,
+                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
+                `"${p.storey || ''}"`,
+                `"${utilities}"`,
+                `"${potentialRentValue}"`,
+                `"${p.front_ft || ''}"`,
+                `"${p.length_ft || ''}"`,
+                `"${demandValue}"`,
+                `"${p.documents || ''}"`,
+                `"${p.status}"`
+            ]
+            : [
+                 `"${p.serial_no}"`,
+                `"${p.is_recorded ? '✔' : ''}"`,
+                `"${new Date(p.created_at).toLocaleDateString()}"`,
+                `"${formatPhoneNumber(p.owner_number, p.country_code).replace('+', '')}"`,
+                `"${p.city}"`,
+                `"${p.area}"`,
+                `"${p.address}"`,
+                `"${p.property_type}"`,
+                `"${p.size_value} ${p.size_unit}"`,
+                `"${p.storey || ''}"`,
+                `"${utilities}"`,
+                `"${p.demand_amount} ${p.demand_unit}"`,
+                `"${p.status}"`
+            ];
+        return row.join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `properties-${type.toLowerCase()}-${new Date().toISOString()}.csv`);
+    link.setAttribute('download', `properties-${type.toLowerCase().replace(' ', '-')}-${new Date().toISOString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -480,48 +530,111 @@ export default function PropertiesPage() {
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !profile.agency_id) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       const text = e.target?.result;
       if (typeof text !== 'string') return;
       
-      const rows = text.split('\n').slice(1); // Skip header
-      if (rows.length === 0) {
+      const rows = text.split('\n');
+      const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const isSaleImport = headerRow.includes('Potential Rent');
+
+      if (rows.length <= 1) {
         toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
         return;
       }
 
       const batch = writeBatch(firestore);
       const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
-      const totalProperties = allProperties.length;
+      const totalSaleProperties = allProperties.filter(p => !p.is_for_rent).length;
+      const totalRentProperties = allProperties.filter(p => p.is_for_rent).length;
       let newCount = 0;
 
-      rows.forEach((row, index) => {
+      rows.slice(1).forEach((row) => {
         if (!row) return;
-        const [serial_no, auto_title, property_type, area, address, size_value, size_unit, demand_amount, demand_unit, status, owner_number] = row.split(',').map(s => s.trim().replace(/"/g, ''));
+        const values = row.split(',').map(s => s.trim().replace(/"/g, ''));
         
-        const newProperty: Omit<Property, 'id'> = {
-            serial_no: `P-${totalProperties + newCount + 1}`,
-            auto_title,
-            property_type: property_type as PropertyType,
-            area,
-            address,
-            size_value: parseFloat(size_value),
-            size_unit: size_unit as SizeUnit,
-            demand_amount: parseFloat(demand_amount),
-            demand_unit: demand_unit as 'Lacs' | 'Crore',
-            status: 'Available',
-            owner_number,
-            country_code: '+92',
-            listing_type: 'For Sale',
-            is_for_rent: false,
-            created_at: new Date().toISOString(),
-            created_by: profile.user_id,
-            agency_id: profile.agency_id,
-            is_recorded: false,
-        };
+        let newProperty: Omit<Property, 'id'>;
+
+        if (isSaleImport) {
+            const [
+                _serial, _video, _date, number, city, area, address, property_type, size,
+                road_size_ft, storey, utilities, potential_rent_amount, front_ft, length_ft,
+                demand, documents, status
+            ] = values;
+
+            const [size_value, size_unit] = size.split(' ');
+            const [demand_amount, demand_unit] = demand.split(' ');
+
+            newProperty = {
+                serial_no: `P-${totalSaleProperties + newCount + 1}`,
+                auto_title: `${size} ${property_type} in ${area}`,
+                property_type: property_type as PropertyType,
+                area, address, city,
+                size_value: parseFloat(size_value),
+                size_unit: size_unit as SizeUnit,
+                demand_amount: parseFloat(demand_amount),
+                demand_unit: demand_unit as 'Lacs' | 'Crore',
+                status: 'Available',
+                owner_number: formatPhoneNumber(number, '+92'),
+                country_code: '+92',
+                listing_type: 'For Sale',
+                is_for_rent: false,
+                created_at: new Date().toISOString(),
+                created_by: profile.user_id,
+                agency_id: profile.agency_id,
+                is_recorded: false,
+                road_size_ft: road_size_ft ? parseInt(road_size_ft.replace(' ft', '')) : undefined,
+                storey: storey || undefined,
+                potential_rent_amount: potential_rent_amount ? parseInt(potential_rent_amount) : undefined,
+                potential_rent_unit: 'Thousand',
+                front_ft: front_ft ? parseInt(front_ft) : undefined,
+                length_ft: length_ft ? parseInt(length_ft) : undefined,
+                documents: documents || undefined,
+                meters: {
+                    electricity: utilities.includes('Electricity'),
+                    gas: utilities.includes('Gas'),
+                    water: utilities.includes('Water'),
+                },
+            };
+        } else { // Rent import
+             const [
+                _serial, _video, _date, number, city, area, address, property_type, size,
+                storey, utilities, rent, status
+            ] = values;
+
+            const [size_value, size_unit] = size.split(' ');
+            const [demand_amount, demand_unit] = rent.split(' ');
+
+            newProperty = {
+                serial_no: `RP-${totalRentProperties + newCount + 1}`,
+                auto_title: `${size} ${property_type} for rent in ${area}`,
+                property_type: property_type as PropertyType,
+                area, address, city,
+                size_value: parseFloat(size_value),
+                size_unit: size_unit as SizeUnit,
+                demand_amount: parseFloat(demand_amount),
+                demand_unit: demand_unit as 'Thousand',
+                status: 'Available',
+                owner_number: formatPhoneNumber(number, '+92'),
+                country_code: '+92',
+                listing_type: 'For Rent',
+                is_for_rent: true,
+                created_at: new Date().toISOString(),
+                created_by: profile.user_id,
+                agency_id: profile.agency_id,
+                is_recorded: false,
+                storey: storey || undefined,
+                meters: {
+                    electricity: utilities.includes('Electricity'),
+                    gas: utilities.includes('Gas'),
+                    water: utilities.includes('Water'),
+                },
+            };
+        }
+        
         batch.set(doc(collectionRef), newProperty);
         newCount++;
       });
@@ -530,11 +643,11 @@ export default function PropertiesPage() {
         await batch.commit();
         toast({ title: 'Import Successful', description: `${newCount} new properties have been added.` });
       } catch (error) {
+        console.error(error);
         toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
       }
     };
     reader.readAsText(file);
-    // Reset file input
     if(importInputRef.current) importInputRef.current.value = '';
   };
 
@@ -954,5 +1067,7 @@ export default function PropertiesPage() {
       </>
     );
   }
+
+    
 
     

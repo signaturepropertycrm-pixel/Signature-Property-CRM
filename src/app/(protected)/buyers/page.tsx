@@ -31,7 +31,7 @@ import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatPhoneNumber } from '@/lib/utils';
 import React from 'react';
 import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -408,24 +408,50 @@ export default function BuyersPage() {
 
     const handleExport = (type: 'For Sale' | 'For Rent') => {
         const buyersToExport = sortBuyers(
-            allBuyers?.filter(b => b.listing_type === type && !b.is_deleted) || []
+            allBuyers?.filter(b => (b.listing_type === type || (!b.listing_type && type === 'For Sale')) && !b.is_deleted) || []
         );
 
         if (buyersToExport.length === 0) {
           toast({ title: 'No Data', description: `There are no buyers for ${type.toLowerCase()} to export.`, variant: 'destructive' });
           return;
         }
-        const headers = ['serial_no', 'name', 'phone', 'email', 'status', 'area_preference', 'property_type_preference', 'budget_min_amount', 'budget_min_unit', 'budget_max_amount', 'budget_max_unit'];
+        
+        const headers = ['Sr No', 'Date', 'Number', 'Name', 'Email', 'City', 'Area', 'Property Type', 'Size', 'Budget', 'Status', 'Investor'];
+        
         const csvContent = [
           headers.join(','),
-          ...buyersToExport.map(b => headers.map(header => `"${b[header as keyof Buyer] || ''}"`).join(','))
+          ...buyersToExport.map(b => {
+              const budgetMin = b.budget_min_amount ? `${b.budget_min_amount} ${b.budget_min_unit}` : '';
+              const budgetMax = b.budget_max_amount ? `${b.budget_max_amount} ${b.budget_max_unit}` : '';
+              const budget = budgetMin && budgetMax ? `${budgetMin} - ${budgetMax}` : budgetMin || budgetMax;
+
+              const sizeMin = b.size_min_value ? `${b.size_min_value} ${b.size_min_unit}` : '';
+              const sizeMax = b.size_max_value ? `${b.size_max_value} ${b.size_max_unit}` : '';
+              const size = sizeMin && sizeMax ? `${sizeMin} - ${sizeMax}` : sizeMin || sizeMax;
+
+              const row = [
+                `"${b.serial_no}"`,
+                `"${new Date(b.created_at).toLocaleDateString()}"`,
+                `"${formatPhoneNumber(b.phone, b.country_code).replace('+', '')}"`,
+                `"${b.name}"`,
+                `"${b.email || ''}"`,
+                `"${b.city || ''}"`,
+                `"${b.area_preference || ''}"`,
+                `"${b.property_type_preference || ''}"`,
+                `"${size}"`,
+                `"${budget}"`,
+                `"${b.status}"`,
+                `"${b.is_investor ? 'Yes' : 'No'}"`
+              ];
+              return row.join(',');
+          })
         ].join('\n');
     
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `buyers-${type.toLowerCase()}-${new Date().toISOString()}.csv`);
+        link.setAttribute('download', `buyers-${type.toLowerCase().replace(' ', '-')}-${new Date().toISOString()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -442,36 +468,54 @@ export default function BuyersPage() {
           const text = e.target?.result;
           if (typeof text !== 'string') return;
           
-          const rows = text.split('\n').slice(1);
-          if (rows.length === 0) {
+          const rows = text.split('\n');
+          const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+          const listingType: ListingType = activeTab;
+
+          if (rows.length <= 1) {
             toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
             return;
           }
     
           const batch = writeBatch(firestore);
           const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
-          const totalBuyers = (totalSaleBuyers || 0) + (totalRentBuyers || 0);
+          const totalBuyersForType = listingType === 'For Sale' ? totalSaleBuyers : totalRentBuyers;
           let newCount = 0;
     
-          rows.forEach((row) => {
+          rows.slice(1).forEach((row) => {
             if (!row) return;
-            const [serial_no, name, phone, email, status, area_preference, property_type_preference, budget_min_amount, budget_min_unit, budget_max_amount, budget_max_unit] = row.split(',').map(s => s.trim().replace(/"/g, ''));
+            const [
+                _serial, _date, number, name, email, city, area, property_type,
+                size, budget, status, investor
+            ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const listingType: ListingType = (serial_no.startsWith('RB') ? 'For Rent' : 'For Sale');
+            const [minBudget, maxBudget] = budget.split('-').map(s => s.trim());
+            const [minBudgetValue, minBudgetUnit] = minBudget.split(' ');
+            const [maxBudgetValue, maxBudgetUnit] = maxBudget ? maxBudget.split(' ') : [undefined, undefined];
+
+            const [minSize, maxSize] = size.split('-').map(s => s.trim());
+            const [minSizeValue, minSizeUnit] = minSize.split(' ');
+            const [maxSizeValue, maxSizeUnit] = maxSize ? maxSize.split(' ') : [undefined, undefined];
 
             const newBuyer: Omit<Buyer, 'id'> = {
-                serial_no: `${listingType === 'For Rent' ? 'RB' : 'B'}-${(listingType === 'For Rent' ? totalRentBuyers : totalSaleBuyers) + newCount + 1}`,
+                serial_no: `${listingType === 'For Rent' ? 'RB' : 'B'}-${totalBuyersForType + newCount + 1}`,
                 name,
-                phone,
+                phone: formatPhoneNumber(number, '+92'),
                 country_code: '+92',
                 email: email || '',
-                status: status as BuyerStatus || 'New',
-                area_preference,
-                property_type_preference: property_type_preference as PropertyType,
-                budget_min_amount: parseFloat(budget_min_amount) || undefined,
-                budget_min_unit: budget_min_unit as PriceUnit || undefined,
-                budget_max_amount: parseFloat(budget_max_amount) || undefined,
-                budget_max_unit: budget_max_unit as PriceUnit || undefined,
+                status: (status as BuyerStatus) || 'New',
+                area_preference: area,
+                city: city,
+                property_type_preference: property_type as PropertyType,
+                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : undefined,
+                budget_min_unit: (minBudgetUnit as PriceUnit) || undefined,
+                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : undefined,
+                budget_max_unit: (maxBudgetUnit as PriceUnit) || undefined,
+                size_min_value: minSizeValue ? parseFloat(minSizeValue) : undefined,
+                size_min_unit: (minSizeUnit as SizeUnit) || undefined,
+                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : undefined,
+                size_max_unit: (maxSizeUnit as SizeUnit) || undefined,
+                is_investor: investor.toLowerCase() === 'yes',
                 listing_type: listingType,
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
@@ -485,6 +529,7 @@ export default function BuyersPage() {
             await batch.commit();
             toast({ title: 'Import Successful', description: `${newCount} new buyers have been added.` });
           } catch (error) {
+            console.error(error);
             toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
           }
         };
@@ -892,6 +937,8 @@ export default function BuyersPage() {
         </>
     );
 }
+
+    
 
     
 
