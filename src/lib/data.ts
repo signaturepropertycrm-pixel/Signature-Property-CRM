@@ -63,7 +63,7 @@ export const countryCodes = [
     { name: "Cambodia", dial_code: "+855", code: "KH" },
     { name: "Cameroon", dial_code: "+237", code: "CM" },
     { name: "Cape Verde", dial_code: "+238", code: "CV" },
-    { name: "Cayman Islands", dial_code: "+ 345", code: "KY" },
+    { name: "Cayman Islands", dial_code: "+1345", code: "KY" },
     { name: "Central African Republic", dial_code: "+236", code: "CF" },
     { name: "Chad", dial_code: "+235", code: "TD" },
     { name: "Chile", dial_code: "+56", code: "CL" },
@@ -260,7 +260,7 @@ export const countryCodes = [
     { name: "Yemen", dial_code: "+967", code: "YE" },
     { name: "Zambia", dial_code: "+260", code: "ZM" },
     { name: "Zimbabwe", dial_code: "+263", code: "ZW" }
-];
+].filter((v,i,a)=>a.findIndex(v2=>(v2.code===v.code))===i);
 
 
 export const punjabCities: string[] = [

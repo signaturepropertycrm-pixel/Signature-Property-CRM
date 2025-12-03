@@ -771,7 +771,7 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Server /> Backup &amp; Restore</CardTitle>
+            <CardTitle className="flex items-center gap-2"><Server /> Backup & Restore</CardTitle>
             <CardDescription>
                 Download a full backup of your data or restore it from a file.
             </CardDescription>
