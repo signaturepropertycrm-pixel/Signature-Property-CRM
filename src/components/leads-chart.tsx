@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -47,7 +48,8 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
     }
     
     properties.forEach((p) => {
-        const createdDate = parseISO(p.created_at!);
+        if (!p.created_at) return;
+        const createdDate = parseISO(p.created_at);
         const monthKey = format(createdDate, "MMM '’'yy");
         if (monthKey in monthlyDataMap) {
             if (p.is_for_rent) {
@@ -59,7 +61,8 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
     });
 
     buyers.forEach((b) => {
-        const createdDate = parseISO(b.created_at!);
+        if (!b.created_at) return;
+        const createdDate = parseISO(b.created_at);
         const monthKey = format(createdDate, "MMM '’'yy");
         if (monthKey in monthlyDataMap) {
             if (b.listing_type === 'For Rent') {
