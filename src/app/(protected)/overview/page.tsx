@@ -116,7 +116,7 @@ export default function OverviewPage() {
         const revenue30d = soldInLast30Days.reduce((sum, prop) => sum + (prop.total_commission || 0), 0);
         
         const rentOutInLast30Days = properties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
-        const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + formatUnit(prop.demand_amount, prop.demand_unit), 0);
+        const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + (prop.rent_total_commission || 0), 0);
 
 
         const propertiesForRent = properties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
