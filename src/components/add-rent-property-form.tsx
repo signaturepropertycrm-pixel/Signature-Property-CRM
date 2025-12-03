@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -37,6 +36,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
+/* ---------- schema ---------- */
 const formSchema = z.object({
   serial_no: z.string().optional(),
   auto_title: z.string().optional(),
@@ -55,30 +55,32 @@ const formSchema = z.object({
     gas: z.boolean().default(false),
     water: z.boolean().default(false),
   }),
-  demand_amount: z.coerce.number({invalid_type_error: "Rent amount must be a number."}).positive('Rent amount must be positive'),
+  demand_amount: z.coerce
+    .number({ invalid_type_error: 'Rent amount must be a number.' })
+    .positive('Rent amount must be positive'),
   demand_unit: z.enum(['Thousand', 'Lacs', 'Crore']).default('Thousand'),
   message: z.string().optional(),
-}).refine(data => {
+}).refine(
+  (data) => {
     if (data.property_type === 'Other') {
-        return !!data.custom_property_type && data.custom_property_type.length > 0;
+      return !!data.custom_property_type && data.custom_property_type.length > 0;
     }
     return true;
-}, {
+  },
+  {
     message: "Custom property type is required when 'Other' is selected.",
-    path: ["custom_property_type"],
-});
-
+    path: ['custom_property_type'],
+  }
+);
 
 type AddRentPropertyFormValues = z.infer<typeof formSchema>;
 
-interface AddRentPropertyFormProps {
-  setDialogOpen: (open: boolean) => void;
-  onSave: (property: Omit<Property, 'id'>) => void;
-  propertyToEdit?: Property | null;
-  totalProperties: number;
-}
-
-const getNewPropertyDefaults = (totalProperties: number, userId: string | undefined, agencyId: string | undefined) => ({
+/* ---------- defaults ---------- */
+const getNewPropertyDefaults = (
+  totalProperties: number,
+  userId: string | undefined,
+  agencyId: string | undefined
+): AddRentPropertyFormValues => ({
   serial_no: `RP-${totalProperties + 1}`,
   auto_title: '',
   country_code: '+92',
@@ -86,56 +88,76 @@ const getNewPropertyDefaults = (totalProperties: number, userId: string | undefi
   city: 'Lahore',
   area: '',
   address: '',
-  property_type: 'House' as const,
+  property_type: 'House',
   custom_property_type: '',
   size_value: 0,
-  size_unit: 'Marla' as const,
+  size_unit: 'Marla',
   storey: '',
   meters: { electricity: false, gas: false, water: false },
   demand_amount: 0,
-  demand_unit: 'Thousand' as const,
+  demand_unit: 'Thousand',
   message: '',
   created_at: new Date().toISOString(),
   created_by: userId || '',
   agency_id: agencyId || '',
 });
 
+/* ---------- component ---------- */
+interface AddRentPropertyFormProps {
+  setDialogOpen: (open: boolean) => void;
+  onSave: (property: Omit<Property, 'id'>) => void;
+  propertyToEdit?: Property | null;
+  totalProperties: number;
+}
 
-export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, totalProperties }: AddRentPropertyFormProps) {
+export function AddRentPropertyForm({
+  setDialogOpen,
+  onSave,
+  propertyToEdit,
+  totalProperties,
+}: AddRentPropertyFormProps) {
   const { user } = useUser();
   const { profile } = useProfile();
+
   const form = useForm<AddRentPropertyFormValues>({
     resolver: zodResolver(formSchema),
+    defaultValues: getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id),
   });
 
   const { control, setValue, reset } = form;
+
   const watchedFields = useWatch({
     control,
     name: ['size_value', 'size_unit', 'property_type', 'area', 'custom_property_type'],
   });
 
-   useEffect(() => {
+  const watchedPropertyType = useWatch({ control, name: 'property_type' });
+
+  /* initialise / edit */
+  useEffect(() => {
     if (propertyToEdit) {
-        const isStandardType = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural'].includes(propertyToEdit.property_type);
-        const phoneWithoutCode = propertyToEdit.owner_number.replace(propertyToEdit.country_code || '+92', '');
-        reset({
-            ...propertyToEdit,
-            country_code: propertyToEdit.country_code || '+92',
-            owner_number: phoneWithoutCode,
-            property_type: isStandardType ? propertyToEdit.property_type : 'Other',
-            custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
-            demand_unit: propertyToEdit.demand_unit ?? 'Thousand',
-            demand_amount: propertyToEdit.demand_amount || 0,
-            size_value: propertyToEdit.size_value || 0,
-            storey: propertyToEdit.storey || '',
-            message: propertyToEdit.message || '',
-        });
+      const isStandardType = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural'].includes(
+        propertyToEdit.property_type
+      );
+      const phoneWithoutCode = propertyToEdit.owner_number.replace(propertyToEdit.country_code || '+92', '');
+      reset({
+        ...propertyToEdit,
+        country_code: propertyToEdit.country_code || '+92',
+        owner_number: phoneWithoutCode,
+        property_type: isStandardType ? propertyToEdit.property_type : 'Other',
+        custom_property_type: isStandardType ? '' : propertyToEdit.property_type,
+        demand_unit: propertyToEdit.demand_unit ?? 'Thousand',
+        demand_amount: propertyToEdit.demand_amount || 0,
+        size_value: propertyToEdit.size_value || 0,
+        storey: propertyToEdit.storey || '',
+        message: propertyToEdit.message || '',
+      });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
     }
   }, [propertyToEdit, totalProperties, reset, user, profile.agency_id]);
 
-
+  /* auto title */
   useEffect(() => {
     const [sizeValue, sizeUnit, propertyType, area, customPropertyType] = watchedFields;
     const finalPropertyType = propertyType === 'Other' ? customPropertyType : propertyType;
@@ -159,41 +181,44 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
     return () => clearTimeout(handler);
   }, [watchedFields, setValue]);
 
+  /* submit */
   function onSubmit(values: AddRentPropertyFormValues) {
-     const finalValues = {
-        ...values,
-        owner_number: formatPhoneNumber(values.owner_number, values.country_code),
-        property_type: values.property_type === 'Other' && values.custom_property_type ? values.custom_property_type : values.property_type,
+    const finalValues = {
+      ...values,
+      owner_number: formatPhoneNumber(values.owner_number, values.country_code),
+      property_type:
+        values.property_type === 'Other' && values.custom_property_type
+          ? values.custom_property_type
+          : values.property_type,
     };
 
-    const propertyData = {
-        ...propertyToEdit,
-        ...finalValues,
-        listing_type: 'For Rent' as const,
-        is_for_rent: true,
-        potential_rent_amount: 0,
-        potential_rent_unit: 'Thousand' as const,
-        id: propertyToEdit?.id,
-        serial_no: propertyToEdit?.serial_no || `RP-${totalProperties + 1}`,
-        status: propertyToEdit?.status || 'Available',
-        created_at: propertyToEdit?.created_at || new Date().toISOString(),
-        created_by: propertyToEdit?.created_by || user?.uid || '',
-        agency_id: propertyToEdit?.agency_id || profile.agency_id || '',
-        is_deleted: propertyToEdit?.is_deleted || false,
-    } as Omit<Property, 'id'> & { id?: string };
+    const propertyData: Omit<Property, 'id'> = {
+      ...propertyToEdit,
+      ...finalValues,
+      listing_type: 'For Rent',
+      is_for_rent: true,
+      potential_rent_amount: 0,
+      potential_rent_unit: 'Thousand',
+      id: propertyToEdit?.id,
+      serial_no: propertyToEdit?.serial_no || `RP-${totalProperties + 1}`,
+      status: propertyToEdit?.status || 'Available',
+      created_at: propertyToEdit?.created_at || new Date().toISOString(),
+      created_by: propertyToEdit?.created_by || user?.uid || '',
+      agency_id: propertyToEdit?.agency_id || profile.agency_id || '',
+      is_deleted: propertyToEdit?.is_deleted || false,
+    };
 
     onSave(propertyData);
-
     setDialogOpen(false);
   }
-  
-  const watchedPropertyType = useWatch({ control, name: 'property_type' });
 
+  /* render */
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <ScrollArea className="h-[65vh] pr-6">
           <div className="space-y-6">
+            {/* Row 1 */}
             <div className="grid md:grid-cols-2 gap-4">
               <FormField
                 control={control}
@@ -202,7 +227,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                   <FormItem>
                     <FormLabel>Serial No</FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
+                      <Input {...field} readOnly className="bg-muted/50" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -210,10 +235,15 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
               />
               <FormItem>
                 <FormLabel>Date Added</FormLabel>
-                <Input value={propertyToEdit ? new Date(propertyToEdit.created_at).toLocaleDateString() : new Date().toLocaleDateString()} readOnly className="bg-muted/50" />
+                <Input
+                  value={propertyToEdit ? new Date(propertyToEdit.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
+                  readOnly
+                  className="bg-muted/50"
+                />
               </FormItem>
             </div>
-            
+
+            {/* Auto title */}
             <FormField
               control={control}
               name="auto_title"
@@ -221,7 +251,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 <FormItem>
                   <FormLabel>Auto-Generated Title</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
+                    <Input {...field} readOnly placeholder="e.g. 5 Marla House in Harbanspura" className="bg-muted/50" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -229,83 +259,70 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             />
 
             <Separator />
-             <h4 className="text-sm font-medium text-muted-foreground">Location Details</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">Location Details</h4>
 
             <div className="grid md:grid-cols-2 gap-4">
-               <FormField
+              {/* City */}
+              <FormField
                 control={control}
                 name="city"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>City</FormLabel>
                     <Popover>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                        "w-full justify-between",
-                                        !field.value && "text-muted-foreground"
-                                    )}
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn('w-full justify-between', !field.value && 'text-muted-foreground')}
+                          >
+                            {field.value ? punjabCities.find((c) => c === field.value) : 'Select city'}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search city..." />
+                          <CommandList>
+                            <CommandGroup>
+                              {punjabCities.map((city) => (
+                                <CommandItem
+                                  value={city}
+                                  key={city}
+                                  onSelect={() => form.setValue('city', city)}
                                 >
-                                    {field.value
-                                        ? punjabCities.find(
-                                            (city) => city === field.value
-                                        )
-                                        : "Select city"}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                            <Command>
-                                <CommandInput placeholder="Search city..." />
-                                <CommandList>
-                                <CommandGroup>
-                                    {punjabCities.map((city) => (
-                                        <CommandItem
-                                            value={city}
-                                            key={city}
-                                            onSelect={() => {
-                                                form.setValue("city", city)
-                                            }}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    city === field.value
-                                                        ? "opacity-100"
-                                                        : "opacity-0"
-                                                )}
-                                            />
-                                            {city}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
+                                  <Check className={cn('mr-2 h-4 w-4', city === field.value ? 'opacity-100' : 'opacity-0')} />
+                                  {city}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
                     </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-               <FormField
+              {/* Area */}
+              <FormField
                 control={control}
                 name="area"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Area</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="e.g. DHA Phase 5" />
+                      <Input placeholder="e.g. DHA Phase 5" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            
+
+            {/* Address */}
             <FormField
               control={control}
               name="address"
@@ -313,7 +330,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 <FormItem>
                   <FormLabel>Full Address</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="Full property address" />
+                    <Textarea placeholder="Full property address" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -324,6 +341,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             <h4 className="text-sm font-medium text-muted-foreground">Property Specification</h4>
 
             <div className="grid md:grid-cols-2 gap-4">
+              {/* Property Type */}
               <FormField
                 control={control}
                 name="property_type"
@@ -332,7 +350,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                     <FormLabel>Property Type</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="House">House</SelectItem>
@@ -348,21 +368,25 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                   </FormItem>
                 )}
               />
-                {watchedPropertyType === 'Other' && (
-                    <FormField
-                        control={control}
-                        name="custom_property_type"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Custom Property Type</FormLabel>
-                            <FormControl>
-                            <Input {...field} value={field.value ?? ''} placeholder="e.g., Penthouse" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                )}
+
+              {/* Custom type if "Other" */}
+              {watchedPropertyType === 'Other' && (
+                <FormField
+                  control={control}
+                  name="custom_property_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custom Property Type</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Penthouse" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Size + Unit */}
               <div className="grid grid-cols-2 gap-2">
                 <FormField
                   control={control}
@@ -371,7 +395,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                     <FormItem>
                       <FormLabel>Property Size</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} placeholder="5" />
+                        <Input type="number" placeholder="5" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -385,7 +409,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                       <FormLabel className="sr-only">Unit</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="Marla">Marla</SelectItem>
@@ -401,24 +427,26 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 />
               </div>
             </div>
-            
+
+            {/* Storey */}
             <FormField
-                control={control}
-                name="storey"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Portion / Unit Details</FormLabel>
-                    <FormControl>
-                        <Input {...field} value={field.value ?? ''} placeholder="e.g. Ground Portion, Upper Portion, Full House" />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
+              control={control}
+              name="storey"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Portion / Unit Details</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Ground Portion, Upper Portion, Full House" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
-             <Separator />
+            <Separator />
             <h4 className="text-sm font-medium text-muted-foreground">Financials & Contact</h4>
-            
+
+            {/* Rent Amount */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="grid grid-cols-2 gap-2">
                 <FormField
@@ -428,7 +456,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                     <FormItem>
                       <FormLabel>Rent Amount</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} value={field.value ?? ''} placeholder="30" />
+                        <Input type="number" placeholder="30" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -442,7 +470,9 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                       <FormLabel className="sr-only">Unit</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Unit" /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="Thousand">Thousand</SelectItem>
@@ -455,44 +485,53 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                   )}
                 />
               </div>
-                <FormItem>
-                    <FormLabel>Owner Number</FormLabel>
-                    <div className="flex gap-2">
-                        <FormField
-                        control={control}
-                        name="country_code"
-                        render={({ field }) => (
-                            <FormItem className="w-1/3">
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
-                                </SelectContent>
-                                </Select>
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={control}
-                        name="owner_number"
-                        render={({ field }) => (
-                            <FormItem className="flex-1">
-                                <FormControl>
-                                    <Input {...field} placeholder="3001234567" />
-                                </FormControl>
-                            </FormItem>
-                        )}
-                        />
-                    </div>
-                    <FormMessage>{form.formState.errors.owner_number?.message}</FormMessage>
-                </FormItem>
+
+              {/* Owner Number */}
+              <FormItem>
+                <FormLabel>Owner Number</FormLabel>
+                <div className="flex gap-2">
+                  <FormField
+                    control={control}
+                    name="country_code"
+                    render={({ field }) => (
+                      <FormItem className="w-1/3">
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {countryCodes.map((c) => (
+                              <SelectItem key={c.code} value={c.dial_code}>
+                                {c.dial_code} ({c.code})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={control}
+                    name="owner_number"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input placeholder="3001234567" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormMessage>{form.formState.errors.owner_number?.message}</FormMessage>
+              </FormItem>
             </div>
-            
+
             <Separator />
             <h4 className="text-sm font-medium text-muted-foreground">Utilities & Notes</h4>
 
+            {/* Meters */}
             <FormItem>
               <FormLabel>Meters</FormLabel>
               <div className="flex items-center gap-6 pt-2">
@@ -534,7 +573,8 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 />
               </div>
             </FormItem>
-            
+
+            {/* Message */}
             <FormField
               control={control}
               name="message"
@@ -542,7 +582,7 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
                 <FormItem>
                   <FormLabel>Message / Notes</FormLabel>
                   <FormControl>
-                    <Textarea {...field} value={field.value ?? ''} placeholder="e.g. Only for small families, no pets allowed, etc." />
+                    <Textarea placeholder="e.g. Only for small families, no pets allowed, etc." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -550,11 +590,15 @@ export function AddRentPropertyForm({ setDialogOpen, onSave, propertyToEdit, tot
             />
           </div>
         </ScrollArea>
+
+        {/* Footer */}
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
             Cancel
           </Button>
-          <Button type="submit" className="glowing-btn">{propertyToEdit ? 'Save Changes' : 'Save Property'}</Button>
+          <Button type="submit" className="glowing-btn">
+            {propertyToEdit ? 'Save Changes' : 'Save Property'}
+          </Button>
         </div>
       </form>
     </Form>

@@ -7,11 +7,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType, Property } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -37,6 +37,7 @@ import React from 'react';
 import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 
 const statusVariant = {
     'New': 'default',
@@ -93,6 +94,9 @@ export default function BuyersPage() {
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
+    const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+    const { data: allProperties } = useCollection<Property>(agencyPropertiesQuery);
+
     const activeAgents = useMemo(() => teamMembers?.filter(m => m.status === 'Active') || [], [teamMembers]);
     
     const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
@@ -108,9 +112,11 @@ export default function BuyersPage() {
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
+    const [buyerForRecommendation, setBuyerForRecommendation] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
+    const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
@@ -185,6 +191,11 @@ export default function BuyersPage() {
             message: `Regarding buyer's interest in ${buyer.area_preference || 'general properties'}.`,
         });
         setIsAppointmentOpen(true);
+    };
+
+    const handleRecommendProperties = (buyer: Buyer) => {
+        setBuyerForRecommendation(buyer);
+        setIsRecommenderOpen(true);
     };
 
     const handleSaveAppointment = async (appointment: Appointment) => {
@@ -443,6 +454,7 @@ export default function BuyersPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="glass-card">
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecommendProperties(buyer); }}><Sparkles />Recommend Properties</DropdownMenuItem>
                                             {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                             <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
@@ -520,6 +532,7 @@ export default function BuyersPage() {
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); setSelectedBuyer(buyer); setIsDetailsOpen(true); }}><Eye />View Details</Button>
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecommendProperties(buyer); }}><Sparkles />Recommend Properties</Button>
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
                                             <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</Button>
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
@@ -748,8 +761,18 @@ export default function BuyersPage() {
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
             {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
-
+            {buyerForRecommendation && allProperties && (
+                <PropertyRecommenderDialog
+                    isOpen={isRecommenderOpen}
+                    setIsOpen={setIsRecommenderOpen}
+                    buyer={buyerForRecommendation}
+                    properties={allProperties}
+                />
+            )}
         </>
     );
 }
 
+
+
+  

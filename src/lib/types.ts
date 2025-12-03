@@ -1,4 +1,5 @@
 
+
 export type UserRole = 'Admin' | 'Agent';
 
 export type User = {
@@ -98,6 +99,12 @@ export type Property = {
   rent_agent_share?: number;
   rent_agent_share_unit?: PriceUnit;
 };
+
+export type RecommendedProperty = Property & {
+  matchScore: number;
+  matchReasons: string[];
+};
+
 
 export type BuyerStatus =
   | 'New'
@@ -223,3 +230,6 @@ export interface ActivityNotification extends BaseNotification {
 }
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
+
+
+  
