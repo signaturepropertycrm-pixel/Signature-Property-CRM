@@ -38,7 +38,12 @@ import {
   ChevronDown,
   MessageSquare,
 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType } from '@/lib/types';
@@ -80,6 +85,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -140,6 +147,7 @@ export default function PropertiesPage() {
   const [listingType, setListingType] = useState<ListingType>('For Sale');
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -428,26 +436,47 @@ export default function PropertiesPage() {
       router.push(url);
   };
 
-  const handleExport = () => {
-    if (filteredProperties.length === 0) {
-      toast({ title: 'No Data', description: 'There are no properties to export in the current view.', variant: 'destructive' });
+  const sortProperties = (propertiesToSort: Property[]) => {
+    return [...propertiesToSort].sort((a, b) => {
+        const aParts = a.serial_no.split('-');
+        const bParts = b.serial_no.split('-');
+        const aPrefix = aParts[0];
+        const bPrefix = bParts[0];
+        const aNum = parseInt(aParts[1], 10);
+        const bNum = parseInt(bParts[1], 10);
+        
+        if (aPrefix < bPrefix) return -1;
+        if (aPrefix > bPrefix) return 1;
+        return aNum - bNum;
+    });
+  };
+
+  const handleExport = (type: 'For Sale' | 'For Rent') => {
+    const propertiesToExport = sortProperties(
+        allProperties.filter(p => p.listing_type === type)
+    );
+
+    if (propertiesToExport.length === 0) {
+      toast({ title: 'No Data', description: `There are no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
       return;
     }
     const headers = ['serial_no', 'auto_title', 'property_type', 'area', 'address', 'size_value', 'size_unit', 'demand_amount', 'demand_unit', 'status', 'owner_number'];
     const csvContent = [
       headers.join(','),
-      ...filteredProperties.map(p => headers.map(header => `"${p[header as keyof Property] || ''}"`).join(','))
+      ...propertiesToExport.map(p => headers.map(header => `"${p[header as keyof Property] || ''}"`).join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `properties-${new Date().toISOString()}.csv`);
+    link.setAttribute('download', `properties-${type.toLowerCase()}-${new Date().toISOString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setIsExportDialogOpen(false);
   };
+
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -483,7 +512,7 @@ export default function PropertiesPage() {
             size_unit: size_unit as SizeUnit,
             demand_amount: parseFloat(demand_amount),
             demand_unit: demand_unit as 'Lacs' | 'Crore',
-            status: status as PropertyStatus,
+            status: 'Available',
             owner_number,
             country_code: '+92',
             listing_type: 'For Sale',
@@ -849,7 +878,7 @@ export default function PropertiesPage() {
                         </Popover>
                         <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
                         <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                        <Button variant="outline" className="rounded-full" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export</Button>
+                        <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                       </>
                   )}
               </div>
@@ -905,6 +934,25 @@ export default function PropertiesPage() {
             <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
           </>
         )}
+        
+        <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Choose Export Type</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Select which type of properties you would like to export to a CSV file.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Properties</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
       </>
     );
   }
+
+    

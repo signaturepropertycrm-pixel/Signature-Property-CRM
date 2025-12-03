@@ -110,6 +110,7 @@ export default function BuyersPage() {
 
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+    const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
@@ -390,26 +391,47 @@ export default function BuyersPage() {
         }
     };
     
-    const handleExport = () => {
-        if (filteredBuyers.length === 0) {
-          toast({ title: 'No Data', description: 'There are no buyers to export in the current view.', variant: 'destructive' });
+    const sortBuyers = (buyersToSort: Buyer[]) => {
+        return [...buyersToSort].sort((a, b) => {
+            const aParts = a.serial_no.split('-');
+            const bParts = b.serial_no.split('-');
+            const aPrefix = aParts[0];
+            const bPrefix = bParts[0];
+            const aNum = parseInt(aParts[1], 10);
+            const bNum = parseInt(bParts[1], 10);
+            
+            if (aPrefix < bPrefix) return -1;
+            if (aPrefix > bPrefix) return 1;
+            return aNum - bNum;
+        });
+    };
+
+    const handleExport = (type: 'For Sale' | 'For Rent') => {
+        const buyersToExport = sortBuyers(
+            allBuyers?.filter(b => b.listing_type === type && !b.is_deleted) || []
+        );
+
+        if (buyersToExport.length === 0) {
+          toast({ title: 'No Data', description: `There are no buyers for ${type.toLowerCase()} to export.`, variant: 'destructive' });
           return;
         }
         const headers = ['serial_no', 'name', 'phone', 'email', 'status', 'area_preference', 'property_type_preference', 'budget_min_amount', 'budget_min_unit', 'budget_max_amount', 'budget_max_unit'];
         const csvContent = [
           headers.join(','),
-          ...filteredBuyers.map(b => headers.map(header => `"${b[header as keyof Buyer] || ''}"`).join(','))
+          ...buyersToExport.map(b => headers.map(header => `"${b[header as keyof Buyer] || ''}"`).join(','))
         ].join('\n');
     
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `buyers-${new Date().toISOString()}.csv`);
+        link.setAttribute('download', `buyers-${type.toLowerCase()}-${new Date().toISOString()}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        setIsExportDialogOpen(false);
     };
+
 
     const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -776,7 +798,7 @@ export default function BuyersPage() {
                                     </Popover>
                                     <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
                                     <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                                    <Button variant="outline" className="rounded-full" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export</Button>
+                                    <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                                 </>
                             )}
                         </div>
@@ -851,8 +873,26 @@ export default function BuyersPage() {
                     properties={allProperties}
                 />
             )}
+            
+            <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Choose Export Type</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Select which type of buyers you would like to export to a CSV file.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Buyers</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
+
+    
 
     
