@@ -233,7 +233,7 @@ export function AppHeader({
                                    <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                             <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => handleDeleteNotification(e, notification.id)}>
+                                             <Button size="icon" variant="ghost" className="h-6 w-6 transition-opacity" onClick={(e) => handleDeleteNotification(e, notification.id)}>
                                                 <X className="h-4 w-4 text-muted-foreground" />
                                             </Button>
                                         </TooltipTrigger>
