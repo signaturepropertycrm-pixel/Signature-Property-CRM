@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -80,6 +81,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useUser } from '@/firebase/auth/use-user';
 
 
 function formatSize(value: number, unit: string) {
@@ -102,6 +104,7 @@ export default function PropertiesPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user } = useUser();
   const { profile } = useProfile();
   const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
@@ -241,9 +244,17 @@ export default function PropertiesPage() {
   };
   
   const handleOpenAddDialog = (type: ListingType) => {
-    setListingType(type);
-    setPropertyToEdit(null);
-    setIsAddPropertyOpen(true);
+    if (user && !user.emailVerified) {
+        toast({
+            title: 'Email Verification Required',
+            description: 'Please verify your email address to add new properties.',
+            variant: 'destructive',
+        });
+    } else {
+        setListingType(type);
+        setPropertyToEdit(null);
+        setIsAddPropertyOpen(true);
+    }
   }
 
   const handleMarkAsSold = (prop: Property) => {
@@ -695,7 +706,7 @@ export default function PropertiesPage() {
         <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
             <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <PopoverTrigger asChild>
-                    <Button className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                    <Button onClick={() => user && !user.emailVerified && handleOpenAddDialog('For Sale')} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                         <PlusCircle className="h-6 w-6" />
                         <span className="sr-only">Add Property</span>
                     </Button>

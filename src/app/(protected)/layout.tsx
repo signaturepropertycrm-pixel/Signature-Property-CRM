@@ -11,10 +11,13 @@ import { CurrencyProvider } from '@/context/currency-context';
 import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MailWarning, Send } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { AppLoader } from '@/components/ui/loader';
+import { useToast } from '@/hooks/use-toast';
+import { sendEmailVerification } from 'firebase/auth';
+import { Button } from '@/components/ui/button';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -44,12 +47,28 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+  const [isResending, setIsResending] = useState(false);
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/login');
     }
   }, [user, isUserLoading, router]);
+
+  const handleResendVerification = async () => {
+      if (!user) return;
+      setIsResending(true);
+      try {
+        await sendEmailVerification(user);
+        toast({ title: 'Verification Email Sent', description: 'Please check your inbox (and spam folder).' });
+      } catch (error) {
+        console.error("Error resending verification email:", error);
+        toast({ title: 'Error', description: 'Could not send email. Please try again later.', variant: 'destructive' });
+      } finally {
+        setIsResending(false);
+      }
+  }
 
   if (isUserLoading || isProfileLoading) {
     return (
@@ -93,8 +112,29 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       )
   }
 
-
-  return <>{children}</>;
+  return (
+    <>
+    {!user.emailVerified && (
+        <div className="sticky top-0 z-50 w-full bg-amber-500 text-amber-900 shadow-md">
+            <div className="container mx-auto flex items-center justify-center p-2 text-sm font-semibold gap-4">
+                <MailWarning className="h-5 w-5" />
+                <span>Please verify your email address to unlock all features.</span>
+                 <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-auto px-2 py-1 text-amber-900 hover:bg-amber-400 hover:text-amber-900"
+                    onClick={handleResendVerification}
+                    disabled={isResending}
+                >
+                    {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2"/>}
+                    Resend Email
+                </Button>
+            </div>
+        </div>
+    )}
+    {children}
+    </>
+  );
 }
 
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {

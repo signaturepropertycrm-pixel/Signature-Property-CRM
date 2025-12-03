@@ -1,4 +1,5 @@
 
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { useUser } from '@/firebase/auth/use-user';
 
 const statusVariant = {
     'New': 'default',
@@ -65,6 +67,7 @@ export default function BuyersPage() {
     const isMobile = useIsMobile();
     const router = useRouter();
     const pathname = usePathname();
+    const { user } = useUser();
     const { profile } = useProfile();
     const searchParams = useSearchParams();
     const { searchQuery } = useSearch();
@@ -350,6 +353,18 @@ export default function BuyersPage() {
     const handleTabChange = (value: string) => {
         const url = `${pathname}?type=${value}`;
         router.push(url);
+    };
+
+    const handleAddBuyerClick = () => {
+        if (user && !user.emailVerified) {
+            toast({
+                title: 'Email Verification Required',
+                description: 'Please verify your email address to add new buyers.',
+                variant: 'destructive',
+            });
+        } else {
+            setIsAddBuyerOpen(true);
+        }
     };
 
     const renderTable = (buyers: Buyer[]) => {
@@ -658,7 +673,7 @@ export default function BuyersPage() {
             <div className={cn("fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button onClick={() => setIsAddBuyerOpen(true)} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                        <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                             <PlusCircle className="h-6 w-6" />
                             <span className="sr-only">Add Buyer</span>
                         </Button>
