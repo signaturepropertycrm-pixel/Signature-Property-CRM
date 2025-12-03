@@ -85,6 +85,7 @@ export default function SettingsPage() {
   const [mounted, setMounted] = useState(false);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isClearActivitiesDialogOpen, setIsClearActivitiesDialogOpen] = useState(false);
   const [isDeleteAgentDialogOpen, setDeleteAgentDialogOpen] = useState(false);
   const [isDeleteAgencyDialogOpen, setDeleteAgencyDialogOpen] = useState(false);
   
@@ -287,6 +288,19 @@ export default function SettingsPage() {
       toast({ title: 'No file or user session', variant: 'destructive' });
       return;
     }
+  };
+
+  const handleClearActivities = async () => {
+    if (!profile.agency_id) {
+        toast({ title: 'Error', description: 'Agency ID not found.', variant: 'destructive'});
+        return;
+    }
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const querySnapshot = await getDocs(activityLogRef);
+    const batch = writeBatch(firestore);
+    querySnapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    toast({ title: 'Activity Log Cleared', description: 'All activity records have been deleted.' });
   };
   
     const handleDeleteAgentAccount = async (password: string) => {
@@ -840,6 +854,29 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
+                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
+                        <div>
+                            <h3 className="font-bold">Clear Activity Log</h3>
+                            <p className="text-sm text-destructive/80">Permanently delete all activity log entries from the database.</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="mt-2 sm:mt-0">Clear Activities</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently delete all activity logs for your agency. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearActivities}>Confirm & Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
                         <div>
                             <h3 className="font-bold">Reset Account</h3>
