@@ -462,7 +462,7 @@ export default function BuyersPage() {
             <div className="space-y-4">
                 {buyers.map(buyer => {
                     return (
-                        <Card key={buyer.id} className="cursor-pointer">
+                        <Card key={buyer.id}>
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
@@ -659,7 +659,7 @@ export default function BuyersPage() {
                     
                     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                         <div className="flex items-center justify-between gap-4">
-                            <TabsList>
+                            <TabsList className="grid w-full grid-cols-2">
                                 <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
                                 <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
                             </TabsList>
