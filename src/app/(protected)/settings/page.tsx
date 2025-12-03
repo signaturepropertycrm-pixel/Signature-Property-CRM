@@ -30,15 +30,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
@@ -47,20 +38,14 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, updateProfile } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import *as z from 'zod';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import ReactCrop, { centerCrop, makeAspectCrop, type Crop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { formatPhoneNumber } from '@/lib/utils';
 import { countryCodes } from '@/lib/data';
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
-import { AvatarCropDialog } from '@/components/avatar-crop-dialog';
-
+import { ImageUploadDialog } from '@/components/image-upload-dialog';
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, 'Current password is required.'),
@@ -96,7 +81,10 @@ export default function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [countryCode, setCountryCode] = useState('+92');
-  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+
 
   const [appointmentNotifications, setAppointmentNotifications] = useState(true);
   const [followUpNotifications, setFollowUpNotifications] = useState(true);
@@ -133,12 +121,11 @@ export default function SettingsPage() {
             setCountryCode(selectedCountry.dial_code);
             setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
         } else {
-            // Fallback for numbers with + but not in our list (e.g. +1)
-            setCountryCode(phone.substring(0, phone.length - 10)); // crude but might work
-            setLocalProfile({ ...profile, phone: phone.substring(phone.length - 10) });
+            const code = phone.substring(0, phone.search(/\d{10}$/));
+            setCountryCode(code || '+92');
+            setLocalProfile({ ...profile, phone: phone.substring(code.length) });
         }
     } else {
-        // No country code, assume default
         setCountryCode('+92');
         setLocalProfile(profile);
     }
@@ -159,28 +146,30 @@ export default function SettingsPage() {
   }, [followUpNotifications]);
 
   const handleAvatarUpdate = async (dataUrl: string) => {
-    if (!user || !profile.agency_id) return;
+    if (!user) return;
+    setIsUploading(true);
   
     try {
       const batch = writeBatch(firestore);
       const isUserAdmin = profile.role === 'Admin';
-  
-      // Admin also updates the main agency doc
+      
+      // Update Firestore document(s)
       if (isUserAdmin) {
-        const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-        batch.update(agencyDocRef, { avatar: dataUrl });
+        if (profile.agency_id) {
+          const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
+          batch.update(agencyDocRef, { avatar: dataUrl });
+          const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+          batch.update(teamMemberRef, { avatar: dataUrl });
+        }
+      } else { // It's an Agent
+        if (profile.agency_id) {
+          const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+          batch.update(teamMemberRef, { avatar: dataUrl });
+        }
+        const agentDocRef = doc(firestore, 'agents', user.uid);
+        batch.update(agentDocRef, { avatar: dataUrl });
       }
       
-      // Every user updates their own teamMember doc
-      const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-      batch.update(teamMemberRef, { avatar: dataUrl });
-      
-      // Agent also updates their root agent doc for consistency if needed elsewhere
-      if (profile.role === 'Agent') {
-          const agentDocRef = doc(firestore, 'agents', user.uid);
-          batch.update(agentDocRef, { avatar: dataUrl });
-      }
-  
       await batch.commit();
   
       // Update local context
@@ -195,7 +184,8 @@ export default function SettingsPage() {
         variant: 'destructive',
       });
     } finally {
-      setIsAvatarCropOpen(false);
+      setIsUploading(false);
+      setIsImageUploadOpen(false);
     }
   };
 
@@ -205,8 +195,8 @@ export default function SettingsPage() {
     if (!user) return;
     
     let fullPhoneNumber = localProfile.phone || '';
-    if (!fullPhoneNumber.startsWith('+')) {
-      fullPhoneNumber = `${countryCode}${fullPhoneNumber.replace(/\D/g, '')}`;
+    if (localProfile.phone && !localProfile.phone.startsWith('+')) {
+      fullPhoneNumber = `${countryCode}${localProfile.phone.replace(/\D/g, '')}`;
     }
 
 
@@ -250,7 +240,7 @@ export default function SettingsPage() {
         await batch.commit();
         
         if (auth.currentUser && formattedProfile.name !== profile.name) {
-          await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
+          await updateDoc(doc(firestore, 'users', user.uid), {name: formattedProfile.name});
         }
 
         setProfile(formattedProfile);
@@ -448,11 +438,11 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-6">
                                 <div className="relative group">
                                     <Avatar className="h-24 w-24 border-4 border-primary/20">
-                                        <AvatarImage src={profile.avatar} />
+                                        <AvatarImage src={profile.avatar} className="object-cover h-full w-full" />
                                         <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
-                                        Change
+                                     <button type="button" onClick={() => setIsImageUploadOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                                        {isUploading ? <Loader2 className="animate-spin" /> : 'Change'}
                                     </button>
                                 </div>
                                 <div>
@@ -573,10 +563,11 @@ export default function SettingsPage() {
                 setIsOpen={setDeleteAgentDialogOpen}
                 onConfirm={handleDeleteAgentAccount}
             />
-             <AvatarCropDialog 
-                isOpen={isAvatarCropOpen}
-                setIsOpen={setIsAvatarCropOpen}
-                onAvatarSave={handleAvatarUpdate}
+             <ImageUploadDialog
+              isOpen={isImageUploadOpen}
+              setIsOpen={setIsImageUploadOpen}
+              onSave={handleAvatarUpdate}
+              isSaving={isUploading}
             />
           </>
       );
@@ -606,11 +597,11 @@ export default function SettingsPage() {
              <div className="flex items-center gap-6">
                 <div className="relative group">
                     <Avatar className="h-24 w-24 border-4 border-primary/20">
-                        <AvatarImage src={profile.avatar} />
+                        <AvatarImage src={profile.avatar} className="object-cover h-full w-full" />
                         <AvatarFallback>{profile.agencyName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
-                        Change
+                     <button type="button" onClick={() => setIsImageUploadOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                         {isUploading ? <Loader2 className="animate-spin" /> : 'Change'}
                     </button>
                 </div>
                 <div>
@@ -965,10 +956,11 @@ export default function SettingsPage() {
         setIsOpen={setDeleteAgencyDialogOpen}
         onConfirm={handleDeleteAgencyAccount}
     />
-     <AvatarCropDialog 
-        isOpen={isAvatarCropOpen}
-        setIsOpen={setIsAvatarCropOpen}
-        onAvatarSave={handleAvatarUpdate}
+     <ImageUploadDialog
+        isOpen={isImageUploadOpen}
+        setIsOpen={setIsImageUploadOpen}
+        onSave={handleAvatarUpdate}
+        isSaving={isUploading}
     />
     </>
   );
@@ -998,14 +990,14 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="text-destructive">Delete Your Account</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-destructive">Delete Your Account</AlertDialogTitle>
+          <AlertDialogDescription>
             This action is permanent and cannot be undone. To confirm, please enter your password.
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         <div className="space-y-2">
             <Label htmlFor="delete-password">Password</Label>
             <Input 
@@ -1017,15 +1009,15 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <AlertDialogFooter>
           <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
-            {isLoading && <AlertTriangle className="animate-spin mr-2" />}
+            {isLoading && <Loader2 className="animate-spin mr-2" />}
             Confirm & Delete
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1046,21 +1038,21 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
       await onConfirm(password);
       setIsOpen(false);
     } catch (e: any) {
-       setError(e.message || 'An error occurred during deletion.');
+      setError(e.message || 'An error occurred during deletion.');
     } finally {
       setIsLoading(false);
     }
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="text-destructive">Delete Agency Account</DialogTitle>
-          <DialogDescription>
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-destructive">Delete Agency Account</AlertDialogTitle>
+          <AlertDialogDescription>
             This action will permanently delete your agency, all its data, and your user account. To confirm, please enter your password.
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         <div className="space-y-2">
             <Label htmlFor="delete-agency-password">Password</Label>
             <Input 
@@ -1072,14 +1064,14 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <AlertDialogFooter>
           <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
             {isLoading && <Loader2 className="animate-spin mr-2" />}
             Confirm & Delete Agency
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
