@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Appointment, AppointmentStatus, Activity } from '@/lib/types';
+import { Appointment, AppointmentStatus, Activity, Buyer, Property } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams } from 'next/navigation';
@@ -18,6 +18,7 @@ import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
+import { formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 
 
 function AppointmentsPageContent() {
@@ -30,6 +31,12 @@ function AppointmentsPageContent() {
 
   const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const { data: appointmentsData, isLoading } = useCollection<Appointment>(appointmentsQuery);
+
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: buyersData } = useCollection<Buyer>(buyersQuery);
+
+  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const { data: propertiesData } = useCollection<Property>(propertiesQuery);
 
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
@@ -99,6 +106,33 @@ function AppointmentsPageContent() {
       await logActivity('updated appointment status', appointment.contactName, { from: appointment.status, to: status });
   };
 
+  const handleWhatsAppChat = (e: React.MouseEvent, appointment: Appointment) => {
+    e.stopPropagation();
+    let phoneNumber = '';
+    let countryCode = '+92';
+
+    if (appointment.contactType === 'Buyer' && buyersData) {
+        const buyer = buyersData.find(b => b.serial_no === appointment.contactSerialNo);
+        if (buyer) {
+            phoneNumber = buyer.phone;
+            countryCode = buyer.country_code || '+92';
+        }
+    } else if (appointment.contactType === 'Owner' && propertiesData) {
+        const property = propertiesData.find(p => p.serial_no === appointment.contactSerialNo);
+        if (property) {
+            phoneNumber = property.owner_number;
+            countryCode = property.country_code || '+92';
+        }
+    }
+
+    if (phoneNumber) {
+        const formattedPhone = formatPhoneNumberForWhatsApp(phoneNumber, countryCode);
+        window.open(`https://wa.me/${formattedPhone}`, '_blank');
+    } else {
+        toast({ title: 'Phone number not found', variant: 'destructive' });
+    }
+};
+
   const statusConfig: { [key in AppointmentStatus]: { variant: 'default' | 'secondary' | 'destructive', icon?: React.ComponentType<{ className?: string }> } } = {
     Scheduled: { variant: 'secondary', icon: Clock },
     Completed: { variant: 'default', icon: Check },
@@ -163,6 +197,7 @@ function AppointmentsPageContent() {
                     </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-card">
+                        <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, appt)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
                             <Check />
                             Mark as Completed
