@@ -131,6 +131,7 @@ export default function PropertiesPage() {
 
   const statusFilterFromURL = searchParams.get('status');
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [importType, setImportType] = useState<'For Sale' | 'For Rent' | null>(null);
 
   const agencyPropertiesQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
@@ -148,6 +149,7 @@ export default function PropertiesPage() {
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -461,14 +463,15 @@ export default function PropertiesPage() {
       return;
     }
 
-    const headers = type === 'For Sale'
-        ? ['Sr No', 'Video Record', 'Date', 'Number', 'City', 'Area', 'Address', 'Property Type', 'Size', 'Road Size', 'Storey', 'Utilities', 'Potential Rent', 'Front', 'Length', 'Demand', 'Documents', 'Status']
-        : ['Sr No', 'Video Record', 'Date', 'Number', 'City', 'Area', 'Address', 'Property Type', 'Size', 'Storey', 'Utilities', 'Rent', 'Status'];
+    const baseHeaders = ['Sr No', 'Video Record', 'Date', 'Number', 'City', 'Area', 'Address', 'Property Type', 'Size', 'Storey', 'Utilities', 'Status'];
+    const saleHeaders = [...baseHeaders, 'Road Size', 'Potential Rent', 'Front', 'Length', 'Demand', 'Documents', 'TikTok Link', 'YouTube Link', 'Instagram Link', 'Facebook Link', 'Other Link'];
+    const rentHeaders = [...baseHeaders, 'Rent', 'TikTok Link', 'YouTube Link', 'Instagram Link', 'Facebook Link', 'Other Link'];
+    const headers = type === 'For Sale' ? saleHeaders : rentHeaders;
 
     const csvContent = [
       headers.join(','),
       ...propertiesToExport.map(p => {
-        const demandValue = p.demand_unit === 'Crore' ? `${p.demand_amount} Cr` : `${p.demand_amount} Lacs`;
+        const demandValue = p.demand_unit === 'Crore' ? `${p.demand_amount} Cr` : p.demand_unit === 'Lacs' ? `${p.demand_amount} Lacs` : `${p.demand_amount} K`;
         const potentialRentValue = p.potential_rent_amount ? formatUnit(p.potential_rent_amount, p.potential_rent_unit || 'Thousand') : '';
         const utilities = [
             p.meters?.electricity && 'Electricity',
@@ -481,10 +484,9 @@ export default function PropertiesPage() {
         
         const phoneNumber = p.owner_number.replace(p.country_code || '+92', '').replace(/\D/g, '');
 
-        const row = type === 'For Sale'
-            ? [
+        const baseRow = [
                 `"${p.serial_no}"`,
-                `"${p.is_recorded ? '✔' : ''}"`,
+                `"${p.is_recorded ? 'Yes' : 'No'}"`,
                 `"${formattedDate}"`,
                 `"${phoneNumber}"`,
                 `"${p.city}"`,
@@ -492,32 +494,37 @@ export default function PropertiesPage() {
                 `"${p.address}"`,
                 `"${p.property_type}"`,
                 `"${p.size_value} ${p.size_unit}"`,
-                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
                 `"${p.storey || ''}"`,
                 `"${utilities}"`,
+                `"${p.status}"`
+            ];
+
+        if (type === 'For Sale') {
+             return [
+                ...baseRow,
+                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
                 `"${potentialRentValue}"`,
                 `"${p.front_ft || ''}"`,
                 `"${p.length_ft || ''}"`,
                 `"${demandValue}"`,
                 `"${p.documents || ''}"`,
-                `"${p.status}"`
-            ]
-            : [
-                 `"${p.serial_no}"`,
-                `"${p.is_recorded ? '✔' : ''}"`,
-                `"${formattedDate}"`,
-                `"${phoneNumber}"`,
-                `"${p.city}"`,
-                `"${p.area}"`,
-                `"${p.address}"`,
-                `"${p.property_type}"`,
-                `"${p.size_value} ${p.size_unit}"`,
-                `"${p.storey || ''}"`,
-                `"${utilities}"`,
-                `"${p.demand_amount} ${p.demand_unit}"`,
-                `"${p.status}"`
-            ];
-        return row.join(',');
+                `"${p.video_links?.tiktok || ''}"`,
+                `"${p.video_links?.youtube || ''}"`,
+                `"${p.video_links?.instagram || ''}"`,
+                `"${p.video_links?.facebook || ''}"`,
+                `"${p.video_links?.other || ''}"`
+            ].join(',');
+        } else { // For Rent
+             return [
+                ...baseRow,
+                `"${demandValue}"`,
+                `"${p.video_links?.tiktok || ''}"`,
+                `"${p.video_links?.youtube || ''}"`,
+                `"${p.video_links?.instagram || ''}"`,
+                `"${p.video_links?.facebook || ''}"`,
+                `"${p.video_links?.other || ''}"`
+            ].join(',');
+        }
       })
     ].join('\n');
 
@@ -532,24 +539,30 @@ export default function PropertiesPage() {
     setIsExportDialogOpen(false);
   };
 
+  const handleImportClick = (type: 'For Sale' | 'For Rent') => {
+    setImportType(type);
+    importInputRef.current?.click();
+    setIsImportDialogOpen(false);
+  };
+
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile.agency_id) return;
+    if (!file || !profile.agency_id || !importType) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
       const text = e.target?.result;
       if (typeof text !== 'string') return;
       
-      const rows = text.split('\n');
-      const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      const isSaleImport = headerRow.includes('Potential Rent');
-
+      const rows = text.split('\n').filter(row => row.trim() !== '');
       if (rows.length <= 1) {
         toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
         return;
       }
+      
+      const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const listingTypeToImport: ListingType = importType;
 
       const batch = writeBatch(firestore);
       const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
@@ -563,15 +576,15 @@ export default function PropertiesPage() {
         
         let newProperty: Omit<Property, 'id'>;
 
-        if (isSaleImport) {
+        if (listingTypeToImport === 'For Sale') {
             const [
-                _serial, _video, _date, number, city, area, address, property_type, size,
-                road_size_ft, storey, utilities, potential_rent_amount, front_ft, length_ft,
-                demand, documents, status
+                _serial, video_recorded, _date, number, city, area, address, property_type, size, storey, utilities, status,
+                road_size_ft, potential_rent_amount, front_ft, length_ft, demand, documents,
+                tiktok, youtube, instagram, facebook, other
             ] = values;
 
             const [size_value, size_unit] = size.split(' ');
-            const [demand_amount, demand_unit] = demand.split(' ');
+            const [demand_amount_str, demand_unit_str] = demand.split(' ');
 
             newProperty = {
                 serial_no: `P-${totalSaleProperties + newCount + 1}`,
@@ -580,8 +593,8 @@ export default function PropertiesPage() {
                 area, address, city,
                 size_value: parseFloat(size_value),
                 size_unit: size_unit as SizeUnit,
-                demand_amount: parseFloat(demand_amount),
-                demand_unit: demand_unit as 'Lacs' | 'Crore',
+                demand_amount: parseFloat(demand_amount_str),
+                demand_unit: demand_unit_str.endsWith('Cr') ? 'Crore' : 'Lacs',
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
                 country_code: '+92',
@@ -590,7 +603,8 @@ export default function PropertiesPage() {
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
-                is_recorded: false,
+                is_recorded: video_recorded.toLowerCase() === 'yes',
+                video_links: { tiktok, youtube, instagram, facebook, other },
                 road_size_ft: road_size_ft ? parseInt(road_size_ft.replace(' ft', '')) : undefined,
                 storey: storey || undefined,
                 potential_rent_amount: potential_rent_amount ? parseInt(potential_rent_amount) : undefined,
@@ -606,12 +620,13 @@ export default function PropertiesPage() {
             };
         } else { // Rent import
              const [
-                _serial, _video, _date, number, city, area, address, property_type, size,
-                storey, utilities, rent, status
+                _serial, video_recorded, _date, number, city, area, address, property_type, size,
+                storey, utilities, status, rent,
+                tiktok, youtube, instagram, facebook, other
             ] = values;
 
             const [size_value, size_unit] = size.split(' ');
-            const [demand_amount, demand_unit] = rent.split(' ');
+            const [demand_amount_str, demand_unit_str] = rent.split(' ');
 
             newProperty = {
                 serial_no: `RP-${totalRentProperties + newCount + 1}`,
@@ -620,8 +635,8 @@ export default function PropertiesPage() {
                 area, address, city,
                 size_value: parseFloat(size_value),
                 size_unit: size_unit as SizeUnit,
-                demand_amount: parseFloat(demand_amount),
-                demand_unit: demand_unit as 'Thousand',
+                demand_amount: parseFloat(demand_amount_str),
+                demand_unit: 'Thousand', // Rent is always in thousands for now
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
                 country_code: '+92',
@@ -630,7 +645,8 @@ export default function PropertiesPage() {
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
-                is_recorded: false,
+                is_recorded: video_recorded.toLowerCase() === 'yes',
+                video_links: { tiktok, youtube, instagram, facebook, other },
                 storey: storey || undefined,
                 meters: {
                     electricity: utilities.includes('Electricity'),
@@ -654,6 +670,7 @@ export default function PropertiesPage() {
     };
     reader.readAsText(file);
     if(importInputRef.current) importInputRef.current.value = '';
+    setImportType(null); // Reset after import
   };
 
 
@@ -994,7 +1011,7 @@ export default function PropertiesPage() {
                             </div>
                             </PopoverContent>
                         </Popover>
-                        <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                        <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                         <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
                         <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                       </>
@@ -1065,6 +1082,22 @@ export default function PropertiesPage() {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
                 <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Properties</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Choose Import Type</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Select the type of properties you are importing from a CSV file.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Properties</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
