@@ -505,9 +505,9 @@ export default function BuyersPage() {
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</Button>
-                                            {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { handleDetailsClick(buyer); e.stopPropagation(); }}><Eye />View Details</Button>
+                                            {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { handleEdit(buyer); e.stopPropagation(); }}><Edit />Edit Details</Button>)}
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { handleSetAppointment(buyer); e.stopPropagation(); }}><CalendarPlus />Set Appointment</Button>
                                             
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -525,7 +525,7 @@ export default function BuyersPage() {
                                             {(profile.role !== 'Agent') && (
                                             <>
                                                 <Separator />
-                                                <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(buyer); }}><Trash2 />Delete</Button>
+                                                <Button variant="destructive" className="justify-start" onClick={(e) => { handleDelete(buyer); e.stopPropagation(); }}><Trash2 />Delete</Button>
                                             </>
                                             )}
                                         </div>
@@ -712,7 +712,7 @@ export default function BuyersPage() {
 
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
-            {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssign} />)}
+            {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
 
         </>
     );
