@@ -37,6 +37,7 @@ import {
   PackageCheck,
   RotateCcw,
   ChevronDown,
+  MessageSquare,
 } from 'lucide-react';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
@@ -67,7 +68,7 @@ import { useSearch, useUI } from '../layout';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/context/currency-context';
-import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -94,6 +95,8 @@ interface Filters {
   minDemand: string;
   maxDemand: string;
   demandUnit: PriceUnit | 'All';
+  serialNoPrefix: 'All' | 'P' | 'RP';
+  serialNo: string;
 }
 
 const propertyStatuses = [
@@ -161,6 +164,8 @@ export default function PropertiesPage() {
     minDemand: '',
     maxDemand: '',
     demandUnit: 'All',
+    serialNoPrefix: 'All',
+    serialNo: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   
@@ -194,6 +199,8 @@ export default function PropertiesPage() {
       minDemand: '',
       maxDemand: '',
       demandUnit: 'All',
+      serialNoPrefix: 'All',
+      serialNo: '',
     });
     setIsFilterPopoverOpen(false);
   };
@@ -220,6 +227,10 @@ export default function PropertiesPage() {
     if (filters.maxSize) baseProperties = baseProperties.filter((p) => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
+    if (filters.serialNo && filters.serialNoPrefix !== 'All') {
+        const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
+        baseProperties = baseProperties.filter(p => p.serial_no === fullSerialNo);
+    }
 
     // 3. Final Filter: URL Status Param
     const currentStatusFilter = statusFilterFromURL || 'All (Sale)';
@@ -294,6 +305,12 @@ export default function PropertiesPage() {
       message: `Regarding property: ${prop.auto_title} (${prop.address})`,
     });
     setIsAppointmentOpen(true);
+  };
+  
+  const handleWhatsAppChat = (e: React.MouseEvent, prop: Property) => {
+    e.stopPropagation();
+    const phoneNumber = formatPhoneNumberForWhatsApp(prop.owner_number, prop.country_code);
+    window.open(`https://wa.me/${phoneNumber}`, '_blank');
   };
 
   const handleSaveAppointment = async (appointment: Appointment) => {
@@ -479,6 +496,7 @@ export default function PropertiesPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="glass-card">
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
@@ -569,6 +587,7 @@ export default function PropertiesPage() {
                     </SheetHeader>
                     <div className="flex flex-col gap-2">
                         <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
+                        <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
                         <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
                         {prop.is_for_rent && prop.status === 'Available' && (
                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
@@ -652,6 +671,22 @@ export default function PropertiesPage() {
                                 <p className="text-sm text-muted-foreground">Refine your property search.</p>
                                 </div>
                                 <div className="grid gap-2">
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label>Serial No</Label>
+                                    <div className="col-span-2 grid grid-cols-2 gap-2">
+                                        <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'P' | 'RP') => handleFilterChange('serialNoPrefix', value)}>
+                                            <SelectTrigger className="h-8">
+                                                <SelectValue placeholder="Prefix" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="All">All</SelectItem>
+                                                <SelectItem value="P">P</SelectItem>
+                                                <SelectItem value="RP">RP</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
+                                    </div>
+                                </div>
                                 <div className="grid grid-cols-3 items-center gap-4">
                                     <Label htmlFor="area">Area</Label>
                                     <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
@@ -791,5 +826,6 @@ export default function PropertiesPage() {
   }
 
     
+
 
 

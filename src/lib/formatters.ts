@@ -65,3 +65,16 @@ export const formatCurrency = (
 
     return `${symbol} ${formattedValue}`;
 };
+
+export const formatPhoneNumberForWhatsApp = (phone: string, countryCode: string = '+92'): string => {
+  if (!phone) return '';
+  let cleaned = phone.replace(/\D/g, '');
+
+  // Remove leading '0' if present for Pakistan numbers
+  if (countryCode === '+92' && cleaned.startsWith('0')) {
+    cleaned = cleaned.substring(1);
+  }
+  
+  // Return number with country code but without '+'
+  return `${countryCode.replace('+', '')}${cleaned}`;
+};

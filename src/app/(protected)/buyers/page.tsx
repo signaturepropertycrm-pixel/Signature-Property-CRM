@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,7 +21,7 @@ import { useSearch, useUI } from '../layout';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -63,6 +63,8 @@ interface Filters {
     minSize: string;
     maxSize: string;
     sizeUnit: SizeUnit | 'All';
+    serialNoPrefix: 'All' | 'B' | 'RB';
+    serialNo: string;
 }
 
 export default function BuyersPage() {
@@ -110,7 +112,7 @@ export default function BuyersPage() {
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
-    const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
+    const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
 
 
@@ -205,7 +207,7 @@ export default function BuyersPage() {
     };
 
     const clearFilters = () => {
-        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
+        setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
         setActiveStatusFilter('All');
         setIsFilterPopoverOpen(false);
     };
@@ -313,6 +315,12 @@ export default function BuyersPage() {
         }
         setBuyerToEdit(null);
     };
+    
+    const handleWhatsAppChat = (e: React.MouseEvent, buyer: Buyer) => {
+        e.stopPropagation();
+        const phoneNumber = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
+        window.open(`https://wa.me/${phoneNumber}`, '_blank');
+    };
 
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
@@ -343,6 +351,10 @@ export default function BuyersPage() {
         if (filters.propertyType !== 'All') filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
         if (filters.minSize) filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
         if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
+        if (filters.serialNo && filters.serialNoPrefix !== 'All') {
+            const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
+            filtered = filtered.filter(p => p.serial_no === fullSerialNo);
+        }
 
         return filtered;
     }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter]);
@@ -432,6 +444,7 @@ export default function BuyersPage() {
                                         <DropdownMenuContent align="end" className="glass-card">
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
                                             {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                            <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                             <DropdownMenuSub>
                                                 <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
@@ -462,7 +475,7 @@ export default function BuyersPage() {
             <div className="space-y-4">
                 {buyers.map(buyer => {
                     return (
-                        <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                        <Card key={buyer.id}>
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
@@ -501,13 +514,14 @@ export default function BuyersPage() {
                                             <span className="sr-only">Toggle menu</span>
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="bottom" className="w-full">
+                                    <SheetContent side="bottom" className="w-full" onClick={e => e.stopPropagation()}>
                                         <SheetHeader className="text-left mb-4">
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); setSelectedBuyer(buyer); setIsDetailsOpen(true); }}><Eye />View Details</Button>
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
+                                            <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</Button>
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
                                             
                                             <DropdownMenu>
@@ -571,6 +585,22 @@ export default function BuyersPage() {
                                                     <p className="text-sm text-muted-foreground">Refine your buyer search.</p>
                                                 </div>
                                                 <div className="grid gap-2">
+                                                    <div className="grid grid-cols-3 items-center gap-4">
+                                                        <Label>Serial No</Label>
+                                                        <div className="col-span-2 grid grid-cols-2 gap-2">
+                                                            <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'B' | 'RB') => handleFilterChange('serialNoPrefix', value)}>
+                                                                <SelectTrigger className="h-8">
+                                                                    <SelectValue placeholder="Prefix" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="All">All</SelectItem>
+                                                                    <SelectItem value="B">B</SelectItem>
+                                                                    <SelectItem value="RB">RB</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
+                                                        </div>
+                                                    </div>
                                                     
                                                     <div className="grid grid-cols-3 items-center gap-4">
                                                         <Label htmlFor="area">Area</Label>
@@ -657,31 +687,33 @@ export default function BuyersPage() {
                         </div>
                     </div>
                     
-                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                        <div className="flex items-center justify-between gap-4">
-                            <TabsList className="grid w-full grid-cols-2">
+                    <div className="flex items-center justify-between gap-4">
+                        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                            <TabsList className='grid w-full grid-cols-2'>
                                 <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
                                 <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
                             </TabsList>
-                            {isMobile && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" className="ml-auto">
-                                            {activeStatusFilter}
-                                            <ChevronDown className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
-                                        {buyerStatuses.map(status => (
-                                            <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
-                                                {status}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
-                        </div>
+                        </Tabs>
+                        {isMobile && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="ml-auto">
+                                        {activeStatusFilter}
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
+                                    {buyerStatuses.map(status => (
+                                        <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
+                                            {status}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
+                    <Tabs value={activeTab} onValueChange={handleTabChange}>
                         <TabsContent value="For Sale" className="mt-4">
                             {renderContent(filteredBuyers)}
                         </TabsContent>
@@ -720,3 +752,4 @@ export default function BuyersPage() {
         </>
     );
 }
+
