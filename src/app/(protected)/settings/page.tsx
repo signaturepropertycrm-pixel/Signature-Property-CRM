@@ -83,7 +83,6 @@ export default function SettingsPage() {
   
   const [localProfile, setLocalProfile] = useState<ProfileData>(profile);
   const [mounted, setMounted] = useState(false);
-  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isClearActivitiesDialogOpen, setIsClearActivitiesDialogOpen] = useState(false);
   const [isDeleteAgentDialogOpen, setDeleteAgentDialogOpen] = useState(false);
@@ -210,39 +209,6 @@ export default function SettingsPage() {
         setIsPasswordUpdating(false);
     }
   };
-
-  const handleAvatarSave = (dataUrl: string) => {
-    if (!user) return;
-
-    // A user can always update their own user document
-    const docRef = doc(firestore, 'users', user.uid);
-    const dataToUpdate = { avatar: dataUrl };
-
-    updateDoc(docRef, dataToUpdate)
-      .then(() => {
-        if (auth.currentUser) {
-          // Also update the photoURL in Firebase Auth profile
-          return updateProfile(auth.currentUser, { photoURL: dataUrl });
-        }
-      })
-      .then(() => {
-        // Update the local context
-        setProfile({ ...profile, avatar: dataUrl });
-        toast({
-          title: "Profile Picture Updated",
-          description: "Your new avatar has been saved."
-        });
-        setIsAvatarDialogOpen(false);
-      })
-      .catch(serverError => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'update',
-          requestResourceData: dataToUpdate,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  }
 
   const handleBackup = () => {
     try {
@@ -396,15 +362,10 @@ export default function SettingsPage() {
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
                             <div className="flex items-center gap-6">
-                                <button type="button" onClick={() => setIsAvatarDialogOpen(true)} className="rounded-full relative group">
-                                    <Avatar className="h-20 w-20 border-4 border-primary/20">
-                                        <AvatarImage src={profile.avatar} />
-                                        <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span className="text-white text-xs font-bold">Change</span>
-                                    </div>
-                                </button>
+                                <Avatar className="h-20 w-20 border-4 border-primary/20">
+                                    <AvatarImage src={profile.avatar} />
+                                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                </Avatar>
                                 <div>
                                     <h3 className="text-lg font-bold">{profile.name}</h3>
                                     <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -506,11 +467,6 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <AvatarCropDialog 
-              isOpen={isAvatarDialogOpen}
-              setIsOpen={setIsAvatarDialogOpen}
-              onSave={handleAvatarSave}
-            />
             <DeleteAgentDialog 
                 isOpen={isDeleteAgentDialogOpen}
                 setIsOpen={setDeleteAgentDialogOpen}
@@ -542,15 +498,10 @@ export default function SettingsPage() {
         <form onSubmit={handleProfileSave}>
           <CardContent className="space-y-6">
              <div className="flex items-center gap-6">
-                <button type="button" onClick={() => setIsAvatarDialogOpen(true)} className="rounded-full relative group">
-                    <Avatar className="h-20 w-20 border-4 border-primary/20">
-                        <AvatarImage src={profile.avatar} />
-                        <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-white text-xs font-bold">Change</span>
-                    </div>
-                </button>
+                <Avatar className="h-20 w-20 border-4 border-primary/20">
+                    <AvatarImage src={profile.avatar} />
+                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                </Avatar>
                 <div>
                     <h3 className="text-lg font-bold">{profile.name}</h3>
                     <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
@@ -897,12 +848,6 @@ export default function SettingsPage() {
       )}
 
     </div>
-    <AvatarCropDialog 
-      isOpen={isAvatarDialogOpen}
-      setIsOpen={setIsAvatarDialogOpen}
-      onSave={handleAvatarSave}
-    />
-
     <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
     <DeleteAgencyDialog 
         isOpen={isDeleteAgencyDialogOpen}
@@ -1016,172 +961,6 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
           <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
             {isLoading && <Loader2 className="animate-spin mr-2" />}
             Confirm & Delete Agency
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function AvatarCropDialog({
-  isOpen,
-  setIsOpen,
-  onSave,
-}: {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  onSave: (dataUrl: string) => void;
-}) {
-  const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<Crop>();
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (!isOpen) {
-      setImgSrc('');
-      setCrop(undefined);
-      setCompletedCrop(undefined);
-    }
-  }, [isOpen]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setCrop(undefined); // Reset crop on new image
-      const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    const crop = centerCrop(
-      makeAspectCrop(
-        {
-          unit: '%',
-          width: 90,
-        },
-        1, // aspect ratio 1:1
-        width,
-        height
-      ),
-      width,
-      height
-    );
-    setCrop(crop);
-    setCompletedCrop(crop); // Set initial completed crop
-  };
-  
-  useEffect(() => {
-    if (
-      !completedCrop ||
-      !previewCanvasRef.current ||
-      !imgRef.current
-    ) {
-      return;
-    }
-
-    const image = imgRef.current;
-    const canvas = previewCanvasRef.current;
-    const crop = completedCrop;
-
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
-    
-    canvas.width = Math.floor(crop.width * scaleX);
-    canvas.height = Math.floor(crop.height * scaleY);
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error('No 2d context');
-    }
-
-    ctx.drawImage(
-      image,
-      crop.x * scaleX,
-      crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
-      0,
-      0,
-      crop.width * scaleX,
-      crop.height * scaleY
-    );
-  }, [completedCrop]);
-
-
-  const handleSave = () => {
-    const canvas = previewCanvasRef.current;
-    if (!canvas) {
-      toast({ title: "Please select an image and crop it.", variant: "destructive" });
-      return;
-    }
-    
-    // Simulate resizing to a max of 256x256 for the final output
-    const image = document.createElement('img');
-    image.src = canvas.toDataURL('image/png');
-    image.onload = () => {
-        const finalCanvas = document.createElement('canvas');
-        const MAX_DIMENSION = 256;
-        finalCanvas.width = MAX_DIMENSION;
-        finalCanvas.height = MAX_DIMENSION;
-        const ctx = finalCanvas.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(image, 0, 0, MAX_DIMENSION, MAX_DIMENSION);
-        const dataUrl = finalCanvas.toDataURL('image/png');
-        onSave(dataUrl);
-    };
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Change Profile Picture</DialogTitle>
-          <DialogDescription>Crop your image to the perfect size.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <Input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-          />
-          {imgSrc && (
-            <div className="flex flex-col items-center gap-4 mt-4">
-                <ReactCrop
-                    crop={crop}
-                    onChange={c => setCrop(c)}
-                    onComplete={(c) => setCompletedCrop(c)}
-                    aspect={1}
-                    circularCrop
-                    style={{ maxHeight: '50vh' }}
-                >
-                    <Image
-                        ref={imgRef}
-                        alt="Crop me"
-                        src={imgSrc}
-                        width={0}
-                        height={0}
-                        sizes="100vw"
-                        style={{ width: '100%', height: 'auto' }}
-                        onLoad={onImageLoad}
-                    />
-                </ReactCrop>
-                <canvas ref={previewCanvasRef} style={{ display: 'none' }} />
-            </div>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!imgSrc}>
-            Save Changes
           </Button>
         </DialogFooter>
       </DialogContent>
