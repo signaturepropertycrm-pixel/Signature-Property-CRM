@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -740,7 +741,7 @@ export default function PropertiesPage() {
           </div>
         </TooltipProvider>
   
-        <div className={cn('fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
+        <div className={cn('fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity', isMoreMenuOpen && 'opacity-0 pointer-events-none')}>
             <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
                 <PopoverTrigger asChild>
                     <Button onClick={() => user && !user.emailVerified && handleOpenAddDialog('For Sale')} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
