@@ -125,16 +125,21 @@ export default function SettingsPage() {
   useEffect(() => {
     setMounted(true);
     const phone = profile.phone || '';
-    const selectedCountry = countryCodes.find(c => phone.startsWith(c.dial_code));
-
-    if (selectedCountry) {
-        setCountryCode(selectedCountry.dial_code);
-        setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
-    } else if (phone.startsWith('+92')) {
-        setCountryCode('+92');
-        setLocalProfile({ ...profile, phone: phone.substring(3) }); // Remove '+92'
+    const phoneHasPlus = phone.startsWith('+');
+    
+    if (phoneHasPlus) {
+        const selectedCountry = countryCodes.find(c => phone.startsWith(c.dial_code));
+        if (selectedCountry) {
+            setCountryCode(selectedCountry.dial_code);
+            setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
+        } else {
+            // Fallback for numbers with + but not in our list (e.g. +1)
+            setCountryCode(phone.substring(0, phone.length - 10)); // crude but might work
+            setLocalProfile({ ...profile, phone: phone.substring(phone.length - 10) });
+        }
     } else {
-        setCountryCode('+92'); // Default
+        // No country code, assume default
+        setCountryCode('+92');
         setLocalProfile(profile);
     }
 
@@ -155,44 +160,47 @@ export default function SettingsPage() {
 
   const handleAvatarUpdate = async (dataUrl: string) => {
     if (!user || !profile.agency_id) return;
-    const storage = getStorage();
-    const isUserAdmin = profile.role === 'Admin';
-    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/${user.uid}.jpg`);
   
     try {
-      await uploadString(avatarRef, dataUrl, 'data_url');
-      const downloadURL = await getDownloadURL(avatarRef);
-  
       const batch = writeBatch(firestore);
+      const isUserAdmin = profile.role === 'Admin';
   
-      // Every user updates their own teamMember document
+      // Update team member document for all roles
       const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-      batch.update(teamMemberRef, { avatar: downloadURL });
+      batch.update(teamMemberRef, { avatar: dataUrl });
   
-      // Only admins update the main agency document
+      // If user is Admin, update the main agency doc
       if (isUserAdmin) {
         const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-        batch.update(agencyDocRef, { avatar: downloadURL });
+        batch.update(agencyDocRef, { avatar: dataUrl });
+      }
+      
+      // If user is Agent, update their root agent doc
+      if (profile.role === 'Agent') {
+          const agentDocRef = doc(firestore, 'agents', user.uid);
+          batch.update(agentDocRef, { avatar: dataUrl });
       }
   
       await batch.commit();
   
-      // This is the crucial part: update the user's auth profile
-      await updateProfile(user, { photoURL: downloadURL });
-      
-      // This updates the local context state
-      setProfile({ ...profile, avatar: downloadURL });
+      // Update Auth user profile
+      if(auth.currentUser) {
+        await updateProfile(auth.currentUser, { photoURL: dataUrl });
+      }
+  
+      // Update local context
+      setProfile({ ...profile, avatar: dataUrl });
   
       toast({ title: 'Profile Picture Updated!' });
-    } catch (error) {
-      console.error("Avatar upload error:", error);
+    } catch (error: any) {
+      console.error('Avatar update error:', error);
       toast({
-        title: 'Upload Failed',
-        description: 'Could not update your profile picture. Please check permissions.',
+        title: 'Update Failed',
+        description: error.message || 'Could not update profile picture. Please try again.',
         variant: 'destructive',
       });
     } finally {
-        setIsAvatarCropOpen(false);
+      setIsAvatarCropOpen(false);
     }
   };
 
@@ -201,8 +209,10 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
     
-    const phoneHasPlus = localProfile.phone && localProfile.phone.startsWith('+');
-    const fullPhoneNumber = phoneHasPlus ? localProfile.phone : formatPhoneNumber(localProfile.phone, countryCode);
+    let fullPhoneNumber = localProfile.phone || '';
+    if (!fullPhoneNumber.startsWith('+')) {
+      fullPhoneNumber = `${countryCode}${fullPhoneNumber.replace(/\D/g, '')}`;
+    }
 
 
     if (
@@ -220,38 +230,43 @@ export default function SettingsPage() {
     };
 
     const isUserAdmin = profile.role === 'Admin';
-    const docId = isUserAdmin ? profile.agency_id : user.uid;
-
-    if (!docId) {
-        toast({ title: 'Error updating profile', description: 'Could not determine document to update.', variant: 'destructive'});
-        return;
-    }
-
-    const batch = writeBatch(firestore);
     
-    // Admin updates the agency doc
-    if (isUserAdmin && profile.agency_id) {
-        const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-        batch.update(agencyDocRef, { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone });
-    }
+    try {
+        const batch = writeBatch(firestore);
+        
+        // Admin updates the agency doc
+        if (isUserAdmin && profile.agency_id) {
+            const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
+            batch.update(agencyDocRef, { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone });
+        }
 
-    // Every user (admin or agent) updates their teamMember doc
-    if (profile.agency_id) {
-        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-        batch.update(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
-    }
+        // Every user (admin or agent) updates their teamMember doc
+        if (profile.agency_id) {
+            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+            batch.update(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
+        }
+        
+        // Agent also updates their root agent doc
+        if (profile.role === 'Agent') {
+            const agentDocRef = doc(firestore, 'agents', user.uid);
+            batch.update(agentDocRef, { name: formattedProfile.name, phone: formattedProfile.phone });
+        }
 
-    await batch.commit();
-    
-    if (auth.currentUser && formattedProfile.name !== profile.name) {
-      await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
-    }
+        await batch.commit();
+        
+        if (auth.currentUser && formattedProfile.name !== profile.name) {
+          await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
+        }
 
-    setProfile(formattedProfile);
-    toast({
-      title: 'Profile Updated',
-      description: 'Your profile information has been saved successfully.',
-    });
+        setProfile(formattedProfile);
+        toast({
+          title: 'Profile Updated',
+          description: 'Your profile information has been saved successfully.',
+        });
+    } catch(error) {
+         toast({ title: 'Error updating profile', description: 'Could not save changes.', variant: 'destructive'});
+         console.error("Profile save error:", error);
+    }
   };
 
   const handlePasswordChange = async (values: PasswordFormValues) => {
@@ -435,7 +450,7 @@ export default function SettingsPage() {
                     <CardHeader><CardTitle>My Profile</CardTitle></CardHeader>
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
-                             <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-6">
                                 <div className="relative group">
                                     <Avatar className="h-24 w-24 border-4 border-primary/20">
                                         <AvatarImage src={profile.avatar} />
