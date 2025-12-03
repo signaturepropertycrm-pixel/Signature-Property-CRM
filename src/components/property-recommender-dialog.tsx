@@ -15,8 +15,8 @@ import { Buyer, Property, RecommendedProperty } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Share2, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Share2, Sparkles, RefreshCw } from 'lucide-react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { Progress } from './ui/progress';
@@ -34,10 +34,15 @@ interface PropertyRecommenderDialogProps {
 
 // Function to calculate the match score and reasons
 const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedProperty | null => {
-    if (
-        property.status !== 'Available' ||
-        property.listing_type !== buyer.listing_type
-    ) {
+    // Basic checks: property must be available
+    if (property.status !== 'Available') {
+        return null;
+    }
+    
+    // Listing type check: 'For Sale' buyers see sale properties, 'For Rent' see rent.
+    const buyerListingType = buyer.listing_type || 'For Sale'; // Default to 'For Sale' if not specified
+    const propertyListingType = property.is_for_rent ? 'For Rent' : 'For Sale';
+    if (buyerListingType !== propertyListingType) {
         return null;
     }
     
@@ -55,8 +60,9 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
 
     // 2. Area Match (Flexible)
     if (buyer.area_preference) {
-        const buyerAreas = buyer.area_preference.toLowerCase().split(',').map(a => a.trim());
-        if (buyerAreas.some(area => property.area.toLowerCase().includes(area))) {
+        const buyerAreas = buyer.area_preference.toLowerCase().split(',').map(a => a.trim()).filter(Boolean);
+        const propertyArea = property.area.toLowerCase();
+        if (buyerAreas.length > 0 && buyerAreas.some(area => propertyArea.includes(area))) {
             score += 25;
             reasons.push('Area preference matched.');
         }
@@ -109,6 +115,13 @@ export function PropertyRecommenderDialog({
 }: PropertyRecommenderDialogProps) {
     const { currency } = useCurrency();
     const { toast } = useToast();
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const handleRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+        toast({ title: "Recommendations Refreshed", description: "The property list has been updated." });
+    }, [toast]);
+
 
     const recommendedProperties = useMemo(() => {
         if (!buyer || !properties) return [];
@@ -117,7 +130,8 @@ export function PropertyRecommenderDialog({
             .map(prop => calculateMatchScore(buyer, prop))
             .filter((p): p is RecommendedProperty => p !== null)
             .sort((a, b) => b.matchScore - a.matchScore);
-    }, [buyer, properties]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [buyer, properties, refreshKey]);
 
     const handleShare = (property: RecommendedProperty) => {
         const buyerPhone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
@@ -153,10 +167,16 @@ This seems like a good fit for you. Let me know if you'd like to schedule a visi
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
-                    <DialogTitle className="font-headline flex items-center gap-2 text-2xl">
-                        <Sparkles />
-                        Property Recommendations for {buyer.name}
-                    </DialogTitle>
+                    <div className="flex justify-between items-center">
+                         <DialogTitle className="font-headline flex items-center gap-2 text-2xl">
+                            <Sparkles />
+                            Property Recommendations for {buyer.name}
+                        </DialogTitle>
+                        <Button variant="outline" size="sm" onClick={handleRefresh}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Refresh
+                        </Button>
+                    </div>
                     <DialogDescription>
                         Based on the buyer's preferences, here are the top property matches.
                     </DialogDescription>
@@ -177,7 +197,7 @@ This seems like a good fit for you. Let me know if you'd like to schedule a visi
                                     <div className="flex items-center gap-4 mt-4">
                                         <div className="w-24 text-center">
                                             <p className="text-xs text-muted-foreground">Match Score</p>
-                                            <p className="text-2xl font-bold" style={{ color: getScoreColor(prop.matchScore).replace('bg-','--tw-bg-') }}>{prop.matchScore}%</p>
+                                            <p className="text-2xl font-bold" style={{ color: `hsl(var(--${getScoreColor(prop.matchScore).replace('bg-','')}-foreground))` }}>{prop.matchScore}%</p>
                                         </div>
                                         <div className="flex-1">
                                             <Progress value={prop.matchScore} className="h-3" indicatorClassName={getScoreColor(prop.matchScore)} />
@@ -225,5 +245,4 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
-
 
