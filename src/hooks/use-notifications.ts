@@ -11,7 +11,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, UserRole, Appointment, FollowUp, Activity, ActivityNotification } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { isBefore, sub, isAfter, isToday, parseISO, startOfToday, differenceInHours } from 'date-fns';
+import { isBefore, sub, isAfter, isToday, parseISO, differenceInHours } from 'date-fns';
 
 const NOTIFICATION_READ_STATUS_KEY = 'signaturecrm_read_notifications';
 const DELETED_NOTIFICATIONS_KEY = 'signaturecrm_deleted_notifications';
@@ -149,8 +149,9 @@ export const useNotifications = () => {
             loadingStates.invitations = false;
         }
 
+        const areAppointmentNotificationsEnabled = localStorage.getItem('notifications_appointments_enabled') !== 'false';
         // Appointments
-        if(appointmentsQuery) {
+        if(appointmentsQuery && areAppointmentNotificationsEnabled) {
              const unsubAppointments = onSnapshot(appointmentsQuery, (snapshot) => {
                 const now = new Date();
                 const appointmentNotifications: AppointmentNotification[] = [];
@@ -198,8 +199,9 @@ export const useNotifications = () => {
              loadingStates.appointments = false;
         }
 
+        const areFollowUpNotificationsEnabled = localStorage.getItem('notifications_followups_enabled') !== 'false';
         // Follow-ups
-        if(followUpsQuery) {
+        if(followUpsQuery && areFollowUpNotificationsEnabled) {
             const unsubFollowUps = onSnapshot(followUpsQuery, (snapshot) => {
                 const now = new Date();
                 const followUpNotifications: FollowUpNotification[] = [];
@@ -305,3 +307,5 @@ export const useNotifications = () => {
 
     return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh };
 };
+
+    

@@ -95,6 +95,9 @@ export default function SettingsPage() {
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [countryCode, setCountryCode] = useState('+92');
 
+  const [appointmentNotifications, setAppointmentNotifications] = useState(true);
+  const [followUpNotifications, setFollowUpNotifications] = useState(true);
+
 
   const passwordForm = useForm<PasswordFormValues>({
       resolver: zodResolver(passwordFormSchema),
@@ -128,7 +131,20 @@ export default function SettingsPage() {
         setCountryCode('+92');
         setLocalProfile({ ...profile, phone: phone.replace(/^\+92/, '') });
     }
+     // Load notification settings
+    const savedAppointmentSetting = localStorage.getItem('notifications_appointments_enabled');
+    const savedFollowUpSetting = localStorage.getItem('notifications_followups_enabled');
+    setAppointmentNotifications(savedAppointmentSetting !== 'false'); // default to true
+    setFollowUpNotifications(savedFollowUpSetting !== 'false'); // default to true
   }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem('notifications_appointments_enabled', String(appointmentNotifications));
+  }, [appointmentNotifications]);
+
+  useEffect(() => {
+    localStorage.setItem('notifications_followups_enabled', String(followUpNotifications));
+  }, [followUpNotifications]);
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -704,24 +720,24 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
-                    <Label>Email for new leads</Label>
-                    <p className="text-xs text-muted-foreground">Receive an email every time a new buyer is added.</p>
+                    <Label>Appointment Reminders</Label>
+                    <p className="text-xs text-muted-foreground">Receive in-app reminders for upcoming appointments.</p>
                 </div>
-                <Switch defaultChecked />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
-                <div className="space-y-0.5">
-                    <Label>Appointment reminders</Label>
-                    <p className="text-xs text-muted-foreground">Get an email reminder one hour before an appointment.</p>
-                </div>
-                <Switch />
+                <Switch checked={appointmentNotifications} onCheckedChange={setAppointmentNotifications} />
             </div>
              <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
-                    <Label>In-app mentions</Label>
-                    <p className="text-xs text-muted-foreground">Get a notification when a team member @-mentions you.</p>
+                    <Label>Follow-up Reminders</Label>
+                    <p className="text-xs text-muted-foreground">Receive in-app reminders for scheduled follow-ups.</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={followUpNotifications} onCheckedChange={setFollowUpNotifications} />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                    <Label>Email for new leads</Label>
+                    <p className="text-xs text-muted-foreground">Receive an email every time a new buyer is added.</p>
+                </div>
+                <Switch defaultChecked disabled />
             </div>
         </CardContent>
       </Card>
@@ -959,3 +975,5 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
     </Dialog>
   );
 }
+
+    
