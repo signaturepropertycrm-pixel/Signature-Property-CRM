@@ -447,19 +447,19 @@ export default function PropertiesPage() {
             <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex items-center gap-2">
-                <span className="font-bold font-headline text-base">
-                  {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-                </span>
-                  {prop.is_recorded && (
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Video className="h-4 w-4 text-primary" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Video is recorded</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
+                  <span className="font-bold font-headline text-base flex items-center gap-2">
+                    {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                    {prop.is_recorded && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Video className="h-4 w-4 text-primary" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Video is recorded</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </span>
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                    <Badge
@@ -826,6 +826,7 @@ export default function PropertiesPage() {
   }
 
     
+
 
 
 
