@@ -177,8 +177,11 @@ export default function SettingsPage() {
   
       await batch.commit();
   
-      setProfile({ ...profile, avatar: downloadURL });
+      // This is the crucial part: update the user's auth profile
       await updateProfile(user, { photoURL: downloadURL });
+      
+      // This updates the local context state
+      setProfile({ ...profile, avatar: downloadURL });
   
       toast({ title: 'Profile Picture Updated!' });
     } catch (error) {
@@ -198,10 +201,9 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
     
-    // Only format if the number doesn't already start with '+'
-    const fullPhoneNumber = localProfile.phone && !localProfile.phone.startsWith('+')
-        ? formatPhoneNumber(localProfile.phone, countryCode)
-        : localProfile.phone;
+    const phoneHasPlus = localProfile.phone && localProfile.phone.startsWith('+');
+    const fullPhoneNumber = phoneHasPlus ? localProfile.phone : formatPhoneNumber(localProfile.phone, countryCode);
+
 
     if (
         localProfile.name === profile.name &&
@@ -433,13 +435,13 @@ export default function SettingsPage() {
                     <CardHeader><CardTitle>My Profile</CardTitle></CardHeader>
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
-                            <div className="flex items-center gap-6">
+                             <div className="flex items-center gap-6">
                                 <div className="relative group">
                                     <Avatar className="h-24 w-24 border-4 border-primary/20">
                                         <AvatarImage src={profile.avatar} />
                                         <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                    <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
                                         Change
                                     </button>
                                 </div>
@@ -597,7 +599,7 @@ export default function SettingsPage() {
                         <AvatarImage src={profile.avatar} />
                         <AvatarFallback>{profile.agencyName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
                         Change
                     </button>
                 </div>
@@ -1071,5 +1073,3 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
     </Dialog>
   );
 }
-
-    
