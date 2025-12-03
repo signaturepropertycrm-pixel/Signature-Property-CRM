@@ -65,11 +65,6 @@ interface Filters {
     sizeUnit: SizeUnit | 'All';
 }
 
-const buyerTypes = [
-    { value: 'For Sale', label: 'Sale Buyers' },
-    { value: 'For Rent', label: 'Rent Buyers' }
-];
-
 export default function BuyersPage() {
     const isMobile = useIsMobile();
     const router = useRouter();
@@ -116,6 +111,8 @@ export default function BuyersPage() {
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
+    const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
+
 
     const buyerFollowUp = useMemo(() => {
         if (!buyerForFollowUp || !followUps) return null;
@@ -208,6 +205,7 @@ export default function BuyersPage() {
 
     const clearFilters = () => {
         setFilters({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All' });
+        setActiveStatusFilter('All');
         setIsFilterPopoverOpen(false);
     };
     
@@ -319,20 +317,16 @@ export default function BuyersPage() {
         if (!allBuyers) return [];
         let filtered: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        // 1. Primary filter by Listing Type (from tabs)
-        // This also handles legacy buyers that don't have listing_type set (defaults them to 'For Sale')
         filtered = filtered.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
         if (profile.role === 'Agent') {
             filtered = filtered.filter(b => b.created_by === profile.user_id);
         }
 
-        // Sidebar status filter from URL
-        if (statusFilterFromURL && statusFilterFromURL !== 'All') {
-            filtered = filtered.filter(b => b.status === statusFilterFromURL);
+        if (activeStatusFilter && activeStatusFilter !== 'All') {
+            filtered = filtered.filter(b => b.status === activeStatusFilter);
         }
         
-        // Search query filter
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             filtered = filtered.filter(buyer =>
@@ -342,10 +336,6 @@ export default function BuyersPage() {
             );
         }
         
-        // Advanced filters from popover
-        if (filters.status !== 'All') {
-            filtered = filtered.filter(b => b.status === filters.status);
-        }
         if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
         if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
         if (filters.maxBudget) filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
@@ -354,12 +344,13 @@ export default function BuyersPage() {
         if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
 
         return filtered;
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, statusFilterFromURL, activeTab]);
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter]);
 
 
     const handleTabChange = (value: string) => {
         const url = `${pathname}?type=${value}`;
         router.push(url);
+        setActiveStatusFilter('All'); // Reset status filter on tab change
     };
 
     const handleAddBuyerClick = () => {
@@ -564,22 +555,7 @@ export default function BuyersPage() {
                             </p>
                         </div>
                         <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-full sm:w-auto">
-                                        {buyerTypes.find(t => t.value === activeTab)?.label || 'Sale Buyers'}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {buyerTypes.map(type => (
-                                        <DropdownMenuItem key={type.value} onSelect={() => handleTabChange(type.value)}>
-                                            {type.label}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                             {(profile.role === 'Admin' || profile.role === 'Editor') && (
+                            {(profile.role === 'Admin' || profile.role === 'Editor') && (
                                 <>
                                     <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                                         <PopoverTrigger asChild>
@@ -590,24 +566,11 @@ export default function BuyersPage() {
                                         <PopoverContent className="w-80">
                                             <div className="grid gap-4">
                                                 <div className="space-y-2">
-                                                    <h4 className="font-medium leading-none">Filters</h4>
+                                                    <h4 className="font-medium leading-none">Advanced Filters</h4>
                                                     <p className="text-sm text-muted-foreground">Refine your buyer search.</p>
                                                 </div>
                                                 <div className="grid gap-2">
-                                                    <div className="grid grid-cols-3 items-center gap-4">
-                                                        <Label htmlFor="status">Status</Label>
-                                                        <Select value={filters.status} onValueChange={(value: BuyerStatus | 'All') => handleFilterChange('status', value)}>
-                                                            <SelectTrigger className="col-span-2 h-8">
-                                                                <SelectValue placeholder="Status" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="All">All</SelectItem>
-                                                                {buyerStatuses.map(status => (
-                                                                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
+                                                    
                                                     <div className="grid grid-cols-3 items-center gap-4">
                                                         <Label htmlFor="area">Area</Label>
                                                         <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
@@ -693,9 +656,36 @@ export default function BuyersPage() {
                         </div>
                     </div>
                     
-                    <div className="mt-4">
-                        {renderContent(filteredBuyers)}
-                    </div>
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        <div className="flex items-center justify-between gap-4">
+                            <TabsList>
+                                <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
+                                <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
+                            </TabsList>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="ml-auto">
+                                        Status: {activeStatusFilter}
+                                        <ChevronDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
+                                    {buyerStatuses.map(status => (
+                                        <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
+                                            {status}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <TabsContent value="For Sale" className="mt-4">
+                            {renderContent(filteredBuyers)}
+                        </TabsContent>
+                        <TabsContent value="For Rent" className="mt-4">
+                            {renderContent(filteredBuyers)}
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </TooltipProvider>
 
@@ -727,5 +717,7 @@ export default function BuyersPage() {
         </>
     );
 }
+
+    
 
     
