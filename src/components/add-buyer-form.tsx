@@ -101,10 +101,10 @@ const getInitialFormValues = (
             city: buyerToEdit.city || '',
             area_preference: buyerToEdit.area_preference || '',
             notes: buyerToEdit.notes || '',
-            size_min_value: buyerToEdit.size_min_value || 0,
-            size_max_value: buyerToEdit.size_max_value || 0,
-            budget_min_amount: buyerToEdit.budget_min_amount || 0,
-            budget_max_amount: buyerToEdit.budget_max_amount || 0,
+            size_min_value: buyerToEdit.size_min_value ?? 0,
+            size_max_value: buyerToEdit.size_max_value ?? 0,
+            budget_min_amount: buyerToEdit.budget_min_amount ?? 0,
+            budget_max_amount: buyerToEdit.budget_max_amount ?? 0,
             is_investor: buyerToEdit.is_investor || false,
             listing_type: buyerToEdit.listing_type || 'For Sale',
         };
@@ -115,7 +115,7 @@ const getInitialFormValues = (
 
     return {
         name: '',
-        listing_type: 'For Sale',
+        listing_type: listingType,
         country_code: '+92',
         phone: '',
         email: '',
@@ -154,6 +154,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
   const watchedListingType = watch('listing_type');
 
   useEffect(() => {
+    // Only update serial number for new buyers when listing type changes
     if (!buyerToEdit) {
         const serialPrefix = watchedListingType === 'For Rent' ? 'RB' : 'B';
         const nextSerialNum = watchedListingType === 'For Rent' ? totalRentBuyers + 1 : totalSaleBuyers + 1;
@@ -400,7 +401,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
                         <FormLabel>Size Preference</FormLabel>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                             <FormField control={form.control} name="size_min_value" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Min" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? 0} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_min_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -408,7 +409,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
                                 </SelectContent></Select></FormItem>
                             )} />
                             <FormField control={form.control} name="size_max_value" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Max" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? 0} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="size_max_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -421,7 +422,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
                         <FormLabel>Budget Range</FormLabel>
                         <div className="grid grid-cols-2 gap-2 mt-2">
                             <FormField control={form.control} name="budget_min_amount" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Min" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? 0} placeholder="Min" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_min_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
@@ -430,7 +431,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
 
                             )} />
                             <FormField control={form.control} name="budget_max_amount" render={({field}) => (
-                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? ''} placeholder="Max" /></FormControl></FormItem>
+                                <FormItem><FormControl><Input type="number" {...field} value={field.value ?? 0} placeholder="Max" /></FormControl></FormItem>
                             )} />
                             <FormField control={form.control} name="budget_max_unit" render={({field}) => (
                                 <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>
