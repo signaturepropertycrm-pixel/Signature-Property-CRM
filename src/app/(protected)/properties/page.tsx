@@ -13,12 +13,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   MoreHorizontal,
   Trash2,
   Edit,
@@ -82,7 +76,9 @@ import { cn } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/firebase/auth/use-user';
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 
 function formatSize(value: number, unit: string) {
   return `${value} ${unit}`;
@@ -396,7 +392,7 @@ export default function PropertiesPage() {
     }
     setPropertyToEdit(null);
   };
-  
+
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
@@ -543,53 +539,61 @@ export default function PropertiesPage() {
               <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
             </CardContent>
             <CardFooter className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Toggle menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="glass-card">
-                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                    {prop.is_for_rent && prop.status === 'Available' && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
-                    )}
-                    {prop.is_for_rent && prop.status === 'Rent Out' && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</DropdownMenuItem>
-                    )}
-                    {prop.status === 'Available' && !prop.is_for_rent && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
-                    )}
-                    {prop.status === 'Sold' && (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</DropdownMenuItem>
-                    )}
-                  {(profile.role === 'Admin') && (
-                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
-                  )}
-                  {(profile.role === 'Admin') && (
-                    prop.is_recorded ? (
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onSelect={(e) => { estopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
-                      )
-                    )}
-                    {(profile.role !== 'Agent') && (
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      );
-    };
+              <Sheet>
+                <SheetTrigger asChild>
+                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="w-full">
+                    <SheetHeader className="text-left mb-4">
+                        <SheetTitle>Actions for {prop.serial_no}</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col gap-2">
+                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
+                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
+                        {prop.is_for_rent && prop.status === 'Available' && (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
+                        )}
+                        {prop.is_for_rent && prop.status === 'Rent Out' && (
+                           <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
+                        )}
+                        {prop.status === 'Available' && !prop.is_for_rent && (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
+                        )}
+                        {prop.status === 'Sold' && (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
+                        )}
+                        {(profile.role === 'Admin') && (
+                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
+                        )}
+                        {(profile.role === 'Admin') && (
+                          prop.is_recorded ? (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</Button>
+                          ) : (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
+                          )
+                        )}
+                        {(profile.role !== 'Agent') && (
+                          <>
+                          <Separator />
+                          <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
+                          </>
+                        )}
+                    </div>
+                </SheetContent>
+              </Sheet>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
+  };
   
-    const renderContent = (properties: Property[]) => {
+  const renderContent = (properties: Property[]) => {
       return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
-    };
+  };
 
     return (
       <>

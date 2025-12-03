@@ -35,6 +35,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import React from 'react';
 import { useUser } from '@/firebase/auth/use-user';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
 
 const statusVariant = {
     'New': 'default',
@@ -495,30 +497,44 @@ export default function BuyersPage() {
                                 <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Phone</p><p className="font-medium">{buyer.phone}</p></div></div>
                             </CardContent>
                             <CardFooter className="flex justify-end">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
+                                <Sheet>
+                                    <SheetTrigger asChild>
                                         <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
                                             <MoreHorizontal className="h-4 w-4" />
                                             <span className="sr-only">Toggle menu</span>
                                         </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="glass-card">
-                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
-                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
-                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                        <DropdownMenuSub>
-                                            <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
-                                            <DropdownMenuPortal>
-                                                <DropdownMenuSubContent>
+                                    </SheetTrigger>
+                                    <SheetContent side="bottom" className="w-full">
+                                        <SheetHeader className="text-left mb-4">
+                                            <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
+                                        </SheetHeader>
+                                        <div className="flex flex-col gap-2">
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</Button>
+                                            {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
+                                            
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" className="justify-start"><Bookmark />Change Status</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                                     {buyerStatuses.map((status) => (
-                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>
+                                                        <DropdownMenuItem key={status} onSelect={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>
+                                                            {status}
+                                                        </DropdownMenuItem>
                                                     ))}
-                                                </DropdownMenuSubContent>
-                                            </DropdownMenuPortal>
-                                        </DropdownMenuSub>
-                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
+                                            {(profile.role !== 'Agent') && (
+                                            <>
+                                                <Separator />
+                                                <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(buyer); }}><Trash2 />Delete</Button>
+                                            </>
+                                            )}
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
                             </CardFooter>
                         </Card>
                     );
