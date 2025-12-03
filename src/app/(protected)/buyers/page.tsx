@@ -170,6 +170,7 @@ export default function BuyersPage() {
     };
 
     const handleDetailsClick = (buyer: Buyer) => {
+        if (isMobile) return;
         setSelectedBuyer({ ...buyer });
         setIsDetailsOpen(true);
     };
@@ -461,7 +462,7 @@ export default function BuyersPage() {
             <div className="space-y-4">
                 {buyers.map(buyer => {
                     return (
-                        <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                        <Card key={buyer.id} className="cursor-pointer">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
@@ -495,7 +496,7 @@ export default function BuyersPage() {
                             <CardFooter className="flex justify-end">
                                 <Sheet>
                                     <SheetTrigger asChild>
-                                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => { e.stopPropagation(); }}>
                                             <MoreHorizontal className="h-4 w-4" />
                                             <span className="sr-only">Toggle menu</span>
                                         </Button>
@@ -505,7 +506,7 @@ export default function BuyersPage() {
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</Button>
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); setSelectedBuyer(buyer); setIsDetailsOpen(true); }}><Eye />View Details</Button>
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
                                             
@@ -662,22 +663,24 @@ export default function BuyersPage() {
                                 <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
                                 <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
                             </TabsList>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="ml-auto">
-                                        {activeStatusFilter}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
-                                    {buyerStatuses.map(status => (
-                                        <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
-                                            {status}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {isMobile && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="ml-auto">
+                                            {activeStatusFilter}
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
+                                        {buyerStatuses.map(status => (
+                                            <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
+                                                {status}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
                         </div>
                         <TabsContent value="For Sale" className="mt-4">
                             {renderContent(filteredBuyers)}
@@ -717,12 +720,3 @@ export default function BuyersPage() {
         </>
     );
 }
-
-    
-
-    
-
-
-
-
-    
