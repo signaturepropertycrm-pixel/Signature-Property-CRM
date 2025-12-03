@@ -505,9 +505,9 @@ export default function BuyersPage() {
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { handleDetailsClick(buyer); e.stopPropagation(); }}><Eye />View Details</Button>
-                                            {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { handleEdit(buyer); e.stopPropagation(); }}><Edit />Edit Details</Button>)}
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { handleSetAppointment(buyer); e.stopPropagation(); }}><CalendarPlus />Set Appointment</Button>
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</Button>
+                                            {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
                                             
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -515,7 +515,7 @@ export default function BuyersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                                     {buyerStatuses.map((status) => (
-                                                        <DropdownMenuItem key={status} onSelect={(e) => { handleStatusChange(buyer, status); e.stopPropagation();}} disabled={buyer.status === status}>
+                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status);}} disabled={buyer.status === status}>
                                                             {status}
                                                         </DropdownMenuItem>
                                                     ))}
@@ -525,7 +525,7 @@ export default function BuyersPage() {
                                             {(profile.role !== 'Agent') && (
                                             <>
                                                 <Separator />
-                                                <Button variant="destructive" className="justify-start" onClick={(e) => { handleDelete(buyer); e.stopPropagation(); }}><Trash2 />Delete</Button>
+                                                <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(buyer); }}><Trash2 />Delete</Button>
                                             </>
                                             )}
                                         </div>
@@ -665,7 +665,7 @@ export default function BuyersPage() {
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="ml-auto">
-                                        Status: {activeStatusFilter}
+                                        {activeStatusFilter}
                                         <ChevronDown className="ml-2 h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -721,4 +721,5 @@ export default function BuyersPage() {
     
 
     
+
 
