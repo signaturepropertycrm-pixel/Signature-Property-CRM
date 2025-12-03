@@ -224,6 +224,48 @@ export default function AnalyticsPage() {
     doc.save(`${type}_report.pdf`);
   };
 
+  const handleDownloadSinglePdf = (prop: Property, type: 'sales' | 'rental') => {
+    const doc = new jsPDF() as jsPDFWithAutoTable;
+    const isSales = type === 'sales';
+    
+    doc.text(`${isSales ? 'Sale' : 'Rental'} Report for ${prop.serial_no}`, 14, 15);
+
+    if (isSales) {
+        const agentShare = formatUnit(prop.agent_commission_amount || 0, prop.agent_commission_unit || 'Thousand');
+        const agencyProfit = (prop.total_commission || 0) - agentShare;
+        doc.autoTable({
+            startY: 20,
+            head: [['Field', 'Value']],
+            body: [
+                ['Property', `${prop.auto_title} (${prop.serial_no})`],
+                ['Buyer', `${prop.buyerName || '-'} (${prop.buyerSerialNo || '-'})`],
+                ['Sale Date', prop.sale_date ? new Date(prop.sale_date).toLocaleDateString() : 'N/A'],
+                ['Sold Price', formatCurrency(prop.sold_price || 0, currency)],
+                ['Total Commission', formatCurrency(prop.total_commission || 0, currency)],
+                ['Agent\'s Share', formatCurrency(agentShare, currency)],
+                ['Agency Profit', formatCurrency(agencyProfit, currency)],
+            ]
+        });
+    } else {
+        const agentShare = formatUnit(prop.rent_agent_share || 0, prop.rent_agent_share_unit || 'Thousand');
+        const agencyProfit = (prop.rent_total_commission || 0) - agentShare;
+         doc.autoTable({
+            startY: 20,
+            head: [['Field', 'Value']],
+            body: [
+                ['Property', `${prop.auto_title} (${prop.serial_no})`],
+                ['Rent Out Date', prop.rent_out_date ? new Date(prop.rent_out_date).toLocaleDateString() : 'N/A'],
+                ['Monthly Rent', formatCurrency(formatUnit(prop.demand_amount, prop.demand_unit), currency)],
+                ['Total Commission', formatCurrency(prop.rent_total_commission || 0, currency)],
+                ['Agent\'s Share', formatCurrency(agentShare, currency)],
+                ['Agency Profit', formatCurrency(agencyProfit, currency)],
+            ]
+        });
+    }
+
+    doc.save(`${prop.serial_no}_${type}_report.pdf`);
+  };
+
   if (isPropertiesLoading || isBuyersLoading) {
     return <div>Loading reports...</div>;
   }
@@ -295,6 +337,7 @@ export default function AnalyticsPage() {
                                     <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         <DropdownMenuItem onSelect={() => handleEdit(p)}><Edit /> Edit Sale Info</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleDownloadSinglePdf(p, 'sales')}><Download /> Download PDF</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => handleRevertToAvailable(p)} className="text-destructive"><RotateCcw /> Revert to Available</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -360,6 +403,7 @@ export default function AnalyticsPage() {
                                     <DropdownMenuTrigger asChild><Button size="icon" variant="ghost"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         <DropdownMenuItem onSelect={() => handleEdit(p)}><Edit /> Edit Rent Info</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => handleDownloadSinglePdf(p, 'rental')}><Download /> Download PDF</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => handleRevertToAvailable(p)} className="text-destructive"><RotateCcw /> Revert to Available</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
