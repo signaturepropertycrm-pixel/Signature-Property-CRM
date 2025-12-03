@@ -38,6 +38,7 @@ import {
   ChevronDown,
   MessageSquare,
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType } from '@/lib/types';
@@ -77,7 +78,6 @@ import { cn } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUser } from '@/firebase/auth/use-user';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
@@ -734,7 +734,7 @@ export default function PropertiesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             {propertyStatuses.map(status => (
-                                <DropdownMenuItem key={status.value} onSelect={()={() => handleStatusChange(status.value)}}>
+                                <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
                                     {status.label}
                                 </DropdownMenuItem>
                             ))}
@@ -908,5 +908,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
