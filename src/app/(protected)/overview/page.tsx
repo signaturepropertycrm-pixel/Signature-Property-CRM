@@ -15,6 +15,7 @@ import { subDays, isWithinInterval, parseISO } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
+import { LeadsChart } from '@/components/leads-chart';
 
 interface StatCardProps {
     title: string;
@@ -278,6 +279,7 @@ export default function OverviewPage() {
             
             <div className="grid grid-cols-1 gap-8 pt-8">
                 <PerformanceChart properties={properties || []} />
+                <LeadsChart properties={properties || []} buyers={buyers || []} />
             </div>
 
         </div>
