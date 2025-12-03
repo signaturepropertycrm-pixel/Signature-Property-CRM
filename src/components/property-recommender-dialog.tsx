@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,9 @@ import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/
 import { useCurrency } from '@/context/currency-context';
 import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import * as ProgressPrimitive from "@radix-ui/react-progress"
+import { cn } from '@/lib/utils';
+
 
 interface PropertyRecommenderDialogProps {
   buyer: Buyer;
@@ -223,4 +227,3 @@ const ProgressIndicator = React.forwardRef<
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
 
-  
