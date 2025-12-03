@@ -585,6 +585,12 @@ export default function PropertiesPage() {
 
             const [size_value, size_unit] = size.split(' ');
             const [demand_amount_str, demand_unit_str] = demand.split(' ');
+            
+            const parseOptionalNumber = (val: string | undefined): number | null => {
+                if (!val || val.trim() === '') return null;
+                const parsed = parseInt(val.replace(/\D/g, ''), 10);
+                return isNaN(parsed) ? null : parsed;
+            };
 
             newProperty = {
                 serial_no: `P-${totalSaleProperties + newCount + 1}`,
@@ -605,12 +611,12 @@ export default function PropertiesPage() {
                 agency_id: profile.agency_id,
                 is_recorded: video_recorded.toLowerCase() === 'yes',
                 video_links: { tiktok, youtube, instagram, facebook, other },
-                road_size_ft: road_size_ft ? parseInt(road_size_ft.replace(' ft', '')) : undefined,
+                road_size_ft: parseOptionalNumber(road_size_ft),
                 storey: storey || undefined,
-                potential_rent_amount: potential_rent_amount ? parseInt(potential_rent_amount) : undefined,
+                potential_rent_amount: parseOptionalNumber(potential_rent_amount),
                 potential_rent_unit: 'Thousand',
-                front_ft: front_ft ? parseInt(front_ft) : undefined,
-                length_ft: length_ft ? parseInt(length_ft) : undefined,
+                front_ft: parseOptionalNumber(front_ft),
+                length_ft: parseOptionalNumber(length_ft),
                 documents: documents || undefined,
                 meters: {
                     electricity: utilities.includes('Electricity'),
