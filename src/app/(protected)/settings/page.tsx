@@ -45,7 +45,7 @@ import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { formatPhoneNumber } from '@/lib/utils';
 import { countryCodes } from '@/lib/data';
-import { ImageUploadDialog } from '@/components/image-upload-dialog';
+import { AvatarCropDialog } from '@/components/avatar-crop-dialog';
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, 'Current password is required.'),
@@ -83,7 +83,7 @@ export default function SettingsPage() {
   const [countryCode, setCountryCode] = useState('+92');
   
   const [isUploading, setIsUploading] = useState(false);
-  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
 
 
   const [appointmentNotifications, setAppointmentNotifications] = useState(true);
@@ -150,44 +150,44 @@ export default function SettingsPage() {
     setIsUploading(true);
   
     try {
-      const batch = writeBatch(firestore);
-      const isUserAdmin = profile.role === 'Admin';
-      
-      // Update Firestore document(s)
-      if (isUserAdmin) {
-        if (profile.agency_id) {
-          const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-          batch.update(agencyDocRef, { avatar: dataUrl });
-          const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-          batch.update(teamMemberRef, { avatar: dataUrl });
-        }
-      } else { // It's an Agent
-        if (profile.agency_id) {
-          const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-          batch.update(teamMemberRef, { avatar: dataUrl });
-        }
-        const agentDocRef = doc(firestore, 'agents', user.uid);
-        batch.update(agentDocRef, { avatar: dataUrl });
-      }
-      
-      await batch.commit();
+        const batch = writeBatch(firestore);
+        const isUserAdmin = profile.role === 'Admin';
   
-      // Update local context
-      setProfile({ ...profile, avatar: dataUrl });
+        // Update Firestore document(s)
+        if (isUserAdmin) {
+            if (profile.agency_id) {
+                const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
+                batch.update(agencyDocRef, { avatar: dataUrl });
+                const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+                batch.update(teamMemberRef, { avatar: dataUrl });
+            }
+        } else { // It's an Agent
+            if (profile.agency_id) {
+                const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+                batch.update(teamMemberRef, { avatar: dataUrl });
+            }
+            const agentDocRef = doc(firestore, 'agents', user.uid);
+            batch.update(agentDocRef, { avatar: dataUrl });
+        }
+        
+        await batch.commit();
+        
+        // Update local context
+        setProfile({ ...profile, avatar: dataUrl });
   
-      toast({ title: 'Profile Picture Updated!' });
+        toast({ title: 'Profile Picture Updated!' });
     } catch (error: any) {
-      console.error('Avatar update error:', error);
-      toast({
-        title: 'Update Failed',
-        description: error.message || 'Could not update profile picture. Please try again.',
-        variant: 'destructive',
-      });
+        console.error('Avatar update error:', error);
+        toast({
+            title: 'Update Failed',
+            description: error.message || 'Could not update profile picture. Please try again.',
+            variant: 'destructive',
+        });
     } finally {
-      setIsUploading(false);
-      setIsImageUploadOpen(false);
+        setIsUploading(false);
+        setIsAvatarCropOpen(false);
     }
-  };
+};
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -441,7 +441,7 @@ export default function SettingsPage() {
                                         <AvatarImage src={profile.avatar} className="object-cover h-full w-full" />
                                         <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
                                     </Avatar>
-                                     <button type="button" onClick={() => setIsImageUploadOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
                                         {isUploading ? <Loader2 className="animate-spin" /> : 'Change'}
                                     </button>
                                 </div>
@@ -563,9 +563,9 @@ export default function SettingsPage() {
                 setIsOpen={setDeleteAgentDialogOpen}
                 onConfirm={handleDeleteAgentAccount}
             />
-             <ImageUploadDialog
-              isOpen={isImageUploadOpen}
-              setIsOpen={setIsImageUploadOpen}
+             <AvatarCropDialog
+              isOpen={isAvatarCropOpen}
+              setIsOpen={setIsAvatarCropOpen}
               onSave={handleAvatarUpdate}
               isSaving={isUploading}
             />
@@ -600,7 +600,7 @@ export default function SettingsPage() {
                         <AvatarImage src={profile.avatar} className="object-cover h-full w-full" />
                         <AvatarFallback>{profile.agencyName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                     <button type="button" onClick={() => setIsImageUploadOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                     <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
                          {isUploading ? <Loader2 className="animate-spin" /> : 'Change'}
                     </button>
                 </div>
@@ -956,9 +956,9 @@ export default function SettingsPage() {
         setIsOpen={setDeleteAgencyDialogOpen}
         onConfirm={handleDeleteAgencyAccount}
     />
-     <ImageUploadDialog
-        isOpen={isImageUploadOpen}
-        setIsOpen={setIsImageUploadOpen}
+     <AvatarCropDialog
+        isOpen={isAvatarCropOpen}
+        setIsOpen={setIsAvatarCropOpen}
         onSave={handleAvatarUpdate}
         isSaving={isUploading}
     />
