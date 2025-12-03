@@ -429,10 +429,15 @@ export default function BuyersPage() {
               const sizeMax = b.size_max_value ? `${b.size_max_value} ${b.size_max_unit}` : '';
               const size = sizeMin && sizeMax ? `${sizeMin} - ${sizeMax}` : sizeMin || sizeMax;
 
+              const date = new Date(b.created_at);
+              const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+              const phoneNumber = b.phone.replace(b.country_code || '+92', '').replace(/\D/g, '');
+
+
               const row = [
                 `"${b.serial_no}"`,
-                `"${new Date(b.created_at).toLocaleDateString()}"`,
-                `"${formatPhoneNumber(b.phone, b.country_code).replace('+', '')}"`,
+                `"${formattedDate}"`,
+                `"${phoneNumber}"`,
                 `"${b.name}"`,
                 `"${b.email || ''}"`,
                 `"${b.city || ''}"`,

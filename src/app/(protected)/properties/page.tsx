@@ -475,13 +475,18 @@ export default function PropertiesPage() {
             p.meters?.gas && 'Gas',
             p.meters?.water && 'Water'
         ].filter(Boolean).join('/');
+        
+        const date = new Date(p.created_at);
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        
+        const phoneNumber = p.owner_number.replace(p.country_code || '+92', '').replace(/\D/g, '');
 
         const row = type === 'For Sale'
             ? [
                 `"${p.serial_no}"`,
                 `"${p.is_recorded ? '✔' : ''}"`,
-                `"${new Date(p.created_at).toLocaleDateString()}"`,
-                `"${formatPhoneNumber(p.owner_number, p.country_code).replace('+', '')}"`,
+                `"${formattedDate}"`,
+                `"${phoneNumber}"`,
                 `"${p.city}"`,
                 `"${p.area}"`,
                 `"${p.address}"`,
@@ -500,8 +505,8 @@ export default function PropertiesPage() {
             : [
                  `"${p.serial_no}"`,
                 `"${p.is_recorded ? '✔' : ''}"`,
-                `"${new Date(p.created_at).toLocaleDateString()}"`,
-                `"${formatPhoneNumber(p.owner_number, p.country_code).replace('+', '')}"`,
+                `"${formattedDate}"`,
+                `"${phoneNumber}"`,
                 `"${p.city}"`,
                 `"${p.area}"`,
                 `"${p.address}"`,
