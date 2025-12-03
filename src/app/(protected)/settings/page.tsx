@@ -156,8 +156,8 @@ export default function SettingsPage() {
   const handleAvatarUpdate = async (dataUrl: string) => {
     if (!user || !profile.agency_id) return;
     const storage = getStorage();
-    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/${user.uid}.jpg`);
     const isUserAdmin = profile.role === 'Admin';
+    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/${user.uid}.jpg`);
   
     try {
       await uploadString(avatarRef, dataUrl, 'data_url');
@@ -177,7 +177,6 @@ export default function SettingsPage() {
   
       await batch.commit();
   
-      // Update local state for immediate feedback
       setProfile({ ...profile, avatar: downloadURL });
       await updateProfile(user, { photoURL: downloadURL });
   
@@ -200,9 +199,9 @@ export default function SettingsPage() {
     if (!user) return;
     
     // Only format if the number doesn't already start with '+'
-    const fullPhoneNumber = localProfile.phone.startsWith('+') 
-        ? localProfile.phone 
-        : formatPhoneNumber(localProfile.phone, countryCode);
+    const fullPhoneNumber = localProfile.phone && !localProfile.phone.startsWith('+')
+        ? formatPhoneNumber(localProfile.phone, countryCode)
+        : localProfile.phone;
 
     if (
         localProfile.name === profile.name &&
@@ -1072,7 +1071,5 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
     </Dialog>
   );
 }
-
-    
 
     
