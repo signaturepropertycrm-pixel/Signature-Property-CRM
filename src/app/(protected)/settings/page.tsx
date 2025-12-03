@@ -153,39 +153,65 @@ export default function SettingsPage() {
     localStorage.setItem('notifications_followups_enabled', String(followUpNotifications));
   }, [followUpNotifications]);
 
-    const handleAvatarUpdate = async (dataUrl: string) => {
+  const handleAvatarUpdate = async (dataUrl: string) => {
     if (!user || !profile.agency_id) return;
     const storage = getStorage();
-    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/profile.jpg`);
-
+    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/${user.uid}.jpg`);
+    const isUserAdmin = profile.role === 'Admin';
+  
     try {
-        await uploadString(avatarRef, dataUrl, 'data_url');
-        const downloadURL = await getDownloadURL(avatarRef);
-
+      await uploadString(avatarRef, dataUrl, 'data_url');
+      const downloadURL = await getDownloadURL(avatarRef);
+  
+      const batch = writeBatch(firestore);
+  
+      // Every user updates their own teamMember document
+      const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+      batch.update(teamMemberRef, { avatar: downloadURL });
+  
+      // Only admins update the main agency document
+      if (isUserAdmin) {
         const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-        
-        const batch = writeBatch(firestore);
         batch.update(agencyDocRef, { avatar: downloadURL });
-        batch.update(teamMemberRef, { avatar: downloadURL });
-        await batch.commit();
-
-        setProfile({ ...profile, avatar: downloadURL });
-        toast({ title: 'Profile Picture Updated!' });
-
+      }
+  
+      await batch.commit();
+  
+      // Update local state for immediate feedback
+      setProfile({ ...profile, avatar: downloadURL });
+      await updateProfile(user, { photoURL: downloadURL });
+  
+      toast({ title: 'Profile Picture Updated!' });
     } catch (error) {
-        toast({ title: 'Upload Failed', description: 'Could not update your profile picture.', variant: 'destructive' });
+      console.error("Avatar upload error:", error);
+      toast({
+        title: 'Upload Failed',
+        description: 'Could not update your profile picture. Please check permissions.',
+        variant: 'destructive',
+      });
+    } finally {
+        setIsAvatarCropOpen(false);
     }
-    setIsAvatarCropOpen(false);
   };
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    
+    // Only format if the number doesn't already start with '+'
+    const fullPhoneNumber = localProfile.phone.startsWith('+') 
+        ? localProfile.phone 
+        : formatPhoneNumber(localProfile.phone, countryCode);
 
-    // Format phone number only if it's not already formatted
-    const fullPhoneNumber = localProfile.phone.startsWith('+') ? localProfile.phone : formatPhoneNumber(localProfile.phone, countryCode);
+    if (
+        localProfile.name === profile.name &&
+        localProfile.agencyName === profile.agencyName &&
+        fullPhoneNumber === profile.phone
+    ) {
+        toast({ title: 'No Changes Detected', description: 'Your profile information is already up to date.'});
+        return;
+    }
 
     const formattedProfile = {
         ...localProfile,
@@ -193,7 +219,6 @@ export default function SettingsPage() {
     };
 
     const isUserAdmin = profile.role === 'Admin';
-    const collectionName = isUserAdmin ? 'agencies' : 'agents';
     const docId = isUserAdmin ? profile.agency_id : user.uid;
 
     if (!docId) {
@@ -201,24 +226,24 @@ export default function SettingsPage() {
         return;
     }
 
-    const docRef = doc(firestore, collectionName, docId);
+    const batch = writeBatch(firestore);
     
-    let dataToUpdate: Partial<ProfileData> = {};
-    if (isUserAdmin) {
-        dataToUpdate = { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone };
-    } else {
-        dataToUpdate = { name: formattedProfile.name, phone: formattedProfile.phone };
+    // Admin updates the agency doc
+    if (isUserAdmin && profile.agency_id) {
+        const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
+        batch.update(agencyDocRef, { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone });
     }
 
-    await updateDoc(docRef, dataToUpdate);
+    // Every user (admin or agent) updates their teamMember doc
+    if (profile.agency_id) {
+        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+        batch.update(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
+    }
 
+    await batch.commit();
+    
     if (auth.currentUser && formattedProfile.name !== profile.name) {
       await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
-    }
-    
-    if (isUserAdmin) {
-        const teamMemberRef = doc(firestore, 'agencies', docId, 'teamMembers', user.uid);
-        await updateDoc(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
     }
 
     setProfile(formattedProfile);
@@ -410,6 +435,15 @@ export default function SettingsPage() {
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
                             <div className="flex items-center gap-6">
+                                <div className="relative group">
+                                    <Avatar className="h-24 w-24 border-4 border-primary/20">
+                                        <AvatarImage src={profile.avatar} />
+                                        <AvatarFallback>{profile.name?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                                        Change
+                                    </button>
+                                </div>
                                 <div>
                                     <h3 className="text-lg font-bold">{profile.name}</h3>
                                     <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -424,6 +458,18 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Account Email</Label>
                                     <Input id="email" type="email" value={user?.email || ''} disabled className="cursor-not-allowed bg-muted/50" />
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <div className="flex gap-2">
+                                    <Select value={countryCode} onValueChange={setCountryCode}>
+                                        <SelectTrigger className="w-1/3"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="flex-1" placeholder="3001234567" />
                                 </div>
                             </div>
                         </CardContent>
@@ -515,6 +561,11 @@ export default function SettingsPage() {
                 isOpen={isDeleteAgentDialogOpen}
                 setIsOpen={setDeleteAgentDialogOpen}
                 onConfirm={handleDeleteAgentAccount}
+            />
+             <AvatarCropDialog 
+                isOpen={isAvatarCropOpen}
+                setIsOpen={setIsAvatarCropOpen}
+                onAvatarSave={handleAvatarUpdate}
             />
           </>
       );
