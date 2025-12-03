@@ -20,16 +20,16 @@ import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
 
-// Generate demo data for the last 12 months
-const generateDemoData = () => {
+// This function initializes the data structure for the last 12 months with zero revenue.
+const initializeMonthlyData = () => {
     const data = [];
     const now = new Date();
     for (let i = 11; i >= 0; i--) {
         const date = subMonths(now, i);
         data.push({
             month: format(date, "MMM '’'yy"),
-            salesRevenue: Math.floor(Math.random() * (500000 - 50000 + 1)) + 50000,
-            rentRevenue: Math.floor(Math.random() * (200000 - 20000 + 1)) + 20000,
+            salesRevenue: 0,
+            rentRevenue: 0,
         });
     }
     return data;
@@ -43,39 +43,42 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
     const saleProperties = properties.filter((p) => p.status === 'Sold' && p.sale_date && p.total_commission);
     const rentProperties = properties.filter((p) => p.status === 'Rent Out' && p.rent_out_date && p.rent_total_commission);
 
-    if (saleProperties.length === 0 && rentProperties.length === 0) {
-        return generateDemoData();
-    }
-
-    const monthlyData: { [key: string]: { salesRevenue: number, rentRevenue: number } } = {};
+    const monthlyDataMap: { [key: string]: { salesRevenue: number, rentRevenue: number } } = {};
     const now = new Date();
 
+    // Initialize map for the last 12 months
     for (let i = 11; i >= 0; i--) {
         const date = subMonths(now, i);
         const monthKey = format(date, "MMM '’'yy");
-        monthlyData[monthKey] = { salesRevenue: 0, rentRevenue: 0 };
+        monthlyDataMap[monthKey] = { salesRevenue: 0, rentRevenue: 0 };
     }
     
     saleProperties.forEach((p) => {
         const saleDate = parseISO(p.sale_date!);
         const monthKey = format(saleDate, "MMM '’'yy");
-        if (monthKey in monthlyData) {
-            monthlyData[monthKey].salesRevenue += p.total_commission!;
+        if (monthKey in monthlyDataMap) {
+            monthlyDataMap[monthKey].salesRevenue += p.total_commission!;
         }
     });
 
     rentProperties.forEach((p) => {
         const rentDate = parseISO(p.rent_out_date!);
         const monthKey = format(rentDate, "MMM '’'yy");
-        if (monthKey in monthlyData) {
-            monthlyData[monthKey].rentRevenue += p.rent_total_commission!;
+        if (monthKey in monthlyDataMap) {
+            monthlyDataMap[monthKey].rentRevenue += p.rent_total_commission!;
         }
     });
+    
+    // If there's no data at all, return an initialized array with zeros to show an empty chart
+    if (saleProperties.length === 0 && rentProperties.length === 0) {
+        return initializeMonthlyData();
+    }
 
-    return Object.keys(monthlyData).map(month => ({
+
+    return Object.keys(monthlyDataMap).map(month => ({
         month,
-        salesRevenue: monthlyData[month].salesRevenue,
-        rentRevenue: monthlyData[month].rentRevenue,
+        salesRevenue: monthlyDataMap[month].salesRevenue,
+        rentRevenue: monthlyDataMap[month].rentRevenue,
     }));
     
   }, [properties]);
