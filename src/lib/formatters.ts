@@ -68,13 +68,20 @@ export const formatCurrency = (
 
 export const formatPhoneNumberForWhatsApp = (phone: string, countryCode: string = '+92'): string => {
   if (!phone) return '';
-  let cleaned = phone.replace(/\D/g, '');
+  let cleanedPhone = phone.replace(/\D/g, ''); // Remove all non-digit characters
+  const codeWithoutPlus = countryCode.replace('+', '');
 
-  // Remove leading '0' if present for Pakistan numbers
-  if (countryCode === '+92' && cleaned.startsWith('0')) {
-    cleaned = cleaned.substring(1);
+  // Case 1: Phone number already starts with the country code (e.g., 92300...)
+  if (cleanedPhone.startsWith(codeWithoutPlus)) {
+    return cleanedPhone;
   }
-  
-  // Return number with country code but without '+'
-  return `${countryCode.replace('+', '')}${cleaned}`;
+
+  // Case 2: Phone number for Pakistan starts with 0 (e.g., 0300...)
+  if (countryCode === '+92' && cleanedPhone.startsWith('0')) {
+    // Remove the leading 0 and prepend the country code
+    return `${codeWithoutPlus}${cleanedPhone.substring(1)}`;
+  }
+
+  // Case 3: A standard local number (e.g., 300...)
+  return `${codeWithoutPlus}${cleanedPhone}`;
 };
