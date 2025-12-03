@@ -165,28 +165,23 @@ export default function SettingsPage() {
       const batch = writeBatch(firestore);
       const isUserAdmin = profile.role === 'Admin';
   
-      // Update team member document for all roles
-      const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-      batch.update(teamMemberRef, { avatar: dataUrl });
-  
-      // If user is Admin, update the main agency doc
+      // Admin also updates the main agency doc
       if (isUserAdmin) {
         const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
         batch.update(agencyDocRef, { avatar: dataUrl });
       }
       
-      // If user is Agent, update their root agent doc
+      // Every user updates their own teamMember doc
+      const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+      batch.update(teamMemberRef, { avatar: dataUrl });
+      
+      // Agent also updates their root agent doc for consistency if needed elsewhere
       if (profile.role === 'Agent') {
           const agentDocRef = doc(firestore, 'agents', user.uid);
           batch.update(agentDocRef, { avatar: dataUrl });
       }
   
       await batch.commit();
-  
-      // Update Auth user profile
-      if(auth.currentUser) {
-        await updateProfile(auth.currentUser, { photoURL: dataUrl });
-      }
   
       // Update local context
       setProfile({ ...profile, avatar: dataUrl });
