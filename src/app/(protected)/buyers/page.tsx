@@ -462,7 +462,7 @@ export default function BuyersPage() {
             <div className="space-y-4">
                 {buyers.map(buyer => {
                     return (
-                        <Card key={buyer.id}>
+                        <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
