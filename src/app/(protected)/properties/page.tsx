@@ -521,7 +521,7 @@ export default function PropertiesPage() {
     return (
       <div className="space-y-4">
         {properties.map((prop) => (
-          <Card key={prop.id} className="cursor-pointer" onClick={() => handleRowClick(prop)}>
+          <Card key={prop.id}>
             <CardHeader>
                 <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
@@ -789,3 +789,4 @@ export default function PropertiesPage() {
   }
 
     
+

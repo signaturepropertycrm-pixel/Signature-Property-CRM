@@ -461,7 +461,7 @@ export default function BuyersPage() {
             <div className="space-y-4">
                 {buyers.map(buyer => {
                     return (
-                        <Card key={buyer.id} onClick={() => handleDetailsClick(buyer)}>
+                        <Card key={buyer.id}>
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
                                     <div className="font-bold font-headline text-lg flex items-center gap-2">
@@ -515,7 +515,7 @@ export default function BuyersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                                     {buyerStatuses.map((status) => (
-                                                        <DropdownMenuItem key={status} onSelect={() => handleStatusChange(buyer, status)} disabled={buyer.status === status}>
+                                                        <DropdownMenuItem key={status} onSelect={(e) => { handleStatusChange(buyer, status); e.stopPropagation();}} disabled={buyer.status === status}>
                                                             {status}
                                                         </DropdownMenuItem>
                                                     ))}
@@ -721,3 +721,4 @@ export default function BuyersPage() {
     
 
     
+
