@@ -58,6 +58,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { formatPhoneNumber } from '@/lib/utils';
 import { countryCodes } from '@/lib/data';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+import { AvatarCropDialog } from '@/components/avatar-crop-dialog';
 
 
 const passwordFormSchema = z.object({
@@ -94,6 +96,7 @@ export default function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [countryCode, setCountryCode] = useState('+92');
+  const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
 
   const [appointmentNotifications, setAppointmentNotifications] = useState(true);
   const [followUpNotifications, setFollowUpNotifications] = useState(true);
@@ -145,6 +148,32 @@ export default function SettingsPage() {
   useEffect(() => {
     localStorage.setItem('notifications_followups_enabled', String(followUpNotifications));
   }, [followUpNotifications]);
+
+    const handleAvatarUpdate = async (dataUrl: string) => {
+    if (!user || !profile.agency_id) return;
+    const storage = getStorage();
+    const avatarRef = storageRef(storage, `avatars/${profile.agency_id}/profile.jpg`);
+
+    try {
+        await uploadString(avatarRef, dataUrl, 'data_url');
+        const downloadURL = await getDownloadURL(avatarRef);
+
+        const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
+        const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+        
+        const batch = writeBatch(firestore);
+        batch.update(agencyDocRef, { avatar: downloadURL });
+        batch.update(teamMemberRef, { avatar: downloadURL });
+        await batch.commit();
+
+        setProfile({ ...profile, avatar: downloadURL });
+        toast({ title: 'Profile Picture Updated!' });
+
+    } catch (error) {
+        toast({ title: 'Upload Failed', description: 'Could not update your profile picture.', variant: 'destructive' });
+    }
+    setIsAvatarCropOpen(false);
+  };
 
 
   const handleProfileSave = async (e: React.FormEvent) => {
@@ -377,7 +406,7 @@ export default function SettingsPage() {
                     <CardHeader><CardTitle>My Profile</CardTitle></CardHeader>
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
-                             <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-6">
                                 <div>
                                     <h3 className="text-lg font-bold">{profile.name}</h3>
                                     <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -510,6 +539,15 @@ export default function SettingsPage() {
         <form onSubmit={handleProfileSave}>
           <CardContent className="space-y-6">
              <div className="flex items-center gap-6">
+                <div className="relative group">
+                    <Avatar className="h-24 w-24 border-4 border-primary/20">
+                        <AvatarImage src={profile.avatar} />
+                        <AvatarFallback>{profile.agencyName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <button type="button" onClick={() => setIsAvatarCropOpen(true)} className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-white text-sm font-semibold">
+                        Change
+                    </button>
+                </div>
                 <div>
                     <h3 className="text-lg font-bold">{profile.name}</h3>
                     <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
@@ -861,6 +899,11 @@ export default function SettingsPage() {
         isOpen={isDeleteAgencyDialogOpen}
         setIsOpen={setDeleteAgencyDialogOpen}
         onConfirm={handleDeleteAgencyAccount}
+    />
+     <AvatarCropDialog 
+        isOpen={isAvatarCropOpen}
+        setIsOpen={setIsAvatarCropOpen}
+        onAvatarSave={handleAvatarUpdate}
     />
     </>
   );
