@@ -101,10 +101,10 @@ const getInitialFormValues = (
             city: buyerToEdit.city || '',
             area_preference: buyerToEdit.area_preference || '',
             notes: buyerToEdit.notes || '',
-            size_min_value: buyerToEdit.size_min_value || null,
-            size_max_value: buyerToEdit.size_max_value || null,
-            budget_min_amount: buyerToEdit.budget_min_amount || null,
-            budget_max_amount: buyerToEdit.budget_max_amount || null,
+            size_min_value: buyerToEdit.size_min_value || 0,
+            size_max_value: buyerToEdit.size_max_value || 0,
+            budget_min_amount: buyerToEdit.budget_min_amount || 0,
+            budget_max_amount: buyerToEdit.budget_max_amount || 0,
             is_investor: buyerToEdit.is_investor || false,
             listing_type: buyerToEdit.listing_type || 'For Sale',
         };
@@ -130,10 +130,10 @@ const getInitialFormValues = (
         size_max_unit: 'Marla',
         budget_min_unit: 'Lacs',
         budget_max_unit: 'Lacs',
-        size_min_value: null,
-        size_max_value: null,
-        budget_min_amount: null,
-        budget_max_amount: null,
+        size_min_value: 0,
+        size_max_value: 0,
+        budget_min_amount: 0,
+        budget_max_amount: 0,
         created_at: new Date().toISOString(),
         created_by: userId || '',
     };
@@ -163,7 +163,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
 
   useEffect(() => {
     reset(getInitialFormValues(watchedListingType, totalSaleBuyers, totalRentBuyers, buyerToEdit, user?.uid));
-  }, [buyerToEdit, totalSaleBuyers, totalRentBuyers, user, profile.agency_id, reset]);
+  }, [buyerToEdit, totalSaleBuyers, totalRentBuyers, user, profile.agency_id, reset, watchedListingType]);
 
   function onSubmit(values: AddBuyerFormValues) {
      const buyerData = {
