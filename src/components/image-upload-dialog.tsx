@@ -74,7 +74,7 @@ export function ImageUploadDialog({
         
         <div className="flex flex-col items-center justify-center space-y-4 py-4">
             <Avatar className="h-40 w-40 border-4 border-dashed">
-                <AvatarImage src={imageSrc || ''} className="object-cover" />
+                <AvatarImage src={imageSrc!} className="object-cover" />
                 <AvatarFallback className="bg-muted">
                     <Upload className="h-10 w-10 text-muted-foreground" />
                 </AvatarFallback>
