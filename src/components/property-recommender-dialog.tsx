@@ -135,21 +135,65 @@ export function PropertyRecommenderDialog({
 
     const handleShare = (property: RecommendedProperty) => {
         const buyerPhone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
-        const demand = formatCurrency(formatUnit(property.demand_amount, property.demand_unit), currency);
+        let message = '';
+    
+        if (buyer.listing_type === 'For Rent') {
+            // Format for Rent Buyer
+            const demand = `${property.demand_amount}${property.demand_unit === 'Thousand' ? 'K' : ` ${property.demand_unit}`}`;
+            const utilities = [
+                property.meters?.gas && '- Gas',
+                property.meters?.electricity && '- Electricity',
+                property.meters?.water && '- Water'
+            ].filter(Boolean).join('\n');
+    
+            message = `
+*RENT PROPERTY DETAILS 🏡*
+*Recommended:* ${property.matchScore}%
 
-        const message = `
-Hello ${buyer.name},
+Serial No: ${property.serial_no}
+Area: ${property.area}
+Property Type: ${property.property_type}
+Size/Marla: ${property.size_value} ${property.size_unit}
+Portion: ${property.storey || 'N/A'}
+Demand: ${demand}
 
-Based on your requirements, I'd like to recommend the following property:
+*Utilities:*
+${utilities || 'N/A'}
+            `.trim().replace(/^\s+/gm, '');
+    
+        } else {
+            // Format for Sale Buyer
+            const demand = `${property.demand_amount} ${property.demand_unit}`;
+            const potentialRent = property.potential_rent_amount ? `Rs.${property.potential_rent_amount.toLocaleString()}` : 'N/A';
+            const utilities = [
+                property.meters?.gas && '- Gas',
+                property.meters?.electricity && '- Electricity',
+                property.meters?.water && '- Water'
+            ].filter(Boolean).join('\n');
+    
+            message = `
+*PROPERTY DETAILS 🏡*
+*Recommended:* ${property.matchScore}%
 
-*${property.auto_title}*
-- *Location:* ${property.address}
-- *Size:* ${property.size_value} ${property.size_unit}
-- *Demand:* ${demand}
+Serial No: ${property.serial_no}
+Area: ${property.area}
+Property Type: ${property.property_type}
+Size/Marla: ${property.size_value} ${property.size_unit}
+Floor: ${property.storey || 'N/A'}
+Road Size: ${property.road_size_ft || 'N/A'}
+Front/Length: ${property.front_ft ? `${property.front_ft}/${property.length_ft || ''}` : 'N/A'}
+Demand: ${demand}
 
-This seems like a good fit for you. Let me know if you'd like to schedule a visit!
-        `.trim().replace(/^\s+/gm, '');
+*Financials:*
+- Potential Rent: ${potentialRent}
 
+*Utilities:*
+${utilities || 'N/A'}
+
+*Documents:* ${property.documents || 'N/A'}
+            `.trim().replace(/^\s+/gm, '');
+        }
+    
         const whatsappUrl = `https://wa.me/${buyerPhone}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
         toast({ title: 'Redirecting to WhatsApp', description: `Sharing ${property.serial_no} with ${buyer.name}` });
@@ -245,4 +289,5 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
+
 
