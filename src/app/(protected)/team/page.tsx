@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils';
 import { TeamMemberDetailsDialog } from '@/components/team-member-details-dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { UpdateMemberAvatarDialog } from '@/components/update-member-avatar-dialog';
 import { useUI } from '../layout';
 
 const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
@@ -34,9 +33,7 @@ export default function TeamPage() {
     const isMobile = useIsMobile();
     const { isMoreMenuOpen } = useUI();
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
-    const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
     const [memberToEdit, setMemberToEdit] = useState<TeamMember | null>(null);
-    const [memberToUpdateAvatar, setMemberToUpdateAvatar] = useState<TeamMember | null>(null);
     const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const { toast } = useToast();
@@ -75,27 +72,6 @@ export default function TeamPage() {
         if(member.status === 'Pending') return;
         setSelectedMember(member);
         setIsDetailsOpen(true);
-    };
-
-    const handleChangePicture = (member: TeamMember) => {
-        setMemberToUpdateAvatar(member);
-        setIsAvatarDialogOpen(true);
-    };
-
-    const handleAvatarSave = async (memberId: string, dataUrl: string) => {
-        if (!profile.agency_id) return;
-
-        const memberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', memberId);
-        await updateDoc(memberRef, { avatar: dataUrl });
-        
-        // If the user is updating their own avatar, also update the main user doc
-        if (memberId === profile.user_id) {
-            const userRef = doc(firestore, 'users', memberId);
-            await updateDoc(userRef, { avatar: dataUrl });
-        }
-        
-        toast({ title: 'Avatar Updated', description: "The team member's profile picture has been updated." });
-        setIsAvatarDialogOpen(false);
     };
 
     const sortedTeamMembers = useMemo(() => {
@@ -168,21 +144,12 @@ export default function TeamPage() {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        {isOwner ? (
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
-                                                <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                            </DropdownMenuItem>
-                                        ) : (
+                                        {!isOwner && (
                                             <>
                                                 {!isPending && (
-                                                    <>
                                                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
-                                                        <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                                    </DropdownMenuItem>
-                                                    </>
                                                 )}
                                                 <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
                                                     <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
@@ -225,21 +192,12 @@ export default function TeamPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                 {isOwner ? (
-                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
-                                        <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                    </DropdownMenuItem>
-                                ) : (
+                                 {!isOwner && (
                                     <>
                                         {!isPending && (
-                                            <>
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
                                                 <Edit className="mr-2 h-4 w-4" /> Edit Role
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleChangePicture(member); }}>
-                                                <Camera className="mr-2 h-4 w-4" /> Change Picture
-                                            </DropdownMenuItem>
-                                            </>
                                         )}
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
@@ -311,15 +269,6 @@ export default function TeamPage() {
                 setIsOpen={setIsAddMemberOpen} 
                 memberToEdit={memberToEdit}
             />
-
-            {memberToUpdateAvatar && (
-                <UpdateMemberAvatarDialog
-                    isOpen={isAvatarDialogOpen}
-                    setIsOpen={setIsAvatarDialogOpen}
-                    member={memberToUpdateAvatar}
-                    onSave={handleAvatarSave}
-                />
-            )}
 
             {selectedMember && (
                 <TeamMemberDetailsDialog 
