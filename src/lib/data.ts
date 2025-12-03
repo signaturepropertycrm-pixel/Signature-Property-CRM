@@ -260,7 +260,7 @@ export const countryCodes = [
     { name: "Yemen", dial_code: "+967", code: "YE" },
     { name: "Zambia", dial_code: "+260", code: "ZM" },
     { name: "Zimbabwe", dial_code: "+263", code: "ZW" }
-].filter((v,i,a)=>a.findIndex(v2=>(v2.code===v.code))===i);
+].filter((v,i,a)=>a.findIndex(v2=>(v2.dial_code===v.dial_code))===i);
 
 
 export const punjabCities: string[] = [
