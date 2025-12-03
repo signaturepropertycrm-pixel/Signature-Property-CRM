@@ -16,7 +16,7 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
-import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare } from 'lucide-react';
+import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare, Phone } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
@@ -125,6 +125,15 @@ export function PropertyDetailsDialog({
                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     <DetailItem icon={<Wallet />} label={property.is_for_rent ? "Rent" : "Demand"} value={formatPrice(property.demand_amount, property.demand_unit)} />
                     {!property.is_for_rent && <DetailItem icon={<Briefcase />} label="Potential Rent" value={formatPrice(property.potential_rent_amount, property.potential_rent_unit)} />}
+                 </div>
+              </div>
+
+              <Separator />
+
+               <div>
+                <h3 className="font-bold text-lg mb-4">Contact Information</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <DetailItem icon={<Phone />} label="Owner's Number" value={property.owner_number} />
                  </div>
               </div>
               
