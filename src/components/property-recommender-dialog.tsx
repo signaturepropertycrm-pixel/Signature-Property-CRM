@@ -138,7 +138,6 @@ export function PropertyRecommenderDialog({
         let message = '';
     
         if (buyer.listing_type === 'For Rent') {
-            // Format for Rent Buyer
             const demand = `${property.demand_amount}${property.demand_unit === 'Thousand' ? 'K' : ` ${property.demand_unit}`}`;
             const utilities = [
                 property.meters?.gas && '- Gas',
@@ -146,8 +145,7 @@ export function PropertyRecommenderDialog({
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `
-*RENT PROPERTY DETAILS 🏡*
+            message = `*RENT PROPERTY DETAILS 🏡*
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
@@ -158,21 +156,19 @@ Portion: ${property.storey || 'N/A'}
 Demand: ${demand}
 
 *Utilities:*
-${utilities || 'N/A'}
-            `.trim().replace(/^\s+/gm, '');
+${utilities || 'N/A'}`;
     
         } else {
-            // Format for Sale Buyer
             const demand = `${property.demand_amount} ${property.demand_unit}`;
-            const potentialRent = property.potential_rent_amount ? `Rs.${property.potential_rent_amount.toLocaleString()}` : 'N/A';
+            const rentInBaseUnit = formatUnit(property.potential_rent_amount || 0, property.potential_rent_unit || 'Thousand');
+            const potentialRent = property.potential_rent_amount ? `Rs. ${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
             const utilities = [
                 property.meters?.gas && '- Gas',
                 property.meters?.electricity && '- Electricity',
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `
-*PROPERTY DETAILS 🏡*
+            message = `*PROPERTY DETAILS 🏡*
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
@@ -180,18 +176,17 @@ Area: ${property.area}
 Property Type: ${property.property_type}
 Size/Marla: ${property.size_value} ${property.size_unit}
 Floor: ${property.storey || 'N/A'}
-Road Size: ${property.road_size_ft || 'N/A'}
+Road Size: ${property.road_size_ft ? `${property.road_size_ft}ft` : 'N/A'}
 Front/Length: ${property.front_ft ? `${property.front_ft}/${property.length_ft || ''}` : 'N/A'}
 Demand: ${demand}
 
 *Financials:*
-- Potential Rent: ${potentialRent}
+- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}
 
 *Utilities:*
 ${utilities || 'N/A'}
 
-*Documents:* ${property.documents || 'N/A'}
-            `.trim().replace(/^\s+/gm, '');
+*Documents:* ${property.documents || 'N/A'}`;
         }
     
         const whatsappUrl = `https://wa.me/${buyerPhone}?text=${encodeURIComponent(message)}`;
@@ -289,5 +284,6 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
+
 
 
