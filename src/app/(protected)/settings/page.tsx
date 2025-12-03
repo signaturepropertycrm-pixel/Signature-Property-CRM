@@ -124,22 +124,26 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Extract country code and phone number
     const phone = profile.phone || '';
     const selectedCountry = countryCodes.find(c => phone.startsWith(c.dial_code));
+
     if (selectedCountry) {
         setCountryCode(selectedCountry.dial_code);
         setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
-    } else {
+    } else if (phone.startsWith('+92')) {
         setCountryCode('+92');
-        setLocalProfile({ ...profile, phone: phone.replace(/^\+92/, '') });
+        setLocalProfile({ ...profile, phone: phone.substring(3) }); // Remove '+92'
+    } else {
+        setCountryCode('+92'); // Default
+        setLocalProfile(profile);
     }
-     // Load notification settings
+
     const savedAppointmentSetting = localStorage.getItem('notifications_appointments_enabled');
     const savedFollowUpSetting = localStorage.getItem('notifications_followups_enabled');
-    setAppointmentNotifications(savedAppointmentSetting !== 'false'); // default to true
-    setFollowUpNotifications(savedFollowUpSetting !== 'false'); // default to true
+    setAppointmentNotifications(savedAppointmentSetting !== 'false');
+    setFollowUpNotifications(savedFollowUpSetting !== 'false');
   }, [profile]);
+
 
   useEffect(() => {
     localStorage.setItem('notifications_appointments_enabled', String(appointmentNotifications));
@@ -180,9 +184,12 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user) return;
 
+    // Format phone number only if it's not already formatted
+    const fullPhoneNumber = localProfile.phone.startsWith('+') ? localProfile.phone : formatPhoneNumber(localProfile.phone, countryCode);
+
     const formattedProfile = {
         ...localProfile,
-        phone: formatPhoneNumber(localProfile.phone, countryCode),
+        phone: fullPhoneNumber,
     };
 
     const isUserAdmin = profile.role === 'Admin';
@@ -198,21 +205,17 @@ export default function SettingsPage() {
     
     let dataToUpdate: Partial<ProfileData> = {};
     if (isUserAdmin) {
-        // For Admin, update agencyName, their own name, and phone in the agency doc
         dataToUpdate = { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone };
     } else {
-        // For Agent, update just their name and phone in their agent doc
         dataToUpdate = { name: formattedProfile.name, phone: formattedProfile.phone };
     }
 
     await updateDoc(docRef, dataToUpdate);
 
-    // Also update the display name in Firebase Auth itself
     if (auth.currentUser && formattedProfile.name !== profile.name) {
       await updateProfile(auth.currentUser, { displayName: formattedProfile.name });
     }
     
-    // Update the teamMember document as well if the name or phone changed for the admin
     if (isUserAdmin) {
         const teamMemberRef = doc(firestore, 'agencies', docId, 'teamMembers', user.uid);
         await updateDoc(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
@@ -1018,5 +1021,7 @@ function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean,
     </Dialog>
   );
 }
+
+    
 
     
