@@ -622,21 +622,23 @@ export default function PropertiesPage() {
                 <p className="text-muted-foreground">Manage your agency and personal properties.</p>
               </div>
               <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full sm:w-auto">
-                              {statusFilterFromURL ? propertyStatuses.find(s => s.value === statusFilterFromURL)?.label : 'All (Sale)'}
-                              <ChevronDown className="ml-2 h-4 w-4" />
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                          {propertyStatuses.map(status => (
-                              <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
-                                  {status.label}
-                              </DropdownMenuItem>
-                          ))}
-                      </DropdownMenuContent>
-                  </DropdownMenu>
+                  {isMobile && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full sm:w-auto">
+                                {statusFilterFromURL ? propertyStatuses.find(s => s.value === statusFilterFromURL)?.label : 'All (Sale)'}
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {propertyStatuses.map(status => (
+                                <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
+                                    {status.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   {(profile.role === 'Admin' || profile.role === 'Editor') && (
                       <>
                         <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
@@ -789,4 +791,5 @@ export default function PropertiesPage() {
   }
 
     
+
 
