@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -360,7 +361,7 @@ export default function SettingsPage() {
                     <CardHeader><CardTitle>My Profile</CardTitle></CardHeader>
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
-                            <div className="flex items-center gap-6">
+                             <div className="flex items-center gap-6">
                                 <Avatar className="h-20 w-20 border-4 border-primary/20">
                                     <AvatarImage src={profile.avatar} />
                                     <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
