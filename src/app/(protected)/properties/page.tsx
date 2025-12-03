@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -113,6 +114,10 @@ const propertyStatuses = [
     { value: 'Available (Rent)', label: 'Available (Rent)' },
     { value: 'Rent Out', label: 'Rent Out' },
     { value: 'Recorded', label: 'Recorded' },
+];
+
+const propertyTypesForFilter: (PropertyType | 'All')[] = [
+    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
 ];
 
 
@@ -951,14 +956,7 @@ export default function PropertiesPage() {
                                         <SelectValue placeholder="Property Type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="All">All</SelectItem>
-                                        <SelectItem value="House">House</SelectItem>
-                                        <SelectItem value="Plot">Plot</SelectItem>
-                                        <SelectItem value="Flat">Flat</SelectItem>
-                                        <SelectItem value="Shop">Shop</SelectItem>
-                                        <SelectItem value="Commercial">Commercial</SelectItem>
-                                        <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
+                                        {propertyTypesForFilter.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
                                     </SelectContent>
                                     </Select>
                                 </div>
@@ -1115,3 +1113,4 @@ export default function PropertiesPage() {
     
 
     
+

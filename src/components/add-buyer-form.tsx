@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -37,7 +38,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-const propertyTypes: PropertyType[] = ['House', 'Plot', 'Flat', 'Shop', 'Commercial', 'Agricultural', 'Other'];
+const propertyTypes: PropertyType[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 
@@ -54,7 +57,7 @@ const formSchema = z.object({
   is_investor: z.boolean().optional().default(false),
   city: z.string().optional(),
   area_preference: z.string().optional(),
-  property_type_preference: z.string().optional(),
+  property_type_preference: z.enum(propertyTypes).optional(),
   size_min_value: z.coerce.number().optional().nullable(),
   size_min_unit: z.enum(sizeUnits).optional(),
   size_max_value: z.coerce.number().optional().nullable(),
