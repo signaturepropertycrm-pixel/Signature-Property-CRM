@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/form';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -122,13 +122,15 @@ function SignupPageContent() {
         
         await batch.commit();
 
+        await sendEmailVerification(user);
+
         // Immediately set the profile in the context to avoid stale data issues
         setProfile(newProfileData);
       }
 
       toast({
         title: 'Account Created!',
-        description: 'You have been successfully registered.',
+        description: 'A verification email has been sent. Please verify your email to continue.',
       });
       router.push('/overview');
 

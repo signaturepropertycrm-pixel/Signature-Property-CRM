@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -92,11 +92,12 @@ function AgentSignupPageContent() {
         });
 
         await batch.commit();
+        await sendEmailVerification(user);
       }
 
       toast({
         title: 'Agent Account Created!',
-        description: 'You have been successfully registered. You can now log in.',
+        description: 'A verification email has been sent. Please verify your email before logging in.',
       });
       router.push('/agent/login');
 

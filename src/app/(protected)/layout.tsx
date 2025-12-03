@@ -14,6 +14,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { Loader2 } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { AppLoader } from '@/components/ui/loader';
 
 // A simple React context to manage global search state
 const SearchContext = React.createContext<{
@@ -52,12 +53,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || isProfileLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-slate-900">
-            <div className="flex flex-col items-center gap-4 text-center">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <h2 className="text-xl font-semibold text-white">Loading Your Workspace</h2>
-                <p className="text-muted-foreground">Please wait a moment...</p>
-            </div>
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <AppLoader />
         </div>
     );
   }
@@ -65,12 +62,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!user || !profile.role) {
     // This can happen briefly between login and profile hydration
     return (
-         <div className="flex h-screen w-full items-center justify-center bg-slate-900">
-            <div className="flex flex-col items-center gap-4 text-center">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <h2 className="text-xl font-semibold text-white">Authenticating</h2>
-                <p className="text-muted-foreground">Verifying your credentials...</p>
-            </div>
+         <div className="flex h-screen w-full items-center justify-center bg-background">
+            <AppLoader />
         </div>
     );
   }
