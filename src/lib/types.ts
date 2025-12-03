@@ -88,6 +88,8 @@ export type Property = {
   // Rent out details
   rent_out_date?: string;
   rented_by_agent_id?: string;
+  final_rent_amount?: number;
+  final_rent_unit?: PriceUnit;
   rent_commission_from_tenant?: number;
   rent_commission_from_tenant_unit?: PriceUnit;
   rent_commission_from_owner?: number;

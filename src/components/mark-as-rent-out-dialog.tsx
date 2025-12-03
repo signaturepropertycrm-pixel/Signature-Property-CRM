@@ -45,6 +45,8 @@ const formSchema = z.object({
   rent_out_date: z.string().refine(date => new Date(date).toString() !== 'Invalid Date', { message: 'Please select a valid date' }),
   rented_by_agent_id: z.string().min(1, "You must select the agent."),
   buyerId: z.string().optional(),
+  final_rent_amount: z.coerce.number().positive("Final rent amount is required."),
+  final_rent_unit: z.enum(priceUnits).default('Thousand'),
   rent_commission_from_tenant: z.coerce.number().min(0).optional(),
   rent_commission_from_tenant_unit: z.enum(priceUnits).default('Thousand'),
   rent_commission_from_owner: z.coerce.number().min(0).optional(),
@@ -104,15 +106,17 @@ export function MarkAsRentOutDialog({
   useEffect(() => {
     if (isOpen) {
         form.reset({
-            rent_out_date: new Date().toISOString().split('T')[0],
-            rented_by_agent_id: '',
-            buyerId: '',
-            rent_commission_from_tenant: 0,
-            rent_commission_from_tenant_unit: 'Thousand',
-            rent_commission_from_owner: 0,
-            rent_commission_from_owner_unit: 'Thousand',
-            rent_agent_share: 0,
-            rent_agent_share_unit: 'Thousand',
+            rent_out_date: property.rent_out_date || new Date().toISOString().split('T')[0],
+            rented_by_agent_id: property.rented_by_agent_id || '',
+            buyerId: property.buyerId || '',
+            final_rent_amount: property.final_rent_amount || property.demand_amount,
+            final_rent_unit: property.final_rent_unit || property.demand_unit as PriceUnit,
+            rent_commission_from_tenant: property.rent_commission_from_tenant || 0,
+            rent_commission_from_tenant_unit: property.rent_commission_from_tenant_unit || 'Thousand',
+            rent_commission_from_owner: property.rent_commission_from_owner || 0,
+            rent_commission_from_owner_unit: property.rent_commission_from_owner_unit || 'Thousand',
+            rent_agent_share: property.rent_agent_share || 0,
+            rent_agent_share_unit: property.rent_agent_share_unit || 'Thousand',
         });
     }
   }, [isOpen, property, form]);
@@ -128,6 +132,8 @@ export function MarkAsRentOutDialog({
         buyerId: buyer?.id || null,
         buyerName: buyer?.name || null,
         buyerSerialNo: buyer?.serial_no || null,
+        final_rent_amount: values.final_rent_amount,
+        final_rent_unit: values.final_rent_unit,
         rent_commission_from_tenant: values.rent_commission_from_tenant,
         rent_commission_from_tenant_unit: values.rent_commission_from_tenant_unit,
         rent_commission_from_owner: values.rent_commission_from_owner,
@@ -141,7 +147,7 @@ export function MarkAsRentOutDialog({
     
     // 1. Update Property
     const propertyRef = doc(firestore, 'agencies', property.agency_id, 'properties', property.id);
-    batch.set(propertyRef, updatedProperty);
+    batch.set(propertyRef, updatedProperty, { merge: true });
 
     // 2. Update Buyer status if a buyer was selected
     if (buyer) {
@@ -223,7 +229,8 @@ export function MarkAsRentOutDialog({
                         )}
                     />
                 </div>
-                 <FormField
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
                         control={form.control}
                         name="buyerId"
                         render={({ field }) => (
@@ -279,7 +286,37 @@ export function MarkAsRentOutDialog({
                             </FormItem>
                         )}
                     />
-                
+                     <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                            control={form.control}
+                            name="final_rent_amount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Final Rent Amount</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="final_rent_unit"
+                            render={({ field }) => (
+                                <FormItem className="self-end">
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {priceUnits.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Commission Details (PKR)</h4>
                 

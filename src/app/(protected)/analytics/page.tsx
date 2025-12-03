@@ -71,6 +71,8 @@ export default function AnalyticsPage() {
             ...dataToReset,
             rent_out_date: null,
             rented_by_agent_id: null,
+            final_rent_amount: null,
+            final_rent_unit: null,
             rent_commission_from_tenant: null,
             rent_commission_from_tenant_unit: null,
             rent_commission_from_owner: null,
@@ -149,13 +151,14 @@ export default function AnalyticsPage() {
 
         const totalCommission = p.rent_total_commission || 0;
         const agencyProfit = totalCommission - agentShare;
+        const finalRent = formatUnit(p.final_rent_amount || 0, p.final_rent_unit || 'Thousand');
 
-        totals.monthlyRent += formatUnit(p.demand_amount, p.demand_unit);
+        totals.monthlyRent += finalRent;
         totals.totalCommission += totalCommission;
         totals.agentShare += agentShare;
         totals.agencyProfit += agencyProfit;
         
-        return { ...p, agencyProfit, agentShare };
+        return { ...p, agencyProfit, agentShare, finalRent };
     });
 
     return { rows, totals };
@@ -191,7 +194,7 @@ export default function AnalyticsPage() {
     ] : [
         `${p.auto_title}\n${p.serial_no}`,
         p.rent_out_date ? new Date(p.rent_out_date).toLocaleDateString() : 'N/A',
-        formatCurrency(formatUnit(p.demand_amount, p.demand_unit), currency),
+        formatCurrency(p.finalRent || 0, currency),
         formatCurrency(p.rent_total_commission || 0, currency),
         formatCurrency(p.agentShare || 0, currency),
         formatCurrency(p.agencyProfit || 0, currency)
@@ -255,7 +258,7 @@ export default function AnalyticsPage() {
             body: [
                 ['Property', `${prop.auto_title} (${prop.serial_no})`],
                 ['Rent Out Date', prop.rent_out_date ? new Date(prop.rent_out_date).toLocaleDateString() : 'N/A'],
-                ['Monthly Rent', formatCurrency(formatUnit(prop.demand_amount, prop.demand_unit), currency)],
+                ['Monthly Rent', formatCurrency(formatUnit(prop.final_rent_amount || 0, prop.final_rent_unit || 'Thousand'), currency)],
                 ['Total Commission', formatCurrency(prop.rent_total_commission || 0, currency)],
                 ['Agent\'s Share', formatCurrency(agentShare, currency)],
                 ['Agency Profit', formatCurrency(agencyProfit, currency)],
@@ -394,7 +397,7 @@ export default function AnalyticsPage() {
                                 <div className="text-sm text-muted-foreground">{p.serial_no}</div>
                             </TableCell>
                             <TableCell>{p.rent_out_date ? new Date(p.rent_out_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>{formatCurrency(formatUnit(p.demand_amount, p.demand_unit), currency)}</TableCell>
+                            <TableCell>{formatCurrency(p.finalRent, currency)}</TableCell>
                             <TableCell>{formatCurrency(p.rent_total_commission || 0, currency)}</TableCell>
                             <TableCell>{formatCurrency(p.agentShare || 0, currency)}</TableCell>
                             <TableCell className="font-bold">{formatCurrency(p.agencyProfit || 0, currency)}</TableCell>
