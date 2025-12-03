@@ -1,5 +1,4 @@
 
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType, Property } from '@/lib/types';
@@ -26,7 +25,7 @@ import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -84,6 +83,8 @@ export default function BuyersPage() {
 
     const activeTab = listingTypeFilterFromURL || 'For Sale';
     const firestore = useFirestore();
+    const importInputRef = useRef<HTMLInputElement>(null);
+
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
     const { data: allBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
@@ -387,6 +388,86 @@ export default function BuyersPage() {
         } else {
             setIsAddBuyerOpen(true);
         }
+    };
+    
+    const handleExport = () => {
+        if (filteredBuyers.length === 0) {
+          toast({ title: 'No Data', description: 'There are no buyers to export in the current view.', variant: 'destructive' });
+          return;
+        }
+        const headers = ['serial_no', 'name', 'phone', 'email', 'status', 'area_preference', 'property_type_preference', 'budget_min_amount', 'budget_min_unit', 'budget_max_amount', 'budget_max_unit'];
+        const csvContent = [
+          headers.join(','),
+          ...filteredBuyers.map(b => headers.map(header => `"${b[header as keyof Buyer] || ''}"`).join(','))
+        ].join('\n');
+    
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `buyers-${new Date().toISOString()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !profile.agency_id) return;
+    
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const text = e.target?.result;
+          if (typeof text !== 'string') return;
+          
+          const rows = text.split('\n').slice(1);
+          if (rows.length === 0) {
+            toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
+            return;
+          }
+    
+          const batch = writeBatch(firestore);
+          const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
+          const totalBuyers = (totalSaleBuyers || 0) + (totalRentBuyers || 0);
+          let newCount = 0;
+    
+          rows.forEach((row) => {
+            if (!row) return;
+            const [serial_no, name, phone, email, status, area_preference, property_type_preference, budget_min_amount, budget_min_unit, budget_max_amount, budget_max_unit] = row.split(',').map(s => s.trim().replace(/"/g, ''));
+            
+            const listingType: ListingType = (serial_no.startsWith('RB') ? 'For Rent' : 'For Sale');
+
+            const newBuyer: Omit<Buyer, 'id'> = {
+                serial_no: `${listingType === 'For Rent' ? 'RB' : 'B'}-${(listingType === 'For Rent' ? totalRentBuyers : totalSaleBuyers) + newCount + 1}`,
+                name,
+                phone,
+                country_code: '+92',
+                email: email || '',
+                status: status as BuyerStatus || 'New',
+                area_preference,
+                property_type_preference: property_type_preference as PropertyType,
+                budget_min_amount: parseFloat(budget_min_amount) || undefined,
+                budget_min_unit: budget_min_unit as PriceUnit || undefined,
+                budget_max_amount: parseFloat(budget_max_amount) || undefined,
+                budget_max_unit: budget_max_unit as PriceUnit || undefined,
+                listing_type: listingType,
+                created_at: new Date().toISOString(),
+                created_by: profile.user_id,
+                agency_id: profile.agency_id,
+            };
+            batch.set(doc(collectionRef), newBuyer);
+            newCount++;
+          });
+          
+          try {
+            await batch.commit();
+            toast({ title: 'Import Successful', description: `${newCount} new buyers have been added.` });
+          } catch (error) {
+            toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
+          }
+        };
+        reader.readAsText(file);
+        if (importInputRef.current) importInputRef.current.value = '';
     };
 
     const renderTable = (buyers: Buyer[]) => {
@@ -693,8 +774,9 @@ export default function BuyersPage() {
                                             </div>
                                         </PopoverContent>
                                     </Popover>
-                                    <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
-                                    <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
+                                    <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                                    <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
+                                    <Button variant="outline" className="rounded-full" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export</Button>
                                 </>
                             )}
                         </div>
@@ -773,6 +855,4 @@ export default function BuyersPage() {
     );
 }
 
-
-
-  
+    

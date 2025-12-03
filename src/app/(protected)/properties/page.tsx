@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -42,7 +41,7 @@ import {
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
 import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType } from '@/lib/types';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
 import { MarkAsRentOutDialog } from '@/components/mark-as-rent-out-dialog';
@@ -72,7 +71,7 @@ import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
@@ -124,6 +123,7 @@ export default function PropertiesPage() {
   const firestore = useFirestore();
 
   const statusFilterFromURL = searchParams.get('status');
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const agencyPropertiesQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
@@ -428,6 +428,88 @@ export default function PropertiesPage() {
       router.push(url);
   };
 
+  const handleExport = () => {
+    if (filteredProperties.length === 0) {
+      toast({ title: 'No Data', description: 'There are no properties to export in the current view.', variant: 'destructive' });
+      return;
+    }
+    const headers = ['serial_no', 'auto_title', 'property_type', 'area', 'address', 'size_value', 'size_unit', 'demand_amount', 'demand_unit', 'status', 'owner_number'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredProperties.map(p => headers.map(header => `"${p[header as keyof Property] || ''}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `properties-${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target?.result;
+      if (typeof text !== 'string') return;
+      
+      const rows = text.split('\n').slice(1); // Skip header
+      if (rows.length === 0) {
+        toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
+        return;
+      }
+
+      const batch = writeBatch(firestore);
+      const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
+      const totalProperties = allProperties.length;
+      let newCount = 0;
+
+      rows.forEach((row, index) => {
+        if (!row) return;
+        const [serial_no, auto_title, property_type, area, address, size_value, size_unit, demand_amount, demand_unit, status, owner_number] = row.split(',').map(s => s.trim().replace(/"/g, ''));
+        
+        const newProperty: Omit<Property, 'id'> = {
+            serial_no: `P-${totalProperties + newCount + 1}`,
+            auto_title,
+            property_type: property_type as PropertyType,
+            area,
+            address,
+            size_value: parseFloat(size_value),
+            size_unit: size_unit as SizeUnit,
+            demand_amount: parseFloat(demand_amount),
+            demand_unit: demand_unit as 'Lacs' | 'Crore',
+            status: status as PropertyStatus,
+            owner_number,
+            country_code: '+92',
+            listing_type: 'For Sale',
+            is_for_rent: false,
+            created_at: new Date().toISOString(),
+            created_by: profile.user_id,
+            agency_id: profile.agency_id,
+            is_recorded: false,
+        };
+        batch.set(doc(collectionRef), newProperty);
+        newCount++;
+      });
+      
+      try {
+        await batch.commit();
+        toast({ title: 'Import Successful', description: `${newCount} new properties have been added.` });
+      } catch (error) {
+        toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
+      }
+    };
+    reader.readAsText(file);
+    // Reset file input
+    if(importInputRef.current) importInputRef.current.value = '';
+  };
+
+
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
@@ -652,7 +734,7 @@ export default function PropertiesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             {propertyStatuses.map(status => (
-                                <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
+                                <DropdownMenuItem key={status.value} onSelect={()={() => handleStatusChange(status.value)}}>
                                     {status.label}
                                 </DropdownMenuItem>
                             ))}
@@ -765,8 +847,9 @@ export default function PropertiesPage() {
                             </div>
                             </PopoverContent>
                         </Popover>
-                        <Button variant="outline" className="rounded-full"><Upload className="mr-2 h-4 w-4" />Import</Button>
-                        <Button variant="outline" className="rounded-full"><Download className="mr-2 h-4 w-4" />Export</Button>
+                        <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                        <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
+                        <Button variant="outline" className="rounded-full" onClick={handleExport}><Download className="mr-2 h-4 w-4" />Export</Button>
                       </>
                   )}
               </div>
@@ -827,8 +910,3 @@ export default function PropertiesPage() {
   }
 
     
-
-
-
-
-
