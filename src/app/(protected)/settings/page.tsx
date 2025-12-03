@@ -362,10 +362,6 @@ export default function SettingsPage() {
                     <form onSubmit={handleProfileSave}>
                         <CardContent className="space-y-6">
                              <div className="flex items-center gap-6">
-                                <Avatar className="h-20 w-20 border-4 border-primary/20">
-                                    <AvatarImage src={profile.avatar} />
-                                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                </Avatar>
                                 <div>
                                     <h3 className="text-lg font-bold">{profile.name}</h3>
                                     <p className="text-sm text-muted-foreground">{user?.email}</p>
@@ -498,10 +494,6 @@ export default function SettingsPage() {
         <form onSubmit={handleProfileSave}>
           <CardContent className="space-y-6">
              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 border-4 border-primary/20">
-                    <AvatarImage src={profile.avatar} />
-                    <AvatarFallback>{profile.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
                 <div>
                     <h3 className="text-lg font-bold">{profile.name}</h3>
                     <p className="text-sm text-muted-foreground">{profile.agencyName}</p>
