@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -16,6 +16,7 @@ import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
 import { LeadsChart } from '@/components/leads-chart';
+import { Button } from '@/components/ui/button';
 
 interface StatCardProps {
     title: string;
@@ -281,6 +282,25 @@ export default function OverviewPage() {
                 <PerformanceChart properties={properties || []} />
                 <LeadsChart properties={properties || []} buyers={buyers || []} />
             </div>
+
+            <Card className="mt-12 bg-gradient-to-r from-primary/90 to-blue-500/90 text-primary-foreground shadow-2xl">
+                <div className="flex flex-col md:flex-row items-center justify-between p-8 gap-6">
+                    <div className="flex-shrink-0">
+                        <Gem className="w-16 h-16 opacity-80" />
+                    </div>
+                    <div className="text-center md:text-left">
+                        <h2 className="text-3xl font-bold font-headline">Unlock Your Agency's Full Potential</h2>
+                        <p className="mt-2 max-w-2xl opacity-90">Upgrade to the Standard plan to access powerful tools, manage more leads, and collaborate with a larger team. Boost your productivity today!</p>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <Button asChild size="lg" className="bg-background text-primary hover:bg-background/90 font-bold text-lg px-8 py-6 rounded-full shadow-lg transition-transform hover:scale-105">
+                            <Link href="/upgrade">
+                                Upgrade Now <ArrowRight className="ml-2" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </Card>
 
         </div>
     );

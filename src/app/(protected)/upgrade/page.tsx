@@ -126,8 +126,8 @@ export default function UpgradePage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className={cn("w-full", plan.isPopular && 'glowing-btn')} variant={plan.isCurrent ? 'outline' : (plan.isPopular ? 'default' : 'outline')} disabled={plan.isCurrent}>
-                {plan.cta} {!plan.isCurrent && <ArrowRight className="ml-2 h-4 w-4" />}
+              <Button className={cn("w-full", plan.isPopular && 'glowing-btn')} variant={plan.isPopular ? 'default' : 'outline'}>
+                {plan.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardFooter>
           </Card>
