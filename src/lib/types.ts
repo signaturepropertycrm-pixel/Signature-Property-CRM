@@ -1,6 +1,7 @@
 
 
 export type UserRole = 'Admin' | 'Agent';
+export type PlanName = 'Basic' | 'Standard' | 'Premium';
 
 export type User = {
   id: string;
@@ -18,6 +19,7 @@ export type User = {
   },
   status?: 'Pending' | 'Active'; // New status for invitations
   invitedAt?: any; // Timestamp for pending invites
+  planName?: PlanName;
 };
 
 export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | '';

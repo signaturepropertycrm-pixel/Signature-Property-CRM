@@ -49,7 +49,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName } from '@/lib/types';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -90,8 +90,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 
 const ITEMS_PER_PAGE = 50;
+
+const planLimits = {
+    Basic: { properties: 500, buyers: 500, team: 3 },
+    Standard: { properties: 2500, buyers: 2500, team: 10 },
+    Premium: { properties: Infinity, buyers: Infinity, team: Infinity },
+};
 
 
 function formatSize(value: number, unit: string) {
@@ -195,6 +202,11 @@ export default function PropertiesPage() {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
     return Array.from(new Map(combined.map((p) => [p.id, p])).values());
   }, [agencyProperties, agentProperties]);
+
+  const currentPlan = (profile?.planName as PlanName) || 'Basic';
+  const limit = planLimits[currentPlan]?.properties || 0;
+  const currentCount = allProperties.length;
+  const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
 
   useEffect(() => {
     if (!isAddPropertyOpen) {
@@ -1160,6 +1172,16 @@ export default function PropertiesPage() {
               </div>
             </div>
             
+             <Card>
+                <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-muted-foreground">Property Leads Usage</span>
+                        <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
+                    </div>
+                    <Progress value={progress} />
+                </CardContent>
+            </Card>
+
             <div className="mt-4">
               {renderContent(paginatedProperties)}
             </div>

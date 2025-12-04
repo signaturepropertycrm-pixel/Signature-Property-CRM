@@ -11,7 +11,7 @@ import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType, Property } from '@/lib/types';
+import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType, PlanName, Property } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
@@ -39,8 +39,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 
 const ITEMS_PER_PAGE = 50;
+
+const planLimits = {
+    Basic: { properties: 500, buyers: 500, team: 3 },
+    Standard: { properties: 2500, buyers: 2500, team: 10 },
+    Premium: { properties: Infinity, buyers: Infinity, team: Infinity },
+};
 
 const statusVariant = {
     'New': 'default',
@@ -131,6 +138,10 @@ export default function BuyersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBuyerForDetails, setSelectedBuyerForDetails] = useState<Buyer | null>(null);
 
+    const currentPlan = (profile?.planName as PlanName) || 'Basic';
+    const limit = planLimits[currentPlan]?.buyers || 0;
+    const currentCount = allBuyers?.length || 0;
+    const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
 
     const buyerFollowUp = useMemo(() => {
         if (!buyerForFollowUp || !followUps) return null;
@@ -1033,6 +1044,16 @@ export default function BuyersPage() {
                         </div>
                     </div>
                     
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-medium text-muted-foreground">Buyer Leads Usage</span>
+                                <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
+                            </div>
+                            <Progress value={progress} />
+                        </CardContent>
+                    </Card>
+
                     <div className="flex items-center justify-between gap-4">
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className='grid w-full grid-cols-2'>
