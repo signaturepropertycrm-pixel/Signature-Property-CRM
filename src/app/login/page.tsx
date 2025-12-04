@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Home, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Home, Loader2, Eye, EyeOff, Download } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/form';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ProfileProvider } from '@/context/profile-context';
@@ -42,6 +42,15 @@ const formSchema = z.object({
 
 type LoginFormValues = z.infer<typeof formSchema>;
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed',
+    platform: string
+  }>;
+  prompt(): Promise<void>;
+}
+
 function LoginPageContent() {
   const router = useRouter();
   const auth = useAuth();
@@ -50,6 +59,7 @@ function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -59,6 +69,33 @@ function LoginPageContent() {
       remember: false,
     },
   });
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPromptEvent(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (installPromptEvent) {
+      installPromptEvent.prompt();
+      installPromptEvent.userChoice.then(choiceResult => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setInstallPromptEvent(null);
+      });
+    }
+  };
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
@@ -102,7 +139,7 @@ function LoginPageContent() {
         router.push('/overview');
       } else {
         // User does not exist in our DB, sign them out and show an error
-        await signOut(auth);
+        await auth.signOut();
         toast({
           variant: 'destructive',
           title: 'Account Not Found',
@@ -112,11 +149,13 @@ function LoginPageContent() {
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
       // Don't sign out here, as the initial popup might have been closed by the user
-      toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description: 'Could not sign in with Google. Please try again or sign up.',
-      });
+      if (error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            variant: 'destructive',
+            title: 'Google Sign-In Failed',
+            description: 'Could not sign in with Google. Please try again or sign up.',
+          });
+      }
     } finally {
       setIsGoogleLoading(false);
     }
@@ -264,6 +303,19 @@ function LoginPageContent() {
                   )}
                   Login
                 </Button>
+
+                {installPromptEvent && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-12 text-base font-bold glowing-btn bg-emerald-500 hover:bg-emerald-600 text-white"
+                    onClick={handleInstallClick}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Install App
+                  </Button>
+                )}
+
                 <div className="mt-4 text-center text-sm">
                   Don&apos;t have an agency account?{' '}
                   <Link
@@ -300,5 +352,3 @@ export default function LoginPage() {
         </FirebaseClientProvider>
     );
 }
-
-    
