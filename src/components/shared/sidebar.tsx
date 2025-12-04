@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
   X,
   Menu,
+  Gem,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -108,7 +109,7 @@ const mainMenuItems = [
 const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
-  { href: '/upgrade', label: 'Upgrade', icon: <Rocket />, roles: ['Admin'] },
+  { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin'] },
 ];
 
 
@@ -153,6 +154,7 @@ export function AppSidebar() {
 
     const isActive = !item.subItems && pathname === item.href;
     const isCollapsibleActive = item.subItems && pathname.startsWith(item.href);
+    const isUpgradeButton = item.href === '/upgrade';
 
     if (item.subItems) {
         return (
@@ -246,7 +248,9 @@ export function AppSidebar() {
             <Link href={item.href}>
               <SidebarMenuButton
                 isActive={isActive}
-                className="rounded-full transition-all duration-200 hover:bg-primary/10 hover:scale-105"
+                className={cn("rounded-full transition-all duration-200",
+                   isUpgradeButton ? "glowing-btn" : "hover:bg-primary/10 hover:scale-105"
+                )}
               >
                 {item.icon}
                 <span className="flex-1 truncate">{item.label}</span>
