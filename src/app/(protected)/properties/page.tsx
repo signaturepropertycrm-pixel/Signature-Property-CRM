@@ -569,7 +569,6 @@ export default function PropertiesPage() {
         return;
       }
       
-      const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
       const listingTypeToImport: ListingType = importType;
 
       const batch = writeBatch(firestore);
@@ -591,8 +590,8 @@ export default function PropertiesPage() {
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
-            const [size_value_str, size_unit_str] = size ? size.split(' ') : [undefined, undefined];
-            const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : [undefined, undefined];
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
+            const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : [];
             
             const parseOptionalNumber = (val: string | undefined): number | null => {
                 if (!val || val.trim() === '') return null;
@@ -603,10 +602,10 @@ export default function PropertiesPage() {
             newProperty = {
                 serial_no: `P-${totalSaleProperties + newCount + 1}`,
                 auto_title: `${size || 'N/A'} ${property_type || ''} in ${area || ''}`.trim(),
-                property_type: property_type as PropertyType,
+                property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
-                city: city || '',
+                city: city || 'Lahore',
                 size_value: size_value_str ? parseFloat(size_value_str) : 0,
                 size_unit: (size_unit_str as SizeUnit) || 'Marla',
                 demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
@@ -629,9 +628,9 @@ export default function PropertiesPage() {
                 length_ft: parseOptionalNumber(length_ft),
                 documents: documents || undefined,
                 meters: {
-                    electricity: utilities?.includes('Electricity'),
-                    gas: utilities?.includes('Gas'),
-                    water: utilities?.includes('Water'),
+                    electricity: utilities?.includes('Electricity') || false,
+                    gas: utilities?.includes('Gas') || false,
+                    water: utilities?.includes('Water') || false,
                 },
             };
         } else { // Rent import
@@ -641,16 +640,16 @@ export default function PropertiesPage() {
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
-            const [size_value_str, size_unit_str] = size ? size.split(' ') : [undefined, undefined];
-            const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [undefined, undefined];
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
+            const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
 
             newProperty = {
                 serial_no: `RP-${totalRentProperties + newCount + 1}`,
                 auto_title: `${size || 'N/A'} ${property_type || ''} for rent in ${area || ''}`.trim(),
-                property_type: property_type as PropertyType,
+                property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
-                city: city || '',
+                city: city || 'Lahore',
                 size_value: size_value_str ? parseFloat(size_value_str) : 0,
                 size_unit: (size_unit_str as SizeUnit) || 'Marla',
                 demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
@@ -667,9 +666,9 @@ export default function PropertiesPage() {
                 video_links: { tiktok: tiktok || '', youtube: youtube || '', instagram: instagram || '', facebook: facebook || '', other: other || '' },
                 storey: storey || undefined,
                 meters: {
-                    electricity: utilities?.includes('Electricity'),
-                    gas: utilities?.includes('Gas'),
-                    water: utilities?.includes('Water'),
+                    electricity: utilities?.includes('Electricity') || false,
+                    gas: utilities?.includes('Gas') || false,
+                    water: utilities?.includes('Water') || false,
                 },
             };
         }
@@ -1120,6 +1119,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 

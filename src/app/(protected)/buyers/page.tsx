@@ -1,4 +1,5 @@
 
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -475,14 +476,13 @@ export default function BuyersPage() {
           const text = e.target?.result;
           if (typeof text !== 'string') return;
           
-          const rows = text.split('\n');
-          const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
-          const listingType: ListingType = activeTab;
-
+          const rows = text.split('\n').filter(row => row.trim() !== '');
           if (rows.length <= 1) {
             toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
             return;
           }
+
+          const listingType: ListingType = activeTab;
     
           const batch = writeBatch(firestore);
           const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
@@ -496,33 +496,33 @@ export default function BuyersPage() {
                 size, budget, status, investor
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const [minBudget, maxBudget] = budget.split('-').map(s => s.trim());
-            const [minBudgetValue, minBudgetUnit] = minBudget.split(' ');
-            const [maxBudgetValue, maxBudgetUnit] = maxBudget ? maxBudget.split(' ') : [undefined, undefined];
+            const [minBudgetStr, maxBudgetStr] = budget ? budget.split('-').map(s => s.trim()) : [];
+            const [minBudgetValue, minBudgetUnit] = minBudgetStr ? minBudgetStr.split(' ') : [];
+            const [maxBudgetValue, maxBudgetUnit] = maxBudgetStr ? maxBudgetStr.split(' ') : [];
 
-            const [minSize, maxSize] = size.split('-').map(s => s.trim());
-            const [minSizeValue, minSizeUnit] = minSize.split(' ');
-            const [maxSizeValue, maxSizeUnit] = maxSize ? maxSize.split(' ') : [undefined, undefined];
+            const [minSizeStr, maxSizeStr] = size ? size.split('-').map(s => s.trim()) : [];
+            const [minSizeValue, minSizeUnit] = minSizeStr ? minSizeStr.split(' ') : [];
+            const [maxSizeValue, maxSizeUnit] = maxSizeStr ? maxSizeStr.split(' ') : [];
 
             const newBuyer: Omit<Buyer, 'id'> = {
                 serial_no: `${listingType === 'For Rent' ? 'RB' : 'B'}-${totalBuyersForType + newCount + 1}`,
-                name,
-                phone: formatPhoneNumber(number, '+92'),
+                name: name || 'N/A',
+                phone: formatPhoneNumber(number || '', '+92'),
                 country_code: '+92',
                 email: email || '',
                 status: (status as BuyerStatus) || 'New',
-                area_preference: area,
-                city: city,
-                property_type_preference: property_type as PropertyType,
-                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : undefined,
+                area_preference: area || '',
+                city: city || '',
+                property_type_preference: (property_type as PropertyType) || undefined,
+                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : 0,
                 budget_min_unit: (minBudgetUnit as PriceUnit) || undefined,
-                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : undefined,
+                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : 0,
                 budget_max_unit: (maxBudgetUnit as PriceUnit) || undefined,
-                size_min_value: minSizeValue ? parseFloat(minSizeValue) : undefined,
+                size_min_value: minSizeValue ? parseFloat(minSizeValue) : 0,
                 size_min_unit: (minSizeUnit as SizeUnit) || undefined,
-                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : undefined,
+                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : 0,
                 size_max_unit: (maxSizeUnit as SizeUnit) || undefined,
-                is_investor: investor.toLowerCase() === 'yes',
+                is_investor: investor?.toLowerCase() === 'yes' || false,
                 listing_type: listingType,
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
