@@ -38,6 +38,8 @@ import {
   RotateCcw,
   ChevronDown,
   MessageSquare,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -87,6 +89,8 @@ import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+const ITEMS_PER_PAGE = 50;
 
 
 function formatSize(value: number, unit: string) {
@@ -183,6 +187,7 @@ export default function PropertiesPage() {
     serialNo: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
@@ -274,6 +279,17 @@ export default function PropertiesPage() {
     }
 
   }, [searchQuery, filters, allProperties, statusFilterFromURL]);
+
+  const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
+
+    const paginatedProperties = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredProperties.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredProperties, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filters, statusFilterFromURL]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -891,8 +907,40 @@ export default function PropertiesPage() {
     );
   };
   
+  const renderPagination = () => (
+    <div className="flex items-center justify-end space-x-2 py-4">
+        <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+        </span>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+        >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+        </Button>
+        <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+        >
+            Next
+            <ChevronRight className="h-4 w-4" />
+        </Button>
+    </div>
+  );
+  
   const renderContent = (properties: Property[]) => {
-      return isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
+      const content = isMobile ? renderCards(properties) : <Card><CardContent className="p-0">{renderTable(properties)}</CardContent></Card>;
+      return (
+          <div>
+              {content}
+              {totalPages > 1 && renderPagination()}
+          </div>
+      )
   };
 
     return (
@@ -1030,7 +1078,7 @@ export default function PropertiesPage() {
             </div>
             
             <div className="mt-4">
-              {renderContent(filteredProperties)}
+              {renderContent(paginatedProperties)}
             </div>
 
           </div>
@@ -1119,6 +1167,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 

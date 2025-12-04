@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -37,6 +37,8 @@ import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
+
+const ITEMS_PER_PAGE = 50;
 
 const statusVariant = {
     'New': 'default',
@@ -124,6 +126,7 @@ export default function BuyersPage() {
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
+    const [currentPage, setCurrentPage] = useState(1);
 
 
     const buyerFollowUp = useMemo(() => {
@@ -376,6 +379,17 @@ export default function BuyersPage() {
         return filtered;
     }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter]);
 
+    const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
+
+    const paginatedBuyers = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredBuyers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredBuyers, currentPage]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filters, activeTab, activeStatusFilter]);
+
 
     const handleTabChange = (value: string) => {
         const url = `${pathname}?type=${value}`;
@@ -535,8 +549,8 @@ export default function BuyersPage() {
                 country_code: '+92',
                 email: email || '',
                 status: (status as BuyerStatus) || 'New',
-                area_preference: area || undefined,
-                city: city || undefined,
+                area_preference: area || '',
+                city: city || '',
                 property_type_preference: (property_type as PropertyType) || undefined,
                 budget_min_amount: budgetData.minVal,
                 budget_min_unit: (budgetData.minUnit as PriceUnit) || undefined,
@@ -748,8 +762,40 @@ export default function BuyersPage() {
         );
     };
 
+    const renderPagination = () => (
+        <div className="flex items-center justify-end space-x-2 py-4">
+            <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+            </span>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+            >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+            </Button>
+            <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+            >
+                Next
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+
     const renderContent = (buyers: Buyer[]) => {
-        return isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
+        const content = isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
+        return (
+            <div>
+                {content}
+                {totalPages > 1 && renderPagination()}
+            </div>
+        )
     };
 
     return (
@@ -910,10 +956,10 @@ export default function BuyersPage() {
                     </div>
                     <Tabs value={activeTab} onValueChange={handleTabChange}>
                         <TabsContent value="For Sale" className="mt-4">
-                            {renderContent(filteredBuyers)}
+                            {renderContent(paginatedBuyers)}
                         </TabsContent>
                         <TabsContent value="For Rent" className="mt-4">
-                            {renderContent(filteredBuyers)}
+                            {renderContent(paginatedBuyers)}
                         </TabsContent>
                     </Tabs>
                 </div>
