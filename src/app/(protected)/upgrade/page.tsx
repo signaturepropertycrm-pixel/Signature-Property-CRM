@@ -5,67 +5,55 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { Check, ArrowRight, Star } from 'lucide-react';
+import { Check, ArrowRight, Star, Info } from 'lucide-react';
 import { useState } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const plans = [
     {
-        name: 'Free',
-        price: { monthly: 0, yearly: 0 },
-        description: 'For individuals and small teams just getting started.',
+        name: 'Basic',
+        price: { monthly: 5000, yearly: 50000 },
+        description: 'Ideal for small agencies getting started and managing a focused portfolio.',
         features: [
-            'Up to 30 Properties',
-            'Up to 30 Buyers',
-            '1 User',
+            'Up to 500 Properties',
+            'Up to 500 Buyers',
+            'Up to 3 Team Members',
             'Core CRM Features',
-            'Standard Support'
+            'Reports & Analytics',
+            'Follow-ups & Appointments',
+            'Standard Support',
         ],
-        cta: 'Current Plan',
-        isCurrent: true,
+        cta: 'Choose Basic',
         isPopular: false,
     },
     {
         name: 'Standard',
-        price: { monthly: 5000, yearly: 50000 },
+        price: { monthly: 15000, yearly: 150000 },
         description: 'For growing agencies that need more power and collaboration.',
         features: [
-            'Up to 1,000 Properties',
-            'Up to 1,000 Buyers',
-            'Up to 5 Team Members',
-            'AI-Powered Text Generation',
-            'Role-Based Access Control',
-            'Priority Support'
+            'Up to 2,500 Properties',
+            'Up to 2,500 Buyers',
+            'Up to 10 Team Members',
+            'All Basic Features',
+            'Access to All Tools',
+            'View All Activities',
+            'Priority Support',
         ],
-        cta: 'Upgrade Now',
+        cta: 'Choose Standard',
         isPopular: true,
     },
     {
         name: 'Premium',
-        price: { monthly: 15000, yearly: 150000 },
-        description: 'For large teams requiring advanced features and scale.',
+        price: { custom: true },
+        description: 'For large teams requiring advanced features and unlimited scale.',
         features: [
-            'Up to 5,000 Properties',
-            'Up to 5,000 Buyers',
+            'Unlimited Properties',
+            'Unlimited Buyers',
             'Unlimited Team Members',
             'All Standard Features',
-            'Video Recording & Sharing Links',
-            'List Generator Tool',
-            'Dedicated Account Manager'
-        ],
-        cta: 'Upgrade Now',
-        isPopular: false,
-    },
-     {
-        name: 'Enterprise',
-        price: { custom: true },
-        description: 'Custom solutions for large-scale operations with specific needs.',
-        features: [
-            'Unlimited Properties & Buyers',
-            'All Premium Features',
             'Custom Integrations',
-            'On-Premise Deployment Option',
-            'Bespoke Feature Development',
-            'SLA & Dedicated Support Team'
+            'Dedicated Account Manager',
+            '24/7 Premium Support',
         ],
         cta: 'Contact Sales',
         isPopular: false,
@@ -84,6 +72,14 @@ export default function UpgradePage() {
           From solo agents to large-scale enterprises, we have a plan that fits your needs. Scale as you grow.
         </p>
       </div>
+      
+       <Alert className="max-w-2xl mx-auto bg-primary/10 border-primary/30">
+          <Info className="h-4 w-4" />
+          <AlertTitle className="font-bold">30-Day Free Trial</AlertTitle>
+          <AlertDescription>
+            All new agency accounts automatically start on a 30-day free trial of our Standard plan. No credit card required.
+          </AlertDescription>
+        </Alert>
 
        <div className="flex items-center justify-center space-x-4">
         <span className={cn("font-medium", !isYearly && "text-primary")}>Monthly</span>
@@ -96,7 +92,7 @@ export default function UpgradePage() {
         <span className="text-sm font-semibold text-green-600">(Save 2 months!)</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 items-start max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 items-start max-w-7xl mx-auto">
         {plans.map((plan) => (
           <Card key={plan.name} className={cn("flex flex-col h-full", plan.isPopular && "border-primary border-2 shadow-primary/20")}>
             {plan.isPopular && (
