@@ -4,12 +4,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Home, Moon, Sun } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
+import TrueFocus from '@/components/true-focus';
 
 // Placeholder data - replace with real data or fetch from an API
 const plans = [
@@ -117,7 +118,7 @@ export default function LandingPage() {
         <header className={cn("sticky top-0 z-50 w-full border-b transition-colors duration-300", headerScrolled ? "bg-card/80 backdrop-blur-lg border-border" : "bg-transparent border-transparent")}>
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center gap-2 font-bold text-lg font-headline text-primary">
-                    <Home />
+                    <Building />
                     <span>SignatureCRM</span>
                 </Link>
                 <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
@@ -147,11 +148,15 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-b from-background to-background/80"></div>
             <div className="container relative mx-auto px-4 animate-fade-in-up">
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
-                <h1 className="text-4xl font-extrabold tracking-tight font-headline md:text-6xl lg:text-7xl">
-                    Close More Deals, Faster.
-                </h1>
+                <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
+                   <TrueFocus 
+                        sentence="Manage Properties Track Buyers Boost Performance" 
+                        borderColor="hsl(var(--primary))"
+                        glowColor="hsl(var(--primary))"
+                    />
+                </div>
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-                    SignatureCRM is the all-in-one platform built for Pakistani real estate agencies to manage properties, track buyers, and boost performance.
+                    SignatureCRM is the all-in-one platform built for Pakistani real estate agencies to streamline operations and close more deals, faster.
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
