@@ -263,26 +263,10 @@ function AppointmentsPageContent() {
                 <TabsTrigger value="Owner">Owner</TabsTrigger>
             </TabsList>
             <TabsContent value="Buyer" className="mt-6">
-                 {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : buyerAppointments.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {buyerAppointments.map(renderAppointmentCard)}
-                    </div>
-                ) : (
-                    <Card className="flex items-center justify-center h-32">
-                        <p className="text-muted-foreground">No buyer appointments scheduled.</p>
-                    </Card>
-                )}
+                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
             </TabsContent>
             <TabsContent value="Owner" className="mt-6">
-                 {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : ownerAppointments.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {ownerAppointments.map(renderAppointmentCard)}
-                    </div>
-                ) : (
-                    <Card className="flex items-center justify-center h-32">
-                        <p className="text-muted-foreground">No owner appointments scheduled.</p>
-                    </Card>
-                )}
+                 {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
             </TabsContent>
          </Tabs>
        ) : (
