@@ -13,6 +13,7 @@ import { useTheme } from 'next-themes';
 import TrueFocus from '@/components/true-focus';
 import { InfiniteScroller } from '@/components/infinite-scroller';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import DotGrid from '@/components/dot-grid';
 
 
 // Placeholder data - replace with real data or fetch from an API
@@ -148,8 +149,14 @@ export default function LandingPage() {
 
       <main className="overflow-hidden">
         {/* Hero Section */}
-        <section className="relative py-20 md:py-32 text-center">
-            <div className="absolute inset-0 bg-gradient-to-b from-background to-background/80"></div>
+        <section className="relative py-20 md:py-32 text-center overflow-hidden">
+             <DotGrid
+                className="absolute inset-0 -z-10"
+                dotSize={2}
+                gap={25}
+                baseColor={theme === 'dark' ? '#1E293B' : '#E0E7FF'}
+                activeColor={theme === 'dark' ? '#38BDF8' : '#3B82F6'}
+             />
             <div className="container relative mx-auto px-4 animate-fade-in-up">
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
