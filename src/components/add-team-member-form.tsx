@@ -30,7 +30,7 @@ import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
-const roles: UserRole[] = ['Agent'];
+const roles: UserRole[] = ['Admin', 'Agent'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -65,7 +65,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
       form.reset({
         name: memberToEdit.name,
         email: memberToEdit.email,
-        role: memberToEdit.role === 'Admin' ? 'Agent' : memberToEdit.role,
+        role: memberToEdit.role,
       });
     } else {
         form.reset({ name: '', email: '', role: 'Agent' });
