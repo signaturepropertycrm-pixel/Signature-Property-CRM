@@ -25,7 +25,7 @@ function AppointmentsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | 'All';
+  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
   const firestore = useFirestore();
   const { profile } = useProfile();
@@ -141,16 +141,8 @@ function AppointmentsPageContent() {
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
 
-  const filteredAppointments = useMemo(() => {
-    if (!appointmentsData) return [];
-    if (typeFilter && typeFilter !== 'All') {
-      return appointmentsData.filter(a => a.contactType === typeFilter);
-    }
-    return appointmentsData;
-  }, [appointmentsData, typeFilter]);
-
-  const buyerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Buyer'), [filteredAppointments]);
-  const ownerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Owner'), [filteredAppointments]);
+  const buyerAppointments = useMemo(() => (appointmentsData || []).filter(a => a.contactType === 'Buyer'), [appointmentsData]);
+  const ownerAppointments = useMemo(() => (appointmentsData || []).filter(a => a.contactType === 'Owner'), [appointmentsData]);
   
   const handleTabChange = (value: string) => {
     const url = `${pathname}?type=${value}`;
@@ -261,23 +253,11 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-       <Tabs defaultValue={typeFilter || 'All'} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="All">All Appointments</TabsTrigger>
-            <TabsTrigger value="Buyer">Buyer Appointments</TabsTrigger>
-            <TabsTrigger value="Owner">Owner Appointments</TabsTrigger>
+       <Tabs defaultValue={typeFilter || 'Buyer'} onValueChange={handleTabChange}>
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="Buyer">Buyer</TabsTrigger>
+            <TabsTrigger value="Owner">Owner</TabsTrigger>
         </TabsList>
-        <TabsContent value="All" className="mt-6">
-            {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointmentsData && appointmentsData.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {appointmentsData.map(renderAppointmentCard)}
-                </div>
-            ) : (
-                 <Card className="flex items-center justify-center h-32">
-                    <p className="text-muted-foreground">No appointments scheduled.</p>
-                </Card>
-            )}
-        </TabsContent>
         <TabsContent value="Buyer" className="mt-6">
             {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
         </TabsContent>
