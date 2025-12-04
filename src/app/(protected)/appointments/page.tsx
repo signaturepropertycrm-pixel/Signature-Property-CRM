@@ -26,8 +26,7 @@ function AppointmentsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
-  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
+  const typeFilter = searchParams.get('type') || 'Buyer';
 
   const firestore = useFirestore();
   const { profile } = useProfile();
@@ -256,8 +255,7 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-       {isMobile ? (
-         <Tabs defaultValue={typeFilter || 'Buyer'} onValueChange={handleTabChange}>
+       <Tabs defaultValue={typeFilter} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="Buyer">Buyer</TabsTrigger>
                 <TabsTrigger value="Owner">Owner</TabsTrigger>
@@ -269,12 +267,6 @@ function AppointmentsPageContent() {
                  {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
             </TabsContent>
          </Tabs>
-       ) : (
-        <div className="space-y-8">
-            {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
-            {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
-        </div>
-       )}
 
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
