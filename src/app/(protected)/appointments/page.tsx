@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Appointment, AppointmentStatus, Activity, Buyer, Property } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
@@ -19,11 +18,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumberForWhatsApp } from '@/lib/formatters';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 function AppointmentsPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
+  const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | 'All';
 
   const firestore = useFirestore();
   const { profile } = useProfile();
@@ -141,7 +143,7 @@ function AppointmentsPageContent() {
 
   const filteredAppointments = useMemo(() => {
     if (!appointmentsData) return [];
-    if (typeFilter) {
+    if (typeFilter && typeFilter !== 'All') {
       return appointmentsData.filter(a => a.contactType === typeFilter);
     }
     return appointmentsData;
@@ -149,6 +151,12 @@ function AppointmentsPageContent() {
 
   const buyerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Buyer'), [filteredAppointments]);
   const ownerAppointments = useMemo(() => filteredAppointments.filter(a => a.contactType === 'Owner'), [filteredAppointments]);
+  
+  const handleTabChange = (value: string) => {
+    const url = `${pathname}?type=${value}`;
+    router.push(url);
+  };
+
 
   const renderAppointmentCard = (appt: Appointment) => {
     const currentStatus = statusConfig[appt.status];
@@ -223,8 +231,7 @@ function AppointmentsPageContent() {
 
   const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
      <div>
-        <h2 className="text-2xl font-bold tracking-tight font-headline mb-4 flex items-center gap-2">{icon} {title}</h2>
-        {isLoading ? <p className="text-muted-foreground">Loading...</p> : appointments.length > 0 ? (
+        {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointments.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {appointments.map(renderAppointmentCard)}
             </div>
@@ -245,7 +252,7 @@ function AppointmentsPageContent() {
             Appointments
           </h1>
           <p className="text-muted-foreground">
-            {typeFilter ? `Showing ${typeFilter} appointments.` : 'Manage your upcoming appointments.'}
+            Manage and track all scheduled buyer and owner appointments.
           </p>
         </div>
         <Button className="glowing-btn" onClick={() => { setAppointmentToEdit(null); setIsAppointmentOpen(true); }}>
@@ -254,10 +261,30 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-        <div className="space-y-8">
-            {(!typeFilter || typeFilter === 'Buyer') && renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
-            {(!typeFilter || typeFilter === 'Owner') && renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
-        </div>
+       <Tabs defaultValue={typeFilter || 'All'} onValueChange={handleTabChange}>
+        <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="All">All Appointments</TabsTrigger>
+            <TabsTrigger value="Buyer">Buyer Appointments</TabsTrigger>
+            <TabsTrigger value="Owner">Owner Appointments</TabsTrigger>
+        </TabsList>
+        <TabsContent value="All" className="mt-6">
+            {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointmentsData && appointmentsData.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {appointmentsData.map(renderAppointmentCard)}
+                </div>
+            ) : (
+                 <Card className="flex items-center justify-center h-32">
+                    <p className="text-muted-foreground">No appointments scheduled.</p>
+                </Card>
+            )}
+        </TabsContent>
+        <TabsContent value="Buyer" className="mt-6">
+            {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
+        </TabsContent>
+        <TabsContent value="Owner" className="mt-6">
+            {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
+        </TabsContent>
+      </Tabs>
 
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
