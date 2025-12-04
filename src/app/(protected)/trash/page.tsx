@@ -13,7 +13,7 @@ import type { Property, Buyer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 
@@ -63,10 +63,8 @@ export default function TrashPage() {
   
   
   const handleRestoreProperty = async (prop: Property) => {
-    // If agency_id does not equal created_by, it's an agent's personal item.
-    const isAgentOwned = prop.agency_id !== prop.created_by;
-    const collectionName = isAgentOwned ? 'agents' : 'agencies';
-    const collectionId = isAgentOwned ? prop.created_by : prop.agency_id;
+    const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
+    const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
 
     if (!collectionId) return;
 
@@ -75,20 +73,35 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteProperty = async (prop: Property) => {
-    const isAgentOwned = prop.agency_id !== prop.created_by;
-    const collectionName = isAgentOwned ? 'agents' : 'agencies';
-    const collectionId = isAgentOwned ? prop.created_by : prop.agency_id;
+    const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
+    const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
 
     if (!collectionId) return;
 
     await deleteDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id));
     toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
   };
+
+  const handleEmptyPropertiesTrash = async () => {
+    if (deletedProperties.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    deletedProperties.forEach(prop => {
+        const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
+        const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
+        if (collectionId) {
+            const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+            batch.delete(docRef);
+        }
+    });
+
+    await batch.commit();
+    toast({ title: 'Properties Trash Emptied', variant: 'destructive', description: `${deletedProperties.length} properties have been permanently removed.` });
+  }
   
   const handleRestoreBuyer = async (buyer: Buyer) => {
-    const isAgentOwned = buyer.agency_id !== buyer.created_by;
-    const collectionName = isAgentOwned ? 'agents' : 'agencies';
-    const collectionId = isAgentOwned ? buyer.created_by : buyer.agency_id;
+    const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
+    const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
 
     if (!collectionId) return;
 
@@ -97,9 +110,8 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteBuyer = async (buyer: Buyer) => {
-    const isAgentOwned = buyer.agency_id !== buyer.created_by;
-    const collectionName = isAgentOwned ? 'agents' : 'agencies';
-    const collectionId = isAgentOwned ? buyer.created_by : buyer.agency_id;
+    const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
+    const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
 
     if (!collectionId) return;
 
@@ -107,16 +119,33 @@ export default function TrashPage() {
     toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
   };
 
-  const PermanentDeleteDialog = ({ onConfirm }: { onConfirm: () => void }) => (
+  const handleEmptyBuyersTrash = async () => {
+    if (deletedBuyers.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    deletedBuyers.forEach(buyer => {
+       const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
+       const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
+       if (collectionId) {
+            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
+            batch.delete(docRef);
+       }
+    });
+
+    await batch.commit();
+    toast({ title: 'Buyers Trash Emptied', variant: 'destructive', description: `${deletedBuyers.length} buyers have been permanently removed.` });
+  }
+
+  const PermanentDeleteDialog = ({ onConfirm, title, description }: { onConfirm: () => void, title: string, description: string }) => (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Delete Permanently</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete the item from the database.
+            {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -143,8 +172,25 @@ export default function TrashPage() {
         </TabsList>
         <TabsContent value="properties">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row justify-between items-center">
               <CardTitle>Deleted Properties</CardTitle>
+               <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={deletedProperties.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Empty Properties Trash</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all {deletedProperties.length} properties in the trash. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEmptyPropertiesTrash}>Confirm & Empty Trash</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
             </CardHeader>
             <CardContent>
               {isLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> : 
@@ -166,7 +212,7 @@ export default function TrashPage() {
                         <TableCell>{prop.auto_title}</TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button variant="outline" size="sm" onClick={() => handleRestoreProperty(prop)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} />
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} title="Are you sure?" description="This action is permanent and cannot be undone." />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -178,8 +224,25 @@ export default function TrashPage() {
         </TabsContent>
         <TabsContent value="buyers">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row justify-between items-center">
               <CardTitle>Deleted Buyers</CardTitle>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={deletedBuyers.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Empty Buyers Trash</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all {deletedBuyers.length} buyers in the trash. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEmptyBuyersTrash}>Confirm & Empty Trash</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
             </CardHeader>
             <CardContent>
                {isLoading ? <p className="text-center py-10 text-muted-foreground">Loading...</p> :
@@ -203,7 +266,7 @@ export default function TrashPage() {
                         <TableCell>{buyer.phone}</TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button variant="outline" size="sm" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} />
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent and cannot be undone." />
                         </TableCell>
                       </TableRow>
                     ))}
