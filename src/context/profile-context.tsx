@@ -21,6 +21,7 @@ export interface ProfileData {
   agency_id: string;
   trialEndDate?: string;
   daysLeftInTrial?: number;
+  planName?: PlanName;
 }
 
 interface ProfileContextType {
@@ -39,6 +40,7 @@ const defaultProfile: ProfileData = {
     avatar: '',
     user_id: '',
     agency_id: '',
+    planName: 'Basic',
 };
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
@@ -105,8 +107,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         let trialEndDate: string | undefined;
         let daysLeftInTrial: number | undefined;
 
-        if (agencyProfile?.createdAt) {
-            const startDate = (agencyProfile.createdAt as Timestamp).toDate();
+        if (userProfile?.createdAt) {
+            const startDate = (userProfile.createdAt as Timestamp).toDate();
             const endDate = addDays(startDate, 30);
             const daysLeft = differenceInDays(endDate, new Date());
             trialEndDate = endDate.toISOString();
@@ -123,6 +125,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             agency_id: userProfile.agency_id || '',
             trialEndDate,
             daysLeftInTrial,
+            planName: agencyProfile?.planName || 'Basic',
         };
         
         setProfileState(newProfileData);
