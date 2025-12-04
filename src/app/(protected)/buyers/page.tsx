@@ -427,11 +427,11 @@ export default function BuyersPage() {
           ...buyersToExport.map(b => {
               const budgetMin = b.budget_min_amount ? `${b.budget_min_amount} ${b.budget_min_unit}` : '';
               const budgetMax = b.budget_max_amount ? ` - ${b.budget_max_amount} ${b.budget_max_unit}` : '';
-              const budget = budgetMin + budgetMax;
+              const budget = budgetMin ? budgetMin + (budgetMax || '') : 'N/A';
 
               const sizeMin = b.size_min_value ? `${b.size_min_value} ${b.size_min_unit}` : '';
               const sizeMax = b.size_max_value ? ` - ${b.size_max_value} ${b.size_max_unit}` : '';
-              const size = sizeMin + sizeMax;
+              const size = sizeMin ? sizeMin + (sizeMax || '') : 'N/A';
 
               const date = new Date(b.created_at);
               const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -507,11 +507,14 @@ export default function BuyersPage() {
                 size, budget, status, investor, notes
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const parseRange = (rangeStr?: string) => {
-                if (!rangeStr || rangeStr.trim() === '') return { minVal: null, minUnit: null, maxVal: null, maxUnit: null };
+            const parseRange = (rangeStr: string) => {
+                if (!rangeStr || rangeStr.trim() === '' || rangeStr.trim().toLowerCase() === 'n/a') {
+                    return { minVal: null, minUnit: null, maxVal: null, maxUnit: null };
+                }
                 const parts = rangeStr.split('-').map(s => s.trim());
-                const [minValStr, minUnitStr] = parts[0]?.split(' ') || [];
-                const [maxValStr, maxUnitStr] = parts[1]?.split(' ') || [];
+                const [minValStr, minUnitStr] = parts[0]?.split(' ').filter(Boolean) || [];
+                const [maxValStr, maxUnitStr] = parts.length > 1 ? (parts[1]?.split(' ').filter(Boolean) || []) : [];
+
                 return {
                     minVal: minValStr ? parseFloat(minValStr) : null,
                     minUnit: minUnitStr || null,
@@ -530,10 +533,10 @@ export default function BuyersPage() {
                 name: name || 'N/A',
                 phone: formatPhoneNumber(number || '', '+92'),
                 country_code: '+92',
-                email: email || '',
+                email: email || undefined,
                 status: (status as BuyerStatus) || 'New',
-                area_preference: area || '',
-                city: city || '',
+                area_preference: area || undefined,
+                city: city || undefined,
                 property_type_preference: (property_type as PropertyType) || undefined,
                 budget_min_amount: budgetData.minVal,
                 budget_min_unit: (budgetData.minUnit as PriceUnit) || undefined,
@@ -545,7 +548,7 @@ export default function BuyersPage() {
                 size_max_unit: (sizeData.maxUnit as SizeUnit) || (sizeData.minUnit as SizeUnit) || undefined,
                 is_investor: investor?.toLowerCase() === 'yes' || false,
                 listing_type: listingTypeToImport,
-                notes: notes || '',
+                notes: notes || undefined,
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
