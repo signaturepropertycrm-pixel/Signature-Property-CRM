@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -161,7 +161,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
-                        <Link href="/signup">30 Days Ka Trail Hasil karo</Link>
+                        <Link href="/signup">Start Your Free Trial</Link>
                     </Button>
                 </div>
             </div>
