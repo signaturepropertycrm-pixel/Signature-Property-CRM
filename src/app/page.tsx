@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -150,7 +150,8 @@ export default function LandingPage() {
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Manage Properties Track Buyers Boost Performance" 
+                        sentence="Close More Deals, Faster" 
+                        separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
                     />
