@@ -161,7 +161,7 @@ export default function LandingPage() {
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Close More Deals,Faster" 
+                        sentence="Close More Deals, Faster" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
@@ -175,20 +175,6 @@ export default function LandingPage() {
                         <Link href="/signup">Start Your Free Trial</Link>
                     </Button>
                 </div>
-            </div>
-        </section>
-
-        {/* Dashboard Preview */}
-        <section className="container mx-auto px-4 -mt-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="relative rounded-2xl shadow-2xl shadow-primary/10 border-4 border-primary/20 bg-background/50 p-2">
-                <Image
-                    src={dashboardPreviewImage?.imageUrl || "https://picsum.photos/seed/crm-dashboard/1200/800"}
-                    alt={dashboardPreviewImage?.description || "SignatureCRM Dashboard"}
-                    width={1200}
-                    height={800}
-                    className="rounded-lg"
-                    data-ai-hint={dashboardPreviewImage?.imageHint || 'dashboard ui'}
-                />
             </div>
         </section>
 
