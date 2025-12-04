@@ -507,7 +507,7 @@ export default function BuyersPage() {
                 size, budget, status, investor, notes
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const parseRange = (rangeStr: string) => {
+            const parseRange = (rangeStr: string | undefined) => {
                 if (!rangeStr || rangeStr.trim() === '' || rangeStr.trim().toLowerCase() === 'n/a') {
                     return { minVal: null, minUnit: null, maxVal: null, maxUnit: null };
                 }
@@ -517,9 +517,9 @@ export default function BuyersPage() {
 
                 return {
                     minVal: minValStr ? parseFloat(minValStr) : null,
-                    minUnit: minUnitStr || null,
+                    minUnit: (minUnitStr as SizeUnit | PriceUnit) || null,
                     maxVal: maxValStr ? parseFloat(maxValStr) : null,
-                    maxUnit: maxUnitStr || minUnitStr || null,
+                    maxUnit: (maxUnitStr as SizeUnit | PriceUnit) || (minUnitStr as SizeUnit | PriceUnit) || null,
                 };
             };
             
@@ -548,7 +548,7 @@ export default function BuyersPage() {
                 size_max_unit: (sizeData.maxUnit as SizeUnit) || (sizeData.minUnit as SizeUnit) || undefined,
                 is_investor: investor?.toLowerCase() === 'yes' || false,
                 listing_type: listingTypeToImport,
-                notes: notes || undefined,
+                notes: notes || '',
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
