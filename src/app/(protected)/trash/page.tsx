@@ -16,6 +16,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 
 export default function TrashPage() {
@@ -136,10 +137,10 @@ export default function TrashPage() {
     toast({ title: 'Buyers Trash Emptied', variant: 'destructive', description: `${deletedBuyers.length} buyers have been permanently removed.` });
   }
 
-  const PermanentDeleteDialog = ({ onConfirm, title, description }: { onConfirm: () => void, title: string, description: string }) => (
+  const PermanentDeleteDialog = ({ onConfirm, title, description, children }: { onConfirm: () => void, title: string, description: string, children: React.ReactNode }) => (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Delete Permanently</Button>
+        {children}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -157,6 +158,7 @@ export default function TrashPage() {
   );
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Trash</h1>
@@ -176,7 +178,7 @@ export default function TrashPage() {
               <CardTitle>Deleted Properties</CardTitle>
                <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={deletedProperties.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Empty Properties Trash</Button>
+                    <Button variant="destructive" disabled={deletedProperties.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -211,8 +213,20 @@ export default function TrashPage() {
                         <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
                         <TableCell>{prop.auto_title}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleRestoreProperty(prop)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} title="Are you sure?" description="This action is permanent and cannot be undone." />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={() => handleRestoreProperty(prop)}><RotateCcw className="h-4 w-4" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Restore</p></TooltipContent>
+                          </Tooltip>
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} title="Are you sure?" description="This action is permanent and cannot be undone.">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Delete Permanently</p></TooltipContent>
+                            </Tooltip>
+                          </PermanentDeleteDialog>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -228,7 +242,7 @@ export default function TrashPage() {
               <CardTitle>Deleted Buyers</CardTitle>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" disabled={deletedBuyers.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Empty Buyers Trash</Button>
+                    <Button variant="destructive" disabled={deletedBuyers.length === 0}><Trash2 className="mr-2 h-4 w-4" /> Clear All</Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -265,8 +279,20 @@ export default function TrashPage() {
                         <TableCell>{buyer.name}</TableCell>
                         <TableCell>{buyer.phone}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="mr-2 h-4 w-4" /> Restore</Button>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent and cannot be undone." />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="h-4 w-4" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Restore</p></TooltipContent>
+                          </Tooltip>
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent and cannot be undone.">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Delete Permanently</p></TooltipContent>
+                            </Tooltip>
+                          </PermanentDeleteDialog>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -278,5 +304,8 @@ export default function TrashPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </TooltipProvider>
   );
 }
+
+    
