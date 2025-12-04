@@ -112,6 +112,8 @@ export default function BuyersPage() {
     const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
     const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+    const [importType, setImportType] = useState<'For Sale' | 'For Rent' | null>(null);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
     const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
     const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
@@ -419,7 +421,7 @@ export default function BuyersPage() {
           return;
         }
         
-        const headers = ['Sr No', 'Date', 'Number', 'Name', 'Email', 'City', 'Area', 'Property Type', 'Size', 'Budget', 'Status', 'Investor'];
+        const headers = ['Sr No', 'Date', 'Number', 'Name', 'Email', 'City', 'Area', 'Property Type', 'Size', 'Budget', 'Status', 'Investor', 'Notes'];
         
         const csvContent = [
           headers.join(','),
@@ -449,7 +451,8 @@ export default function BuyersPage() {
                 `"${size}"`,
                 `"${budget}"`,
                 `"${b.status}"`,
-                `"${b.is_investor ? 'Yes' : 'No'}"`
+                `"${b.is_investor ? 'Yes' : 'No'}"`,
+                `"${b.notes || ''}"`
               ];
               return row.join(',');
           })
@@ -466,10 +469,15 @@ export default function BuyersPage() {
         setIsExportDialogOpen(false);
     };
 
+    const handleImportClick = (type: 'For Sale' | 'For Rent') => {
+        setImportType(type);
+        importInputRef.current?.click();
+        setIsImportDialogOpen(false);
+    };
 
     const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file || !profile.agency_id) return;
+        if (!file || !profile.agency_id || !importType) return;
     
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -482,30 +490,37 @@ export default function BuyersPage() {
             return;
           }
 
-          const listingType: ListingType = activeTab;
+          const listingTypeToImport: ListingType = importType;
     
           const batch = writeBatch(firestore);
           const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
-          const totalBuyersForType = listingType === 'For Sale' ? totalSaleBuyers : totalRentBuyers;
+          
+          // Recalculate totals inside the handler to be up-to-date
+          const currentBuyers = allBuyers || [];
+          const totalSaleBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Sale').length;
+          const totalRentBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Rent').length;
+          
           let newCount = 0;
     
           rows.slice(1).forEach((row) => {
             if (!row) return;
             const [
                 _serial, _date, number, name, email, city, area, property_type,
-                size, budget, status, investor
+                size, budget, status, investor, notes
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const [minBudgetStr, maxBudgetStr] = budget ? budget.split('-').map(s => s.trim()) : [];
-            const [minBudgetValue, minBudgetUnit] = minBudgetStr ? minBudgetStr.split(' ') : [];
-            const [maxBudgetValue, maxBudgetUnit] = maxBudgetStr ? maxBudgetStr.split(' ') : [];
+            const [minBudgetStr, maxBudgetStr] = budget ? budget.split('-').map(s => s.trim()) : [undefined, undefined];
+            const [minBudgetValue, minBudgetUnit] = minBudgetStr ? minBudgetStr.split(' ') : [undefined, undefined];
+            const [maxBudgetValue, maxBudgetUnit] = maxBudgetStr ? maxBudgetStr.split(' ') : [undefined, undefined];
 
-            const [minSizeStr, maxSizeStr] = size ? size.split('-').map(s => s.trim()) : [];
-            const [minSizeValue, minSizeUnit] = minSizeStr ? minSizeStr.split(' ') : [];
-            const [maxSizeValue, maxSizeUnit] = maxSizeStr ? maxSizeStr.split(' ') : [];
+            const [minSizeStr, maxSizeStr] = size ? size.split('-').map(s => s.trim()) : [undefined, undefined];
+            const [minSizeValue, minSizeUnit] = minSizeStr ? minSizeStr.split(' ') : [undefined, undefined];
+            const [maxSizeValue, maxSizeUnit] = maxSizeStr ? maxSizeStr.split(' ') : [undefined, undefined];
+
+            const currentTotal = listingTypeToImport === 'For Sale' ? totalSaleBuyersForImport : totalRentBuyersForImport;
 
             const newBuyer: Omit<Buyer, 'id'> = {
-                serial_no: `${listingType === 'For Rent' ? 'RB' : 'B'}-${totalBuyersForType + newCount + 1}`,
+                serial_no: `${listingTypeToImport === 'For Rent' ? 'RB' : 'B'}-${currentTotal + newCount + 1}`,
                 name: name || 'N/A',
                 phone: formatPhoneNumber(number || '', '+92'),
                 country_code: '+92',
@@ -523,7 +538,8 @@ export default function BuyersPage() {
                 size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : 0,
                 size_max_unit: (maxSizeUnit as SizeUnit) || undefined,
                 is_investor: investor?.toLowerCase() === 'yes' || false,
-                listing_type: listingType,
+                listing_type: listingTypeToImport,
+                notes: notes || '',
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
@@ -542,6 +558,7 @@ export default function BuyersPage() {
         };
         reader.readAsText(file);
         if (importInputRef.current) importInputRef.current.value = '';
+        setImportType(null);
     };
 
     const renderTable = (buyers: Buyer[]) => {
@@ -848,7 +865,7 @@ export default function BuyersPage() {
                                             </div>
                                         </PopoverContent>
                                     </Popover>
-                                    <Button variant="outline" className="rounded-full" onClick={() => importInputRef.current?.click()}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                                    <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                                     <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
                                     <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                                 </>
@@ -941,6 +958,22 @@ export default function BuyersPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <AlertDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Choose Import Type</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Select the type of buyers you are importing from a CSV file.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Buyers</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
@@ -950,3 +983,4 @@ export default function BuyersPage() {
     
 
     
+
