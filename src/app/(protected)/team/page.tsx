@@ -59,8 +59,8 @@ export default function TeamPage() {
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.team || 0;
-    // Admin is not counted towards the limit
-    const currentCount = teamMembers ? teamMembers.filter(m => m.role !== 'Admin').length : 0;
+    // Admin is not counted towards the limit, but should be displayed.
+    const currentCount = teamMembers ? teamMembers.filter(m => m.role === 'Agent').length : 0;
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
 
     const handleEdit = (member: TeamMember) => {
