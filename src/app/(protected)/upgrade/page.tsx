@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import { cn } from '@/lib/utils';
 import { Check, ArrowRight, Star, Info } from 'lucide-react';
 import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useProfile } from '@/context/profile-context';
+import { format } from 'date-fns';
 
 const plans = [
     {
@@ -63,6 +66,7 @@ const plans = [
 
 export default function UpgradePage() {
     const [isYearly, setIsYearly] = useState(false);
+    const { profile } = useProfile();
 
   return (
     <div className="space-y-8">
@@ -77,7 +81,13 @@ export default function UpgradePage() {
           <Info className="h-4 w-4" />
           <AlertTitle className="font-bold">30-Day Free Trial</AlertTitle>
           <AlertDescription>
-            All new agency accounts automatically start on a 30-day free trial of our Standard plan. No credit card required.
+            {profile.trialEndDate && profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0 ? (
+                <span>
+                    Your free trial of the Standard plan ends in <strong>{profile.daysLeftInTrial} days</strong> (on {format(new Date(profile.trialEndDate), 'PPP')}).
+                </span>
+            ) : (
+                'All new agency accounts automatically start on a 30-day free trial of our Standard plan.'
+            )}
           </AlertDescription>
         </Alert>
 

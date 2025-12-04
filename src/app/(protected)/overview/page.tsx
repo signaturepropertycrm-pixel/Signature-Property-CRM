@@ -1,7 +1,8 @@
+
 'use client';
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -11,12 +12,13 @@ import { collection, query, where, Timestamp } from 'firebase/firestore';
 import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { subDays, isWithinInterval, parseISO } from 'date-fns';
+import { subDays, isWithinInterval, parseISO, format } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
 import { LeadsChart } from '@/components/leads-chart';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface StatCardProps {
     title: string;
@@ -273,6 +275,19 @@ export default function OverviewPage() {
                 <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><TrendingUp/> Statistics</h1>
                 <p className="text-muted-foreground">A quick overview of your performance and key metrics in the last 30 days.</p>
             </div>
+            
+            {profile.role === 'Admin' && profile.trialEndDate && profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0 && (
+                 <Alert className="max-w-2xl mx-auto bg-primary/10 border-primary/30">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle className="font-bold">
+                        {profile.daysLeftInTrial > 1 ? `${profile.daysLeftInTrial} Days Left in Your Trial` : 'Your trial ends today!'}
+                    </AlertTitle>
+                    <AlertDescription>
+                        Your 30-day free trial of the Standard plan ends on {format(new Date(profile.trialEndDate), 'PPP')}.
+                        <Link href="/upgrade" className="font-semibold text-primary underline ml-2">Upgrade now</Link> to keep your premium features.
+                    </AlertDescription>
+                </Alert>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}

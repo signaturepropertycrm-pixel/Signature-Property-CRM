@@ -3,11 +3,12 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/lib/types';
-import { doc } from 'firebase/firestore';
+import { doc, Timestamp } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { useFirestore } from '@/firebase/provider';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { addDays, differenceInDays } from 'date-fns';
 
 
 export interface ProfileData {
@@ -18,6 +19,8 @@ export interface ProfileData {
   avatar?: string;
   user_id: string;
   agency_id: string;
+  trialEndDate?: string;
+  daysLeftInTrial?: number;
 }
 
 interface ProfileContextType {
@@ -89,10 +92,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         
         let name = userProfile.name || user.displayName || 'User';
         let phone = userProfile.phone || '';
-        // Prioritize the avatar from the team member record, then agency, then user profile, then auth object.
         let avatar = teamMemberProfile?.avatar || agencyProfile?.avatar || userProfile.avatar || user.photoURL || '';
 
-        // Specific profiles can override details
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             phone = agentProfile.phone || phone;
@@ -101,14 +102,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             phone = agencyProfile.phone || phone;
         }
 
+        let trialEndDate: string | undefined;
+        let daysLeftInTrial: number | undefined;
+
+        if (agencyProfile?.createdAt) {
+            const startDate = (agencyProfile.createdAt as Timestamp).toDate();
+            const endDate = addDays(startDate, 30);
+            const daysLeft = differenceInDays(endDate, new Date());
+            trialEndDate = endDate.toISOString();
+            daysLeftInTrial = Math.max(0, daysLeft);
+        }
+
         const newProfileData: ProfileData = {
             name: name,
             agencyName: agencyProfile?.agencyName || 'My Agency',
             phone: phone,
             role: role, 
             avatar: avatar,
-            user_id: user.uid, // Always ensure user_id is the UID
+            user_id: user.uid,
             agency_id: userProfile.agency_id || '',
+            trialEndDate,
+            daysLeftInTrial,
         };
         
         setProfileState(newProfileData);
@@ -141,5 +155,3 @@ export function useProfile() {
   }
   return context;
 }
-
-    
