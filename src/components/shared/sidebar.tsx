@@ -90,16 +90,7 @@ const mainMenuItems = [
     ]
   },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
-  { 
-    href: '/appointments?type=Buyer', 
-    label: 'Appointments', 
-    icon: <Calendar />, 
-    roles: ['Admin', 'Agent'],
-    subItems: [
-        { href: '/appointments?type=Buyer', label: 'Buyer' },
-        { href: '/appointments?type=Owner', label: 'Owner' },
-    ]
-  },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
