@@ -101,11 +101,15 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
                 <span>Pay with JazzCash</span>
             </Button>
             <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('bank')}>
-                <Banknote className="h-8 w-8 mr-4 text-primary" />
+                <div className="h-8 w-8 mr-4 flex items-center justify-center bg-primary text-primary-foreground rounded-md">
+                  <Banknote className="h-5 w-5" />
+                </div>
                 <span>Pay with Bank Transfer</span>
             </Button>
             <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('card')}>
-                <CreditCard className="h-8 w-8 mr-4 text-primary" />
+                <div className="h-8 w-8 mr-4 flex items-center justify-center bg-primary text-primary-foreground rounded-md">
+                  <CreditCard className="h-5 w-5" />
+                </div>
                 <span>Pay with Credit/Debit Card</span>
             </Button>
         </div>
@@ -124,7 +128,7 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
 
     return (
         <>
-            <DialogHeader>
+             <DialogHeader>
                  <Button variant="ghost" size="icon" className="absolute left-4 top-4 h-8 w-8" onClick={handleBack}>
                     <ArrowLeft />
                  </Button>
