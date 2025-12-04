@@ -12,14 +12,13 @@ import {
   CalendarPlus,
   ArrowRight,
 } from 'lucide-react';
-import React, from 'react';
+import React, { useMemo } from 'react';
 import { Activity } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
-import { useMemoFirebase } from '@/firebase/hooks';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -35,7 +34,7 @@ export default function ActivitiesPage() {
   const firestore = useFirestore();
   const { profile } = useProfile();
 
-  const activitiesQuery = useMemoFirebase(() => {
+  const activitiesQuery = useMemo(() => {
     if (!profile.agency_id) return null;
     const sevenDaysAgo = subDays(new Date(), 7);
     return query(
@@ -45,7 +44,7 @@ export default function ActivitiesPage() {
     );
   }, [firestore, profile.agency_id]);
 
-  const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
+  const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery as any);
   
   const sortedActivities = activities; // Already sorted by query
 
