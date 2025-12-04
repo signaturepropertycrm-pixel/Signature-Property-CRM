@@ -12,10 +12,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Copy, Check, Info } from 'lucide-react';
-import { useState } from 'react';
+import { Copy, Check, Info, Upload, Banknote, CreditCard, ArrowLeft, Loader2 } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Input } from './ui/input';
 
 export type Plan = {
     name: string;
@@ -33,12 +34,20 @@ interface PaymentDialogProps {
   billingCycle: 'monthly' | 'yearly';
 }
 
+type PaymentMethod = 'jazzcash' | 'bank' | 'card';
+
 export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: PaymentDialogProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [transactionId, setTransactionId] = useState('');
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
 
   if (plan.price.custom) {
-      // Handle custom plan - maybe show contact info
       return null;
   }
   
@@ -50,60 +59,165 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
     toast({ title: "Copied to clipboard!" });
     setTimeout(() => setCopied(false), 2000);
   };
+  
+  const handleBack = () => {
+    setSelectedMethod(null);
+    setTransactionId('');
+    setReceiptFile(null);
+  }
+
+  const handleSubmit = () => {
+    if (!transactionId || !receiptFile) {
+        toast({
+            title: "Information Missing",
+            description: "Please provide both Transaction ID and a receipt file.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
+    // Simulate submission
+    setTimeout(() => {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+    }, 2000);
+  }
+
+  const renderInitialScreen = () => (
+      <>
+        <DialogHeader>
+            <DialogTitle className="font-headline">Choose Payment Method</DialogTitle>
+            <DialogDescription>
+                You are purchasing the <strong>{plan.name} ({billingCycle})</strong> plan for <strong>RS {price.toLocaleString()}</strong>.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-4 py-4">
+            <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('jazzcash')}>
+                <img src="https://play-lh.googleusercontent.com/VRvAbPM5f2k7r_5Im-Fk2sIcqowb4lMh2b3iNLetTfSubKr_trackexs_key_point_a=w240-h480-rw" alt="JazzCash" className="h-8 w-8 mr-4"/>
+                <span>Pay with JazzCash</span>
+            </Button>
+            <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('bank')}>
+                <Banknote className="h-8 w-8 mr-4 text-primary" />
+                <span>Pay with Bank Transfer</span>
+            </Button>
+            <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('card')}>
+                <CreditCard className="h-8 w-8 mr-4 text-primary" />
+                <span>Pay with Credit/Debit Card</span>
+            </Button>
+        </div>
+        <DialogFooter>
+            <Button variant="secondary" onClick={() => setIsOpen(false)}>Cancel</Button>
+        </DialogFooter>
+    </>
+  );
+
+  const renderDetailsScreen = () => {
+    const details = {
+        jazzcash: { title: "JazzCash Payment", accountName: "Usman Sagheer", accountNumber: "03001234567" },
+        bank: { title: "Bank Transfer", accountName: "Usman Sagheer", accountNumber: "01234567890123", bankName: "Meezan Bank" },
+        card: { title: "Credit/Debit Card", message: "Online card payments are coming soon. Please choose another method." }
+    }[selectedMethod!];
+
+    return (
+        <>
+            <DialogHeader>
+                 <Button variant="ghost" size="icon" className="absolute left-4 top-4 h-8 w-8" onClick={handleBack}>
+                    <ArrowLeft />
+                 </Button>
+                <DialogTitle className="font-headline text-center">{details.title}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                 <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Instructions</AlertTitle>
+                    <AlertDescription>
+                        Please transfer <strong>RS {price.toLocaleString()}</strong> to the account below, then upload the receipt and enter the Transaction ID to complete your request.
+                    </AlertDescription>
+                </Alert>
+
+                <Card>
+                    <CardContent className="p-4 space-y-3 text-sm">
+                        {selectedMethod !== 'card' ? (
+                            <>
+                                {details.bankName && (
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">Bank:</span>
+                                        <span className="font-semibold">{details.bankName}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                    <span className="text-muted-foreground">Account Name:</span>
+                                    <span className="font-semibold">{details.accountName}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-muted-foreground">Account Number:</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-mono">{details.accountNumber}</span>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(details.accountNumber)}>
+                                            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-center text-muted-foreground p-4">{details.message}</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {selectedMethod !== 'card' && (
+                    <div className="space-y-4 pt-4">
+                        <Input
+                            placeholder="Transaction ID / TID"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                        />
+                         <div>
+                            <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                                <Upload className="mr-2 h-4 w-4" />
+                                {receiptFile ? `Selected: ${receiptFile.name}` : 'Upload Receipt'}
+                            </Button>
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/png, image/jpeg, application/pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
+                        </div>
+                    </div>
+                )}
+            </div>
+             <DialogFooter>
+                <Button variant="secondary" onClick={handleBack}>Back</Button>
+                <Button onClick={handleSubmit} disabled={selectedMethod === 'card' || !transactionId || !receiptFile || isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit for Activation
+                </Button>
+            </DialogFooter>
+        </>
+    );
+  };
+  
+  const renderSuccessScreen = () => (
+    <>
+         <DialogHeader>
+            <DialogTitle className="font-headline text-center">Request Submitted</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
+            <div className="h-16 w-16 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full flex items-center justify-center">
+                <Check className="h-8 w-8" />
+            </div>
+            <p className="max-w-xs text-muted-foreground">
+                Thank you! Your request has been received. Your <strong>{plan.name}</strong> plan will be activated within the next 24 hours.
+            </p>
+        </div>
+        <DialogFooter>
+             <Button className="w-full" onClick={() => setIsOpen(false)}>Done</Button>
+        </DialogFooter>
+    </>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Complete Your Payment</DialogTitle>
-          <DialogDescription>
-            You have selected the <strong>{plan.name} ({billingCycle})</strong> plan.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="py-4">
-             <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Instructions</AlertTitle>
-                <AlertDescription>
-                    Please transfer the amount to the account below and contact support with your transaction receipt to activate your plan.
-                </AlertDescription>
-            </Alert>
-
-            <Separator className="my-4" />
-
-            <Card>
-                <CardContent className="p-6 space-y-4">
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Amount to Pay:</span>
-                        <span className="font-bold text-lg">RS {price.toLocaleString()}</span>
-                    </div>
-
-                    <div className="space-y-2">
-                        <p className="text-sm font-semibold text-primary">JazzCash Account Details</p>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Account Name:</span>
-                            <span className="font-mono">Usman Sagheer</span>
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Account Number:</span>
-                            <div className="flex items-center gap-2">
-                                <span className="font-mono">0300-1234567</span>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy('03001234567')}>
-                                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setIsOpen(false)}>Close</Button>
-        </DialogFooter>
+        {isSubmitted ? renderSuccessScreen() : selectedMethod ? renderDetailsScreen() : renderInitialScreen()}
       </DialogContent>
     </Dialog>
   );
 }
-

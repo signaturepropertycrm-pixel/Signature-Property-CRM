@@ -76,6 +76,10 @@ export default function UpgradePage() {
         setSelectedPlan(plan);
         setIsPaymentDialogOpen(true);
     }
+    
+    // Assuming profile.planName holds the name of the current plan, e.g., "Basic", "Standard"
+    // For trial, we'll assume the trial is on the "Basic" plan.
+    const currentPlanName = profile.planName || 'Basic'; 
 
   return (
     <>
@@ -93,10 +97,10 @@ export default function UpgradePage() {
           <AlertDescription>
             {profile.trialEndDate && profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0 ? (
                 <span>
-                    Your free trial of the Standard plan ends in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial > 1 ? 'days' : 'day'}</strong> (on {format(new Date(profile.trialEndDate), 'PPP')}).
+                    Your free trial of the <strong>Basic</strong> plan ends in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial > 1 ? 'days' : 'day'}</strong> (on {format(new Date(profile.trialEndDate), 'PPP')}).
                 </span>
             ) : (
-                'All new agency accounts automatically start on a 30-day free trial of our Standard plan.'
+                'All new agency accounts automatically start on a 30-day free trial of our Basic plan.'
             )}
           </AlertDescription>
         </Alert>
@@ -113,54 +117,71 @@ export default function UpgradePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 items-start max-w-7xl mx-auto">
-        {plans.map((plan) => (
-          <Card key={plan.name} className={cn("flex flex-col h-full", plan.isPopular && "border-primary border-2 shadow-primary/20")}>
-            {plan.isPopular && (
-                 <div className="bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider text-center py-1 rounded-t-lg -mt-px flex items-center justify-center gap-2">
-                    <Star className="h-4 w-4" />
-                    Most Popular
-                </div>
-            )}
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold font-headline">{plan.name}</CardTitle>
-                <div className="text-4xl font-extrabold my-4">
-                    {plan.price.custom ? (
-                        'Custom'
-                    ) : (
-                       isYearly ? (
-                        <div className="flex items-center justify-center gap-2">
-                           <span>RS {plan.price.yearly.toLocaleString()}</span>
-                           <span className="text-xl font-medium text-muted-foreground line-through">RS {(plan.price.monthly * 12).toLocaleString()}</span>
-                        </div>
-                       ) : `RS ${plan.price.monthly.toLocaleString()}`
-                    )}
-                    {!plan.price.custom && (
-                         <span className="text-sm font-normal text-muted-foreground">/{isYearly ? 'year' : 'month'}</span>
-                    )}
-                </div>
-              <CardDescription>{plan.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-4">
-              <ul className="space-y-3">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start">
-                    <Check className="mr-3 h-5 w-5 flex-shrink-0 text-green-500" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className={cn("w-full", plan.isPopular && 'glowing-btn')} 
-                variant={plan.isPopular ? 'default' : 'outline'}
-                onClick={() => handleChoosePlan(plan)}
-              >
-                {plan.cta} <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        {plans.map((plan) => {
+          const isCurrentPlan = plan.name === currentPlanName;
+          const planIndex = plans.findIndex(p => p.name === plan.name);
+          const currentPlanIndex = plans.findIndex(p => p.name === currentPlanName);
+          let buttonText = plan.cta;
+          if (isCurrentPlan) {
+              buttonText = 'Current Plan';
+          } else if (planIndex > currentPlanIndex) {
+              buttonText = 'Upgrade';
+          } else if (!plan.price.custom) {
+              buttonText = 'Downgrade';
+          }
+
+          return (
+            <Card key={plan.name} className={cn("flex flex-col h-full relative", plan.isPopular && "border-primary border-2 shadow-primary/20", isCurrentPlan && "ring-2 ring-primary")}>
+              {isCurrentPlan && (
+                  <div className="absolute -top-3 right-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-lg">Current Plan</div>
+              )}
+              {plan.isPopular && (
+                   <div className="bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider text-center py-1 rounded-t-lg -mt-px flex items-center justify-center gap-2">
+                      <Star className="h-4 w-4" />
+                      Most Popular
+                  </div>
+              )}
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold font-headline">{plan.name}</CardTitle>
+                  <div className="text-4xl font-extrabold my-4">
+                      {plan.price.custom ? (
+                          'Custom'
+                      ) : (
+                         isYearly ? (
+                          <div className="flex items-center justify-center gap-2">
+                             <span>RS {plan.price.yearly.toLocaleString()}</span>
+                             <span className="text-xl font-medium text-muted-foreground line-through">RS {(plan.price.monthly * 12).toLocaleString()}</span>
+                          </div>
+                         ) : `RS ${plan.price.monthly.toLocaleString()}`
+                      )}
+                      {!plan.price.custom && (
+                           <span className="text-sm font-normal text-muted-foreground">/{isYearly ? 'year' : 'month'}</span>
+                      )}
+                  </div>
+                <CardDescription>{plan.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-4">
+                <ul className="space-y-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start">
+                      <Check className="mr-3 h-5 w-5 flex-shrink-0 text-green-500" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  className={cn("w-full", plan.isPopular && 'glowing-btn')} 
+                  variant={plan.isPopular ? 'default' : 'outline'}
+                  onClick={() => !isCurrentPlan && handleChoosePlan(plan)}
+                  disabled={isCurrentPlan}
+                >
+                  {buttonText} {!isCurrentPlan && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+              </CardFooter>
+            </Card>
+        )})}
       </div>
     </div>
     {selectedPlan && (
