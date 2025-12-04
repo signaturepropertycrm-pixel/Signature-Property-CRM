@@ -223,11 +223,9 @@ function AppointmentsPageContent() {
     );
   }
 
-  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[], showTitle: boolean = true) => (
+  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
      <div className="space-y-4">
-        {showTitle && (
-            <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">{icon} {title}</h2>
-        )}
+        <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">{icon} {title}</h2>
         {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointments.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {appointments.map(renderAppointmentCard)}
@@ -265,10 +263,26 @@ function AppointmentsPageContent() {
                 <TabsTrigger value="Owner">Owner</TabsTrigger>
             </TabsList>
             <TabsContent value="Buyer" className="mt-6">
-                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments, false)}
+                 {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : buyerAppointments.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {buyerAppointments.map(renderAppointmentCard)}
+                    </div>
+                ) : (
+                    <Card className="flex items-center justify-center h-32">
+                        <p className="text-muted-foreground">No buyer appointments scheduled.</p>
+                    </Card>
+                )}
             </TabsContent>
             <TabsContent value="Owner" className="mt-6">
-                {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments, false)}
+                 {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : ownerAppointments.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {ownerAppointments.map(renderAppointmentCard)}
+                    </div>
+                ) : (
+                    <Card className="flex items-center justify-center h-32">
+                        <p className="text-muted-foreground">No owner appointments scheduled.</p>
+                    </Card>
+                )}
             </TabsContent>
          </Tabs>
        ) : (
