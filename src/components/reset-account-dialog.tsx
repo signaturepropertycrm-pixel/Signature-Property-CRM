@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase/auth/use-user';
 import { useAuth } from '@/firebase/provider';
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
@@ -26,17 +26,19 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 interface ResetAccountDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  isPasswordRequired: boolean;
 }
 
-const formSchema = z.object({
-  password: z.string().min(1, 'Password is required to confirm.'),
+const formSchema = (isPasswordRequired: boolean) => z.object({
+  password: isPasswordRequired ? z.string().min(1, 'Password is required to confirm.') : z.string().optional(),
+  confirmationText: !isPasswordRequired ? z.string().refine(val => val.toUpperCase() === 'RESET', { message: "Please type 'RESET' to confirm." }) : z.string().optional(),
 });
 
-type ResetFormValues = z.infer<typeof formSchema>;
 
 export function ResetAccountDialog({
   isOpen,
   setIsOpen,
+  isPasswordRequired,
 }: ResetAccountDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
@@ -44,20 +46,29 @@ export function ResetAccountDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const form = useForm<ResetFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { password: '' },
+  const form = useForm<z.infer<ReturnType<typeof formSchema>>>({
+    resolver: zodResolver(formSchema(isPasswordRequired)),
+    defaultValues: { password: '', confirmationText: '' },
   });
 
+  // Reset form when dialog opens/closes or auth type changes
+  useEffect(() => {
+    form.reset({ password: '', confirmationText: '' });
+  }, [isOpen, isPasswordRequired, form]);
+
+
   const handleReset = () => {
-    // Clear all relevant localStorage keys
+    // This logic should be adapted to use Firestore and delete collections.
+    // The localStorage logic is a placeholder.
+    // In a real app, you would trigger a server-side function to delete Firestore data.
+    console.log("Triggering account reset...");
+
     localStorage.removeItem('properties');
     localStorage.removeItem('buyers');
     localStorage.removeItem('appointments');
     localStorage.removeItem('followUps');
     localStorage.removeItem('teamMembers');
     localStorage.removeItem('activities');
-    // We keep app-profile and app-currency as they are user preferences
     
     toast({
       title: 'Account Reset Successful',
@@ -68,8 +79,8 @@ export function ResetAccountDialog({
     window.location.reload();
   };
 
-  const onSubmit = async (data: ResetFormValues) => {
-    if (!user || !user.email) {
+  const onSubmit = async (data: z.infer<ReturnType<typeof formSchema>>) => {
+    if (!user) {
         setError('Could not verify user. Please try logging in again.');
         return;
     }
@@ -78,17 +89,30 @@ export function ResetAccountDialog({
     setError(null);
 
     try {
-        const credential = EmailAuthProvider.credential(user.email, data.password);
-        await reauthenticateWithCredential(user, credential);
+        if (isPasswordRequired) {
+            if (!user.email || !data.password) {
+                setError('Password is required for this action.');
+                setIsLoading(false);
+                return;
+            }
+            const credential = EmailAuthProvider.credential(user.email, data.password);
+            await reauthenticateWithCredential(user, credential);
+        } else {
+             if (data.confirmationText?.toUpperCase() !== 'RESET') {
+                setError("Please type 'RESET' to confirm.");
+                setIsLoading(false);
+                return;
+            }
+        }
         
-        // Re-authentication successful, proceed with reset
+        // Re-authentication/confirmation successful, proceed with reset
         handleReset();
 
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
             setError('Incorrect password. Please try again.');
         } else {
-            setError('An unexpected error occurred during authentication.');
+            setError('An unexpected error occurred during confirmation.');
             console.error(error);
         }
     } finally {
@@ -102,7 +126,7 @@ export function ResetAccountDialog({
         <DialogHeader>
           <DialogTitle className="font-headline text-destructive">Reset Your Account</DialogTitle>
           <DialogDescription>
-            This is a permanent action. Please confirm by entering your password.
+            This is a permanent action. Please confirm to proceed.
           </DialogDescription>
         </DialogHeader>
         
@@ -116,19 +140,35 @@ export function ResetAccountDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} placeholder="Enter your password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isPasswordRequired ? (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} placeholder="Enter your password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+                 <FormField
+                control={form.control}
+                name="confirmationText"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>To confirm, type "RESET" below</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="RESET" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>

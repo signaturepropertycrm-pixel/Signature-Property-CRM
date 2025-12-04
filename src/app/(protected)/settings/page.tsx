@@ -987,7 +987,7 @@ export default function SettingsPage() {
       )}
 
     </div>
-    <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
+    <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} isPasswordRequired={isPasswordSignIn} />
     <DeleteConfirmationDialog 
         isOpen={isDeleteAgencyDialogOpen}
         setIsOpen={setDeleteAgencyDialogOpen}
@@ -1105,4 +1105,5 @@ function DeleteConfirmationDialog({
     </AlertDialog>
   );
 }
+
 
