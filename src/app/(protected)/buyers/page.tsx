@@ -426,12 +426,12 @@ export default function BuyersPage() {
           headers.join(','),
           ...buyersToExport.map(b => {
               const budgetMin = b.budget_min_amount ? `${b.budget_min_amount} ${b.budget_min_unit}` : '';
-              const budgetMax = b.budget_max_amount ? `${b.budget_max_amount} ${b.budget_max_unit}` : '';
-              const budget = budgetMin && budgetMax ? `${budgetMin} - ${budgetMax}` : budgetMin || budgetMax;
+              const budgetMax = b.budget_max_amount ? ` - ${b.budget_max_amount} ${b.budget_max_unit}` : '';
+              const budget = budgetMin + budgetMax;
 
               const sizeMin = b.size_min_value ? `${b.size_min_value} ${b.size_min_unit}` : '';
-              const sizeMax = b.size_max_value ? `${b.size_max_value} ${b.size_max_unit}` : '';
-              const size = sizeMin && sizeMax ? `${sizeMin} - ${sizeMax}` : sizeMin || sizeMax;
+              const sizeMax = b.size_max_value ? ` - ${b.size_max_value} ${b.size_max_unit}` : '';
+              const size = sizeMin + sizeMax;
 
               const date = new Date(b.created_at);
               const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -494,7 +494,6 @@ export default function BuyersPage() {
           const batch = writeBatch(firestore);
           const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
           
-          // Recalculate totals inside the handler to be up-to-date
           const currentBuyers = allBuyers || [];
           const totalSaleBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Sale').length;
           const totalRentBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Rent').length;
@@ -508,13 +507,21 @@ export default function BuyersPage() {
                 size, budget, status, investor, notes
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
-            const [minBudgetStr, maxBudgetStr] = budget ? budget.split('-').map(s => s.trim()) : [undefined, undefined];
-            const [minBudgetValue, minBudgetUnit] = minBudgetStr ? minBudgetStr.split(' ') : [undefined, undefined];
-            const [maxBudgetValue, maxBudgetUnit] = maxBudgetStr ? maxBudgetStr.split(' ') : [undefined, undefined];
-
-            const [minSizeStr, maxSizeStr] = size ? size.split('-').map(s => s.trim()) : [undefined, undefined];
-            const [minSizeValue, minSizeUnit] = minSizeStr ? minSizeStr.split(' ') : [undefined, undefined];
-            const [maxSizeValue, maxSizeUnit] = maxSizeStr ? maxSizeStr.split(' ') : [undefined, undefined];
+            const parseRange = (rangeStr?: string) => {
+                if (!rangeStr || rangeStr.trim() === '') return { minVal: null, minUnit: undefined, maxVal: null, maxUnit: undefined };
+                const parts = rangeStr.split('-').map(s => s.trim());
+                const [minValStr, minUnitStr] = parts[0]?.split(' ') || [];
+                const [maxValStr, maxUnitStr] = parts[1]?.split(' ') || [];
+                return {
+                    minVal: minValStr ? parseFloat(minValStr) : null,
+                    minUnit: minUnitStr,
+                    maxVal: maxValStr ? parseFloat(maxValStr) : null,
+                    maxUnit: maxUnitStr,
+                };
+            };
+            
+            const budgetData = parseRange(budget);
+            const sizeData = parseRange(size);
 
             const currentTotal = listingTypeToImport === 'For Sale' ? totalSaleBuyersForImport : totalRentBuyersForImport;
 
@@ -528,14 +535,14 @@ export default function BuyersPage() {
                 area_preference: area || '',
                 city: city || '',
                 property_type_preference: (property_type as PropertyType) || undefined,
-                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : null,
-                budget_min_unit: (minBudgetUnit as PriceUnit) || undefined,
-                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : null,
-                budget_max_unit: (maxBudgetUnit as PriceUnit) || undefined,
-                size_min_value: minSizeValue ? parseFloat(minSizeValue) : null,
-                size_min_unit: (minSizeUnit as SizeUnit) || undefined,
-                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : null,
-                size_max_unit: (maxSizeUnit as SizeUnit) || undefined,
+                budget_min_amount: budgetData.minVal,
+                budget_min_unit: (budgetData.minUnit as PriceUnit) || undefined,
+                budget_max_amount: budgetData.maxVal,
+                budget_max_unit: (budgetData.maxUnit as PriceUnit) || (budgetData.minUnit as PriceUnit) || undefined,
+                size_min_value: sizeData.minVal,
+                size_min_unit: (sizeData.minUnit as SizeUnit) || undefined,
+                size_max_value: sizeData.maxVal,
+                size_max_unit: (sizeData.maxUnit as SizeUnit) || (sizeData.minUnit as SizeUnit) || undefined,
                 is_investor: investor?.toLowerCase() === 'yes' || false,
                 listing_type: listingTypeToImport,
                 notes: notes || '',
@@ -984,3 +991,6 @@ export default function BuyersPage() {
     
 
 
+
+
+    
