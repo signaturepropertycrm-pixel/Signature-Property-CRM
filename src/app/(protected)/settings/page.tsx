@@ -38,7 +38,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, GoogleAuthProvider, reauthenticateWithPopup } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import *as z from 'zod';
 import { useForm } from 'react-hook-form';
@@ -346,15 +346,17 @@ export default function SettingsPage() {
     toast({ title: 'Activity Log Cleared', description: 'All activity records have been deleted.' });
   };
   
-    const handleDeleteAgentAccount = async (password?: string) => {
+  const handleDeleteAgentAccount = async (password?: string) => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
 
     try {
-        if (isPasswordSignIn && currentUser.email) {
-            if (!password) throw new Error('Password is required.');
+        if (isPasswordSignIn && currentUser.email && password) {
             const credential = EmailAuthProvider.credential(currentUser.email, password);
             await reauthenticateWithCredential(currentUser, credential);
+        } else if (!isPasswordSignIn) {
+            const provider = new GoogleAuthProvider();
+            await reauthenticateWithPopup(currentUser, provider);
         }
 
         const batch = writeBatch(firestore);
@@ -377,7 +379,15 @@ export default function SettingsPage() {
         
     } catch (error: any) {
         console.error("Agent account deletion error:", error);
-        toast({ title: 'Deletion Failed', description: error.code === 'auth/invalid-credential' ? 'Incorrect password.' : 'An error occurred.', variant: 'destructive' });
+        let description = 'An error occurred during deletion.';
+        if (error.code === 'auth/invalid-credential') {
+            description = 'Incorrect password.';
+        } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+            description = 'Re-authentication cancelled. Account not deleted.';
+        } else if (error.code === 'auth/requires-recent-login') {
+            description = 'For security, please sign in again to delete your account.';
+        }
+        toast({ title: 'Deletion Failed', description, variant: 'destructive' });
         throw error;
     }
   };
@@ -387,10 +397,12 @@ export default function SettingsPage() {
     if (!currentUser || !profile.agency_id) return;
 
     try {
-        if (isPasswordSignIn && currentUser.email) {
-            if (!password) throw new Error('Password is required.');
+        if (isPasswordSignIn && currentUser.email && password) {
             const credential = EmailAuthProvider.credential(currentUser.email, password);
             await reauthenticateWithCredential(currentUser, credential);
+        } else if (!isPasswordSignIn) {
+            const provider = new GoogleAuthProvider();
+            await reauthenticateWithPopup(currentUser, provider);
         }
 
         const batch = writeBatch(firestore);
@@ -414,9 +426,18 @@ export default function SettingsPage() {
         toast({ title: "Agency Account Deleted", description: "Your agency and all its data have been permanently deleted." });
         window.location.href = '/login';
         
-    } catch (error: any) {
+    } catch (error: any)
+      {
         console.error("Agency account deletion error:", error);
-        toast({ title: 'Deletion Failed', description: error.code === 'auth/invalid-credential' ? 'Incorrect password.' : 'An error occurred while deleting data.', variant: 'destructive' });
+        let description = 'An error occurred while deleting data.';
+         if (error.code === 'auth/invalid-credential') {
+            description = 'Incorrect password.';
+        } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+            description = 'Re-authentication cancelled. Account not deleted.';
+        } else if (error.code === 'auth/requires-recent-login') {
+            description = 'For security, please sign in again to delete your account.';
+        }
+        toast({ title: 'Deletion Failed', description, variant: 'destructive' });
         throw error;
     }
   };
@@ -974,7 +995,7 @@ export default function SettingsPage() {
         isPasswordRequired={isPasswordSignIn}
         title="Delete Agency Account"
         description="This action will permanently delete your agency and all its data. To confirm, please enter your password."
-        nonPasswordDescription="This action will permanently delete your agency and all its data. To confirm, please type 'DELETE' in the box below."
+        nonPasswordDescription="This action will permanently delete your agency and all its data. To confirm your identity, you will be prompted to sign in with Google again."
     />
      <AvatarCropDialog
         isOpen={isAvatarCropOpen}
@@ -1012,14 +1033,15 @@ function DeleteConfirmationDialog({
   const canConfirm = isPasswordRequired ? password : confirmationText.toUpperCase() === 'DELETE';
 
   const handleConfirm = async () => {
-    if (!canConfirm) {
-        setError(isPasswordRequired ? 'Password is required.' : 'Please type DELETE to confirm.');
+    if (!isPasswordRequired && confirmationText.toUpperCase() !== 'DELETE') {
+        setError('Please type DELETE to confirm.');
         return;
     }
     setError('');
     setIsLoading(true);
     try {
       await onConfirm(isPasswordRequired ? password : undefined);
+      // On success, the component might unmount due to navigation, but if not:
       setIsOpen(false);
     } catch (e: any) {
        setError(e.message || 'An error occurred during deletion.');
@@ -1083,3 +1105,4 @@ function DeleteConfirmationDialog({
     </AlertDialog>
   );
 }
+
