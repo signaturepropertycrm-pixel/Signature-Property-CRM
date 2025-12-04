@@ -17,6 +17,7 @@ import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Input } from './ui/input';
+import Image from 'next/image';
 
 export type Plan = {
     name: string;
@@ -94,7 +95,9 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
         </DialogHeader>
         <div className="grid grid-cols-1 gap-4 py-4">
             <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('jazzcash')}>
-                <img src="https://play-lh.googleusercontent.com/VRvAbPM5f2k7r_5Im-Fk2sIcqowb4lMh2b3iNLetTfSubKr_trackexs_key_point_a=w240-h480-rw" alt="JazzCash" className="h-8 w-8 mr-4"/>
+                <div className="h-8 w-8 mr-4 flex items-center justify-center bg-primary rounded-md">
+                    <span className="text-primary-foreground font-bold text-xl">J</span>
+                </div>
                 <span>Pay with JazzCash</span>
             </Button>
             <Button variant="outline" className="justify-start h-14" onClick={() => setSelectedMethod('bank')}>
