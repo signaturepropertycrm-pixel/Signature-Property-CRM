@@ -89,7 +89,6 @@ const mainMenuItems = [
         { href: '/tools/post-generator', label: 'Post Generator' },
     ]
   },
-  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
@@ -164,7 +163,7 @@ export function AppSidebar() {
                     </CollapsibleTrigger>
                 </SidebarMenuItem>
                 <CollapsibleContent>
-                    <SidebarMenu className="pl-6">
+                    <SidebarMenu className="pl-6 transition-all duration-300">
                         {item.subItems.map((subItem: any) => {
                             const currentUrlParams = new URLSearchParams(Array.from(searchParams.entries()));
                             const subItemUrlParams = new URLSearchParams(subItem.href.split('?')[1] || '');
