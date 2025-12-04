@@ -157,11 +157,11 @@ export default function LandingPage() {
                 baseColor={theme === 'dark' ? '#1E293B' : '#E0E7FF'}
                 activeColor={theme === 'dark' ? '#38BDF8' : '#3B82F6'}
              />
-            <div className="container relative mx-auto px-4 animate-fade-in-up">
+            <div className="container mx-auto px-4 animate-fade-in-up">
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Close More Deals, Faster" 
+                        sentence="Close More Deals,Faster" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
