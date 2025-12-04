@@ -508,15 +508,15 @@ export default function BuyersPage() {
             ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
             
             const parseRange = (rangeStr?: string) => {
-                if (!rangeStr || rangeStr.trim() === '') return { minVal: null, minUnit: undefined, maxVal: null, maxUnit: undefined };
+                if (!rangeStr || rangeStr.trim() === '') return { minVal: null, minUnit: null, maxVal: null, maxUnit: null };
                 const parts = rangeStr.split('-').map(s => s.trim());
                 const [minValStr, minUnitStr] = parts[0]?.split(' ') || [];
                 const [maxValStr, maxUnitStr] = parts[1]?.split(' ') || [];
                 return {
                     minVal: minValStr ? parseFloat(minValStr) : null,
-                    minUnit: minUnitStr,
+                    minUnit: minUnitStr || null,
                     maxVal: maxValStr ? parseFloat(maxValStr) : null,
-                    maxUnit: maxUnitStr,
+                    maxUnit: maxUnitStr || minUnitStr || null,
                 };
             };
             
@@ -992,5 +992,7 @@ export default function BuyersPage() {
 
 
 
+
+    
 
     
