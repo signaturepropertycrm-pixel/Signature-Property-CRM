@@ -1,5 +1,4 @@
 
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -529,13 +528,13 @@ export default function BuyersPage() {
                 area_preference: area || '',
                 city: city || '',
                 property_type_preference: (property_type as PropertyType) || undefined,
-                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : 0,
+                budget_min_amount: minBudgetValue ? parseFloat(minBudgetValue) : null,
                 budget_min_unit: (minBudgetUnit as PriceUnit) || undefined,
-                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : 0,
+                budget_max_amount: maxBudgetValue ? parseFloat(maxBudgetValue) : null,
                 budget_max_unit: (maxBudgetUnit as PriceUnit) || undefined,
-                size_min_value: minSizeValue ? parseFloat(minSizeValue) : 0,
+                size_min_value: minSizeValue ? parseFloat(minSizeValue) : null,
                 size_min_unit: (minSizeUnit as SizeUnit) || undefined,
-                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : 0,
+                size_max_value: maxSizeValue ? parseFloat(maxSizeValue) : null,
                 size_max_unit: (maxSizeUnit as SizeUnit) || undefined,
                 is_investor: investor?.toLowerCase() === 'yes' || false,
                 listing_type: listingTypeToImport,
@@ -983,4 +982,5 @@ export default function BuyersPage() {
     
 
     
+
 
