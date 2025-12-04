@@ -114,8 +114,8 @@ export default function BuyersPage() {
     const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
         if (!allBuyers) return { totalSaleBuyers: 0, totalRentBuyers: 0 };
         return {
-            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale' && !b.is_deleted).length,
-            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent' && !b.is_deleted).length
+            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale').length,
+            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent').length
         };
     }, [allBuyers]);
 
@@ -140,7 +140,7 @@ export default function BuyersPage() {
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.buyers || 0;
-    const currentCount = allBuyers?.filter(b => !b.is_deleted).length || 0;
+    const currentCount = allBuyers?.length || 0;
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
     const isLimitReached = currentCount >= limit;
 

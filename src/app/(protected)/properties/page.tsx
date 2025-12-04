@@ -200,7 +200,7 @@ export default function PropertiesPage() {
   
   const allProperties = useMemo(() => {
     if (!agencyProperties) return [];
-    return agencyProperties.filter(p => !p.is_deleted);
+    return agencyProperties;
   }, [agencyProperties]);
   
 
@@ -242,7 +242,7 @@ export default function PropertiesPage() {
   };
 
   const filteredProperties = useMemo(() => {
-    let baseProperties = allProperties;
+    let baseProperties = allProperties.filter(p => !p.is_deleted);
 
     // 1. Primary Filter: Search Query
     if (searchQuery) {
@@ -1283,4 +1283,5 @@ export default function PropertiesPage() {
     
 
     
+
 
