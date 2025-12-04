@@ -114,8 +114,8 @@ export default function BuyersPage() {
     const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
         if (!allBuyers) return { totalSaleBuyers: 0, totalRentBuyers: 0 };
         return {
-            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale').length,
-            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent').length
+            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale' && !b.is_deleted).length,
+            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent' && !b.is_deleted).length
         };
     }, [allBuyers]);
 
@@ -140,8 +140,9 @@ export default function BuyersPage() {
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.buyers || 0;
-    const currentCount = allBuyers?.length || 0;
+    const currentCount = allBuyers?.filter(b => !b.is_deleted).length || 0;
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
+    const isLimitReached = currentCount >= limit;
 
     const buyerFollowUp = useMemo(() => {
         if (!buyerForFollowUp || !followUps) return null;
@@ -434,9 +435,17 @@ export default function BuyersPage() {
                 description: 'Please verify your email address to add new buyers.',
                 variant: 'destructive',
             });
-        } else {
-            setIsAddBuyerOpen(true);
+            return;
         }
+        if (isLimitReached) {
+            toast({
+                title: "Buyer Limit Reached",
+                description: `You have reached your limit of ${limit} buyers. Please upgrade your plan to add more.`,
+                variant: "destructive",
+            });
+            return;
+        }
+        setIsAddBuyerOpen(true);
     };
     
     const sortBuyers = (buyersToSort: Buyer[]) => {
@@ -1110,6 +1119,7 @@ export default function BuyersPage() {
                 totalRentBuyers={totalRentBuyers}
                 buyerToEdit={buyerToEdit}
                 onSave={handleSaveBuyer}
+                limitReached={isLimitReached}
             />
 
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}

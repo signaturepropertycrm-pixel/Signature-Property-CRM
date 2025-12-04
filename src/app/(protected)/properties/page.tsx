@@ -199,14 +199,16 @@ export default function PropertiesPage() {
   const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
   
   const allProperties = useMemo(() => {
-    const combined = [...(agencyProperties || []), ...(agentProperties || [])];
-    return Array.from(new Map(combined.map((p) => [p.id, p])).values());
-  }, [agencyProperties, agentProperties]);
+    if (!agencyProperties) return [];
+    return agencyProperties.filter(p => !p.is_deleted);
+  }, [agencyProperties]);
+  
 
   const currentPlan = (profile?.planName as PlanName) || 'Basic';
   const limit = planLimits[currentPlan]?.properties || 0;
   const currentCount = allProperties.length;
   const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
+  const isLimitReached = currentCount >= limit;
 
   useEffect(() => {
     if (!isAddPropertyOpen) {
@@ -240,7 +242,7 @@ export default function PropertiesPage() {
   };
 
   const filteredProperties = useMemo(() => {
-    let baseProperties = allProperties.filter(p => !p.is_deleted);
+    let baseProperties = allProperties;
 
     // 1. Primary Filter: Search Query
     if (searchQuery) {
@@ -319,11 +321,19 @@ export default function PropertiesPage() {
             description: 'Please verify your email address to add new properties.',
             variant: 'destructive',
         });
-    } else {
-        setListingType(type);
-        setPropertyToEdit(null);
-        setIsAddPropertyOpen(true);
+        return;
     }
+     if (isLimitReached) {
+        toast({
+            title: "Property Limit Reached",
+            description: `You have reached your limit of ${limit} properties. Please upgrade your plan to add more.`,
+            variant: "destructive",
+        });
+        return;
+    }
+    setListingType(type);
+    setPropertyToEdit(null);
+    setIsAddPropertyOpen(true);
   }
 
   const handleMarkAsSold = (prop: Property) => {
@@ -1213,6 +1223,7 @@ export default function PropertiesPage() {
           allProperties={allProperties}
           onSave={handleSaveProperty}
           listingType={listingType}
+          limitReached={isLimitReached}
         />
   
         {appointmentDetails && (
@@ -1272,3 +1283,4 @@ export default function PropertiesPage() {
     
 
     
+
