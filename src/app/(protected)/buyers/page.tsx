@@ -519,10 +519,10 @@ export default function BuyersPage() {
             const [
                 _serial, _date, number, name, email, city, area, property_type,
                 size, budget, status, investor, notes
-            ] = row.split(',').map(s => s.trim().replace(/"/g, ''));
+            ] = row.split(',').map(s => (s || '').trim().replace(/"/g, ''));
             
-            const parseRange = (rangeStr: string | undefined) => {
-                if (!rangeStr || rangeStr.trim() === '' || rangeStr.trim().toLowerCase() === 'n/a') {
+            const parseRange = (rangeStr: string) => {
+                if (!rangeStr || rangeStr.toLowerCase() === 'n/a') {
                     return { minVal: null, minUnit: null, maxVal: null, maxUnit: null };
                 }
                 const parts = rangeStr.split('-').map(s => s.trim());
@@ -537,8 +537,8 @@ export default function BuyersPage() {
                 };
             };
             
-            const budgetData = parseRange(budget);
-            const sizeData = parseRange(size);
+            const budgetData = parseRange(budget || '');
+            const sizeData = parseRange(size || '');
 
             const currentTotal = listingTypeToImport === 'For Sale' ? totalSaleBuyersForImport : totalRentBuyersForImport;
 
@@ -553,14 +553,14 @@ export default function BuyersPage() {
                 city: city || '',
                 property_type_preference: (property_type as PropertyType) || undefined,
                 budget_min_amount: budgetData.minVal,
-                budget_min_unit: (budgetData.minUnit as PriceUnit) || undefined,
+                budget_min_unit: budgetData.minUnit as PriceUnit || undefined,
                 budget_max_amount: budgetData.maxVal,
-                budget_max_unit: (budgetData.maxUnit as PriceUnit) || (budgetData.minUnit as PriceUnit) || undefined,
+                budget_max_unit: budgetData.maxUnit as PriceUnit || undefined,
                 size_min_value: sizeData.minVal,
-                size_min_unit: (sizeData.minUnit as SizeUnit) || undefined,
+                size_min_unit: sizeData.minUnit as SizeUnit || undefined,
                 size_max_value: sizeData.maxVal,
-                size_max_unit: (sizeData.maxUnit as SizeUnit) || (sizeData.minUnit as SizeUnit) || undefined,
-                is_investor: investor?.toLowerCase() === 'yes' || false,
+                size_max_unit: sizeData.maxUnit as SizeUnit || undefined,
+                is_investor: (investor || '').toLowerCase() === 'yes',
                 listing_type: listingTypeToImport,
                 notes: notes || '',
                 created_at: new Date().toISOString(),
