@@ -89,6 +89,9 @@ export default function SettingsPage() {
   const [appointmentNotifications, setAppointmentNotifications] = useState(true);
   const [followUpNotifications, setFollowUpNotifications] = useState(true);
 
+  const signInProvider = user?.providerData[0]?.providerId;
+  const isPasswordSignIn = signInProvider === 'password';
+
 
   const passwordForm = useForm<PasswordFormValues>({
       resolver: zodResolver(passwordFormSchema),
@@ -343,15 +346,18 @@ export default function SettingsPage() {
     toast({ title: 'Activity Log Cleared', description: 'All activity records have been deleted.' });
   };
   
-    const handleDeleteAgentAccount = async (password: string) => {
+    const handleDeleteAgentAccount = async (password?: string) => {
     const currentUser = auth.currentUser;
-    if (!currentUser || !currentUser.email) return;
+    if (!currentUser) return;
 
-    const credential = EmailAuthProvider.credential(currentUser.email, password);
     try {
-        await reauthenticateWithCredential(currentUser, credential);
+        if (isPasswordSignIn && currentUser.email) {
+            if (!password) throw new Error('Password is required.');
+            const credential = EmailAuthProvider.credential(currentUser.email, password);
+            await reauthenticateWithCredential(currentUser, credential);
+        }
+
         const batch = writeBatch(firestore);
-        
         const agentDoc = doc(firestore, 'agents', currentUser.uid);
         batch.delete(agentDoc);
 
@@ -376,14 +382,17 @@ export default function SettingsPage() {
     }
   };
 
-  const handleDeleteAgencyAccount = async (password: string) => {
+  const handleDeleteAgencyAccount = async (password?: string) => {
     const currentUser = auth.currentUser;
-    if (!currentUser || !currentUser.email || !profile.agency_id) return;
+    if (!currentUser || !profile.agency_id) return;
 
-    const credential = EmailAuthProvider.credential(currentUser.email, password);
     try {
-        await reauthenticateWithCredential(currentUser, credential);
-        
+        if (isPasswordSignIn && currentUser.email) {
+            if (!password) throw new Error('Password is required.');
+            const credential = EmailAuthProvider.credential(currentUser.email, password);
+            await reauthenticateWithCredential(currentUser, credential);
+        }
+
         const batch = writeBatch(firestore);
         const agencyId = profile.agency_id;
         
@@ -400,7 +409,6 @@ export default function SettingsPage() {
         batch.delete(userDocRef);
 
         await batch.commit();
-
         await deleteUser(currentUser);
         
         toast({ title: "Agency Account Deleted", description: "Your agency and all its data have been permanently deleted." });
@@ -477,71 +485,73 @@ export default function SettingsPage() {
                          <CardFooter className="border-t px-6 py-4"><Button>Save Changes</Button></CardFooter>
                     </form>
                 </Card>
-                <Card>
-                    <CardHeader><CardTitle>Security</CardTitle><CardDescription>Change your password.</CardDescription></CardHeader>
-                    <Form {...passwordForm}>
-                        <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)}>
-                            <CardContent className="space-y-4">
-                                <FormField
-                                    control={passwordForm.control}
-                                    name="currentPassword"
-                                    render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Current Password</FormLabel>
-                                        <div className="relative">
-                                        <FormControl>
-                                            <Input type={showCurrentPassword ? 'text' : 'password'} {...field} className="pr-10" />
-                                        </FormControl>
-                                        <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff /> : <Eye />}</Button>
-                                        </div>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {isPasswordSignIn && (
+                    <Card>
+                        <CardHeader><CardTitle>Security</CardTitle><CardDescription>Change your password.</CardDescription></CardHeader>
+                        <Form {...passwordForm}>
+                            <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)}>
+                                <CardContent className="space-y-4">
                                     <FormField
                                         control={passwordForm.control}
-                                        name="newPassword"
+                                        name="currentPassword"
                                         render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>New Password</FormLabel>
+                                            <FormLabel>Current Password</FormLabel>
                                             <div className="relative">
                                             <FormControl>
-                                                <Input type={showNewPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                                <Input type={showCurrentPassword ? 'text' : 'password'} {...field} className="pr-10" />
                                             </FormControl>
-                                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff /> : <Eye />}</Button>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff /> : <Eye />}</Button>
                                             </div>
                                             <FormMessage />
                                         </FormItem>
                                         )}
                                     />
-                                    <FormField
-                                        control={passwordForm.control}
-                                        name="confirmPassword"
-                                        render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Confirm New Password</FormLabel>
-                                            <div className="relative">
-                                            <FormControl>
-                                                <Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" />
-                                            </FormControl>
-                                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff /> : <Eye />}</Button>
-                                            </div>
-                                            <FormMessage />
-                                        </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </CardContent>
-                            <CardFooter className="border-t px-6 py-4">
-                                <Button type="submit" disabled={isPasswordUpdating}>
-                                    {isPasswordUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Update Password
-                                </Button>
-                            </CardFooter>
-                        </form>
-                    </Form>
-                </Card>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <FormField
+                                            control={passwordForm.control}
+                                            name="newPassword"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>New Password</FormLabel>
+                                                <div className="relative">
+                                                <FormControl>
+                                                    <Input type={showNewPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                                </FormControl>
+                                                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff /> : <Eye />}</Button>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={passwordForm.control}
+                                            name="confirmPassword"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Confirm New Password</FormLabel>
+                                                <div className="relative">
+                                                <FormControl>
+                                                    <Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                                </FormControl>
+                                                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff /> : <Eye />}</Button>
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="border-t px-6 py-4">
+                                    <Button type="submit" disabled={isPasswordUpdating}>
+                                        {isPasswordUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Update Password
+                                    </Button>
+                                </CardFooter>
+                            </form>
+                        </Form>
+                    </Card>
+                )}
                  <Card className="border-destructive">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle /> Danger Zone</CardTitle>
@@ -558,10 +568,14 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-            <DeleteAgentDialog 
+            <DeleteConfirmationDialog 
                 isOpen={isDeleteAgentDialogOpen}
                 setIsOpen={setDeleteAgentDialogOpen}
                 onConfirm={handleDeleteAgentAccount}
+                isPasswordRequired={isPasswordSignIn}
+                title="Delete Your Account"
+                description="This action is permanent and cannot be undone. To confirm, please enter your password."
+                nonPasswordDescription="This action is permanent and cannot be undone. To confirm, please type 'DELETE' in the box below."
             />
              <AvatarCropDialog
               isOpen={isAvatarCropOpen}
@@ -657,76 +671,78 @@ export default function SettingsPage() {
         </form>
       </Card>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Security</CardTitle>
-          <CardDescription>
-            Change your password.
-          </CardDescription>
-        </CardHeader>
-        <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)}>
-                <CardContent className="space-y-4">
-                    <FormField
-                        control={passwordForm.control}
-                        name="currentPassword"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Current Password</FormLabel>
-                            <div className="relative">
-                            <FormControl>
-                                <Input type={showCurrentPassword ? 'text' : 'password'} {...field} className="pr-10" />
-                            </FormControl>
-                            <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff /> : <Eye />}</Button>
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {isPasswordSignIn && (
+        <Card>
+            <CardHeader>
+            <CardTitle>Security</CardTitle>
+            <CardDescription>
+                Change your password.
+            </CardDescription>
+            </CardHeader>
+            <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)}>
+                    <CardContent className="space-y-4">
                         <FormField
                             control={passwordForm.control}
-                            name="newPassword"
+                            name="currentPassword"
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>New Password</FormLabel>
+                                <FormLabel>Current Password</FormLabel>
                                 <div className="relative">
                                 <FormControl>
-                                    <Input type={showNewPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                    <Input type={showCurrentPassword ? 'text' : 'password'} {...field} className="pr-10" />
                                 </FormControl>
-                                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff /> : <Eye />}</Button>
+                                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>{showCurrentPassword ? <EyeOff /> : <Eye />}</Button>
                                 </div>
                                 <FormMessage />
                             </FormItem>
                             )}
                         />
-                        <FormField
-                            control={passwordForm.control}
-                            name="confirmPassword"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Confirm New Password</FormLabel>
-                                <div className="relative">
-                                <FormControl>
-                                    <Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" />
-                                </FormControl>
-                                <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff /> : <Eye />}</Button>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                </CardContent>
-                <CardFooter className="border-t px-6 py-4">
-                    <Button type="submit" disabled={isPasswordUpdating}>
-                        {isPasswordUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Update Password
-                    </Button>
-                </CardFooter>
-            </form>
-        </Form>
-      </Card>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <FormField
+                                control={passwordForm.control}
+                                name="newPassword"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>New Password</FormLabel>
+                                    <div className="relative">
+                                    <FormControl>
+                                        <Input type={showNewPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                    </FormControl>
+                                    <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowNewPassword(!showNewPassword)}>{showNewPassword ? <EyeOff /> : <Eye />}</Button>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={passwordForm.control}
+                                name="confirmPassword"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm New Password</FormLabel>
+                                    <div className="relative">
+                                    <FormControl>
+                                        <Input type={showConfirmPassword ? 'text' : 'password'} {...field} className="pr-10" />
+                                    </FormControl>
+                                    <Button type="button" variant="ghost" size="icon" className="absolute inset-y-0 right-0 h-full px-3 text-muted-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff /> : <Eye />}</Button>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                    </CardContent>
+                    <CardFooter className="border-t px-6 py-4">
+                        <Button type="submit" disabled={isPasswordUpdating}>
+                            {isPasswordUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Password
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Form>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -951,10 +967,14 @@ export default function SettingsPage() {
 
     </div>
     <ResetAccountDialog isOpen={isResetDialogOpen} setIsOpen={setIsResetDialogOpen} />
-    <DeleteAgencyDialog 
+    <DeleteConfirmationDialog 
         isOpen={isDeleteAgencyDialogOpen}
         setIsOpen={setDeleteAgencyDialogOpen}
         onConfirm={handleDeleteAgencyAccount}
+        isPasswordRequired={isPasswordSignIn}
+        title="Delete Agency Account"
+        description="This action will permanently delete your agency and all its data. To confirm, please enter your password."
+        nonPasswordDescription="This action will permanently delete your agency and all its data. To confirm, please type 'DELETE' in the box below."
     />
      <AvatarCropDialog
         isOpen={isAvatarCropOpen}
@@ -967,20 +987,39 @@ export default function SettingsPage() {
 }
 
 
-function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, setIsOpen: (open: boolean) => void, onConfirm: (password: string) => Promise<void> }) {
+function DeleteConfirmationDialog({ 
+    isOpen, 
+    setIsOpen, 
+    onConfirm,
+    isPasswordRequired,
+    title,
+    description,
+    nonPasswordDescription,
+}: { 
+    isOpen: boolean, 
+    setIsOpen: (open: boolean) => void, 
+    onConfirm: (password?: string) => Promise<void>,
+    isPasswordRequired: boolean,
+    title: string,
+    description: string,
+    nonPasswordDescription: string
+}) {
   const [password, setPassword] = useState('');
+  const [confirmationText, setConfirmationText] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  const canConfirm = isPasswordRequired ? password : confirmationText.toUpperCase() === 'DELETE';
+
   const handleConfirm = async () => {
-    if (!password) {
-      setError('Password is required to confirm.');
-      return;
+    if (!canConfirm) {
+        setError(isPasswordRequired ? 'Password is required.' : 'Please type DELETE to confirm.');
+        return;
     }
     setError('');
     setIsLoading(true);
     try {
-      await onConfirm(password);
+      await onConfirm(isPasswordRequired ? password : undefined);
       setIsOpen(false);
     } catch (e: any) {
        setError(e.message || 'An error occurred during deletion.');
@@ -988,87 +1027,56 @@ function DeleteAgentDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, 
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) {
+        setPassword('');
+        setConfirmationText('');
+        setError('');
+        setIsLoading(false);
+    }
+  }, [isOpen]);
   
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-destructive">Delete Your Account</AlertDialogTitle>
+          <AlertDialogTitle className="text-destructive">{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            This action is permanent and cannot be undone. To confirm, please enter your password.
+            {isPasswordRequired ? description : nonPasswordDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2">
-            <Label htmlFor="delete-password">Password</Label>
-            <Input 
-                id="delete-password"
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Enter your password"
-            />
+            {isPasswordRequired ? (
+                <>
+                    <Label htmlFor="delete-password">Password</Label>
+                    <Input 
+                        id="delete-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                        placeholder="Enter your password"
+                    />
+                </>
+            ) : (
+                <>
+                    <Label htmlFor="delete-confirm-text">Type DELETE to confirm</Label>
+                    <Input 
+                        id="delete-confirm-text"
+                        type="text"
+                        value={confirmationText}
+                        onChange={(e) => { setConfirmationText(e.target.value); setError(''); }}
+                        placeholder="DELETE"
+                    />
+                </>
+            )}
             {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <AlertDialogFooter>
-          <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
+          <Button variant="ghost" onClick={() => setIsOpen(false)} disabled={isLoading}>Cancel</Button>
+          <Button variant="destructive" onClick={handleConfirm} disabled={isLoading || !canConfirm}>
             {isLoading && <Loader2 className="animate-spin mr-2" />}
             Confirm & Delete
-          </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}
-
-
-function DeleteAgencyDialog({ isOpen, setIsOpen, onConfirm }: { isOpen: boolean, setIsOpen: (open: boolean) => void, onConfirm: (password: string) => Promise<void> }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleConfirm = async () => {
-    if (!password) {
-      setError('Password is required to confirm.');
-      return;
-    }
-    setError('');
-    setIsLoading(true);
-    try {
-      await onConfirm(password);
-      setIsOpen(false);
-    } catch (e: any) {
-      setError(e.message || 'An error occurred during deletion.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  return (
-    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-destructive">Delete Agency Account</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action will permanently delete your agency, all its data, and your user account. To confirm, please enter your password.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="space-y-2">
-            <Label htmlFor="delete-agency-password">Password</Label>
-            <Input 
-                id="delete-agency-password"
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="Enter your password"
-            />
-            {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <AlertDialogFooter>
-          <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={isLoading}>
-            {isLoading && <Loader2 className="animate-spin mr-2" />}
-            Confirm & Delete Agency
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
