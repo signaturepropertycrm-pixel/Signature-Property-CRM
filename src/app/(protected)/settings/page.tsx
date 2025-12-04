@@ -972,7 +972,20 @@ export default function SettingsPage() {
                             <h3 className="font-bold">Reset Account</h3>
                             <p className="text-sm text-destructive/80">Permanently delete all CRM data including properties, buyers, and appointments. Your user account will not be deleted.</p>
                         </div>
-                        <Button variant="destructive" className="mt-2 sm:mt-0" onClick={() => setIsResetDialogOpen(true)}>Reset Account</Button>
+                        <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="mt-2 sm:mt-0">Reset Account</Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                                <AlertDialogHeader><AlertDialogTitle>Are you sure you want to reset?</AlertDialogTitle></AlertDialogHeader>
+                                <AlertDialogDescription>This will delete all CRM data. This action is final.</AlertDialogDescription>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => setIsResetDialogOpen(true)}>Confirm & Reset</AlertDialogAction>
+                                </AlertDialogFooter>
+                             </AlertDialogContent>
+                        </AlertDialog>
+
                     </div>
                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg bg-destructive/10">
                         <div>
@@ -1105,5 +1118,3 @@ function DeleteConfirmationDialog({
     </AlertDialog>
   );
 }
-
-

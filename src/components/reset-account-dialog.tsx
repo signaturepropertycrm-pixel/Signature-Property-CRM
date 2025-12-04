@@ -18,10 +18,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/firebase/auth/use-user';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { useProfile } from '@/context/profile-context';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
 
 interface ResetAccountDialogProps {
   isOpen: boolean;
@@ -43,6 +45,8 @@ export function ResetAccountDialog({
   const { toast } = useToast();
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const { profile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -57,26 +61,36 @@ export function ResetAccountDialog({
   }, [isOpen, isPasswordRequired, form]);
 
 
-  const handleReset = () => {
-    // This logic should be adapted to use Firestore and delete collections.
-    // The localStorage logic is a placeholder.
-    // In a real app, you would trigger a server-side function to delete Firestore data.
-    console.log("Triggering account reset...");
-
-    localStorage.removeItem('properties');
-    localStorage.removeItem('buyers');
-    localStorage.removeItem('appointments');
-    localStorage.removeItem('followUps');
-    localStorage.removeItem('teamMembers');
-    localStorage.removeItem('activities');
+  const handleReset = async () => {
+    if (!profile.agency_id) {
+        toast({ title: 'Error', description: 'Agency ID not found.', variant: 'destructive'});
+        return;
+    }
     
-    toast({
-      title: 'Account Reset Successful',
-      description: 'All your CRM data has been permanently deleted.',
-    });
+    console.log("Triggering account data reset...");
+    
+    try {
+        const batch = writeBatch(firestore);
+        const subCollections = ['properties', 'buyers', 'teamMembers', 'appointments', 'followUps', 'activityLogs'];
+        
+        for (const subCol of subCollections) {
+            const querySnapshot = await getDocs(collection(firestore, 'agencies', profile.agency_id, subCol));
+            querySnapshot.forEach(doc => batch.delete(doc.ref));
+        }
 
-    // Reload the page to reflect the cleared state
-    window.location.reload();
+        await batch.commit();
+
+        toast({
+            title: 'Account Reset Successful',
+            description: 'All your CRM data has been permanently deleted.',
+        });
+
+        // Reload the page to reflect the cleared state
+        window.location.reload();
+    } catch (error) {
+        console.error("Error resetting account data:", error);
+        toast({ title: "Reset Failed", description: "Could not delete all data. Please try again.", variant: 'destructive'});
+    }
   };
 
   const onSubmit = async (data: z.infer<ReturnType<typeof formSchema>>) => {
@@ -106,7 +120,7 @@ export function ResetAccountDialog({
         }
         
         // Re-authentication/confirmation successful, proceed with reset
-        handleReset();
+        await handleReset();
 
     } catch (error: any) {
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
