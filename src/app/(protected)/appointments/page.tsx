@@ -19,12 +19,14 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 function AppointmentsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const typeFilter = searchParams.get('type') as 'Buyer' | 'Owner' | null;
 
   const firestore = useFirestore();
@@ -221,8 +223,11 @@ function AppointmentsPageContent() {
     );
   }
 
-  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
-     <div>
+  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[], showTitle: boolean = true) => (
+     <div className="space-y-4">
+        {showTitle && (
+            <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">{icon} {title}</h2>
+        )}
         {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointments.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {appointments.map(renderAppointmentCard)}
@@ -253,18 +258,25 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-       <Tabs defaultValue={typeFilter || 'Buyer'} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="Buyer">Buyer</TabsTrigger>
-            <TabsTrigger value="Owner">Owner</TabsTrigger>
-        </TabsList>
-        <TabsContent value="Buyer" className="mt-6">
+       {isMobile ? (
+         <Tabs defaultValue={typeFilter || 'Buyer'} onValueChange={handleTabChange}>
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="Buyer">Buyer</TabsTrigger>
+                <TabsTrigger value="Owner">Owner</TabsTrigger>
+            </TabsList>
+            <TabsContent value="Buyer" className="mt-6">
+                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments, false)}
+            </TabsContent>
+            <TabsContent value="Owner" className="mt-6">
+                {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments, false)}
+            </TabsContent>
+         </Tabs>
+       ) : (
+        <div className="space-y-8">
             {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
-        </TabsContent>
-        <TabsContent value="Owner" className="mt-6">
             {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
-        </TabsContent>
-      </Tabs>
+        </div>
+       )}
 
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
