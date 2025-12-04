@@ -85,7 +85,7 @@ export function AppHeader({
         await signOut(auth);
     }
     localStorage.removeItem('app-profile');
-    router.push('/login');
+    router.push('/');
   };
 
   const handleAccept = async (invitationId: string, agencyId: string) => {
