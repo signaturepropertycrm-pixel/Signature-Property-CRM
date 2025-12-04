@@ -496,8 +496,28 @@ export default function BuyersPage() {
         reader.onload = async (e) => {
           const text = e.target?.result;
           if (typeof text !== 'string') return;
+
+          // Robust CSV parsing
+          const parseCsvRow = (row: string): string[] => {
+              const result: string[] = [];
+              let currentField = '';
+              let inQuotes = false;
+              for (let i = 0; i < row.length; i++) {
+                  const char = row[i];
+                  if (char === '"') {
+                      inQuotes = !inQuotes;
+                  } else if (char === ',' && !inQuotes) {
+                      result.push(currentField.trim());
+                      currentField = '';
+                  } else {
+                      currentField += char;
+                  }
+              }
+              result.push(currentField.trim());
+              return result;
+          };
           
-          const rows = text.split('\n').filter(row => row.trim() !== '');
+          const rows = text.split('\n').map(row => row.trim()).filter(row => row);
           if (rows.length <= 1) {
             toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
             return;
@@ -516,10 +536,12 @@ export default function BuyersPage() {
     
           rows.slice(1).forEach((row) => {
             if (!row) return;
+            const values = parseCsvRow(row);
+            
             const [
                 _serial, _date, number, name, email, city, area, property_type,
                 size, budget, status, investor, notes
-            ] = row.split(',').map(s => (s || '').trim().replace(/"/g, ''));
+            ] = values;
             
             const parseRange = (rangeStr: string) => {
                 if (!rangeStr || rangeStr.toLowerCase() === 'n/a') {
@@ -528,7 +550,7 @@ export default function BuyersPage() {
                 const parts = rangeStr.split('-').map(s => s.trim());
                 const [minValStr, minUnitStr] = parts[0]?.split(' ').filter(Boolean) || [];
                 const [maxValStr, maxUnitStr] = parts.length > 1 ? (parts[1]?.split(' ').filter(Boolean) || []) : [];
-
+            
                 return {
                     minVal: minValStr ? parseFloat(minValStr) : null,
                     minUnit: (minUnitStr as SizeUnit | PriceUnit) || null,
@@ -551,7 +573,7 @@ export default function BuyersPage() {
                 status: (status as BuyerStatus) || 'New',
                 area_preference: area || '',
                 city: city || '',
-                property_type_preference: (property_type as PropertyType) || undefined,
+                property_type_preference: (property_type as PropertyType) || "" as PropertyType,
                 budget_min_amount: budgetData.minVal,
                 budget_min_unit: budgetData.minUnit as PriceUnit || undefined,
                 budget_max_amount: budgetData.maxVal,
@@ -1041,6 +1063,8 @@ export default function BuyersPage() {
 
 
 
+
+    
 
     
 
