@@ -226,12 +226,15 @@ export default function PropertiesPage() {
     // 1. Primary Filter: Search Query
     if (searchQuery) {
         const lowercasedQuery = searchQuery.toLowerCase();
+        const numericQuery = searchQuery.replace(/\D/g, '');
+
         baseProperties = baseProperties.filter(
             (prop) =>
                 (prop.auto_title && prop.auto_title.toLowerCase().includes(lowercasedQuery)) ||
                 prop.address.toLowerCase().includes(lowercasedQuery) ||
                 prop.area.toLowerCase().includes(lowercasedQuery) ||
                 prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
+                (prop.owner_number && prop.owner_number.replace(/\D/g, '').includes(numericQuery)) ||
                 (prop.video_links && Object.values(prop.video_links).some(link => link && link.toLowerCase().includes(lowercasedQuery)))
         );
     }
@@ -1113,4 +1116,5 @@ export default function PropertiesPage() {
     
 
     
+
 

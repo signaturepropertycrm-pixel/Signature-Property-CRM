@@ -351,10 +351,12 @@ export default function BuyersPage() {
         
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
+            const numericQuery = searchQuery.replace(/\D/g, '');
             filtered = filtered.filter(buyer =>
                 buyer.name.toLowerCase().includes(lowercasedQuery) ||
                 (buyer.area_preference && buyer.area_preference.toLowerCase().includes(lowercasedQuery)) ||
-                buyer.serial_no.toLowerCase().includes(lowercasedQuery)
+                buyer.serial_no.toLowerCase().includes(lowercasedQuery) ||
+                (buyer.phone && buyer.phone.replace(/\D/g, '').includes(numericQuery))
             );
         }
         
