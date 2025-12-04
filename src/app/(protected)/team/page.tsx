@@ -24,10 +24,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useUI } from '../layout';
 import { Progress } from '@/components/ui/progress';
 
-const roleConfig: Record<UserRole | 'Pending', { icon: React.ReactNode, color: string }> = {
+const roleConfig: Record<UserRole, { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
     Agent: { icon: <User className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' },
-    Pending: { icon: <Clock className="h-4 w-4" />, color: 'bg-gray-500/10 text-gray-500' },
 };
 
 const planLimits = {
@@ -59,7 +58,6 @@ export default function TeamPage() {
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.team || 0;
-    // Admin is not counted towards the limit, but should be displayed.
     const currentCount = teamMembers ? teamMembers.filter(m => m.role === 'Agent').length : 0;
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
 
@@ -75,27 +73,22 @@ export default function TeamPage() {
         await deleteDoc(memberRef);
         
         toast({
-            title: 'Invitation Revoked',
-            description: `The invitation for ${member.email} has been revoked.`,
+            title: 'Member Removed',
+            description: `${member.name} has been removed from the team.`,
             variant: 'destructive',
         });
     };
 
     const handleCardClick = (member: TeamMember) => {
-        if(member.status === 'Pending') return;
         setSelectedMember(member);
         setIsDetailsOpen(true);
     };
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder: Record<string, number> = { Admin: 1, Agent: 2, Pending: 3 };
+        const roleOrder: Record<string, number> = { Admin: 1, Agent: 2 };
         return [...teamMembers].sort((a, b) => {
-            const statusA = a.status || 'Active';
-            const statusB = b.status || 'Active';
-            if (statusA === 'Pending' && statusB !== 'Pending') return 1;
-            if (statusB === 'Pending' && statusA !== 'Pending') return -1;
-            return (roleOrder[a.role] || 4) - (roleOrder[b.role] || 4);
+            return (roleOrder[a.role] || 3) - (roleOrder[b.role] || 3);
         });
     }, [teamMembers]);
 
@@ -129,14 +122,12 @@ export default function TeamPage() {
             </TableHeader>
             <TableBody>
                 {sortedTeamMembers.map(member => {
-                    const isPending = member.status === 'Pending';
-                    const displayRole = isPending ? 'Pending' : member.role;
-                    const config = roleConfig[displayRole] || roleConfig.Agent;
+                    const config = roleConfig[member.role] || roleConfig.Agent;
                     const isOwner = member.id === profile.user_id;
                     const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
                     
                     return (
-                        <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className={cn('cursor-pointer', isPending && 'opacity-70 bg-muted/50')}>
+                        <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className='cursor-pointer'>
                             <TableCell className="font-medium">
                                 <div className="flex items-center gap-3">
                                     <div>
@@ -145,9 +136,9 @@ export default function TeamPage() {
                                     </div>
                                 </div>
                             </TableCell>
-                            <TableCell><Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className={config.color}>{config.icon} {member.role}</Badge></TableCell>
                             <TableCell>
-                                <Badge variant={isPending ? 'secondary' : 'default'} className={cn(!isPending && 'bg-green-600/80')}>{member.status || 'Active'}</Badge>
+                                <Badge variant={'default'} className={'bg-green-600/80'}>{member.status || 'Active'}</Badge>
                             </TableCell>
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
@@ -159,13 +150,11 @@ export default function TeamPage() {
                                     <DropdownMenuContent align="end">
                                         {!isOwner && (
                                             <>
-                                                {!isPending && (
-                                                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                                    </DropdownMenuItem>
-                                                )}
+                                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Remove Member
                                                 </DropdownMenuItem>
                                             </>
                                         )}
@@ -184,20 +173,18 @@ export default function TeamPage() {
     const renderCards = () => (
         <div className="space-y-4">
         {sortedTeamMembers.map(member => {
-            const isPending = member.status === 'Pending';
-            const displayRole = isPending ? 'Pending' : member.role;
-            const config = roleConfig[displayRole] || roleConfig.Agent;
+            const config = roleConfig[member.role] || roleConfig.Agent;
             const isOwner = member.id === profile.user_id;
             const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
 
             return (
                 <Card 
                     key={member.id || member.email} 
-                    className={cn("flex flex-col hover:shadow-lg transition-shadow cursor-pointer", isPending && "opacity-70 bg-muted/50")}
+                    className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer"
                     onClick={() => handleCardClick(member)}
                 >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <Badge variant="outline" className={config.color}>{config.icon} {displayRole}</Badge>
+                        <Badge variant="outline" className={config.color}>{config.icon} {member.role}</Badge>
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
@@ -207,13 +194,11 @@ export default function TeamPage() {
                             <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                  {!isOwner && (
                                     <>
-                                        {!isPending && (
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit Role
-                                            </DropdownMenuItem>
-                                        )}
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(member); }}>
+                                            <Edit className="mr-2 h-4 w-4" /> Edit Role
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(member); }} className="text-destructive">
-                                            <Trash2 className="mr-2 h-4 w-4" /> {isPending ? 'Revoke Invite' : 'Remove Member'}
+                                            <Trash2 className="mr-2 h-4 w-4" /> Remove Member
                                         </DropdownMenuItem>
                                     </>
                                 )}
@@ -225,15 +210,9 @@ export default function TeamPage() {
                         <CardDescription>{member.email}</CardDescription>
                     </CardContent>
                     <CardFooter className="border-t p-2">
-                        {isPending ? (
-                            <div className='text-xs text-center w-full text-muted-foreground py-2'>
-                                {`Invited on ${member.invitedAt?.toDate().toLocaleDateString()}`}
-                            </div>
-                        ) : (
-                            <div className="text-center w-full">
-                               <Badge variant={isPending ? 'secondary' : 'default'} className={cn(!isPending && 'bg-green-600/80')}>{member.status || 'Active'}</Badge>
-                            </div>
-                        )}
+                        <div className="text-center w-full">
+                           <Badge variant={'default'} className={'bg-green-600/80'}>{member.status || 'Active'}</Badge>
+                        </div>
                     </CardFooter>
                 </Card>
             )

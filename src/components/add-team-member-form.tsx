@@ -87,24 +87,22 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             await updateDoc(memberRef, { role: values.role, name: values.name });
             toast({ title: 'Member Updated', description: `Details for ${values.name} have been updated.` });
         } else {
-            // Send an invitation by creating a 'pending' document.
-            // We use addDoc and let Firestore generate the ID.
+            // Add a new active team member directly.
             const teamMembersCollectionRef = collection(firestore, 'agencies', profile.agency_id, 'teamMembers');
             
             await addDoc(teamMembersCollectionRef, {
-                // Do not set ID, Firestore will generate it.
                 name: values.name,
                 email: values.email,
                 role: values.role,
-                status: 'Pending', // New invitation status
+                status: 'Active', // Set status to Active immediately
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
-                invitedAt: serverTimestamp()
+                createdAt: serverTimestamp()
             });
 
             toast({ 
-                title: 'Invitation Sent!', 
-                description: `${values.name} (${values.email}) has been invited to join your agency as an ${values.role}.` 
+                title: 'Member Added!', 
+                description: `${values.name} (${values.email}) has been added to your agency as an ${values.role}.` 
             });
         }
         setDialogOpen(false);
@@ -178,7 +176,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
           </Button>
           <Button type="submit" className="glowing-btn" disabled={isLoading}>
             {isLoading && <Loader2 className="animate-spin" />}
-            {memberToEdit ? 'Save Changes' : 'Send Invite'}
+            {memberToEdit ? 'Save Changes' : 'Add Member'}
           </Button>
         </div>
       </form>
