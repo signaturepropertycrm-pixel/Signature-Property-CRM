@@ -24,76 +24,50 @@ export default function TrashPage() {
   const firestore = useFirestore();
   const { profile } = useProfile();
 
-  // Agency-wide queries
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
   
   const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
   const { data: agencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
   
-  // Agent-specific queries
-  const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
-  const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
-
-  const agentBuyersQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'buyers') : null, [profile.user_id, firestore]);
-  const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
-
-  const isLoading = apLoading || abLoading || (profile.role === 'Agent' && (agentPLoading || agentBLoading));
+  const isLoading = apLoading || abLoading;
 
   const deletedProperties = useMemo(() => {
-      const allProps = profile.role === 'Agent' ? [...(agencyProperties || []), ...(agentProperties || [])] : (agencyProperties || []);
-      const uniqueProps = Array.from(new Map(allProps.map(p => [p.id, p])).values());
-      
-      let props = uniqueProps.filter(p => p.is_deleted);
+      let props = (agencyProperties || []).filter(p => p.is_deleted);
       if (profile.role === 'Agent') {
           props = props.filter(p => p.created_by === profile.user_id);
       }
       return props;
-  }, [agencyProperties, agentProperties, profile.role, profile.user_id]);
+  }, [agencyProperties, profile.role, profile.user_id]);
 
   const deletedBuyers = useMemo(() => {
-      const allBuyersData = profile.role === 'Agent' ? [...(agencyBuyers || []), ...(agentBuyers || [])] : (agencyBuyers || []);
-      const uniqueBuyers = Array.from(new Map(allBuyersData.map(b => [b.id, b])).values());
-      
-      let buyers = uniqueBuyers.filter(b => b.is_deleted);
+      let buyers = (agencyBuyers || []).filter(b => b.is_deleted);
       if (profile.role === 'Agent') {
           buyers = buyers.filter(b => b.created_by === profile.user_id);
       }
       return buyers;
-  }, [agencyBuyers, agentBuyers, profile.role, profile.user_id]);
+  }, [agencyBuyers, profile.role, profile.user_id]);
   
   
   const handleRestoreProperty = async (prop: Property) => {
-    const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
-    const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
-
-    if (!collectionId) return;
-
-    await setDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id), { is_deleted: false }, { merge: true });
+    if (!profile.agency_id) return;
+    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id), { is_deleted: false }, { merge: true });
     toast({ title: 'Property Restored', description: 'The property has been successfully restored.' });
   };
   
   const handlePermanentDeleteProperty = async (prop: Property) => {
-    const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
-    const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
-
-    if (!collectionId) return;
-
-    await deleteDoc(doc(firestore, collectionName, collectionId, 'properties', prop.id));
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id));
     toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
   };
 
   const handleEmptyPropertiesTrash = async () => {
-    if (deletedProperties.length === 0) return;
+    if (deletedProperties.length === 0 || !profile.agency_id) return;
 
     const batch = writeBatch(firestore);
     deletedProperties.forEach(prop => {
-        const collectionName = prop.created_by === profile.agency_id ? 'agencies' : 'agents';
-        const collectionId = prop.created_by === profile.agency_id ? prop.agency_id : prop.created_by;
-        if (collectionId) {
-            const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-            batch.delete(docRef);
-        }
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
+        batch.delete(docRef);
     });
 
     await batch.commit();
@@ -101,36 +75,24 @@ export default function TrashPage() {
   }
   
   const handleRestoreBuyer = async (buyer: Buyer) => {
-    const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
-    const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
-
-    if (!collectionId) return;
-
-    await setDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id), { is_deleted: false }, { merge: true });
+    if (!profile.agency_id) return;
+    await setDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id), { is_deleted: false }, { merge: true });
     toast({ title: 'Buyer Restored', description: 'The buyer has been successfully restored.' });
   };
   
   const handlePermanentDeleteBuyer = async (buyer: Buyer) => {
-    const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
-    const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
-
-    if (!collectionId) return;
-
-    await deleteDoc(doc(firestore, collectionName, collectionId, 'buyers', buyer.id));
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id));
     toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
   };
 
   const handleEmptyBuyersTrash = async () => {
-    if (deletedBuyers.length === 0) return;
+    if (deletedBuyers.length === 0 || !profile.agency_id) return;
 
     const batch = writeBatch(firestore);
     deletedBuyers.forEach(buyer => {
-       const collectionName = buyer.created_by === profile.agency_id ? 'agencies' : 'agents';
-       const collectionId = buyer.created_by === profile.agency_id ? buyer.agency_id : buyer.created_by;
-       if (collectionId) {
-            const docRef = doc(firestore, collectionName, collectionId, 'buyers', buyer.id);
-            batch.delete(docRef);
-       }
+       const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
+       batch.delete(docRef);
     });
 
     await batch.commit();

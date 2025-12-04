@@ -154,13 +154,8 @@ export default function PropertiesPage() {
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
   );
-  const agentPropertiesQuery = useMemoFirebase(
-    () => (profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null),
-    [profile.user_id, firestore]
-  );
-
-  const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
-  const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
+  
+  const { data: allProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   
   const [listingType, setListingType] = useState<ListingType>('For Sale');
   
@@ -198,15 +193,10 @@ export default function PropertiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
   
-  const allProperties = useMemo(() => {
-    if (!agencyProperties) return [];
-    return agencyProperties;
-  }, [agencyProperties]);
-  
 
   const currentPlan = (profile?.planName as PlanName) || 'Basic';
   const limit = planLimits[currentPlan]?.properties || 0;
-  const currentCount = allProperties.length;
+  const currentCount = allProperties?.length || 0;
   const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
   const isLimitReached = currentCount >= limit;
 
@@ -242,7 +232,13 @@ export default function PropertiesPage() {
   };
 
   const filteredProperties = useMemo(() => {
+    if (!allProperties) return [];
+    
     let baseProperties = allProperties.filter(p => !p.is_deleted);
+    
+    if (profile.role === 'Agent') {
+      baseProperties = baseProperties.filter(p => p.created_by === user?.uid || p.assignedTo === user?.uid);
+    }
 
     // 1. Primary Filter: Search Query
     if (searchQuery) {
@@ -294,7 +290,7 @@ export default function PropertiesPage() {
              return baseProperties.filter(p => !p.is_for_rent);
     }
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -379,33 +375,21 @@ export default function PropertiesPage() {
     await addDoc(collectionRef, appointment);
   };
 
-  const getPropertyCollectionInfo = (property: Property) => {
-    const isAgentOwned = profile.role === 'Agent' && property.created_by === profile.user_id;
-    const collectionName = isAgentOwned ? 'agents' : 'agencies';
-    const collectionId = isAgentOwned ? profile.user_id : profile.agency_id;
-    return { collectionName, collectionId };
-  };
-
   const handleUnmarkRecorded = async (prop: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
-    if (!collectionId) return;
-
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    if (!profile.agency_id) return;
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
     await setDoc(docRef, { is_recorded: false, video_links: {} }, { merge: true });
   };
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(updatedProperty);
-    if (!collectionId) return;
-
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', updatedProperty.id);
+    if (!profile.agency_id) return;
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
     await setDoc(docRef, updatedProperty, { merge: true });
   };
   
   const handleMarkAsAvailableForRent = async (prop: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
-    if (!collectionId) return;
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+    if (!profile.agency_id) return;
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
     await setDoc(docRef, { 
         status: 'Available', 
         rent_out_date: null,
@@ -419,8 +403,7 @@ export default function PropertiesPage() {
   };
 
   const handleMarkAsUnsold = async (prop: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
-    if (!collectionId) return;
+    if (!profile.agency_id) return;
 
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
     await setDoc(docRef, { 
@@ -442,10 +425,8 @@ export default function PropertiesPage() {
   };
 
   const handleDelete = async (property: Property) => {
-    const { collectionName, collectionId } = getPropertyCollectionInfo(property);
-    if (!collectionId) return;
-
-    const docRef = doc(firestore, collectionName, collectionId, 'properties', property.id);
+    if (!profile.agency_id) return;
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
     await setDoc(docRef, { is_deleted: true }, { merge: true });
     toast({
       title: 'Property Moved to Trash',
@@ -458,13 +439,8 @@ export default function PropertiesPage() {
     
     const batch = writeBatch(firestore);
     selectedProperties.forEach(propId => {
-        const prop = allProperties.find(p => p.id === propId);
-        if(prop) {
-            const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
-             if (!collectionId) return;
-            const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
-            batch.update(docRef, { is_deleted: true });
-        }
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propId);
+      batch.update(docRef, { is_deleted: true });
     });
 
     await batch.commit();
@@ -476,22 +452,14 @@ export default function PropertiesPage() {
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
-    const isAgentAdding = profile.role === 'Agent';
+    if (!profile.agency_id) return;
     
     if (propertyToEdit && propertyData.id) {
-        const { collectionName, collectionId } = getPropertyCollectionInfo(propertyToEdit);
-        if (!collectionId) return;
-
-        const docRef = doc(firestore, collectionName, collectionId, 'properties', propertyData.id);
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propertyData.id);
         await setDoc(docRef, propertyData, { merge: true });
         toast({ title: 'Property Updated' });
     } else {
-        const collectionName = isAgentAdding ? 'agents' : 'agencies';
-        const collectionId = isAgentAdding ? profile.user_id : profile.agency_id;
-        
-        if (!collectionId) return;
-        
-        const collectionRef = collection(firestore, collectionName, collectionId, 'properties');
+        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
         const { id, ...restOfData } = propertyData;
         
         await addDoc(collectionRef, { 
@@ -525,6 +493,7 @@ export default function PropertiesPage() {
   };
 
   const handleExport = (type: 'For Sale' | 'For Rent') => {
+    if (!allProperties) return;
     const propertiesToExport = sortProperties(
         allProperties.filter(p => (p.listing_type === type || (!p.listing_type && type === 'For Sale')) && !p.is_deleted)
     );
@@ -619,7 +588,7 @@ export default function PropertiesPage() {
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile.agency_id || !importType) return;
+    if (!file || !profile.agency_id || !importType || !allProperties) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -755,7 +724,7 @@ export default function PropertiesPage() {
 
 
   const renderTable = (properties: Property[]) => {
-    if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     
     const handleSelectAll = (checked: boolean) => {
@@ -886,7 +855,7 @@ export default function PropertiesPage() {
   };
 
   const renderCards = (properties: Property[]) => {
-    if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
+    if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
       <div className="space-y-4">
@@ -1220,7 +1189,7 @@ export default function PropertiesPage() {
           isOpen={isAddPropertyOpen}
           setIsOpen={setIsAddPropertyOpen}
           propertyToEdit={propertyToEdit}
-          allProperties={allProperties}
+          allProperties={allProperties || []}
           onSave={handleSaveProperty}
           listingType={listingType}
           limitReached={isLimitReached}
@@ -1283,5 +1252,6 @@ export default function PropertiesPage() {
     
 
     
+
 
 
