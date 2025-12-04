@@ -161,7 +161,7 @@ export default function LandingPage() {
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Close More Deals,Faster" 
+                        sentence="Close More Deals, Faster" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
@@ -190,7 +190,7 @@ export default function LandingPage() {
                 </div>
                 <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
                     {features.map((feature, index) => (
-                        <div key={feature.title} className="text-center p-8 border rounded-2xl bg-card/50 hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${0.4 + index * 0.1}s` }}>
+                        <div key={feature.title} className="text-center p-8 border rounded-2xl bg-card/50 hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${''}${0.4 + index * 0.1}s` }}>
                             {feature.icon}
                             <h3 className="mt-6 text-xl font-bold font-headline">{feature.title}</h3>
                             <p className="mt-2 text-muted-foreground">{feature.description}</p>
