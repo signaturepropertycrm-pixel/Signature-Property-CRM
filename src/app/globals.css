@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -78,6 +79,18 @@
     background-image: linear-gradient(120deg, hsl(220, 25%, 10%), hsl(221, 25%, 15%));
   }
 }
+
+@layer utilities {
+    .animate-infinite-scroll {
+        animation: infinite-scroll 40s linear infinite;
+    }
+
+    @keyframes infinite-scroll {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+}
+
 
 @layer components {
   .glass-card {

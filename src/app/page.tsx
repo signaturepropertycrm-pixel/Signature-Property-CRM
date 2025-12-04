@@ -4,13 +4,16 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import TrueFocus from '@/components/true-focus';
+import { InfiniteScroller } from '@/components/infinite-scroller';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
 
 // Placeholder data - replace with real data or fetch from an API
 const plans = [
@@ -101,6 +104,7 @@ const testimonials = [
 export default function LandingPage() {
   const { setTheme, theme } = useTheme();
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const dashboardPreviewImage = PlaceHolderImages.find(img => img.id === 'dashboard-preview');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -171,12 +175,12 @@ export default function LandingPage() {
         <section className="container mx-auto px-4 -mt-16 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div className="relative rounded-2xl shadow-2xl shadow-primary/10 border-4 border-primary/20 bg-background/50 p-2">
                 <Image
-                    src="https://picsum.photos/seed/crm-dashboard/1200/800"
-                    alt="SignatureCRM Dashboard"
+                    src={dashboardPreviewImage?.imageUrl || "https://picsum.photos/seed/crm-dashboard/1200/800"}
+                    alt={dashboardPreviewImage?.description || "SignatureCRM Dashboard"}
                     width={1200}
                     height={800}
                     className="rounded-lg"
-                    data-ai-hint="dashboard ui"
+                    data-ai-hint={dashboardPreviewImage?.imageHint || 'dashboard ui'}
                 />
             </div>
         </section>
@@ -201,6 +205,11 @@ export default function LandingPage() {
                     ))}
                 </div>
             </div>
+        </section>
+
+        {/* Infinite Scroller */}
+        <section className="py-12">
+            <InfiniteScroller />
         </section>
 
         {/* Pricing Section */}
