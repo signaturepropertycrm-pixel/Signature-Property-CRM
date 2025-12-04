@@ -161,7 +161,7 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
-                        <Link href="/signup">Get Started for Free</Link>
+                        <Link href="/signup">30 Days Ka Trail Hasil karo</Link>
                     </Button>
                 </div>
             </div>
