@@ -621,12 +621,12 @@ export default function PropertiesPage() {
                 is_recorded: video_recorded?.toLowerCase() === 'yes',
                 video_links: { tiktok: tiktok || '', youtube: youtube || '', instagram: instagram || '', facebook: facebook || '', other: other || '' },
                 road_size_ft: parseOptionalNumber(road_size_ft),
-                storey: storey || undefined,
+                storey: storey || '',
                 potential_rent_amount: parseOptionalNumber(potential_rent_amount),
                 potential_rent_unit: 'Thousand',
                 front_ft: parseOptionalNumber(front_ft),
                 length_ft: parseOptionalNumber(length_ft),
-                documents: documents || undefined,
+                documents: documents || '',
                 meters: {
                     electricity: utilities?.includes('Electricity') || false,
                     gas: utilities?.includes('Gas') || false,
@@ -664,7 +664,7 @@ export default function PropertiesPage() {
                 agency_id: profile.agency_id,
                 is_recorded: video_recorded?.toLowerCase() === 'yes',
                 video_links: { tiktok: tiktok || '', youtube: youtube || '', instagram: instagram || '', facebook: facebook || '', other: other || '' },
-                storey: storey || undefined,
+                storey: storey || '',
                 meters: {
                     electricity: utilities?.includes('Electricity') || false,
                     gas: utilities?.includes('Gas') || false,
@@ -1119,6 +1119,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 
