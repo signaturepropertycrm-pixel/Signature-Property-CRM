@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -11,8 +10,11 @@ import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useProfile } from '@/context/profile-context';
 import { format } from 'date-fns';
+import { PaymentDialog } from '@/components/payment-dialog';
+import type { Plan } from '@/components/payment-dialog';
 
-const plans = [
+
+const plans: Plan[] = [
     {
         name: 'Basic',
         price: { monthly: 5000, yearly: 50000 },
@@ -67,8 +69,16 @@ const plans = [
 export default function UpgradePage() {
     const [isYearly, setIsYearly] = useState(false);
     const { profile } = useProfile();
+    const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+
+    const handleChoosePlan = (plan: Plan) => {
+        setSelectedPlan(plan);
+        setIsPaymentDialogOpen(true);
+    }
 
   return (
+    <>
     <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight font-headline">Find the Right Plan for Your Agency</h1>
@@ -83,7 +93,7 @@ export default function UpgradePage() {
           <AlertDescription>
             {profile.trialEndDate && profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0 ? (
                 <span>
-                    Your free trial of the Standard plan ends in <strong>{profile.daysLeftInTrial} days</strong> (on {format(new Date(profile.trialEndDate), 'PPP')}).
+                    Your free trial of the Standard plan ends in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial > 1 ? 'days' : 'day'}</strong> (on {format(new Date(profile.trialEndDate), 'PPP')}).
                 </span>
             ) : (
                 'All new agency accounts automatically start on a 30-day free trial of our Standard plan.'
@@ -117,7 +127,12 @@ export default function UpgradePage() {
                     {plan.price.custom ? (
                         'Custom'
                     ) : (
-                        `RS ${isYearly ? plan.price.yearly.toLocaleString() : plan.price.monthly.toLocaleString()}`
+                       isYearly ? (
+                        <div className="flex items-center justify-center gap-2">
+                           <span>RS {plan.price.yearly.toLocaleString()}</span>
+                           <span className="text-xl font-medium text-muted-foreground line-through">RS {(plan.price.monthly * 12).toLocaleString()}</span>
+                        </div>
+                       ) : `RS ${plan.price.monthly.toLocaleString()}`
                     )}
                     {!plan.price.custom && (
                          <span className="text-sm font-normal text-muted-foreground">/{isYearly ? 'year' : 'month'}</span>
@@ -136,7 +151,11 @@ export default function UpgradePage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button className={cn("w-full", plan.isPopular && 'glowing-btn')} variant={plan.isPopular ? 'default' : 'outline'}>
+              <Button 
+                className={cn("w-full", plan.isPopular && 'glowing-btn')} 
+                variant={plan.isPopular ? 'default' : 'outline'}
+                onClick={() => handleChoosePlan(plan)}
+              >
                 {plan.cta} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardFooter>
@@ -144,5 +163,14 @@ export default function UpgradePage() {
         ))}
       </div>
     </div>
+    {selectedPlan && (
+        <PaymentDialog 
+            isOpen={isPaymentDialogOpen}
+            setIsOpen={setIsPaymentDialogOpen}
+            plan={selectedPlan}
+            billingCycle={isYearly ? 'yearly' : 'monthly'}
+        />
+    )}
+    </>
   );
 }
