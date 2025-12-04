@@ -1,4 +1,5 @@
 
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -116,7 +118,7 @@ export default function BuyersPage() {
     const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
     const [importType, setImportType] = useState<'For Sale' | 'For Rent' | null>(null);
     const [buyerToEdit, setBuyerToEdit] = useState<Buyer | null>(null);
-    const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
+    const [selectedBuyers, setSelectedBuyers] = useState<string[]>([]);
     const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
     const [buyerForRecommendation, setBuyerForRecommendation] = useState<Buyer | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -127,6 +129,7 @@ export default function BuyersPage() {
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedBuyerForDetails, setSelectedBuyerForDetails] = useState<Buyer | null>(null);
 
 
     const buyerFollowUp = useMemo(() => {
@@ -141,19 +144,19 @@ export default function BuyersPage() {
     // When the dialog closes, clear the selected buyer to ensure fresh data is loaded next time
     useEffect(() => {
         if (!isDetailsOpen) {
-            setSelectedBuyer(null);
+            setSelectedBuyerForDetails(null);
         }
     }, [isDetailsOpen]);
 
     // When the master list of buyers changes, update the selected buyer if it exists
     useEffect(() => {
-        if (selectedBuyer && allBuyers) {
-            const updatedBuyer = allBuyers.find(b => b.id === selectedBuyer.id);
+        if (selectedBuyerForDetails && allBuyers) {
+            const updatedBuyer = allBuyers.find(b => b.id === selectedBuyerForDetails.id);
             if (updatedBuyer) {
-                setSelectedBuyer(updatedBuyer);
+                setSelectedBuyerForDetails(updatedBuyer);
             }
         }
-    }, [allBuyers, selectedBuyer]);
+    }, [allBuyers, selectedBuyerForDetails]);
     
     const logActivity = async (action: string, target: string, targetType: Activity['targetType'], details: any = null) => {
         if (!profile.agency_id) return;
@@ -186,7 +189,7 @@ export default function BuyersPage() {
 
     const handleDetailsClick = (buyer: Buyer) => {
         if (isMobile) return;
-        setSelectedBuyer({ ...buyer });
+        setSelectedBuyerForDetails({ ...buyer });
         setIsDetailsOpen(true);
     };
 
@@ -220,6 +223,21 @@ export default function BuyersPage() {
         toast({ title: "Buyer Moved to Trash", description: "You can restore them from the trash page." });
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedBuyers.length === 0 || !profile.agency_id) return;
+        const batch = writeBatch(firestore);
+        selectedBuyers.forEach(buyerId => {
+            const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+            batch.update(buyerRef, { is_deleted: true });
+        });
+        await batch.commit();
+        toast({
+            title: `${selectedBuyers.length} Buyers Moved to Trash`,
+            description: 'You can restore them from the trash page.',
+        });
+        setSelectedBuyers([]);
+    };
+
     const handleFilterChange = (key: keyof Filters, value: string | BuyerStatus | PropertyType | PriceUnit | SizeUnit) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
@@ -241,9 +259,9 @@ export default function BuyersPage() {
         
         // This is the crucial part: update the local state immediately
         // so the dialog reflects the change without needing a full data refetch.
-        if (selectedBuyer) {
-            setSelectedBuyer({
-                ...selectedBuyer,
+        if (selectedBuyerForDetails) {
+            setSelectedBuyerForDetails({
+                ...selectedBuyerForDetails,
                 assignedTo: newAssignedTo,
             });
         }
@@ -388,6 +406,7 @@ export default function BuyersPage() {
 
     useEffect(() => {
         setCurrentPage(1);
+        setSelectedBuyers([]);
     }, [searchQuery, filters, activeTab, activeStatusFilter]);
 
 
@@ -609,10 +628,25 @@ export default function BuyersPage() {
     const renderTable = (buyers: Buyer[]) => {
         if (isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
         if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
+
+        const handleSelectAll = (checked: boolean) => {
+            if (checked) {
+                setSelectedBuyers(paginatedBuyers.map(b => b.id));
+            } else {
+                setSelectedBuyers([]);
+            }
+        };
+        
         return (
             <Table>
                 <TableHeader>
                     <TableRow>
+                         <TableHead className="w-10">
+                            <Checkbox
+                                checked={paginatedBuyers.length > 0 && selectedBuyers.length === paginatedBuyers.length}
+                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                            />
+                        </TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Area &amp; Type</TableHead>
                         <TableHead>Budget &amp; Size</TableHead>
@@ -624,6 +658,16 @@ export default function BuyersPage() {
                     {buyers.map(buyer => {
                         return (
                             <TableRow key={buyer.id}>
+                               <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <Checkbox
+                                        checked={selectedBuyers.includes(buyer.id)}
+                                        onCheckedChange={(checked) => {
+                                            setSelectedBuyers(prev =>
+                                                checked ? [...prev, buyer.id] : prev.filter(id => id !== buyer.id)
+                                            );
+                                        }}
+                                    />
+                                </TableCell>
                                 <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
                                     <div className="font-bold font-headline text-base flex items-center gap-2">
                                         {buyer.name}
@@ -707,9 +751,20 @@ export default function BuyersPage() {
                         <Card key={buyer.id}>
                             <CardHeader>
                                 <CardTitle className="flex justify-between items-start">
-                                    <div className="font-bold font-headline text-lg flex items-center gap-2">
-                                        {buyer.name}
-                                    </div>
+                                     <div className="flex items-start gap-2">
+                                         <Checkbox
+                                            checked={selectedBuyers.includes(buyer.id)}
+                                            onCheckedChange={(checked) => {
+                                                setSelectedBuyers(prev =>
+                                                    checked ? [...prev, buyer.id] : prev.filter(id => id !== buyer.id)
+                                                );
+                                            }}
+                                            className="mt-1"
+                                        />
+                                        <div className="font-bold font-headline text-lg flex items-center gap-2">
+                                            {buyer.name}
+                                        </div>
+                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={`capitalize ${buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}`}>{buyer.status}</Badge>
                                         {buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}
@@ -748,7 +803,7 @@ export default function BuyersPage() {
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
                                         <div className="flex flex-col gap-2">
-                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); setSelectedBuyer(buyer); setIsDetailsOpen(true); }}><Eye />View Details</Button>
+                                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); setSelectedBuyerForDetails(buyer); setIsDetailsOpen(true); }}><Eye />View Details</Button>
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecommendProperties(buyer); }}><Sparkles />Recommend Properties</Button>
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
                                             <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</Button>
@@ -834,6 +889,28 @@ export default function BuyersPage() {
                         <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                             {(profile.role === 'Admin' || profile.role === 'Editor') && (
                                 <>
+                                    {selectedBuyers.length > 0 && (
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="destructive" className="rounded-full">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete ({selectedBuyers.length})
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This will move {selectedBuyers.length} buyers to the trash. You can restore them later.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    )}
                                     <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="rounded-full">
@@ -1010,7 +1087,7 @@ export default function BuyersPage() {
 
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
-            {selectedBuyer && (<BuyerDetailsDialog buyer={selectedBuyer} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
+            {selectedBuyerForDetails && (<BuyerDetailsDialog buyer={selectedBuyerForDetails} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
             {buyerForRecommendation && allProperties && (
                 <PropertyRecommenderDialog
                     isOpen={isRecommenderOpen}

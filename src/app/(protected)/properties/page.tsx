@@ -89,6 +89,7 @@ import { useUser } from '@/firebase/auth/use-user';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -160,7 +161,7 @@ export default function PropertiesPage() {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isSoldOpen, setIsSoldOpen] = useState(false);
   const [isRentOutOpen, setIsRentOutOpen] = useState(false);
@@ -188,6 +189,7 @@ export default function PropertiesPage() {
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
   
   const allProperties = useMemo(() => {
     const combined = [...(agencyProperties || []), ...(agentProperties || [])];
@@ -289,11 +291,12 @@ export default function PropertiesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
+        setSelectedProperties([]);
     }, [searchQuery, filters, statusFilterFromURL]);
 
 
   const handleRowClick = (prop: Property) => {
-    setSelectedProperty(prop);
+    setPropertyForDetails(prop);
     setIsDetailsOpen(true);
   };
   
@@ -312,17 +315,17 @@ export default function PropertiesPage() {
   }
 
   const handleMarkAsSold = (prop: Property) => {
-    setSelectedProperty(prop);
+    setPropertyForDetails(prop);
     setIsSoldOpen(true);
   };
   
   const handleMarkAsRentOut = (prop: Property) => {
-    setSelectedProperty(prop);
+    setPropertyForDetails(prop);
     setIsRentOutOpen(true);
   };
 
   const handleRecordVideo = (prop: Property) => {
-    setSelectedProperty(prop);
+    setPropertyForDetails(prop);
     setIsRecordVideoOpen(true);
   };
 
@@ -426,6 +429,28 @@ export default function PropertiesPage() {
       title: 'Property Moved to Trash',
       description: 'You can restore it from the trash page.',
     });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProperties.length === 0 || !profile.agency_id) return;
+    
+    const batch = writeBatch(firestore);
+    selectedProperties.forEach(propId => {
+        const prop = allProperties.find(p => p.id === propId);
+        if(prop) {
+            const { collectionName, collectionId } = getPropertyCollectionInfo(prop);
+             if (!collectionId) return;
+            const docRef = doc(firestore, collectionName, collectionId, 'properties', prop.id);
+            batch.update(docRef, { is_deleted: true });
+        }
+    });
+
+    await batch.commit();
+    toast({
+        title: `${selectedProperties.length} Properties Moved to Trash`,
+        description: 'You can restore them from the trash page.',
+    });
+    setSelectedProperties([]);
   };
 
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
@@ -710,10 +735,25 @@ export default function PropertiesPage() {
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading || isAgentLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
+    
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedProperties(paginatedProperties.map(p => p.id));
+        } else {
+            setSelectedProperties([]);
+        }
+    };
+    
     return (
       <Table>
         <TableHeader>
           <TableRow>
+             <TableHead className="w-10">
+                <Checkbox
+                    checked={paginatedProperties.length > 0 && selectedProperties.length === paginatedProperties.length}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                />
+            </TableHead>
             <TableHead className="w-[350px]">Property</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Size</TableHead>
@@ -725,6 +765,16 @@ export default function PropertiesPage() {
         <TableBody>
           {properties.map((prop) => (
             <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
+               <TableCell onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                    checked={selectedProperties.includes(prop.id)}
+                    onCheckedChange={(checked) => {
+                        setSelectedProperties(prev =>
+                            checked ? [...prev, prop.id] : prev.filter(id => id !== prop.id)
+                        );
+                    }}
+                />
+            </TableCell>
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base flex items-center gap-2">
@@ -822,24 +872,35 @@ export default function PropertiesPage() {
           <Card key={prop.id}>
             <CardHeader>
                 <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                    <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-                      {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-                      {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
-                    </CardTitle>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                         <Badge
-                            variant="default"
-                            className={cn(
-                              'font-mono',
-                              prop.serial_no.startsWith('RP')
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
-                                : 'bg-primary/20 text-primary hover:bg-primary/30'
-                            )}
-                          >
-                            {prop.serial_no}
-                          </Badge>
-                      </div>
+                    <div className="flex items-start gap-2">
+                         <Checkbox
+                            checked={selectedProperties.includes(prop.id)}
+                            onCheckedChange={(checked) => {
+                                setSelectedProperties(prev =>
+                                    checked ? [...prev, prop.id] : prev.filter(id => id !== prop.id)
+                                );
+                            }}
+                            className="mt-1"
+                        />
+                        <div className="flex-1">
+                            <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
+                            {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                            {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+                            </CardTitle>
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                                <Badge
+                                    variant="default"
+                                    className={cn(
+                                    'font-mono',
+                                    prop.serial_no.startsWith('RP')
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                        : 'bg-primary/20 text-primary hover:bg-primary/30'
+                                    )}
+                                >
+                                    {prop.serial_no}
+                                </Badge>
+                            </div>
+                        </div>
                     </div>
                     <div className="flex flex-col gap-1 items-end">
                         <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground')}>
@@ -972,6 +1033,28 @@ export default function PropertiesPage() {
                   )}
                   {(profile.role === 'Admin' || profile.role === 'Editor') && (
                       <>
+                        {selectedProperties.length > 0 && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" className="rounded-full">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete ({selectedProperties.length})
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will move {selectedProperties.length} properties to the trash. You can restore them later.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                         <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                             <PopoverTrigger asChild>
                             <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
@@ -1119,12 +1202,12 @@ export default function PropertiesPage() {
           />
         )}
   
-        {selectedProperty && (
+        {propertyForDetails && (
           <>
-            <PropertyDetailsDialog property={selectedProperty} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
-            <MarkAsSoldDialog property={selectedProperty} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
-            <MarkAsRentOutDialog property={selectedProperty} isOpen={isRentOutOpen} setIsOpen={setIsRentOutOpen} onUpdateProperty={handleUpdateProperty} />
-            <RecordVideoDialog property={selectedProperty} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
+            <PropertyDetailsDialog property={propertyForDetails} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />
+            <MarkAsSoldDialog property={propertyForDetails} isOpen={isSoldOpen} setIsOpen={setIsSoldOpen} onUpdateProperty={handleUpdateProperty} />
+            <MarkAsRentOutDialog property={propertyForDetails} isOpen={isRentOutOpen} setIsOpen={setIsRentOutOpen} onUpdateProperty={handleUpdateProperty} />
+            <RecordVideoDialog property={propertyForDetails} isOpen={isRecordVideoOpen} setIsOpen={setIsRecordVideoOpen} onUpdateProperty={handleUpdateProperty} />
           </>
         )}
         
@@ -1167,10 +1250,3 @@ export default function PropertiesPage() {
     
 
     
-
-
-
-
-
-
-
