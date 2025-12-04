@@ -91,12 +91,11 @@ const mainMenuItems = [
   },
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { 
-    href: '/appointments', 
+    href: '/appointments?type=Buyer', 
     label: 'Appointments', 
     icon: <Calendar />, 
     roles: ['Admin', 'Agent'],
     subItems: [
-        { href: '/appointments', label: 'All Appointments' },
         { href: '/appointments?type=Buyer', label: 'Buyer' },
         { href: '/appointments?type=Owner', label: 'Owner' },
     ]
