@@ -31,7 +31,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn, formatPhoneNumber } from '@/lib/utils';
 import React from 'react';
 import { useUser } from '@/firebase/auth/use-user';
@@ -524,7 +524,13 @@ export default function BuyersPage() {
               for (let i = 0; i < row.length; i++) {
                   const char = row[i];
                   if (char === '"') {
-                      inQuotes = !inQuotes;
+                      if (i + 1 < row.length && row[i+1] === '"') {
+                          // It's an escaped quote
+                          currentField += '"';
+                          i++; // Skip the next quote
+                      } else {
+                        inQuotes = !inQuotes;
+                      }
                   } else if (char === ',' && !inQuotes) {
                       result.push(currentField.trim());
                       currentField = '';
@@ -594,13 +600,13 @@ export default function BuyersPage() {
                 city: city || '',
                 property_type_preference: (property_type as PropertyType) || "" as PropertyType,
                 budget_min_amount: budgetData.minVal,
-                budget_min_unit: budgetData.minUnit as PriceUnit || "",
+                budget_min_unit: budgetData.minUnit as PriceUnit || null,
                 budget_max_amount: budgetData.maxVal,
-                budget_max_unit: budgetData.maxUnit as PriceUnit || "",
+                budget_max_unit: budgetData.maxUnit as PriceUnit || null,
                 size_min_value: sizeData.minVal,
-                size_min_unit: sizeData.minUnit as SizeUnit || "",
+                size_min_unit: sizeData.minUnit as SizeUnit || null,
                 size_max_value: sizeData.maxVal,
-                size_max_unit: sizeData.maxUnit as SizeUnit || "",
+                size_max_unit: sizeData.maxUnit as SizeUnit || null,
                 is_investor: (investor || '').toLowerCase() === 'yes',
                 listing_type: listingTypeToImport,
                 notes: notes || '',

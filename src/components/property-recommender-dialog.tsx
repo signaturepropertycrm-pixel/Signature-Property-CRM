@@ -145,7 +145,7 @@ export function PropertyRecommenderDialog({
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `*RENT PROPERTY DETAILS 🏡*
+            message = `*RENT PROPERTY DETAILS*
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
@@ -168,7 +168,7 @@ ${utilities || 'N/A'}`;
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `*PROPERTY DETAILS 🏡*
+            message = `*PROPERTY DETAILS*
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
