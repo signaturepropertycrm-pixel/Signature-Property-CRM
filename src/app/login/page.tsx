@@ -25,13 +25,14 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useAuth } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase/provider';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ProfileProvider } from '@/context/profile-context';
 import { Separator } from '@/components/ui/separator';
+import { doc, getDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
@@ -44,6 +45,7 @@ type LoginFormValues = z.infer<typeof formSchema>;
 function LoginPageContent() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -84,18 +86,36 @@ function LoginPageContent() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      if (!auth) {
+      if (!auth || !firestore) {
         throw new Error('Auth service is not available.');
       }
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/overview');
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // After successful sign-in, check if user exists in our Firestore 'users' collection
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        // User exists, proceed to dashboard
+        router.push('/overview');
+      } else {
+        // User does not exist in our DB, sign them out and show an error
+        await signOut(auth);
+        toast({
+          variant: 'destructive',
+          title: 'Account Not Found',
+          description: "Your account does not exist. Please sign up first.",
+        });
+      }
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
+      // Don't sign out here, as the initial popup might have been closed by the user
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',
-        description: 'Could not sign in with Google. Please try again.',
+        description: 'Could not sign in with Google. Please try again or sign up.',
       });
     } finally {
       setIsGoogleLoading(false);
