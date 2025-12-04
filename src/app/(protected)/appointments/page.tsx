@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users } from 'lucide-react';
+import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users, Eye } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Appointment, AppointmentStatus, Activity, Buyer, Property } from '@/lib/types';
@@ -20,6 +20,8 @@ import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
+import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 
 
 function AppointmentsPageContent() {
@@ -31,6 +33,7 @@ function AppointmentsPageContent() {
   const firestore = useFirestore();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
   const { data: appointmentsData, isLoading } = useCollection<Appointment>(appointmentsQuery);
@@ -45,6 +48,9 @@ function AppointmentsPageContent() {
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
   const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
+
+  const [contactForDetails, setContactForDetails] = useState<Buyer | Property | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const logActivity = async (action: string, target: string, details: any = null) => {
     if (!profile.agency_id) return;
@@ -97,6 +103,27 @@ function AppointmentsPageContent() {
       setAppointmentToUpdateStatus(appointment);
       setNewStatus(status);
   };
+  
+  const handleViewDetails = (appointment: Appointment) => {
+    if (appointment.contactType === 'Buyer') {
+      const buyer = buyersData?.find(b => b.serial_no === appointment.contactSerialNo);
+      if (buyer) {
+        setContactForDetails(buyer);
+        setIsDetailsOpen(true);
+      } else {
+        toast({ title: 'Buyer not found', variant: 'destructive' });
+      }
+    } else { // Owner
+      const property = propertiesData?.find(p => p.serial_no === appointment.contactSerialNo);
+      if (property) {
+        setContactForDetails(property);
+        setIsDetailsOpen(true);
+      } else {
+        toast({ title: 'Property not found', variant: 'destructive' });
+      }
+    }
+  };
+
 
   const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
       if (!profile.agency_id) return;
@@ -198,6 +225,7 @@ function AppointmentsPageContent() {
                     </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="glass-card">
+                        <DropdownMenuItem onSelect={() => handleViewDetails(appt)}><Eye /> View Contact Details</DropdownMenuItem>
                         <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, appt)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
                             <Check />
@@ -255,7 +283,7 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-       <Tabs defaultValue={typeFilter} onValueChange={handleTabChange} className="w-full">
+      <Tabs defaultValue={typeFilter} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="Buyer">Buyer</TabsTrigger>
                 <TabsTrigger value="Owner">Owner</TabsTrigger>
@@ -266,7 +294,8 @@ function AppointmentsPageContent() {
             <TabsContent value="Owner" className="mt-6">
                  {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
             </TabsContent>
-         </Tabs>
+        </Tabs>
+
 
        <SetAppointmentDialog 
             isOpen={isAppointmentOpen}
@@ -283,6 +312,21 @@ function AppointmentsPageContent() {
                 onUpdate={handleUpdateStatus}
             />
         )}
+        {contactForDetails && (contactForDetails as Buyer).serial_no?.startsWith('B') && (
+            <BuyerDetailsDialog
+                buyer={contactForDetails as Buyer}
+                isOpen={isDetailsOpen}
+                setIsOpen={setIsDetailsOpen}
+            />
+        )}
+        {contactForDetails && (contactForDetails as Property).serial_no?.startsWith('P') && (
+            <PropertyDetailsDialog
+                property={contactForDetails as Property}
+                isOpen={isDetailsOpen}
+                setIsOpen={setIsDetailsOpen}
+            />
+        )}
+
     </div>
   );
 }
