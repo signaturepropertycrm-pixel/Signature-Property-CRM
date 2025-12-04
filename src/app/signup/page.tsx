@@ -27,11 +27,12 @@ import {
 } from '@/components/ui/form';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileProvider, useProfile } from '@/context/profile-context';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Your name is required.'),
@@ -49,7 +50,9 @@ function SignupPageContent() {
   const { toast } = useToast();
   const { setProfile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showAgencyName, setShowAgencyName] = useState(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(formSchema),
@@ -60,6 +63,93 @@ function SignupPageContent() {
       password: '',
     },
   });
+
+  const handleGoogleSignUp = async () => {
+      setIsGoogleLoading(true);
+      try {
+          if (!auth || !firestore) {
+              throw new Error('Auth or Firestore service is not available.');
+          }
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          const user = result.user;
+          const additionalInfo = getAdditionalUserInfo(result);
+
+          if (additionalInfo?.isNewUser) {
+              const agencyId = user.uid;
+              const batch = writeBatch(firestore);
+
+              const userDocRef = doc(firestore, 'users', user.uid);
+              batch.set(userDocRef, {
+                  id: user.uid,
+                  name: user.displayName,
+                  email: user.email,
+                  role: 'Admin',
+                  agency_id: agencyId,
+                  createdAt: serverTimestamp(),
+              });
+
+              const agencyDocRef = doc(firestore, 'agencies', agencyId);
+              batch.set(agencyDocRef, {
+                  id: agencyId,
+                  agencyName: `${user.displayName}'s Agency`,
+                  ownerId: user.uid,
+                  name: user.displayName,
+                  createdAt: serverTimestamp(),
+                  avatar: user.photoURL,
+              });
+
+              const teamMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', user.uid);
+              batch.set(teamMemberRef, {
+                  id: user.uid,
+                  name: user.displayName,
+                  email: user.email,
+                  role: 'Admin',
+                  status: 'Active',
+                  createdAt: serverTimestamp(),
+                  avatar: user.photoURL,
+              });
+
+              await batch.commit();
+
+              const newProfileData = {
+                  id: user.uid,
+                  name: user.displayName || '',
+                  agencyName: `${user.displayName}'s Agency`,
+                  email: user.email || '',
+                  phone: '',
+                  role: 'Admin' as const,
+                  agency_id: agencyId,
+                  user_id: user.uid,
+                  avatar: user.photoURL || '',
+              };
+              setProfile(newProfileData);
+          } else {
+            // Existing user, just fetch their profile
+            const userDocRef = doc(firestore, 'users', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+                // Profile will be loaded by the main layout's context provider
+            }
+          }
+
+          toast({
+              title: 'Successfully Signed In!',
+              description: additionalInfo?.isNewUser ? 'Your new agency account has been created.' : 'Welcome back!',
+          });
+          router.push('/overview');
+
+      } catch (error: any) {
+          console.error('Google Sign-Up Error:', error);
+          toast({
+              variant: 'destructive',
+              title: 'Google Sign-Up Failed',
+              description: 'Could not sign up with Google. Please try again.',
+          });
+      } finally {
+          setIsGoogleLoading(false);
+      }
+  };
 
   const onSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
@@ -172,6 +262,44 @@ function SignupPageContent() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={handleGoogleSignUp}
+                  disabled={isGoogleLoading || isLoading}
+                >
+                  {isGoogleLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      aria-hidden="true"
+                      focusable="false"
+                      data-prefix="fab"
+                      data-icon="google"
+                      role="img"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 488 512"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M488 261.8C488 403.3 381.5 512 244 512 111.8 512 0 400.2 0 264.8S111.8 17.6 244 17.6c78.2 0 128.8 30.7 172.4 69.3l-59.8 58.6C324.2 119.8 291.6 98.4 244 98.4c-83.8 0-146.4 65.5-146.4 166.4s62.6 166.4 146.4 166.4c97.2 0 130.3-72.8 134.7-109.8H244v-73.4h239.3c5.1 26.6 7.7 54.5 7.7 85.4z"
+                      ></path>
+                    </svg>
+                  )}
+                  Sign up with Google
+                </Button>
+
+                <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                    </div>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="name"
@@ -257,7 +385,7 @@ function SignupPageContent() {
                 <Button
                   type="submit"
                   className="w-full h-12 text-base font-bold mt-4 glowing-btn"
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading}
                 >
                   {isLoading && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -291,5 +419,7 @@ export default function SignupPage() {
         </FirebaseClientProvider>
     );
 }
+
+    
 
     

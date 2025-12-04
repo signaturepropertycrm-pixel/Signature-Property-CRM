@@ -484,7 +484,8 @@
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "anonymous",
+      "google.com"
     ]
   },
   "firestore": {
@@ -637,3 +638,4 @@
     "reasoning": "The Firestore data structure is designed to support a real estate CRM application focusing on properties, buyers, team management, and related functionalities. The design prioritizes security, scalability, and ease of debugging, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). \n\nAuthorization Independence is achieved through denormalization. For example, the `properties` subcollection under `/users/{userId}` includes the `members` map which defines the roles of different users. This eliminates the need for `get()` calls in security rules to check parent document properties, enabling atomic operations.\n\nStructural Segregation is applied by using dedicated collections for different data types, each with homogeneous security requirements. For example, properties created by different users are segregated under their respective user document, enhancing security and simplifying rules.\n\nAccess Modeling uses hierarchical paths for user-owned data. Properties, Buyers, FollowUps, and Appointments are stored under each user's document, establishing clear ownership and simplifying security rules. Membership Maps (`members` field) are utilized for collaborative data access, allowing multiple users to have specific roles (e.g., Admin, Agent, Viewer) within a property or buyer record. Global roles are managed through the `/roles_admin/{uid}` collection, where the existence of a document indicates admin privileges.\n\nQAPs (Rules are not Filters) are supported by structural segregation and the membership model. List operations can be secured based on the path and the `members` map, ensuring that only authorized users can access the data without filtering based on document content.\n\nExplicit State Modeling is encouraged by using a dedicated `status` field in entities like `Property` and `Buyer`, rather than relying on multiple booleans or timestamps to infer the state. This makes the data model more predictable and easier to reason about.\n\nRadical Consistency is maintained through strict naming conventions for fields (e.g., always using `ownerId` for ownership) and descriptive wildcards (e.g., `{propertyId}` instead of `{id}`)."
   }
 }
+    
