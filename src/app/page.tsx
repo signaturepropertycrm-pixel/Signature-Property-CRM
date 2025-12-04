@@ -161,7 +161,7 @@ export default function LandingPage() {
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Close More Deals, Faster" 
+                        sentence="Close More Deals,Faster" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
