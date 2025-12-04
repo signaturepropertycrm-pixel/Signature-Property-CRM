@@ -533,7 +533,7 @@ export default function BuyersPage() {
                 name: name || 'N/A',
                 phone: formatPhoneNumber(number || '', '+92'),
                 country_code: '+92',
-                email: email || undefined,
+                email: email || '',
                 status: (status as BuyerStatus) || 'New',
                 area_preference: area || undefined,
                 city: city || undefined,
