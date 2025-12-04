@@ -4,9 +4,12 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Home } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Home, Moon, Sun } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 // Placeholder data - replace with real data or fetch from an API
 const plans = [
@@ -95,9 +98,23 @@ const testimonials = [
 
 
 export default function LandingPage() {
+  const { setTheme, theme } = useTheme();
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setHeaderScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
     <div className="bg-background text-foreground animate-fade-in">
-        <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-lg">
+        <header className={cn("sticky top-0 z-50 w-full border-b transition-colors duration-300", headerScrolled ? "bg-card/80 backdrop-blur-lg border-border" : "bg-transparent border-transparent")}>
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center gap-2 font-bold text-lg font-headline text-primary">
                     <Home />
@@ -109,6 +126,11 @@ export default function LandingPage() {
                     <Link href="#testimonials" className="transition-colors hover:text-primary">Testimonials</Link>
                 </nav>
                 <div className="flex items-center gap-2">
+                     <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="rounded-full">
+                        <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                        <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                        <span className="sr-only">Toggle theme</span>
+                    </Button>
                      <Button variant="ghost" asChild>
                         <Link href="/login">Login</Link>
                     </Button>
