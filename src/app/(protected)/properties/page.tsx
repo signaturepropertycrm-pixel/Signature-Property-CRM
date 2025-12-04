@@ -591,8 +591,8 @@ export default function PropertiesPage() {
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
-            const [size_value, size_unit] = size.split(' ');
-            const [demand_amount_str, demand_unit_str] = demand.split(' ');
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : [undefined, undefined];
+            const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : [undefined, undefined];
             
             const parseOptionalNumber = (val: string | undefined): number | null => {
                 if (!val || val.trim() === '') return null;
@@ -602,13 +602,15 @@ export default function PropertiesPage() {
 
             newProperty = {
                 serial_no: `P-${totalSaleProperties + newCount + 1}`,
-                auto_title: `${size} ${property_type} in ${area}`,
+                auto_title: `${size || 'N/A'} ${property_type || ''} in ${area || ''}`.trim(),
                 property_type: property_type as PropertyType,
-                area, address, city,
-                size_value: parseFloat(size_value),
-                size_unit: size_unit as SizeUnit,
-                demand_amount: parseFloat(demand_amount_str),
-                demand_unit: demand_unit_str.endsWith('Cr') ? 'Crore' : 'Lacs',
+                area: area || '',
+                address: address || '', 
+                city: city || '',
+                size_value: size_value_str ? parseFloat(size_value_str) : 0,
+                size_unit: (size_unit_str as SizeUnit) || 'Marla',
+                demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
+                demand_unit: demand_unit_str?.endsWith('Cr') ? 'Crore' : 'Lacs',
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
                 country_code: '+92',
@@ -617,7 +619,7 @@ export default function PropertiesPage() {
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
-                is_recorded: video_recorded.toLowerCase() === 'yes',
+                is_recorded: video_recorded?.toLowerCase() === 'yes',
                 video_links: { tiktok, youtube, instagram, facebook, other },
                 road_size_ft: parseOptionalNumber(road_size_ft),
                 storey: storey || undefined,
@@ -627,9 +629,9 @@ export default function PropertiesPage() {
                 length_ft: parseOptionalNumber(length_ft),
                 documents: documents || undefined,
                 meters: {
-                    electricity: utilities.includes('Electricity'),
-                    gas: utilities.includes('Gas'),
-                    water: utilities.includes('Water'),
+                    electricity: utilities?.includes('Electricity'),
+                    gas: utilities?.includes('Gas'),
+                    water: utilities?.includes('Water'),
                 },
             };
         } else { // Rent import
@@ -639,17 +641,19 @@ export default function PropertiesPage() {
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
-            const [size_value, size_unit] = size.split(' ');
-            const [demand_amount_str, demand_unit_str] = rent.split(' ');
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : [undefined, undefined];
+            const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [undefined, undefined];
 
             newProperty = {
                 serial_no: `RP-${totalRentProperties + newCount + 1}`,
-                auto_title: `${size} ${property_type} for rent in ${area}`,
+                auto_title: `${size || 'N/A'} ${property_type || ''} for rent in ${area || ''}`.trim(),
                 property_type: property_type as PropertyType,
-                area, address, city,
-                size_value: parseFloat(size_value),
-                size_unit: size_unit as SizeUnit,
-                demand_amount: parseFloat(demand_amount_str),
+                area: area || '',
+                address: address || '', 
+                city: city || '',
+                size_value: size_value_str ? parseFloat(size_value_str) : 0,
+                size_unit: (size_unit_str as SizeUnit) || 'Marla',
+                demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
                 demand_unit: 'Thousand', // Rent is always in thousands for now
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
@@ -659,13 +663,13 @@ export default function PropertiesPage() {
                 created_at: new Date().toISOString(),
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
-                is_recorded: video_recorded.toLowerCase() === 'yes',
+                is_recorded: video_recorded?.toLowerCase() === 'yes',
                 video_links: { tiktok, youtube, instagram, facebook, other },
                 storey: storey || undefined,
                 meters: {
-                    electricity: utilities.includes('Electricity'),
-                    gas: utilities.includes('Gas'),
-                    water: utilities.includes('Water'),
+                    electricity: utilities?.includes('Electricity'),
+                    gas: utilities?.includes('Gas'),
+                    water: utilities?.includes('Water'),
                 },
             };
         }
@@ -1116,5 +1120,6 @@ export default function PropertiesPage() {
     
 
     
+
 
 
