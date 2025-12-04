@@ -11,15 +11,29 @@ import {
   CheckCircle,
   CalendarPlus,
   ArrowRight,
+  Trash2,
 } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { Activity } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, writeBatch } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const getActionIcon = (action: string) => {
   if (action.includes('added a new property')) return <FilePlus className="h-4 w-4" />;
@@ -34,6 +48,7 @@ const getActionIcon = (action: string) => {
 export default function ActivitiesPage() {
   const firestore = useFirestore();
   const { profile } = useProfile();
+  const { toast } = useToast();
 
   const activitiesQuery = useMemoFirebase(() => {
     if (!profile.agency_id) return null;
@@ -49,15 +64,58 @@ export default function ActivitiesPage() {
   
   const sortedActivities = activities; // Already sorted by query
 
+  const handleClearActivities = async () => {
+    if (!profile.agency_id) {
+        toast({ title: 'Error', description: 'Agency ID not found.', variant: 'destructive'});
+        return;
+    }
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const querySnapshot = await getDocs(activityLogRef);
+    const batch = writeBatch(firestore);
+    querySnapshot.forEach(doc => batch.delete(doc.ref));
+    
+    try {
+        await batch.commit();
+        toast({ title: 'Activity Log Cleared', description: 'All activity records have been deleted.' });
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not clear activity log.', variant: 'destructive'});
+        console.error("Error clearing activities: ", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Recent Activities
-        </h1>
-        <p className="text-muted-foreground">
-          A log of all major actions taken within the last 7 days.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">
+            Recent Activities
+            </h1>
+            <p className="text-muted-foreground">
+            A log of all major actions taken within the last 7 days.
+            </p>
+        </div>
+        {profile.role === 'Admin' && (
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={!activities || activities.length === 0}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear All
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all activity logs. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleClearActivities}>Confirm & Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        )}
       </div>
 
       <Card>
