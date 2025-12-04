@@ -6,6 +6,7 @@ import { Providers } from './providers';
 export const metadata: Metadata = {
   title: 'SignatureCRM',
   description: 'The ultimate real-estate CRM.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
