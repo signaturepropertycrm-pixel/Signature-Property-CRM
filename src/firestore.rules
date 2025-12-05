@@ -5,21 +5,25 @@ function isSuperAdmin() {
   return request.auth.token.email == 'usmansagheer444@gmail.com';
 }
 
+function isAgencyMember(agencyId) {
+    return exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid));
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /{path=**}/teamMembers/{memberId} {
-      allow list: if request.auth != null;
-      allow read, write: if isSuperAdmin() || request.auth.uid == memberId;
+    match /agencies/{agencyId} {
+       allow read: if request.auth.uid == agencyId || isAgencyMember(agencyId);
+       allow write: if isSuperAdmin() || request.auth.uid == agencyId;
+    }
+    
+    // This rule allows any authenticated member of an agency to read/write to its subcollections.
+    match /agencies/{agencyId}/{subcollection}/{documentId} {
+      allow read, write: if isAgencyMember(agencyId);
     }
 
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
-    }
-
-    match /agencies/{agencyId} {
-       allow read: if request.auth.uid == agencyId;
-       allow write: if isSuperAdmin() || request.auth.uid == agencyId;
     }
 
      match /agents/{agentId} {
@@ -30,15 +34,5 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
       allow create: if request.auth != null;
     }
-
-    // Fallback rules
-    match /{path=**} {
-      allow read, write: if request.auth != null && path.size() % 2 == 1;
-    }
-
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
   }
 }
-
