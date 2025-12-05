@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,11 @@ export function useIsMobile() {
   const [isMobile, setIsMobile] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Ensure this code runs only on the client
+    if (typeof window === 'undefined') {
+        return;
+    }
+
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };

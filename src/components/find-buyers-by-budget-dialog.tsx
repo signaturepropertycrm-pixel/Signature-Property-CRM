@@ -37,9 +37,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check } from 'lucide-react';
+import { Download, Share2, Check, Phone, Wallet, Home } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Badge } from './ui/badge';
 
 interface FindBuyersByBudgetDialogProps {
   isOpen: boolean;
@@ -67,6 +70,7 @@ export function FindBuyersByBudgetDialog({
   const [isShareMode, setIsShareMode] = useState(false);
   const { toast } = useToast();
   const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!isOpen) {
@@ -157,6 +161,92 @@ export function FindBuyersByBudgetDialog({
     setShareStatus(prev => ({ ...prev, [buyerId]: confirmed ? 'shared' : 'idle' }));
   };
 
+  const renderCards = () => (
+    <div className="p-4 space-y-4">
+      {foundBuyers.map((buyer, index) => (
+        <Card key={buyer.id}>
+          <CardHeader>
+            <CardTitle className="flex justify-between items-start">
+              <span>{index + 1}. {buyer.name}</span>
+              <Badge variant="outline">{buyer.serial_no}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {buyer.phone}</div>
+            <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /> {formatBuyerBudget(buyer)}</div>
+            <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> {buyer.area_preference || 'N/A'}</div>
+          </CardContent>
+          {isShareMode && (
+            <CardFooter className="justify-end">
+              {shareStatus[buyer.id] === 'idle' && (
+                <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                  <Share2 className="mr-2 h-4 w-4" /> Share
+                </Button>
+              )}
+              {shareStatus[buyer.id] === 'confirming' && (
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
+                  <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
+                </div>
+              )}
+              {shareStatus[buyer.id] === 'shared' && (
+                <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
+                  <Check className="h-5 w-5" /> Shared
+                </div>
+              )}
+            </CardFooter>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderTable = () => (
+      <Table>
+          <TableHeader>
+              <TableRow>
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Budget</TableHead>
+                  <TableHead>Area</TableHead>
+                  {isShareMode && <TableHead className="text-right">Action</TableHead>}
+              </TableRow>
+          </TableHeader>
+          <TableBody>
+              {foundBuyers.map((buyer, index) => (
+                  <TableRow key={buyer.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{buyer.name}</TableCell>
+                      <TableCell>{buyer.phone}</TableCell>
+                      <TableCell>{formatBuyerBudget(buyer)}</TableCell>
+                      <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
+                      {isShareMode && (
+                        <TableCell className="text-right">
+                          {shareStatus[buyer.id] === 'idle' && (
+                            <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                              <Share2 className="mr-2 h-4 w-4" /> Share
+                            </Button>
+                          )}
+                          {shareStatus[buyer.id] === 'confirming' && (
+                            <div className="flex gap-2 justify-end">
+                              <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
+                              <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
+                            </div>
+                          )}
+                          {shareStatus[buyer.id] === 'shared' && (
+                            <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
+                              <Check className="h-5 w-5" /> Shared
+                            </div>
+                          )}
+                        </TableCell>
+                      )}
+                  </TableRow>
+              ))}
+          </TableBody>
+      </Table>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-3xl">
@@ -223,49 +313,7 @@ export function FindBuyersByBudgetDialog({
           <div className="mt-6 space-y-4">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
             <ScrollArea className="h-64 border rounded-md">
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-12">#</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Budget</TableHead>
-                            <TableHead>Area</TableHead>
-                            {isShareMode && <TableHead className="text-right">Action</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {foundBuyers.map((buyer, index) => (
-                            <TableRow key={buyer.id}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>{buyer.name}</TableCell>
-                                <TableCell>{buyer.phone}</TableCell>
-                                <TableCell>{formatBuyerBudget(buyer)}</TableCell>
-                                <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
-                                {isShareMode && (
-                                  <TableCell className="text-right">
-                                    {shareStatus[buyer.id] === 'idle' && (
-                                      <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
-                                        <Share2 className="mr-2 h-4 w-4" /> Share
-                                      </Button>
-                                    )}
-                                    {shareStatus[buyer.id] === 'confirming' && (
-                                      <div className="flex gap-2 justify-end">
-                                        <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
-                                        <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
-                                      </div>
-                                    )}
-                                    {shareStatus[buyer.id] === 'shared' && (
-                                      <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
-                                        <Check className="h-5 w-5" /> Shared
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                )}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                 </Table>
+                {isMobile ? renderCards() : renderTable()}
             </ScrollArea>
              <div className="flex justify-between items-center gap-2 pt-2">
                 <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download List</Button>
