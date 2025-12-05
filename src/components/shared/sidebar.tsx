@@ -100,7 +100,6 @@ const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
   { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin'] },
-  { href: '/super-admin', label: 'Super Admin', icon: <ShieldCheck />, roles: ['SuperAdmin'] } // Special Role
 ];
 
 
@@ -140,6 +139,11 @@ export function AppSidebar() {
 
   const renderMenuItem = (item: any) => {
     const isSuperAdmin = profile.email === 'demo_admin@signaturecrm.test';
+    
+    // Hide SuperAdmin link from UI
+    if (item.href === '/super-admin') {
+      return null;
+    }
     
     // Role check
     if (!item.roles.includes(profile.role) && !(item.roles.includes('SuperAdmin') && isSuperAdmin)) {
