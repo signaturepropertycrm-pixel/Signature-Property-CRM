@@ -15,7 +15,7 @@ import { Buyer, Property, RecommendedProperty } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Share2, Sparkles, RefreshCw } from 'lucide-react';
+import { Share2, Sparkles, RefreshCw, Video } from 'lucide-react';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
@@ -23,6 +23,10 @@ import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cn } from '@/lib/utils';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+
+type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
 
 
 interface PropertyRecommenderDialogProps {
@@ -107,42 +111,41 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
     return { ...property, matchScore: finalScore, matchReasons: reasons };
 };
 
-export function PropertyRecommenderDialog({
-  buyer,
-  properties,
-  isOpen,
-  setIsOpen,
-}: PropertyRecommenderDialogProps) {
+const RecommendedPropertyCard = ({ property, buyer }: { property: RecommendedProperty, buyer: Buyer }) => {
     const { currency } = useCurrency();
     const { toast } = useToast();
-    const [refreshKey, setRefreshKey] = useState(0);
+    const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({});
 
-    const handleRefresh = useCallback(() => {
-        setRefreshKey(prev => prev + 1);
-        toast({ title: "Recommendations Refreshed", description: "The property list has been updated." });
-    }, [toast]);
+    const availableLinks = useMemo(() => {
+        if (!property.is_recorded || !property.video_links) return [];
+        return (Object.keys(property.video_links) as VideoLinkPlatform[]).filter(key => !!property.video_links![key]);
+    }, [property]);
 
+    useEffect(() => {
+        // Pre-select all available links when component mounts or property changes
+        const initialSelected: Record<VideoLinkPlatform, boolean> = {};
+        availableLinks.forEach(link => initialSelected[link] = true);
+        setSelectedLinks(initialSelected);
+    }, [availableLinks]);
 
-    const recommendedProperties = useMemo(() => {
-        if (!buyer || !properties) return [];
+    const handleLinkSelectionChange = (platform: VideoLinkPlatform) => {
+        setSelectedLinks(prev => ({ ...prev, [platform]: !prev[platform] }));
+    };
 
-        return properties
-            .map(prop => calculateMatchScore(buyer, prop))
-            .filter((p): p is RecommendedProperty => p !== null)
-            .sort((a, b) => b.matchScore - a.matchScore);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [buyer, properties, refreshKey]);
-
-    const handleShare = (property: RecommendedProperty) => {
+    const handleShare = () => {
         const buyerPhone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
         let message = '';
 
-        const videoLinks = property.video_links ? Object.entries(property.video_links)
-            .filter(([_, link]) => link)
-            .map(([platform, link]) => `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}`)
-            .join('\n') : '';
+        const linksToShare = Object.entries(selectedLinks)
+            .filter(([_, isSelected]) => isSelected)
+            .map(([platform]) => {
+                const link = property.video_links?.[platform as VideoLinkPlatform];
+                return link ? `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}` : null;
+            })
+            .filter(Boolean)
+            .join('\n');
 
-        const videoLinksSection = videoLinks ? `\n*Video Links:*\n${videoLinks}` : '';
+        const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
     
         if (buyer.listing_type === 'For Rent') {
             const demand = `${property.demand_amount}${property.demand_unit === 'Thousand' ? 'K' : ` ${property.demand_unit}`}`;
@@ -210,6 +213,87 @@ ${utilities || 'N/A'}
     };
 
     return (
+        <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h4 className="font-bold">{property.auto_title}</h4>
+                    <p className="text-sm text-muted-foreground">{property.address}</p>
+                </div>
+                <Badge variant="secondary">{formatCurrency(formatUnit(property.demand_amount, property.demand_unit), currency)}</Badge>
+            </div>
+            <div className="flex items-center gap-4 mt-4">
+                <div className="w-24 text-center">
+                    <p className="text-xs text-muted-foreground">Match Score</p>
+                    <p className="text-2xl font-bold" style={{ color: `hsl(var(--${getScoreColor(property.matchScore).replace('bg-','')}-foreground))` }}>{property.matchScore}%</p>
+                </div>
+                <div className="flex-1">
+                    <Progress value={property.matchScore} className="h-3" indicatorClassName={getScoreColor(property.matchScore)} />
+                    <div className="text-xs text-muted-foreground mt-1 space-x-2">
+                        {property.matchReasons.map(reason => (
+                            <span key={reason}>&#x2022; {reason}</span>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {availableLinks.length > 0 && (
+                <div className="mt-4 pt-3 border-t">
+                    <Label className="font-semibold flex items-center gap-2 mb-2"><Video className="h-4 w-4" /> Include Video Links</Label>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {availableLinks.map(platform => (
+                            <div key={platform} className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id={`${property.id}-${platform}`}
+                                    checked={selectedLinks[platform]}
+                                    onCheckedChange={() => handleLinkSelectionChange(platform)}
+                                />
+                                <Label htmlFor={`${property.id}-${platform}`} className="text-sm font-normal capitalize cursor-pointer">
+                                    {platform}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="text-right mt-3">
+                <Button size="sm" variant="outline" onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share via WhatsApp
+                </Button>
+            </div>
+        </div>
+    );
+};
+
+
+export function PropertyRecommenderDialog({
+  buyer,
+  properties,
+  isOpen,
+  setIsOpen,
+}: PropertyRecommenderDialogProps) {
+    
+    const { toast } = useToast();
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const handleRefresh = useCallback(() => {
+        setRefreshKey(prev => prev + 1);
+        toast({ title: "Recommendations Refreshed", description: "The property list has been updated." });
+    }, [toast]);
+
+
+    const recommendedProperties = useMemo(() => {
+        if (!buyer || !properties) return [];
+
+        return properties
+            .map(prop => calculateMatchScore(buyer, prop))
+            .filter((p): p is RecommendedProperty => p !== null)
+            .sort((a, b) => b.matchScore - a.matchScore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [buyer, properties, refreshKey]);
+
+    return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
@@ -232,35 +316,7 @@ ${utilities || 'N/A'}
                     <div className="space-y-4 py-4">
                         {recommendedProperties.length > 0 ? (
                             recommendedProperties.map(prop => (
-                                <div key={prop.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h4 className="font-bold">{prop.auto_title}</h4>
-                                            <p className="text-sm text-muted-foreground">{prop.address}</p>
-                                        </div>
-                                        <Badge variant="secondary">{formatCurrency(formatUnit(prop.demand_amount, prop.demand_unit), currency)}</Badge>
-                                    </div>
-                                    <div className="flex items-center gap-4 mt-4">
-                                        <div className="w-24 text-center">
-                                            <p className="text-xs text-muted-foreground">Match Score</p>
-                                            <p className="text-2xl font-bold" style={{ color: `hsl(var(--${getScoreColor(prop.matchScore).replace('bg-','')}-foreground))` }}>{prop.matchScore}%</p>
-                                        </div>
-                                        <div className="flex-1">
-                                            <Progress value={prop.matchScore} className="h-3" indicatorClassName={getScoreColor(prop.matchScore)} />
-                                            <div className="text-xs text-muted-foreground mt-1 space-x-2">
-                                                {prop.matchReasons.map(reason => (
-                                                    <span key={reason}>&#x2022; {reason}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="text-right mt-3">
-                                        <Button size="sm" variant="outline" onClick={() => handleShare(prop)}>
-                                            <Share2 className="mr-2 h-4 w-4" />
-                                            Share via WhatsApp
-                                        </Button>
-                                    </div>
-                                </div>
+                                <RecommendedPropertyCard key={prop.id} property={prop} buyer={buyer} />
                             ))
                         ) : (
                             <div className="text-center py-10 text-muted-foreground">
@@ -291,7 +347,4 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
-
-
-
 
