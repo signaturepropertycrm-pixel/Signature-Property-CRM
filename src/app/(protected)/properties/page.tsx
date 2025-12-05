@@ -722,18 +722,17 @@ export default function PropertiesPage() {
     setImportType(null); // Reset after import
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+        setSelectedProperties(paginatedProperties.map(p => p.id));
+    } else {
+        setSelectedProperties([]);
+    }
+  };
 
   const renderTable = (properties: Property[]) => {
     if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
-    
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            setSelectedProperties(paginatedProperties.map(p => p.id));
-        } else {
-            setSelectedProperties([]);
-        }
-    };
     
     return (
       <Table>
@@ -1006,21 +1005,33 @@ export default function PropertiesPage() {
               </div>
               <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                   {isMobile && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full sm:w-auto">
-                                {statusFilterFromURL ? propertyStatuses.find(s => s.value === statusFilterFromURL)?.label : 'All (Sale)'}
-                                <ChevronDown className="ml-2 h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            {propertyStatuses.map(status => (
-                                <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
-                                    {status.label}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex w-full items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="flex-1">
+                                    {statusFilterFromURL ? propertyStatuses.find(s => s.value === statusFilterFromURL)?.label : 'All (Sale)'}
+                                    <ChevronDown className="ml-2 h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {propertyStatuses.map(status => (
+                                    <DropdownMenuItem key={status.value} onSelect={() => handleStatusChange(status.value)}>
+                                        {status.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="select-all-mobile"
+                                checked={paginatedProperties.length > 0 && selectedProperties.length === paginatedProperties.length}
+                                onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                            />
+                            <Label htmlFor="select-all-mobile" className="text-sm font-medium leading-none">
+                                All
+                            </Label>
+                        </div>
+                    </div>
                   )}
                   {(profile.role === 'Admin' || profile.role === 'Editor') && (
                       <>
@@ -1252,6 +1263,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 

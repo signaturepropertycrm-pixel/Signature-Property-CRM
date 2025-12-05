@@ -651,17 +651,17 @@ export default function BuyersPage() {
         setImportType(null);
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedBuyers(paginatedBuyers.map(b => b.id));
+        } else {
+            setSelectedBuyers([]);
+        }
+    };
+
     const renderTable = (buyers: Buyer[]) => {
         if (isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
         if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
-
-        const handleSelectAll = (checked: boolean) => {
-            if (checked) {
-                setSelectedBuyers(paginatedBuyers.map(b => b.id));
-            } else {
-                setSelectedBuyers([]);
-            }
-        };
         
         return (
             <Table>
@@ -1071,22 +1071,37 @@ export default function BuyersPage() {
                             </TabsList>
                         </Tabs>
                         {isMobile && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="ml-auto">
-                                        {activeStatusFilter}
-                                        <ChevronDown className="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
-                                    {buyerStatuses.map(status => (
-                                        <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
-                                            {status}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                             <div className="flex items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="ml-auto">
+                                            {activeStatusFilter}
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
+                                        {buyerStatuses.map(status => (
+                                            <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
+                                                {status}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id="select-all-mobile"
+                                        checked={paginatedBuyers.length > 0 && selectedBuyers.length === paginatedBuyers.length}
+                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                    />
+                                    <label
+                                        htmlFor="select-all-mobile"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                        Select All
+                                    </label>
+                                </div>
+                             </div>
                         )}
                     </div>
                     <Tabs value={activeTab} onValueChange={handleTabChange}>
