@@ -35,6 +35,7 @@ import {
   X,
   Menu,
   Gem,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -99,6 +100,7 @@ const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
   { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin'] },
+  { href: '/super-admin', label: 'Super Admin', icon: <ShieldCheck />, roles: ['SuperAdmin'] } // Special Role
 ];
 
 
@@ -133,11 +135,14 @@ export function AppSidebar() {
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/overview', '/properties', '/buyers', '/team'].includes(item.href) &&
-      item.roles.includes(profile.role)
+      (item.roles.includes(profile.role) || (item.roles.includes('SuperAdmin') && profile.email === 'demo_admin@signaturecrm.test'))
   );
 
   const renderMenuItem = (item: any) => {
-    if (!item.roles.includes(profile.role)) {
+    const isSuperAdmin = profile.email === 'demo_admin@signaturecrm.test';
+    
+    // Role check
+    if (!item.roles.includes(profile.role) && !(item.roles.includes('SuperAdmin') && isSuperAdmin)) {
       return null;
     }
 

@@ -1,11 +1,13 @@
 
 rules_version = '2';
+
+function isSuperAdmin() {
+  return request.auth.token.email == 'demo_admin@signaturecrm.test';
+}
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ✅ This rule allows reading from the 'teamMembers' collection group
-    // when querying by 'email' and 'status'. This also enables the required
-    // composite index for the notifications query.
     match /{path=**}/teamMembers/{memberId} {
       allow list: if request.query.email == request.auth.token.email
                   && request.query.status == 'Pending';
@@ -16,11 +18,17 @@ service cloud.firestore {
     }
 
     match /agencies/{agencyId} {
-       allow read, write: if request.auth.uid == agencyId;
+       allow read: if request.auth.uid == agencyId;
+       allow write: if isSuperAdmin() || request.auth.uid == agencyId;
     }
 
      match /agents/{agentId} {
        allow read, write: if request.auth.uid == agentId;
+    }
+
+    match /upgradeRequests/{requestId} {
+      allow read, write: if isSuperAdmin();
+      allow create: if request.auth != null;
     }
 
     // Fallback rules
