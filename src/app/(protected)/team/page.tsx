@@ -124,7 +124,6 @@ export default function TeamPage() {
                 {sortedTeamMembers.map(member => {
                     const config = roleConfig[member.role] || roleConfig.Agent;
                     const isOwner = member.id === profile.user_id;
-                    const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
                     
                     return (
                         <TableRow key={member.id || member.email} onClick={() => handleCardClick(member)} className='cursor-pointer'>
@@ -138,7 +137,7 @@ export default function TeamPage() {
                             </TableCell>
                             <TableCell><Badge variant="outline" className={config.color}>{config.icon} {member.role}</Badge></TableCell>
                             <TableCell>
-                                <Badge variant={'default'} className={'bg-green-600/80'}>{member.status || 'Active'}</Badge>
+                                <Badge variant={'default'} className={member.status === 'Pending' ? 'bg-amber-500/80' : 'bg-green-600/80'}>{member.status || 'Active'}</Badge>
                             </TableCell>
                             <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
@@ -175,7 +174,6 @@ export default function TeamPage() {
         {sortedTeamMembers.map(member => {
             const config = roleConfig[member.role] || roleConfig.Agent;
             const isOwner = member.id === profile.user_id;
-            const stats = memberStats[member.id] || { assignedBuyers: 0, soldProperties: 0 };
 
             return (
                 <Card 
@@ -211,7 +209,7 @@ export default function TeamPage() {
                     </CardContent>
                     <CardFooter className="border-t p-2">
                         <div className="text-center w-full">
-                           <Badge variant={'default'} className={'bg-green-600/80'}>{member.status || 'Active'}</Badge>
+                           <Badge variant={'default'} className={member.status === 'Pending' ? 'bg-amber-500/80' : 'bg-green-600/80'}>{member.status || 'Active'}</Badge>
                         </div>
                     </CardFooter>
                 </Card>
@@ -282,5 +280,3 @@ export default function TeamPage() {
         </>
     );
 }
-
-    
