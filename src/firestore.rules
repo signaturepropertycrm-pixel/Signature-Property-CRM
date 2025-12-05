@@ -9,8 +9,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /{path=**}/teamMembers/{memberId} {
-      allow list: if request.query.email == request.auth.token.email
-                  && request.query.status == 'Pending';
+      allow list: if request.auth != null;
+      allow read, write: if isSuperAdmin() || request.auth.uid == memberId;
     }
 
     match /users/{userId} {
@@ -41,3 +41,4 @@ service cloud.firestore {
     }
   }
 }
+

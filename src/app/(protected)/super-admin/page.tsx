@@ -156,7 +156,7 @@ export default function SuperAdminPage() {
                                      <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" size="icon" disabled={actionLoading === req.id}>
-                                                {actionLoading === req.id && newStatus === 'rejected' ? <Loader2 className="animate-spin" /> : <X className="h-4 w-4" />}
+                                                <X className="h-4 w-4" />
                                             </Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
@@ -175,7 +175,7 @@ export default function SuperAdminPage() {
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="default" size="icon" disabled={actionLoading === req.id} className="bg-green-600 hover:bg-green-700">
-                                                {actionLoading === req.id && newStatus === 'approved' ? <Loader2 className="animate-spin" /> : <Check className="h-4 w-4" />}
+                                                <Check className="h-4 w-4" />
                                             </Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
@@ -206,3 +206,4 @@ export default function SuperAdminPage() {
     </div>
   );
 }
+
