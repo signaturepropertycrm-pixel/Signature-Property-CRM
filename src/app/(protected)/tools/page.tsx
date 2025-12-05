@@ -16,7 +16,7 @@ const tools = [
     {
         title: 'Find By Budget',
         description: 'Find buyers by budget to quickly match them with properties you want to sell fast.',
-        href: '/tools/deal-tracker',
+        href: '/tools/find-by-budget',
         icon: <DollarSign className="h-8 w-8 text-primary" />,
     },
     {

@@ -88,7 +88,7 @@ const mainMenuItems = [
     roles: ['Admin'],
     subItems: [
         { href: '/tools/list-generator', label: 'List Generator' },
-        { href: '/tools/deal-tracker', label: 'Find By Budget' },
+        { href: '/tools/find-by-budget', label: 'Find By Budget' },
         { href: '/tools/post-generator', label: 'Post Generator' },
     ]
   },

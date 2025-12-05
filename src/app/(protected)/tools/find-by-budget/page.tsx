@@ -31,7 +31,7 @@ import { Download, Share2, Check, Phone, Wallet, Home, DollarSign } from 'lucide
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -74,7 +74,10 @@ export default function FindByBudgetPage() {
   const { profile } = useProfile();
   const firestore = useFirestore();
 
-  const buyersQuery = useMemoFirebase(() => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null), [profile.agency_id, firestore]);
+  const buyersQuery = useMemoFirebase(
+    () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null),
+    [profile.agency_id, firestore]
+  );
   const { data: buyers, isLoading } = useCollection<Buyer>(buyersQuery);
 
   const form = useForm<FormValues>({
