@@ -88,7 +88,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Define restricted paths for each role
-  const agentForbiddenPaths = ['/team', '/upgrade', '/tools'];
+  const agentForbiddenPaths = ['/team', '/upgrade', '/tools', '/analytics', '/super-admin'];
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
@@ -97,6 +97,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       isAllowed = false;
   }
   
+  if (profile.role !== 'Admin' && pathname.startsWith('/super-admin')) {
+      isAllowed = false;
+      message = "You do not have permission to view this page.";
+  }
+
+
   if (!isAllowed) {
       return (
          <div className="flex h-screen w-full items-center justify-center p-4">
