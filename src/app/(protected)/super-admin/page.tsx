@@ -88,7 +88,7 @@ export default function SuperAdminPage() {
         )
     }
 
-    if (profile.email !== 'demo_admin@signaturecrm.test') {
+    if (profile.email !== 'usmansagheer444@gmail.com') {
         return (
             <div className="flex h-full items-center justify-center">
                  <Card className="max-w-md text-center">

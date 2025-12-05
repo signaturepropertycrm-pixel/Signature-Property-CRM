@@ -2,7 +2,7 @@
 rules_version = '2';
 
 function isSuperAdmin() {
-  return request.auth.token.email == 'demo_admin@signaturecrm.test';
+  return request.auth.token.email == 'usmansagheer444@gmail.com';
 }
 
 service cloud.firestore {
