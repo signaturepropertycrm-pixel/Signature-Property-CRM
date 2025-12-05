@@ -33,8 +33,11 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit } from '@/lib/types';
-import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
+import { Download, Share2 } from 'lucide-react';
+import { Textarea } from './ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 interface FindBuyersByBudgetDialogProps {
   isOpen: boolean;
@@ -57,6 +60,9 @@ export function FindBuyersByBudgetDialog({
 }: FindBuyersByBudgetDialogProps) {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
   const { currency } = useCurrency();
+  const [propertyMessage, setPropertyMessage] = useState('');
+  const [isShareMode, setIsShareMode] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -94,11 +100,44 @@ export function FindBuyersByBudgetDialog({
     });
 
     setFoundBuyers(filtered);
+    setIsShareMode(false);
   }
+
+  const handleDownload = () => {
+    const headers = ['Name', 'Phone', 'Budget', 'Area Preference'];
+    const csvContent = [
+      headers.join(','),
+      ...foundBuyers.map(b => {
+          const row = [
+            `"${b.name}"`,
+            `"${b.phone}"`,
+            `"${formatBuyerBudget(b).replace(/,/g, '')}"`,
+            `"${b.area_preference || 'N/A'}"`
+          ];
+          return row.join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `budget-buyers-${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  const handleShareToBuyer = (buyer: Buyer) => {
+    const phone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
+    const encodedMessage = encodeURIComponent(propertyMessage);
+    window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
+    toast({ title: 'Redirecting to WhatsApp...', description: `Preparing message for ${buyer.name}`});
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Find Buyers by Budget</DialogTitle>
           <DialogDescription>
@@ -159,7 +198,7 @@ export function FindBuyersByBudgetDialog({
           </form>
         </Form>
         {foundBuyers.length > 0 && (
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 space-y-4">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
             <ScrollArea className="h-64 border rounded-md">
                  <Table>
@@ -168,6 +207,8 @@ export function FindBuyersByBudgetDialog({
                             <TableHead>Name</TableHead>
                             <TableHead>Phone</TableHead>
                             <TableHead>Budget</TableHead>
+                            <TableHead>Area</TableHead>
+                            {isShareMode && <TableHead className="text-right">Action</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -176,14 +217,51 @@ export function FindBuyersByBudgetDialog({
                                 <TableCell>{buyer.name}</TableCell>
                                 <TableCell>{buyer.phone}</TableCell>
                                 <TableCell>{formatBuyerBudget(buyer)}</TableCell>
+                                <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
+                                {isShareMode && (
+                                  <TableCell className="text-right">
+                                    <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                                      <Share2 className="mr-2 h-4 w-4" />
+                                      Share
+                                    </Button>
+                                  </TableCell>
+                                )}
                             </TableRow>
                         ))}
                     </TableBody>
                  </Table>
             </ScrollArea>
+             <div className="flex justify-between items-center gap-2 pt-2">
+                <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download List</Button>
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button><Share2 className="mr-2 h-4 w-4"/> Share Property to List</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Share Property Details</DialogTitle>
+                            <DialogDescription>Paste the property details you want to share with the found buyers.</DialogDescription>
+                        </DialogHeader>
+                        <Textarea 
+                            value={propertyMessage}
+                            onChange={(e) => setPropertyMessage(e.target.value)}
+                            rows={10}
+                            placeholder="Paste property details here..."
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                             <DialogClose asChild>
+                                <Button onClick={() => setIsShareMode(true)}>Set Message</Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
           </div>
         )}
-        <DialogFooter>
+        <DialogFooter className="border-t pt-4">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Close
           </Button>
