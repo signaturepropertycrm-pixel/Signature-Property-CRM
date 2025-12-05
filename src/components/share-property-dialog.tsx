@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Property } from '@/lib/types';
-import { Copy, Share2, Check } from 'lucide-react';
+import { Copy, Share2, Check, Video } from 'lucide-react';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+import { Separator } from './ui/separator';
 
 interface SharePropertyDialogProps {
     property: Property;
@@ -23,8 +26,24 @@ interface SharePropertyDialogProps {
     mode: 'copy' | 'share';
 }
 
-const generateSimpleShareableText = (property: Property) => {
+type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
+
+const generateShareableText = (property: Property, selectedLinks: Record<VideoLinkPlatform, boolean> = {}) => {
     if (!property) return { forCustomer: '', forAgent: '' };
+
+    const formatLink = (platform: string, link: string) => {
+        const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+        return `${platformName}: ${link}`;
+    }
+
+    const linksToShare = Object.entries(selectedLinks)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([platform]) => {
+            const link = property.video_links?.[platform as VideoLinkPlatform];
+            return link ? formatLink(platform, link) : null;
+        })
+        .filter(Boolean)
+        .join('\n');
 
     const details = {
         serialNo: `Serial No: ${property.serial_no}`,
@@ -38,7 +57,8 @@ const generateSimpleShareableText = (property: Property) => {
         address: `Full Address: ${property.address}`,
         ownerNumber: `Owner Number: ${property.owner_number}`,
         potentialRent: property.potential_rent_amount ? `- Potential Rent: ${property.potential_rent_amount}K` : '- Potential Rent: N/A',
-        documents: `Documents: ${property.documents || 'N/A'}`
+        documents: `Documents: ${property.documents || 'N/A'}`,
+        videoLinks: linksToShare ? `\n*Video Links:*\n${linksToShare}` : null
     };
 
     const utilities = [
@@ -47,8 +67,7 @@ const generateSimpleShareableText = (property: Property) => {
         property.meters?.water && '*- Water*'
     ].filter(Boolean).join('\n') || 'No utilities listed.';
 
-    // Customer Text
-    const customerTextParts = [
+    const baseCustomerParts = [
         '*PROPERTY DETAILS 🏡*',
         details.serialNo,
         details.area,
@@ -65,10 +84,10 @@ const generateSimpleShareableText = (property: Property) => {
         '\n*Documents:*',
         details.documents,
     ];
-    const forCustomer = customerTextParts.filter(Boolean).join('\n');
+    if (details.videoLinks) baseCustomerParts.push(details.videoLinks);
+    const forCustomer = baseCustomerParts.filter(Boolean).join('\n');
 
-    // Agent Text
-    const agentTextParts = [
+    const baseAgentParts = [
         '*PROPERTY DETAILS 🏡*',
         details.serialNo,
         details.area,
@@ -87,7 +106,8 @@ const generateSimpleShareableText = (property: Property) => {
         '\n*Documents:*',
         details.documents,
     ];
-    const forAgent = agentTextParts.filter(Boolean).join('\n');
+    if (details.videoLinks) baseAgentParts.push(details.videoLinks);
+    const forAgent = baseAgentParts.filter(Boolean).join('\n');
 
     return { forCustomer, forAgent };
 };
@@ -104,16 +124,45 @@ export function SharePropertyDialog({
   const [customerText, setCustomerText] = useState('');
   const [agentText, setAgentText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({
+      tiktok: false, youtube: false, instagram: false, facebook: false, other: false
+  });
+
+  const availableLinks = useMemo(() => {
+    if (!property.is_recorded || !property.video_links) return [];
+    return (Object.keys(property.video_links) as VideoLinkPlatform[]).filter(key => !!property.video_links![key]);
+  }, [property]);
 
   useEffect(() => {
     if (isOpen && property) {
         setLoading(true);
-        const { forCustomer, forAgent } = generateSimpleShareableText(property);
+        // Pre-select all available links by default
+        const initialSelected: Record<VideoLinkPlatform, boolean> = {
+             tiktok: !!property.video_links?.tiktok,
+             youtube: !!property.video_links?.youtube,
+             instagram: !!property.video_links?.instagram,
+             facebook: !!property.video_links?.facebook,
+             other: !!property.video_links?.other
+        };
+        setSelectedLinks(initialSelected);
+        const { forCustomer, forAgent } = generateShareableText(property, initialSelected);
         setCustomerText(forCustomer);
         setAgentText(forAgent);
         setLoading(false);
     }
   }, [isOpen, property]);
+
+  useEffect(() => {
+    if (isOpen && property) {
+       const { forCustomer, forAgent } = generateShareableText(property, selectedLinks);
+       setCustomerText(forCustomer);
+       setAgentText(forAgent);
+    }
+  }, [selectedLinks, isOpen, property]);
+
+  const handleLinkSelectionChange = (platform: VideoLinkPlatform) => {
+      setSelectedLinks(prev => ({ ...prev, [platform]: !prev[platform] }));
+  };
 
 
   const handleCopy = (text: string, type: 'customer' | 'agent') => {
@@ -141,6 +190,29 @@ export function SharePropertyDialog({
             {mode === 'copy' ? 'Copy Details' : 'Share Property'}: {property.auto_title}
           </DialogTitle>
         </DialogHeader>
+
+          {availableLinks.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <Label className="font-semibold flex items-center gap-2"><Video /> Include Video Links</Label>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    {availableLinks.map(platform => (
+                        <div key={platform} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={`link-${platform}`}
+                                checked={selectedLinks[platform]}
+                                onCheckedChange={() => handleLinkSelectionChange(platform)}
+                            />
+                            <Label htmlFor={`link-${platform}`} className="text-sm font-normal capitalize cursor-pointer">
+                                {platform}
+                            </Label>
+                        </div>
+                    ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <Tabs defaultValue="customer">
             <TabsList className="grid w-full grid-cols-2">
