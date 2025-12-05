@@ -1,10 +1,17 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users to read/write to the avatars folder
+    // Allow authenticated users to read/write to their own avatar folder
     match /avatars/{agencyId}/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Allow authenticated users to upload their upgrade receipts
+    match /upgrade_receipts/{agencyId}/{fileName} {
+      allow write: if request.auth != null && request.auth.uid == resource.metadata.ownerId;
+      allow read: if request.auth != null; // Or more restrictive if needed
     }
   }
 }

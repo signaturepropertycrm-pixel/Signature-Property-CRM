@@ -18,6 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Input } from './ui/input';
 import Image from 'next/image';
+import { useProfile } from '@/context/profile-context';
+import { useFirestore } from '@/firebase/provider';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export type Plan = {
     name: string;
@@ -38,6 +42,8 @@ interface PaymentDialogProps {
 type PaymentMethod = 'jazzcash' | 'bank' | 'card';
 
 export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: PaymentDialogProps) {
+  const { profile } = useProfile();
+  const firestore = useFirestore();
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -67,7 +73,7 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
     setReceiptFile(null);
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!transactionId || !receiptFile) {
         toast({
             title: "Information Missing",
@@ -77,12 +83,45 @@ export function PaymentDialog({ isOpen, setIsOpen, plan, billingCycle }: Payment
         return;
     }
 
+    if (!profile.agency_id) {
+        toast({ title: "Error", description: "Agency information not found.", variant: "destructive"});
+        return;
+    }
+
     setIsSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
-        setIsSubmitting(false);
+    
+    try {
+        // 1. Upload receipt to Firebase Storage
+        const storage = getStorage();
+        const filePath = `upgrade_receipts/${profile.agency_id}/${new Date().toISOString()}_${receiptFile.name}`;
+        const receiptStorageRef = storageRef(storage, filePath);
+        const uploadResult = await uploadBytes(receiptStorageRef, receiptFile);
+        const receiptUrl = await getDownloadURL(uploadResult.ref);
+
+        // 2. Create a document in the `upgradeRequests` collection
+        const requestsCollectionRef = collection(firestore, 'upgradeRequests');
+        await addDoc(requestsCollectionRef, {
+            agencyId: profile.agency_id,
+            agencyName: profile.agencyName,
+            requestedPlan: plan.name,
+            billingCycle,
+            amount: price,
+            transactionId,
+            receiptUrl,
+            status: 'pending',
+            createdAt: serverTimestamp(),
+            userId: profile.user_id,
+            userName: profile.name,
+        });
+
         setIsSubmitted(true);
-    }, 2000);
+
+    } catch (error) {
+        console.error("Error submitting upgrade request: ", error);
+        toast({ title: "Submission Failed", description: "Could not submit your request. Please try again.", variant: "destructive"});
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const renderInitialScreen = () => (

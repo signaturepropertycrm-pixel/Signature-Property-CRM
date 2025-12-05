@@ -233,5 +233,21 @@ export interface ActivityNotification extends BaseNotification {
 
 export type Notification = InvitationNotification | AppointmentNotification | FollowUpNotification | ActivityNotification;
 
-
+export type UpgradeRequest = {
+    id: string;
+    agencyId: string;
+    agencyName: string;
+    userId: string;
+    userName: string;
+    requestedPlan: PlanName;
+    billingCycle: 'monthly' | 'yearly';
+    amount: number;
+    transactionId: string;
+    receiptUrl: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: any; // Firestore timestamp
+    reviewedAt?: any;
+    reviewerId?: string;
+};
   
+
