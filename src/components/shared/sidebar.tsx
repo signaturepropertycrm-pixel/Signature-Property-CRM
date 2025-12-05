@@ -50,6 +50,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 import { useUI } from '@/app/(protected)/layout';
+import { motion } from 'framer-motion';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
@@ -293,8 +294,8 @@ export function AppSidebar() {
                                   return (
                                     <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
                                         <div 
-                                            className="flex items-center gap-3"
-                                            style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
+                                            className="flex items-center gap-3 animate-fade-in-up"
+                                            style={{ animationDelay: `${''}${index * 0.05}s` }}
                                         >
                                             <span className="font-semibold text-slate-800 dark:text-white shadow-lg">{finalLabel}</span>
                                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
