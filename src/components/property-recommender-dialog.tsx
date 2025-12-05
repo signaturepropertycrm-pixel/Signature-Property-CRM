@@ -136,6 +136,13 @@ export function PropertyRecommenderDialog({
     const handleShare = (property: RecommendedProperty) => {
         const buyerPhone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
         let message = '';
+
+        const videoLinks = property.video_links ? Object.entries(property.video_links)
+            .filter(([_, link]) => link)
+            .map(([platform, link]) => `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}`)
+            .join('\n') : '';
+
+        const videoLinksSection = videoLinks ? `\n*Video Links:*\n${videoLinks}` : '';
     
         if (buyer.listing_type === 'For Rent') {
             const demand = `${property.demand_amount}${property.demand_unit === 'Thousand' ? 'K' : ` ${property.demand_unit}`}`;
@@ -156,7 +163,7 @@ Portion: ${property.storey || 'N/A'}
 Demand: ${demand}
 
 *Utilities:*
-${utilities || 'N/A'}`;
+${utilities || 'N/A'}${videoLinksSection}`;
     
         } else {
             const demand = `${property.demand_amount} ${property.demand_unit}`;
@@ -186,7 +193,7 @@ Demand: ${demand}
 *Utilities:*
 ${utilities || 'N/A'}
 
-*Documents:* ${property.documents || 'N/A'}`;
+*Documents:* ${property.documents || 'N/A'}${videoLinksSection}`;
         }
     
         const whatsappUrl = `https://wa.me/${buyerPhone}?text=${encodeURIComponent(message)}`;
@@ -284,6 +291,7 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
+
 
 
 
