@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,6 +40,7 @@ import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { FindBuyersByBudgetDialog } from '@/components/find-buyers-by-budget-dialog';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -132,6 +133,7 @@ export default function BuyersPage() {
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
     const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
     const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
+    const [isFindBuyersOpen, setIsFindBuyersOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
@@ -937,6 +939,9 @@ export default function BuyersPage() {
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     )}
+                                    <Button variant="outline" className="rounded-full" onClick={() => setIsFindBuyersOpen(true)}>
+                                        <DollarSign className="mr-2 h-4 w-4" />Find by Budget
+                                    </Button>
                                     <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <Button variant="outline" className="rounded-full">
@@ -1146,6 +1151,13 @@ export default function BuyersPage() {
                     setIsOpen={setIsRecommenderOpen}
                     buyer={buyerForRecommendation}
                     properties={allProperties}
+                />
+            )}
+             {allBuyers && (
+                <FindBuyersByBudgetDialog
+                    isOpen={isFindBuyersOpen}
+                    setIsOpen={setIsFindBuyersOpen}
+                    buyers={allBuyers}
                 />
             )}
             
