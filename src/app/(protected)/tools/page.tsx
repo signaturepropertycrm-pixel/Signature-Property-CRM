@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowRight, ClipboardList, Rocket } from 'lucide-react';
+import { ArrowRight, ClipboardList, Rocket, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +12,12 @@ const tools = [
         description: 'Generate a shareable, formatted list of available properties for other dealers and clients.',
         href: '/tools/list-generator',
         icon: <ClipboardList className="h-8 w-8 text-primary" />,
+    },
+    {
+        title: 'Deal Tracker',
+        description: 'Find buyers by budget to quickly match them with properties you want to sell fast.',
+        href: '/tools/deal-tracker',
+        icon: <DollarSign className="h-8 w-8 text-primary" />,
     },
     {
         title: 'Post Generator',

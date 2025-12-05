@@ -2,16 +2,6 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-  DialogClose,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,16 +27,30 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check, Phone, Wallet, Home } from 'lucide-react';
-import { Textarea } from './ui/textarea';
+import { Download, Share2, Check, Phone, Wallet, Home, DollarSign } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from './ui/badge';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection } from 'firebase/firestore';
+import { useFirestore } from '@/firebase/provider';
+import { useProfile } from '@/context/profile-context';
+import { useMemoFirebase } from '@/firebase/hooks';
+
 
 interface FindBuyersByBudgetDialogProps {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
   buyers: Buyer[];
 }
 
@@ -59,11 +63,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 type ShareStatus = 'idle' | 'confirming' | 'shared';
 
-export function FindBuyersByBudgetDialog({
-  isOpen,
-  setIsOpen,
-  buyers,
-}: FindBuyersByBudgetDialogProps) {
+export default function DealTrackerPage() {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
   const { currency } = useCurrency();
   const [propertyMessage, setPropertyMessage] = useState('');
@@ -71,14 +71,11 @@ export function FindBuyersByBudgetDialog({
   const { toast } = useToast();
   const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
   const isMobile = useIsMobile();
+  const { profile } = useProfile();
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (!isOpen) {
-        setFoundBuyers([]);
-        setIsShareMode(false);
-        setShareStatus({});
-    }
-  }, [isOpen]);
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: buyers, isLoading } = useCollection<Buyer>(buyersQuery);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -104,7 +101,7 @@ export function FindBuyersByBudgetDialog({
     const searchMin = formatUnit(values.minBudget, values.budgetUnit);
     const searchMax = formatUnit(values.maxBudget, values.budgetUnit);
 
-    const filtered = buyers.filter(buyer => {
+    const filtered = (buyers || []).filter(buyer => {
         if (!buyer.budget_min_amount || !buyer.budget_max_amount || !buyer.budget_min_unit || !buyer.budget_max_unit) {
             return false;
         }
@@ -248,69 +245,75 @@ export function FindBuyersByBudgetDialog({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-headline">Find Buyers by Budget</DialogTitle>
-          <DialogDescription>
-            Enter a budget range to find matching buyer leads.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex items-end gap-2">
-              <FormField
-                control={form.control}
-                name="minBudget"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Min Budget</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="maxBudget"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Max Budget</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="budgetUnit"
-                render={({ field }) => (
-                  <FormItem className="w-28">
-                    <FormLabel>Unit</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><DollarSign/> Deal Tracker</h1>
+        <p className="text-muted-foreground">
+          Find buyers by budget to quickly match them with properties.
+        </p>
+      </div>
+      <Card>
+        <CardHeader>
+            <CardTitle>Find Buyers</CardTitle>
+            <CardDescription>Enter a budget range to find matching buyer leads.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="flex items-end gap-2">
+                <FormField
+                    control={form.control}
+                    name="minBudget"
+                    render={({ field }) => (
+                    <FormItem className="flex-1">
+                        <FormLabel>Min Budget</FormLabel>
                         <FormControl>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
+                        <Input type="number" {...field} />
                         </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Lacs">Lacs</SelectItem>
-                            <SelectItem value="Crore">Crore</SelectItem>
-                        </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <Button type="submit">Search</Button>
-            </div>
-          </form>
-        </Form>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="maxBudget"
+                    render={({ field }) => (
+                    <FormItem className="flex-1">
+                        <FormLabel>Max Budget</FormLabel>
+                        <FormControl>
+                        <Input type="number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="budgetUnit"
+                    render={({ field }) => (
+                    <FormItem className="w-28">
+                        <FormLabel>Unit</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Lacs">Lacs</SelectItem>
+                                <SelectItem value="Crore">Crore</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit">Search</Button>
+                </div>
+            </form>
+            </Form>
+        </CardContent>
         {foundBuyers.length > 0 && (
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-4 p-6 border-t">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
             <ScrollArea className="h-64 border rounded-md">
                 {isMobile ? renderCards() : renderTable()}
@@ -345,12 +348,8 @@ export function FindBuyersByBudgetDialog({
             </div>
           </div>
         )}
-        <DialogFooter className="border-t pt-4">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </Card>
+    </div>
   );
 }
+
