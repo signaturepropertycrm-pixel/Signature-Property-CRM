@@ -40,6 +40,7 @@ import {
   MessageSquare,
   ChevronRight,
   ChevronLeft,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -192,6 +193,7 @@ export default function PropertiesPage() {
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
 
   const currentPlan = (profile?.planName as PlanName) || 'Basic';
@@ -273,24 +275,39 @@ export default function PropertiesPage() {
 
     switch (currentStatusFilter) {
         case 'All (Sale)':
-            return baseProperties.filter(p => !p.is_for_rent);
+            baseProperties = baseProperties.filter(p => !p.is_for_rent);
+            break;
         case 'Available (Sale)':
-            return baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
+            baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
+            break;
         case 'Sold':
-            return baseProperties.filter(p => p.status === 'Sold' && !p.is_for_rent);
+            baseProperties = baseProperties.filter(p => p.status === 'Sold' && !p.is_for_rent);
+            break;
         case 'All (Rent)':
-            return baseProperties.filter(p => p.is_for_rent);
+            baseProperties = baseProperties.filter(p => p.is_for_rent);
+            break;
         case 'Available (Rent)':
-             return baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+             baseProperties = baseProperties.filter(p => p.status === 'Available' && p.is_for_rent);
+             break;
         case 'Rent Out':
-            return baseProperties.filter(p => p.status === 'Rent Out');
+            baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
+            break;
         case 'Recorded':
-            return baseProperties.filter(p => p.is_recorded);
+            baseProperties = baseProperties.filter(p => p.is_recorded);
+            break;
         default:
-             return baseProperties.filter(p => !p.is_for_rent);
+             baseProperties = baseProperties.filter(p => !p.is_for_rent);
+             break;
     }
+    
+    // 4. Sorting
+    return baseProperties.sort((a, b) => {
+        const aNum = parseInt(a.serial_no.split('-')[1] || '0', 10);
+        const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
+        return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
+    });
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -744,7 +761,12 @@ export default function PropertiesPage() {
                     onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                 />
             </TableHead>
-            <TableHead className="w-[350px]">Property</TableHead>
+            <TableHead className="w-[350px]">
+                <Button variant="ghost" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
+                    Property
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            </TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Demand</TableHead>
@@ -1263,6 +1285,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 
