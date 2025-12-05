@@ -23,7 +23,6 @@ interface SharePropertyDialogProps {
     property: Property;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    mode: 'copy' | 'share';
 }
 
 type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
@@ -117,7 +116,6 @@ export function SharePropertyDialog({
   property,
   isOpen,
   setIsOpen,
-  mode
 }: SharePropertyDialogProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState<'customer' | 'agent' | null>(null);
@@ -187,7 +185,7 @@ export function SharePropertyDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline">
-            {mode === 'copy' ? 'Copy Details' : 'Share Property'}: {property.auto_title}
+            Share Property: {property.auto_title}
           </DialogTitle>
         </DialogHeader>
 
@@ -227,16 +225,13 @@ export function SharePropertyDialog({
                 disabled={loading}
               />
               <div className="flex gap-2 mt-4">
-                 {mode === 'copy' ? (
-                    <Button className="w-full" onClick={() => handleCopy(customerText, 'customer')} disabled={loading}>
-                        {copied === 'customer' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
-                        {copied === 'customer' ? 'Copied' : 'Copy Text'}
-                    </Button>
-                 ) : (
-                    <Button className="w-full" variant="outline" onClick={() => handleShare(customerText)} disabled={loading}>
-                        <Share2 className="mr-2" /> Share on WhatsApp
-                    </Button>
-                 )}
+                <Button className="w-full" variant="secondary" onClick={() => handleCopy(customerText, 'customer')} disabled={loading}>
+                    {copied === 'customer' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
+                    {copied === 'customer' ? 'Copied' : 'Copy Text'}
+                </Button>
+                <Button className="w-full" onClick={() => handleShare(customerText)} disabled={loading}>
+                    <Share2 className="mr-2" /> Share on WhatsApp
+                </Button>
               </div>
             </TabsContent>
             <TabsContent value="agent">
@@ -247,16 +242,13 @@ export function SharePropertyDialog({
                 disabled={loading}
               />
                <div className="flex gap-2 mt-4">
-                 {mode === 'copy' ? (
-                    <Button className="w-full" onClick={() => handleCopy(agentText, 'agent')} disabled={loading}>
-                        {copied === 'agent' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
-                        {copied === 'agent' ? 'Copied' : 'Copy Text'}
-                    </Button>
-                 ) : (
-                    <Button className="w-full" variant="outline" onClick={() => handleShare(agentText)} disabled={loading}>
-                        <Share2 className="mr-2" /> Share on WhatsApp
-                    </Button>
-                 )}
+                <Button className="w-full" variant="secondary" onClick={() => handleCopy(agentText, 'agent')} disabled={loading}>
+                    {copied === 'agent' ? <Check className="mr-2" /> : <Copy className="mr-2" />}
+                    {copied === 'agent' ? 'Copied' : 'Copy Text'}
+                </Button>
+                <Button className="w-full" onClick={() => handleShare(agentText)} disabled={loading}>
+                    <Share2 className="mr-2" /> Share on WhatsApp
+                </Button>
               </div>
             </TabsContent>
           </Tabs>

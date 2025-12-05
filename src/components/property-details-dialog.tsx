@@ -16,7 +16,7 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
-import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare, Phone } from 'lucide-react';
+import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare, Phone, Share2 } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
@@ -44,7 +44,6 @@ export function PropertyDetailsDialog({
 }: PropertyDetailsDialogProps) {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isVideoLinksOpen, setIsVideoLinksOpen] = useState(false);
-  const [shareMode, setShareMode] = useState<'copy' | 'share'>('share');
   const { currency } = useCurrency();
 
 
@@ -56,8 +55,7 @@ export function PropertyDetailsDialog({
     return formatCurrency(valueInPkr, currency);
   }
 
-  const handleOpenShareDialog = (mode: 'copy' | 'share') => {
-    setShareMode(mode);
+  const handleOpenShareDialog = () => {
     setIsShareOpen(true);
   }
 
@@ -185,15 +183,14 @@ export function PropertyDetailsDialog({
                 )}
             </div>
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => handleOpenShareDialog('copy')}>
-                  Copy
+                <Button onClick={handleOpenShareDialog}>
+                    <Share2 className="mr-2" /> Share / Copy
                 </Button>
-                <Button onClick={() => handleOpenShareDialog('share')}>Share</Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <SharePropertyDialog property={property} isOpen={isShareOpen} setIsOpen={setIsShareOpen} mode={shareMode} />
+      <SharePropertyDialog property={property} isOpen={isShareOpen} setIsOpen={setIsShareOpen} />
       {hasVideoLinks && (
         <VideoLinksDialog 
             property={property}
