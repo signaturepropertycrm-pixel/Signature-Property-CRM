@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2 } from 'lucide-react';
+import { Download, Share2, Check } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
@@ -54,6 +54,7 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+type ShareStatus = 'idle' | 'confirming' | 'shared';
 
 export function FindBuyersByBudgetDialog({
   isOpen,
@@ -65,6 +66,15 @@ export function FindBuyersByBudgetDialog({
   const [propertyMessage, setPropertyMessage] = useState('');
   const [isShareMode, setIsShareMode] = useState(false);
   const { toast } = useToast();
+  const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
+
+  useEffect(() => {
+    if (!isOpen) {
+        setFoundBuyers([]);
+        setIsShareMode(false);
+        setShareStatus({});
+    }
+  }, [isOpen]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -97,11 +107,16 @@ export function FindBuyersByBudgetDialog({
         const buyerMin = formatUnit(buyer.budget_min_amount, buyer.budget_min_unit);
         const buyerMax = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
 
-        // Check for any overlap between buyer's range and search range
         return Math.max(searchMin, buyerMin) <= Math.min(searchMax, buyerMax);
     });
 
     setFoundBuyers(filtered);
+    // Initialize share status for found buyers
+    const initialStatus: Record<string, ShareStatus> = {};
+    filtered.forEach(buyer => {
+      initialStatus[buyer.id] = 'idle';
+    });
+    setShareStatus(initialStatus);
     setIsShareMode(false);
   }
 
@@ -134,9 +149,14 @@ export function FindBuyersByBudgetDialog({
     const phone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
     const encodedMessage = encodeURIComponent(propertyMessage);
     window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
-    toast({ title: 'Redirecting to WhatsApp...', description: `Preparing message for ${buyer.name}`});
+    toast({ title: 'Redirecting to WhatsApp...', description: `Confirm share for ${buyer.name} upon return.`});
+    setShareStatus(prev => ({...prev, [buyer.id]: 'confirming'}));
   };
   
+  const handleConfirmShare = (buyerId: string, confirmed: boolean) => {
+    setShareStatus(prev => ({ ...prev, [buyerId]: confirmed ? 'shared' : 'idle' }));
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-3xl">
@@ -206,6 +226,7 @@ export function FindBuyersByBudgetDialog({
                  <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-12">#</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Phone</TableHead>
                             <TableHead>Budget</TableHead>
@@ -214,18 +235,31 @@ export function FindBuyersByBudgetDialog({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {foundBuyers.map(buyer => (
+                        {foundBuyers.map((buyer, index) => (
                             <TableRow key={buyer.id}>
+                                <TableCell>{index + 1}</TableCell>
                                 <TableCell>{buyer.name}</TableCell>
                                 <TableCell>{buyer.phone}</TableCell>
                                 <TableCell>{formatBuyerBudget(buyer)}</TableCell>
                                 <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
                                 {isShareMode && (
                                   <TableCell className="text-right">
-                                    <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
-                                      <Share2 className="mr-2 h-4 w-4" />
-                                      Share
-                                    </Button>
+                                    {shareStatus[buyer.id] === 'idle' && (
+                                      <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                                        <Share2 className="mr-2 h-4 w-4" /> Share
+                                      </Button>
+                                    )}
+                                    {shareStatus[buyer.id] === 'confirming' && (
+                                      <div className="flex gap-2 justify-end">
+                                        <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
+                                        <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
+                                      </div>
+                                    )}
+                                    {shareStatus[buyer.id] === 'shared' && (
+                                      <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
+                                        <Check className="h-5 w-5" /> Shared
+                                      </div>
+                                    )}
                                   </TableCell>
                                 )}
                             </TableRow>
