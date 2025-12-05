@@ -103,7 +103,7 @@ const planLimits = {
 
 
 function formatSize(value: number, unit: string) {
-  return `${value} ${unit}`;
+  return `${''}${value} ${''}${unit}`;
 }
 
 interface Filters {
@@ -266,7 +266,7 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.serialNo && filters.serialNoPrefix !== 'All') {
-        const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
+        const fullSerialNo = `${''}${filters.serialNoPrefix}-${''}${filters.serialNo}`;
         baseProperties = baseProperties.filter(p => p.serial_no === fullSerialNo);
     }
 
@@ -339,7 +339,7 @@ export default function PropertiesPage() {
      if (isLimitReached) {
         toast({
             title: "Property Limit Reached",
-            description: `You have reached your limit of ${limit} properties. Please upgrade your plan to add more.`,
+            description: `You have reached your limit of ${''}${limit} properties. Please upgrade your plan to add more.`,
             variant: "destructive",
         });
         return;
@@ -373,9 +373,9 @@ export default function PropertiesPage() {
   const handleSetAppointment = (prop: Property) => {
     setAppointmentDetails({
       contactType: 'Owner',
-      contactName: `Owner of ${prop.serial_no}`,
+      contactName: `Owner of ${''}${prop.serial_no}`,
       contactSerialNo: prop.serial_no,
-      message: `Regarding property: ${prop.auto_title} (${prop.address})`,
+      message: `Regarding property: ${''}${prop.auto_title} (${''}${prop.address})`,
     });
     setIsAppointmentOpen(true);
   };
@@ -383,7 +383,7 @@ export default function PropertiesPage() {
   const handleWhatsAppChat = (e: React.MouseEvent, prop: Property) => {
     e.stopPropagation();
     const phoneNumber = formatPhoneNumberForWhatsApp(prop.owner_number, prop.country_code);
-    window.open(`https://wa.me/${phoneNumber}`, '_blank');
+    window.open(`https://wa.me/${''}${phoneNumber}`, '_blank');
   };
 
   const handleSaveAppointment = async (appointment: Appointment) => {
@@ -438,7 +438,7 @@ export default function PropertiesPage() {
       agent_commission_unit: null,
       agent_share_percentage: null
     }, { merge: true });
-    toast({ title: 'Property Status Updated', description: `${prop.serial_no} marked as Available again.` });
+    toast({ title: 'Property Status Updated', description: `${''}${prop.serial_no} marked as Available again.` });
   };
 
   const handleDelete = async (property: Property) => {
@@ -462,7 +462,7 @@ export default function PropertiesPage() {
 
     await batch.commit();
     toast({
-        title: `${selectedProperties.length} Properties Moved to Trash`,
+        title: `${''}${selectedProperties.length} Properties Moved to Trash`,
         description: 'You can restore them from the trash page.',
     });
     setSelectedProperties([]);
@@ -490,7 +490,7 @@ export default function PropertiesPage() {
   };
   
   const handleStatusChange = (status: string) => {
-      const url = `${pathname}?status=${encodeURIComponent(status)}`;
+      const url = `${''}${pathname}?status=${''}${encodeURIComponent(status)}`;
       router.push(url);
   };
 
@@ -516,7 +516,7 @@ export default function PropertiesPage() {
     );
 
     if (propertiesToExport.length === 0) {
-      toast({ title: 'No Data', description: `There are no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
+      toast({ title: 'No Data', description: `There are no properties for ${''}${type.toLowerCase()} to export.`, variant: 'destructive' });
       return;
     }
 
@@ -528,7 +528,7 @@ export default function PropertiesPage() {
     const csvContent = [
       headers.join(','),
       ...propertiesToExport.map(p => {
-        const demandValue = p.demand_unit === 'Crore' ? `${p.demand_amount} Cr` : p.demand_unit === 'Lacs' ? `${p.demand_amount} Lacs` : `${p.demand_amount} K`;
+        const demandValue = p.demand_unit === 'Crore' ? `${''}${p.demand_amount} Cr` : p.demand_unit === 'Lacs' ? `${''}${p.demand_amount} Lacs` : `${''}${p.demand_amount} K`;
         const potentialRentValue = p.potential_rent_amount ? formatUnit(p.potential_rent_amount, p.potential_rent_unit || 'Thousand') : '';
         const utilities = [
             p.meters?.electricity && 'Electricity',
@@ -537,49 +537,49 @@ export default function PropertiesPage() {
         ].filter(Boolean).join('/');
         
         const date = new Date(p.created_at);
-        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const formattedDate = `${''}${date.getFullYear()}-${''}${String(date.getMonth() + 1).padStart(2, '0')}-${''}${String(date.getDate()).padStart(2, '0')}`;
         
         const phoneNumber = p.owner_number.replace(p.country_code || '+92', '').replace(/\D/g, '');
 
         const baseRow = [
-                `"${p.serial_no}"`,
-                `"${p.is_recorded ? 'Yes' : 'No'}"`,
-                `"${formattedDate}"`,
-                `"${phoneNumber}"`,
-                `"${p.city}"`,
-                `"${p.area}"`,
-                `"${p.address}"`,
-                `"${p.property_type}"`,
-                `"${p.size_value} ${p.size_unit}"`,
-                `"${p.storey || ''}"`,
-                `"${utilities}"`,
-                `"${p.status}"`
+                `"${''}${p.serial_no}"`,
+                `"${''}${p.is_recorded ? 'Yes' : 'No'}"`,
+                `"${''}${formattedDate}"`,
+                `"${''}${phoneNumber}"`,
+                `"${''}${p.city}"`,
+                `"${''}${p.area}"`,
+                `"${''}${p.address}"`,
+                `"${''}${p.property_type}"`,
+                `"${''}${p.size_value} ${''}${p.size_unit}"`,
+                `"${''}${p.storey || ''}"`,
+                `"${''}${utilities}"`,
+                `"${''}${p.status}"`
             ];
 
         if (type === 'For Sale') {
              return [
                 ...baseRow,
-                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
-                `"${potentialRentValue}"`,
-                `"${p.front_ft || ''}"`,
-                `"${p.length_ft || ''}"`,
-                `"${demandValue}"`,
-                `"${p.documents || ''}"`,
-                `"${p.video_links?.tiktok || ''}"`,
-                `"${p.video_links?.youtube || ''}"`,
-                `"${p.video_links?.instagram || ''}"`,
-                `"${p.video_links?.facebook || ''}"`,
-                `"${p.video_links?.other || ''}"`
+                `"${''}${p.road_size_ft ? `${''}${p.road_size_ft} ft` : ''}"`,
+                `"${''}${potentialRentValue}"`,
+                `"${''}${p.front_ft || ''}"`,
+                `"${''}${p.length_ft || ''}"`,
+                `"${''}${demandValue}"`,
+                `"${''}${p.documents || ''}"`,
+                `"${''}${p.video_links?.tiktok || ''}"`,
+                `"${''}${p.video_links?.youtube || ''}"`,
+                `"${''}${p.video_links?.instagram || ''}"`,
+                `"${''}${p.video_links?.facebook || ''}"`,
+                `"${''}${p.video_links?.other || ''}"`
             ].join(',');
         } else { // For Rent
              return [
                 ...baseRow,
-                `"${demandValue}"`,
-                `"${p.video_links?.tiktok || ''}"`,
-                `"${p.video_links?.youtube || ''}"`,
-                `"${p.video_links?.instagram || ''}"`,
-                `"${p.video_links?.facebook || ''}"`,
-                `"${p.video_links?.other || ''}"`
+                `"${''}${demandValue}"`,
+                `"${''}${p.video_links?.tiktok || ''}"`,
+                `"${''}${p.video_links?.youtube || ''}"`,
+                `"${''}${p.video_links?.instagram || ''}"`,
+                `"${''}${p.video_links?.facebook || ''}"`,
+                `"${''}${p.video_links?.other || ''}"`
             ].join(',');
         }
       })
@@ -589,7 +589,7 @@ export default function PropertiesPage() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `properties-${type.toLowerCase().replace(' ', '-')}-${new Date().toISOString()}.csv`);
+    link.setAttribute('download', `properties-${''}${type.toLowerCase().replace(' ', '-')}-${''}${new Date().toISOString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -635,7 +635,7 @@ export default function PropertiesPage() {
         if (listingTypeToImport === 'For Sale') {
             const [
                 _serial, video_recorded, _date, number, city, area, address, property_type, size, storey, utilities, status,
-                road_size_ft, potential_rent_amount, front_ft, length_ft, demand, documents,
+                road_size_ft, potential_rent, front_ft, length_ft, demand, documents,
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
@@ -648,9 +648,23 @@ export default function PropertiesPage() {
                 return isNaN(parsed) ? null : parsed;
             };
 
+            const potentialRentLower = (potential_rent || '').toLowerCase();
+            let potentialRentAmount: number | null = null;
+            let potentialRentUnit: PriceUnit = 'Thousand';
+
+            if (potentialRentLower.includes('lac')) {
+                potentialRentAmount = parseFloat(potentialRentLower.replace('lac', '').trim()) || null;
+                potentialRentUnit = 'Lacs';
+            } else if (potentialRentLower.includes('cr')) {
+                potentialRentAmount = parseFloat(potentialRentLower.replace('cr', '').trim()) || null;
+                potentialRentUnit = 'Crore';
+            } else {
+                potentialRentAmount = parseOptionalNumber(potential_rent);
+            }
+
             newProperty = {
-                serial_no: `P-${totalSaleProperties + newCount + 1}`,
-                auto_title: `${size || 'N/A'} ${property_type || ''} in ${area || ''}`.trim(),
+                serial_no: `P-${''}${totalSaleProperties + newCount + 1}`,
+                auto_title: `${''}${size || 'N/A'} ${''}${property_type || ''} in ${''}${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
@@ -671,8 +685,8 @@ export default function PropertiesPage() {
                 video_links: { tiktok: tiktok || '', youtube: youtube || '', instagram: instagram || '', facebook: facebook || '', other: other || '' },
                 road_size_ft: parseOptionalNumber(road_size_ft),
                 storey: storey || '',
-                potential_rent_amount: parseOptionalNumber(potential_rent_amount),
-                potential_rent_unit: 'Thousand',
+                potential_rent_amount: potentialRentAmount,
+                potential_rent_unit: potentialRentUnit,
                 front_ft: parseOptionalNumber(front_ft),
                 length_ft: parseOptionalNumber(length_ft),
                 documents: documents || '',
@@ -693,8 +707,8 @@ export default function PropertiesPage() {
             const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
 
             newProperty = {
-                serial_no: `RP-${totalRentProperties + newCount + 1}`,
-                auto_title: `${size || 'N/A'} ${property_type || ''} for rent in ${area || ''}`.trim(),
+                serial_no: `RP-${''}${totalRentProperties + newCount + 1}`,
+                auto_title: `${''}${size || 'N/A'} ${''}${property_type || ''} for rent in ${''}${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
@@ -728,7 +742,7 @@ export default function PropertiesPage() {
       
       try {
         await batch.commit();
-        toast({ title: 'Import Successful', description: `${newCount} new properties have been added.` });
+        toast({ title: 'Import Successful', description: `${''}${newCount} new properties have been added.` });
       } catch (error) {
         console.error(error);
         toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
@@ -790,7 +804,7 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base flex items-center gap-2">
-                    {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                    {prop.auto_title || `${''}${prop.size_value} ${''}${prop.size_unit} ${''}${prop.property_type} in ${''}${prop.area}`}
                     {prop.is_recorded && (
                        <Tooltip>
                         <TooltipTrigger asChild>
@@ -896,7 +910,7 @@ export default function PropertiesPage() {
                         />
                         <div className="flex-1">
                             <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-                            {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                            {prop.auto_title || `${''}${prop.size_value} ${''}${prop.size_unit} ${''}${prop.property_type} in ${''}${prop.area}`}
                             {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
                             </CardTitle>
                             <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
@@ -1285,6 +1299,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 
