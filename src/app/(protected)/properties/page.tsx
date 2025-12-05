@@ -92,6 +92,7 @@ import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { motion } from 'framer-motion';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -103,7 +104,7 @@ const planLimits = {
 
 
 function formatSize(value: number, unit: string) {
-  return `${''}${value} ${''}${unit}`;
+  return `${value} ${unit}`;
 }
 
 interface Filters {
@@ -266,7 +267,7 @@ export default function PropertiesPage() {
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.maxDemand) baseProperties = baseProperties.filter((p) => p.demand_amount <= Number(filters.maxDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
     if (filters.serialNo && filters.serialNoPrefix !== 'All') {
-        const fullSerialNo = `${''}${filters.serialNoPrefix}-${''}${filters.serialNo}`;
+        const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
         baseProperties = baseProperties.filter(p => p.serial_no === fullSerialNo);
     }
 
@@ -339,7 +340,7 @@ export default function PropertiesPage() {
      if (isLimitReached) {
         toast({
             title: "Property Limit Reached",
-            description: `You have reached your limit of ${''}${limit} properties. Please upgrade your plan to add more.`,
+            description: `You have reached your limit of ${limit} properties. Please upgrade your plan to add more.`,
             variant: "destructive",
         });
         return;
@@ -373,9 +374,9 @@ export default function PropertiesPage() {
   const handleSetAppointment = (prop: Property) => {
     setAppointmentDetails({
       contactType: 'Owner',
-      contactName: `Owner of ${''}${prop.serial_no}`,
+      contactName: `Owner of ${prop.serial_no}`,
       contactSerialNo: prop.serial_no,
-      message: `Regarding property: ${''}${prop.auto_title} (${''}${prop.address})`,
+      message: `Regarding property: ${prop.auto_title} (${prop.address})`,
     });
     setIsAppointmentOpen(true);
   };
@@ -383,7 +384,7 @@ export default function PropertiesPage() {
   const handleWhatsAppChat = (e: React.MouseEvent, prop: Property) => {
     e.stopPropagation();
     const phoneNumber = formatPhoneNumberForWhatsApp(prop.owner_number, prop.country_code);
-    window.open(`https://wa.me/${''}${phoneNumber}`, '_blank');
+    window.open(`https://wa.me/${phoneNumber}`, '_blank');
   };
 
   const handleSaveAppointment = async (appointment: Appointment) => {
@@ -438,7 +439,7 @@ export default function PropertiesPage() {
       agent_commission_unit: null,
       agent_share_percentage: null
     }, { merge: true });
-    toast({ title: 'Property Status Updated', description: `${''}${prop.serial_no} marked as Available again.` });
+    toast({ title: 'Property Status Updated', description: `${prop.serial_no} marked as Available again.` });
   };
 
   const handleDelete = async (property: Property) => {
@@ -462,7 +463,7 @@ export default function PropertiesPage() {
 
     await batch.commit();
     toast({
-        title: `${''}${selectedProperties.length} Properties Moved to Trash`,
+        title: `${selectedProperties.length} Properties Moved to Trash`,
         description: 'You can restore them from the trash page.',
     });
     setSelectedProperties([]);
@@ -490,7 +491,7 @@ export default function PropertiesPage() {
   };
   
   const handleStatusChange = (status: string) => {
-      const url = `${''}${pathname}?status=${''}${encodeURIComponent(status)}`;
+      const url = `${pathname}?status=${encodeURIComponent(status)}`;
       router.push(url);
   };
 
@@ -516,7 +517,7 @@ export default function PropertiesPage() {
     );
 
     if (propertiesToExport.length === 0) {
-      toast({ title: 'No Data', description: `There are no properties for ${''}${type.toLowerCase()} to export.`, variant: 'destructive' });
+      toast({ title: 'No Data', description: `There are no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
       return;
     }
 
@@ -528,8 +529,8 @@ export default function PropertiesPage() {
     const csvContent = [
       headers.join(','),
       ...propertiesToExport.map(p => {
-        const demandValue = p.demand_unit === 'Crore' ? `${''}${p.demand_amount} Cr` : p.demand_unit === 'Lacs' ? `${''}${p.demand_amount} Lacs` : `${''}${p.demand_amount} K`;
-        const potentialRentValue = p.potential_rent_amount ? formatUnit(p.potential_rent_amount, p.potential_rent_unit || 'Thousand') : '';
+        const demandValue = p.demand_unit === 'Crore' ? `${p.demand_amount} Cr` : p.demand_unit === 'Lacs' ? `${p.demand_amount} Lacs` : `${p.demand_amount} K`;
+        const potentialRentValue = p.potential_rent_amount ? `${p.potential_rent_amount}${p.potential_rent_unit === 'Thousand' ? 'K' : ` ${p.potential_rent_unit}`}` : '';
         const utilities = [
             p.meters?.electricity && 'Electricity',
             p.meters?.gas && 'Gas',
@@ -537,49 +538,49 @@ export default function PropertiesPage() {
         ].filter(Boolean).join('/');
         
         const date = new Date(p.created_at);
-        const formattedDate = `${''}${date.getFullYear()}-${''}${String(date.getMonth() + 1).padStart(2, '0')}-${''}${String(date.getDate()).padStart(2, '0')}`;
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         
         const phoneNumber = p.owner_number.replace(p.country_code || '+92', '').replace(/\D/g, '');
 
         const baseRow = [
-                `"${''}${p.serial_no}"`,
-                `"${''}${p.is_recorded ? 'Yes' : 'No'}"`,
-                `"${''}${formattedDate}"`,
-                `"${''}${phoneNumber}"`,
-                `"${''}${p.city}"`,
-                `"${''}${p.area}"`,
-                `"${''}${p.address}"`,
-                `"${''}${p.property_type}"`,
-                `"${''}${p.size_value} ${''}${p.size_unit}"`,
-                `"${''}${p.storey || ''}"`,
-                `"${''}${utilities}"`,
-                `"${''}${p.status}"`
+                `"${p.serial_no}"`,
+                `"${p.is_recorded ? 'Yes' : 'No'}"`,
+                `"${formattedDate}"`,
+                `"${phoneNumber}"`,
+                `"${p.city}"`,
+                `"${p.area}"`,
+                `"${p.address}"`,
+                `"${p.property_type}"`,
+                `"${p.size_value} ${p.size_unit}"`,
+                `"${p.storey || ''}"`,
+                `"${utilities}"`,
+                `"${p.status}"`
             ];
 
         if (type === 'For Sale') {
              return [
                 ...baseRow,
-                `"${''}${p.road_size_ft ? `${''}${p.road_size_ft} ft` : ''}"`,
-                `"${''}${potentialRentValue}"`,
-                `"${''}${p.front_ft || ''}"`,
-                `"${''}${p.length_ft || ''}"`,
-                `"${''}${demandValue}"`,
-                `"${''}${p.documents || ''}"`,
-                `"${''}${p.video_links?.tiktok || ''}"`,
-                `"${''}${p.video_links?.youtube || ''}"`,
-                `"${''}${p.video_links?.instagram || ''}"`,
-                `"${''}${p.video_links?.facebook || ''}"`,
-                `"${''}${p.video_links?.other || ''}"`
+                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
+                `"${potentialRentValue}"`,
+                `"${p.front_ft || ''}"`,
+                `"${p.length_ft || ''}"`,
+                `"${demandValue}"`,
+                `"${p.documents || ''}"`,
+                `"${p.video_links?.tiktok || ''}"`,
+                `"${p.video_links?.youtube || ''}"`,
+                `"${p.video_links?.instagram || ''}"`,
+                `"${p.video_links?.facebook || ''}"`,
+                `"${p.video_links?.other || ''}"`
             ].join(',');
         } else { // For Rent
              return [
                 ...baseRow,
-                `"${''}${demandValue}"`,
-                `"${''}${p.video_links?.tiktok || ''}"`,
-                `"${''}${p.video_links?.youtube || ''}"`,
-                `"${''}${p.video_links?.instagram || ''}"`,
-                `"${''}${p.video_links?.facebook || ''}"`,
-                `"${''}${p.video_links?.other || ''}"`
+                `"${demandValue}"`,
+                `"${p.video_links?.tiktok || ''}"`,
+                `"${p.video_links?.youtube || ''}"`,
+                `"${p.video_links?.instagram || ''}"`,
+                `"${p.video_links?.facebook || ''}"`,
+                `"${p.video_links?.other || ''}"`
             ].join(',');
         }
       })
@@ -589,7 +590,7 @@ export default function PropertiesPage() {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `properties-${''}${type.toLowerCase().replace(' ', '-')}-${''}${new Date().toISOString()}.csv`);
+    link.setAttribute('download', `properties-${type.toLowerCase().replace(' ', '-')}-${new Date().toISOString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -663,8 +664,8 @@ export default function PropertiesPage() {
             }
 
             newProperty = {
-                serial_no: `P-${''}${totalSaleProperties + newCount + 1}`,
-                auto_title: `${''}${size || 'N/A'} ${''}${property_type || ''} in ${''}${area || ''}`.trim(),
+                serial_no: `P-${totalSaleProperties + newCount + 1}`,
+                auto_title: `${size || 'N/A'} ${property_type || ''} in ${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
@@ -707,8 +708,8 @@ export default function PropertiesPage() {
             const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
 
             newProperty = {
-                serial_no: `RP-${''}${totalRentProperties + newCount + 1}`,
-                auto_title: `${''}${size || 'N/A'} ${''}${property_type || ''} for rent in ${''}${area || ''}`.trim(),
+                serial_no: `RP-${totalRentProperties + newCount + 1}`,
+                auto_title: `${size || 'N/A'} ${property_type || ''} for rent in ${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
                 address: address || '', 
@@ -742,7 +743,7 @@ export default function PropertiesPage() {
       
       try {
         await batch.commit();
-        toast({ title: 'Import Successful', description: `${''}${newCount} new properties have been added.` });
+        toast({ title: 'Import Successful', description: `${newCount} new properties have been added.` });
       } catch (error) {
         console.error(error);
         toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
@@ -789,8 +790,14 @@ export default function PropertiesPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {properties.map((prop) => (
-            <TableRow key={prop.id} className="hover:bg-accent/50 transition-colors cursor-pointer">
+          {properties.map((prop, index) => (
+            <motion.tr 
+              key={prop.id} 
+              className="hover:bg-accent/50 transition-colors cursor-pointer"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+            >
                <TableCell onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                     checked={selectedProperties.includes(prop.id)}
@@ -804,7 +811,7 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base flex items-center gap-2">
-                    {prop.auto_title || `${''}${prop.size_value} ${''}${prop.size_unit} ${''}${prop.property_type} in ${''}${prop.area}`}
+                    {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
                     {prop.is_recorded && (
                        <Tooltip>
                         <TooltipTrigger asChild>
@@ -882,7 +889,7 @@ export default function PropertiesPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
-            </TableRow>
+            </motion.tr>
           ))}
         </TableBody>
       </Table>
@@ -894,101 +901,108 @@ export default function PropertiesPage() {
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     return (
       <div className="space-y-4">
-        {properties.map((prop) => (
-          <Card key={prop.id}>
-            <CardHeader>
-                <div className="flex justify-between items-start gap-4">
-                    <div className="flex items-start gap-2">
-                         <Checkbox
-                            checked={selectedProperties.includes(prop.id)}
-                            onCheckedChange={(checked) => {
-                                setSelectedProperties(prev =>
-                                    checked ? [...prev, prop.id] : prev.filter(id => id !== prop.id)
-                                );
-                            }}
-                            className="mt-1"
-                        />
-                        <div className="flex-1">
-                            <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
-                            {prop.auto_title || `${''}${prop.size_value} ${''}${prop.size_unit} ${''}${prop.property_type} in ${''}${prop.area}`}
-                            {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
-                            </CardTitle>
-                            <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
-                                <Badge
-                                    variant="default"
-                                    className={cn(
-                                    'font-mono',
-                                    prop.serial_no.startsWith('RP')
-                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
-                                        : 'bg-primary/20 text-primary hover:bg-primary/30'
-                                    )}
-                                >
-                                    {prop.serial_no}
-                                </Badge>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-1 items-end">
-                        <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground')}>
-                            {prop.status}
-                        </Badge>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm">
-              <div className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Type</p><p className="font-medium">{prop.property_type}</p></div></div>
-              <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p></div></div>
-              <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Sheet>
-                <SheetTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                    </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="w-full">
-                    <SheetHeader className="text-left mb-4">
-                        <SheetTitle>Actions for {prop.serial_no}</SheetTitle>
-                    </SheetHeader>
-                    <div className="flex flex-col gap-2">
-                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
-                        <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
-                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
-                        {prop.is_for_rent && prop.status === 'Available' && (
-                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
-                        )}
-                        {prop.is_for_rent && prop.status === 'Rent Out' && (
-                           <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
-                        )}
-                        {prop.status === 'Available' && !prop.is_for_rent && (
-                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
-                        )}
-                        {prop.status === 'Sold' && (
-                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
-                        )}
-                        {(profile.role === 'Admin') && (
-                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
-                        )}
-                        {(profile.role === 'Admin') && (
-                          prop.is_recorded ? (
-                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</Button>
-                          ) : (
-                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
-                          )
-                        )}
-                        {(profile.role !== 'Agent') && (
-                          <>
-                          <Separator />
-                          <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
-                          </>
-                        )}
-                    </div>
-                </SheetContent>
-              </Sheet>
-            </CardFooter>
-          </Card>
+        {properties.map((prop, index) => (
+          <motion.div
+            key={prop.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+          >
+            <Card>
+              <CardHeader>
+                  <div className="flex justify-between items-start gap-4">
+                      <div className="flex items-start gap-2">
+                           <Checkbox
+                              checked={selectedProperties.includes(prop.id)}
+                              onCheckedChange={(checked) => {
+                                  setSelectedProperties(prev =>
+                                      checked ? [...prev, prop.id] : prev.filter(id => id !== prop.id)
+                                  );
+                              }}
+                              className="mt-1"
+                          />
+                          <div className="flex-1">
+                              <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
+                              {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
+                              {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+                              </CardTitle>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
+                                  <Badge
+                                      variant="default"
+                                      className={cn(
+                                      'font-mono',
+                                      prop.serial_no.startsWith('RP')
+                                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                          : 'bg-primary/20 text-primary hover:bg-primary/30'
+                                      )}
+                                  >
+                                      {prop.serial_no}
+                                  </Badge>
+                              </div>
+                          </div>
+                      </div>
+                      <div className="flex flex-col gap-1 items-end">
+                          <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground')}>
+                              {prop.status}
+                          </Badge>
+                      </div>
+                  </div>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2"><Tag className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Type</p><p className="font-medium">{prop.property_type}</p></div></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Size</p><p className="font-medium">{formatSize(prop.size_value, prop.size_unit)}</p></div></div>
+                <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
+              </CardContent>
+              <CardFooter className="flex justify-end">
+                <Sheet>
+                  <SheetTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                      </Button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="w-full">
+                      <SheetHeader className="text-left mb-4">
+                          <SheetTitle>Actions for {prop.serial_no}</SheetTitle>
+                      </SheetHeader>
+                      <div className="flex flex-col gap-2">
+                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
+                          <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
+                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
+                          {prop.is_for_rent && prop.status === 'Available' && (
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
+                          )}
+                          {prop.is_for_rent && prop.status === 'Rent Out' && (
+                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
+                          )}
+                          {prop.status === 'Available' && !prop.is_for_rent && (
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
+                          )}
+                          {prop.status === 'Sold' && (
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
+                          )}
+                          {(profile.role === 'Admin') && (
+                            <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
+                          )}
+                          {(profile.role === 'Admin') && (
+                            prop.is_recorded ? (
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</Button>
+                            ) : (
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
+                            )
+                          )}
+                          {(profile.role !== 'Agent') && (
+                            <>
+                            <Separator />
+                            <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
+                            </>
+                          )}
+                      </div>
+                  </SheetContent>
+                </Sheet>
+              </CardFooter>
+            </Card>
+          </motion.div>
         ))}
       </div>
     );
@@ -1299,6 +1313,7 @@ export default function PropertiesPage() {
     
 
     
+
 
 
 
