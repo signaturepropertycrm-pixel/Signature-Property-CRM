@@ -63,7 +63,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 type ShareStatus = 'idle' | 'confirming' | 'shared';
 
-export default function DealTrackerPage() {
+export default function FindByBudgetPage() {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
   const { currency } = useCurrency();
   const [propertyMessage, setPropertyMessage] = useState('');
@@ -74,7 +74,7 @@ export default function DealTrackerPage() {
   const { profile } = useProfile();
   const firestore = useFirestore();
 
-  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const buyersQuery = useMemoFirebase(() => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null), [profile.agency_id, firestore]);
   const { data: buyers, isLoading } = useCollection<Buyer>(buyersQuery);
 
   const form = useForm<FormValues>({
@@ -180,8 +180,9 @@ export default function DealTrackerPage() {
                   <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
               )}
-              {shareStatus[buyer.id] === 'confirming' && (
+               {shareStatus[buyer.id] === 'confirming' && (
                 <div className="flex gap-2 justify-end">
+                  <span className="text-sm text-muted-foreground">Shared?</span>
                   <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
                   <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
                 </div>
@@ -226,7 +227,8 @@ export default function DealTrackerPage() {
                             </Button>
                           )}
                           {shareStatus[buyer.id] === 'confirming' && (
-                            <div className="flex gap-2 justify-end">
+                             <div className="flex gap-2 justify-end items-center">
+                              <span className="text-sm text-muted-foreground">Shared?</span>
                               <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
                               <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
                             </div>
@@ -247,7 +249,7 @@ export default function DealTrackerPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><DollarSign/> Deal Tracker</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><DollarSign/> Find By Budget</h1>
         <p className="text-muted-foreground">
           Find buyers by budget to quickly match them with properties.
         </p>
@@ -322,7 +324,7 @@ export default function DealTrackerPage() {
                 <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download List</Button>
                  <Dialog>
                     <DialogTrigger asChild>
-                        <Button><Share2 className="mr-2 h-4 w-4"/> Share Property to List</Button>
+                        <Button><Share2 className="mr-2 h-4 w-4"/> Share Detail</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
@@ -352,4 +354,3 @@ export default function DealTrackerPage() {
     </div>
   );
 }
-
