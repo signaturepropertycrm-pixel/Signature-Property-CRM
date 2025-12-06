@@ -97,6 +97,7 @@ function SignupPageContent() {
                   name: user.displayName,
                   createdAt: serverTimestamp(),
                   avatar: user.photoURL,
+                  planName: 'Basic', // Add default plan
               });
 
               const teamMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', user.uid);
@@ -122,6 +123,7 @@ function SignupPageContent() {
                   agency_id: agencyId,
                   user_id: user.uid,
                   avatar: user.photoURL || '',
+                  planName: 'Basic' as const,
               };
               setProfile(newProfileData);
           } else {
@@ -175,6 +177,7 @@ function SignupPageContent() {
             agency_id: agencyId,
             user_id: user.uid,
             avatar: '',
+            planName: 'Basic' as const,
         };
         
         const batch = writeBatch(firestore);
@@ -198,6 +201,7 @@ function SignupPageContent() {
             ownerId: user.uid,
             name: values.name, // Storing the owner's name directly in the agency doc
             createdAt: serverTimestamp(),
+            planName: 'Basic', // Add default plan
         });
 
         // 3. Add the admin as a team member of their own agency
