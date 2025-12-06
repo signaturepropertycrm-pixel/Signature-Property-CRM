@@ -27,7 +27,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check, Phone, Wallet, Home, DollarSign } from 'lucide-react';
+import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -55,9 +55,10 @@ interface FindBuyersByBudgetDialogProps {
 }
 
 const formSchema = z.object({
-  minBudget: z.coerce.number().min(0, 'Minimum budget must be positive'),
-  maxBudget: z.coerce.number().min(0, 'Maximum budget must be positive'),
+  minBudget: z.coerce.number().min(0, 'Minimum budget must be positive').optional(),
+  maxBudget: z.coerce.number().min(0, 'Maximum budget must be positive').optional(),
   budgetUnit: z.enum(['Lacs', 'Crore']).default('Lacs'),
+  area: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -86,6 +87,7 @@ export default function FindByBudgetPage() {
       minBudget: 0,
       maxBudget: 0,
       budgetUnit: 'Lacs',
+      area: '',
     },
   });
   
@@ -101,17 +103,29 @@ export default function FindByBudgetPage() {
   }
 
   function onSubmit(values: FormValues) {
-    const searchMin = formatUnit(values.minBudget, values.budgetUnit);
-    const searchMax = formatUnit(values.maxBudget, values.budgetUnit);
+    if (!values.area && (!values.minBudget || !values.maxBudget)) {
+        toast({ title: 'Invalid Search', description: 'Please provide a budget range or an area to search.', variant: 'destructive'});
+        return;
+    }
+
+    const searchMin = values.minBudget ? formatUnit(values.minBudget, values.budgetUnit) : 0;
+    const searchMax = values.maxBudget ? formatUnit(values.maxBudget, values.budgetUnit) : Infinity;
 
     const filtered = (buyers || []).filter(buyer => {
-        if (!buyer.budget_min_amount || !buyer.budget_max_amount || !buyer.budget_min_unit || !buyer.budget_max_unit) {
-            return false;
+        let budgetMatch = true;
+        if (searchMin > 0 || searchMax < Infinity) {
+            if (!buyer.budget_min_amount || !buyer.budget_max_amount || !buyer.budget_min_unit || !buyer.budget_max_unit) {
+                budgetMatch = false;
+            } else {
+                const buyerMin = formatUnit(buyer.budget_min_amount, buyer.budget_min_unit);
+                const buyerMax = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
+                budgetMatch = Math.max(searchMin, buyerMin) <= Math.min(searchMax, buyerMax);
+            }
         }
-        const buyerMin = formatUnit(buyer.budget_min_amount, buyer.budget_min_unit);
-        const buyerMax = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
+        
+        const areaMatch = !values.area || (buyer.area_preference && buyer.area_preference.toLowerCase().includes(values.area.toLowerCase()));
 
-        return Math.max(searchMin, buyerMin) <= Math.min(searchMax, buyerMax);
+        return budgetMatch && areaMatch;
     });
 
     setFoundBuyers(filtered);
@@ -125,7 +139,7 @@ export default function FindByBudgetPage() {
   }
 
   const handleDownload = () => {
-    const headers = ['Name', 'Phone', 'Budget', 'Area Preference'];
+    const headers = ['Name', 'Phone', 'Budget', 'Area Preference', 'Notes'];
     const csvContent = [
       headers.join(','),
       ...foundBuyers.map(b => {
@@ -133,7 +147,8 @@ export default function FindByBudgetPage() {
             `"${b.name}"`,
             `"${b.phone}"`,
             `"${formatBuyerBudget(b).replace(/,/g, '')}"`,
-            `"${b.area_preference || 'N/A'}"`
+            `"${b.area_preference || 'N/A'}"`,
+            `"${(b.notes || '').replace(/"/g, '""')}"`
           ];
           return row.join(',');
       })
@@ -175,6 +190,7 @@ export default function FindByBudgetPage() {
             <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {buyer.phone}</div>
             <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /> {formatBuyerBudget(buyer)}</div>
             <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> {buyer.area_preference || 'N/A'}</div>
+            <div className="flex items-start gap-2"><FileText className="h-4 w-4 text-muted-foreground mt-1" /> <p className="whitespace-pre-wrap">{buyer.notes || 'No notes.'}</p></div>
           </CardContent>
           {isShareMode && (
             <CardFooter className="justify-end">
@@ -211,6 +227,7 @@ export default function FindByBudgetPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Budget</TableHead>
                   <TableHead>Area</TableHead>
+                  <TableHead>Notes</TableHead>
                   {isShareMode && <TableHead className="text-right">Action</TableHead>}
               </TableRow>
           </TableHeader>
@@ -222,6 +239,7 @@ export default function FindByBudgetPage() {
                       <TableCell>{buyer.phone}</TableCell>
                       <TableCell>{formatBuyerBudget(buyer)}</TableCell>
                       <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
+                      <TableCell className="max-w-xs truncate">{buyer.notes || 'N/A'}</TableCell>
                       {isShareMode && (
                         <TableCell className="text-right">
                           {shareStatus[buyer.id] === 'idle' && (
@@ -254,65 +272,82 @@ export default function FindByBudgetPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><DollarSign/> Find By Budget</h1>
         <p className="text-muted-foreground">
-          Find buyers by budget to quickly match them with properties.
+          Find buyers by budget and area to quickly match them with properties.
         </p>
       </div>
       <Card>
         <CardHeader>
             <CardTitle>Find Buyers</CardTitle>
-            <CardDescription>Enter a budget range to find matching buyer leads.</CardDescription>
+            <CardDescription>Enter a budget range and/or an area to find matching buyer leads.</CardDescription>
         </CardHeader>
         <CardContent>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="flex items-end gap-2">
-                <FormField
-                    control={form.control}
-                    name="minBudget"
-                    render={({ field }) => (
-                    <FormItem className="flex-1">
-                        <FormLabel>Min Budget</FormLabel>
-                        <FormControl>
-                        <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="maxBudget"
-                    render={({ field }) => (
-                    <FormItem className="flex-1">
-                        <FormLabel>Max Budget</FormLabel>
-                        <FormControl>
-                        <Input type="number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="budgetUnit"
-                    render={({ field }) => (
-                    <FormItem className="w-28">
-                        <FormLabel>Unit</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="flex items-end gap-2 lg:col-span-2">
+                    <FormField
+                        control={form.control}
+                        name="minBudget"
+                        render={({ field }) => (
+                        <FormItem className="flex-1">
+                            <FormLabel>Min Budget</FormLabel>
                             <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                            <Input type="number" {...field} />
                             </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Lacs">Lacs</SelectItem>
-                                <SelectItem value="Crore">Crore</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </FormItem>
-                    )}
-                />
-                <Button type="submit">Search</Button>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="maxBudget"
+                        render={({ field }) => (
+                        <FormItem className="flex-1">
+                            <FormLabel>Max Budget</FormLabel>
+                            <FormControl>
+                            <Input type="number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="budgetUnit"
+                        render={({ field }) => (
+                        <FormItem className="w-28">
+                            <FormLabel>Unit</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Lacs">Lacs</SelectItem>
+                                    <SelectItem value="Crore">Crore</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                        )}
+                    />
+                  </div>
+                  <FormField
+                      control={form.control}
+                      name="area"
+                      render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Area Preference</FormLabel>
+                          <FormControl>
+                          <Input {...field} placeholder="e.g. DHA, Bahria" />
+                          </FormControl>
+                          <FormMessage />
+                      </FormItem>
+                      )}
+                  />
+                </div>
+                <div className="flex justify-end">
+                    <Button type="submit">Search</Button>
                 </div>
             </form>
             </Form>
