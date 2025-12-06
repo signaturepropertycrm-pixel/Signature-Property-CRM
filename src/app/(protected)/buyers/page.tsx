@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buyerStatuses } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight, DollarSign, ArrowUpDown } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -138,6 +138,7 @@ export default function BuyersPage() {
     const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBuyerForDetails, setSelectedBuyerForDetails] = useState<Buyer | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.buyers || 0;
@@ -407,8 +408,12 @@ export default function BuyersPage() {
             filtered = filtered.filter(p => p.serial_no === fullSerialNo);
         }
 
-        return filtered;
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter]);
+        return filtered.sort((a, b) => {
+            const aNum = parseInt(a.serial_no.split('-')[1] || '0', 10);
+            const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
+            return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
+        });
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder]);
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
 
@@ -674,7 +679,12 @@ export default function BuyersPage() {
                                 onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                             />
                         </TableHead>
-                        <TableHead>Name</TableHead>
+                        <TableHead>
+                             <Button variant="ghost" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
+                                Name
+                                <ArrowUpDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </TableHead>
                         <TableHead>Area &amp; Type</TableHead>
                         <TableHead>Budget &amp; Size</TableHead>
                         <TableHead>Status</TableHead>
@@ -1199,3 +1209,4 @@ export default function BuyersPage() {
     
 
     
+
