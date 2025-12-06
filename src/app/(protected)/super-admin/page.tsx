@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -87,7 +86,7 @@ export default function SuperAdminPage() {
     const isLoading = isRequestsLoading || areAgenciesLoading;
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
           <ShieldCheck />
