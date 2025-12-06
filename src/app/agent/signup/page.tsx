@@ -99,7 +99,7 @@ function AgentSignupPageContent() {
         title: 'Agent Account Created!',
         description: 'A verification email has been sent. Please verify your email before logging in.',
       });
-      router.push('/agent/login');
+      router.push('/login');
 
     } catch (error: any) {
       console.error('Signup Error:', error);
@@ -215,9 +215,9 @@ function AgentSignupPageContent() {
                   Create Account
                 </Button>
                 <div className="mt-4 text-center text-sm">
-                  Already have an agent account?{' '}
+                  Already have an account?{' '}
                   <Link
-                    href="/agent/login"
+                    href="/login"
                     className="font-semibold text-primary hover:text-primary/80 transition-colors"
                   >
                     Login
