@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -38,7 +39,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import {
   Tooltip,
   TooltipContent,
@@ -136,19 +137,13 @@ export function AppSidebar() {
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/overview', '/properties', '/buyers', '/team'].includes(item.href) &&
-      (item.roles.includes(profile.role) || (item.roles.includes('SuperAdmin') && profile.email === 'demo_admin@signaturecrm.test'))
+      (item.roles.includes(profile.role))
   );
 
   const renderMenuItem = (item: any) => {
-    const isSuperAdmin = profile.email === 'demo_admin@signaturecrm.test';
-    
-    // Hide SuperAdmin link from UI
-    if (item.href === '/super-admin') {
-      return null;
-    }
     
     // Role check
-    if (!item.roles.includes(profile.role) && !(item.roles.includes('SuperAdmin') && isSuperAdmin)) {
+    if (!item.roles.includes(profile.role)) {
       return null;
     }
 
@@ -293,15 +288,17 @@ export function AppSidebar() {
 
                                   return (
                                     <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
-                                        <div 
-                                            className="flex items-center gap-3 animate-fade-in-up"
-                                            style={{ animationDelay: `${''}${index * 0.05}s` }}
+                                        <motion.div 
+                                            className="flex items-center gap-3"
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.3, delay: index * 0.05 }}
                                         >
                                             <span className="font-semibold text-slate-800 dark:text-white shadow-lg">{finalLabel}</span>
                                             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
                                                 {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     </Link>
                                   )
                                })}

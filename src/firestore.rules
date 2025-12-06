@@ -1,10 +1,6 @@
 
 rules_version = '2';
 
-function isSuperAdmin() {
-  return request.auth.token.email == 'usmansagheer444@gmail.com';
-}
-
 function isAgencyMember(agencyId) {
     return exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid));
 }
@@ -20,7 +16,7 @@ service cloud.firestore {
 
     match /agencies/{agencyId} {
        allow read: if request.auth.uid == agencyId || isAgencyMember(agencyId);
-       allow write: if isSuperAdmin() || request.auth.uid == agencyId;
+       allow write: if request.auth.uid == agencyId;
     }
     
     // This rule allows any authenticated member of an agency to read/write to its subcollections.
@@ -37,7 +33,6 @@ service cloud.firestore {
     }
 
     match /upgradeRequests/{requestId} {
-      allow read, write: if isSuperAdmin();
       allow create: if request.auth != null;
     }
   }
