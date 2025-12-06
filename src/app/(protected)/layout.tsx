@@ -87,6 +87,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // If user is Super Admin and trying to access a super-admin route, let the dedicated layout handle it.
+  if (user?.email === 'usmansagheer444@gmail.com' && pathname.startsWith('/super-admin')) {
+      return <>{children}</>;
+  }
+
+
   // Define restricted paths for each role
   const agentForbiddenPaths = ['/team', '/upgrade', '/tools', '/analytics', '/super-admin'];
 
@@ -146,9 +152,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-
+  const { user } = useUser();
   const pathname = usePathname();
   const isSearchable = pathname.startsWith('/properties') || pathname.startsWith('/buyers');
+
+  // Do not render the main CRM layout for the super-admin
+  if (user?.email === 'usmansagheer444@gmail.com' && pathname.startsWith('/super-admin')) {
+    return <>{children}</>;
+  }
+
 
   // Reset search when navigating away from searchable pages
   React.useEffect(() => {
