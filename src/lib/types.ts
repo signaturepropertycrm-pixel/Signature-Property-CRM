@@ -56,7 +56,7 @@ export type Property = {
   demand_amount: number;
   demand_unit: 'Lacs' | 'Crore' | 'Thousand';
   documents?: string;
-  message?: string; // New field for rent properties
+  message?: string; // General notes for any property type
   status: PropertyStatus;
   is_recorded: boolean;
   created_at: string;

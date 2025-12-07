@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect } from 'react';
@@ -70,6 +69,7 @@ const formSchema = z.object({
   demand_amount: z.coerce.number().positive('Demand must be positive'),
   demand_unit: z.enum(['Lacs', 'Crore']).default('Lacs'),
   documents: z.string().optional(),
+  message: z.string().optional(),
 });
 
 type AddSalePropertyFormValues = z.infer<typeof formSchema>;
@@ -101,6 +101,7 @@ const getNewPropertyDefaults = (
   demand_amount: 0,
   demand_unit: 'Lacs',
   documents: '',
+  message: '',
 });
 
 /* ---------- component ---------- */
@@ -155,6 +156,7 @@ export function AddSalePropertyForm({
         length_ft: propertyToEdit.length_ft ?? 0,
         property_type: isOtherType ? 'Other' : propertyToEdit.property_type,
         property_type_other: isOtherType ? propertyToEdit.property_type : '',
+        message: propertyToEdit.message || '',
       });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -661,6 +663,21 @@ export function AddSalePropertyForm({
                   <FormLabel>Documents</FormLabel>
                   <FormControl>
                     <Textarea placeholder="e.g. Registry, Fard, Transfer papers" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Message/Notes */}
+            <FormField
+              control={control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message / Notes</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Add any extra notes about the property..." {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
