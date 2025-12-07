@@ -613,6 +613,31 @@ export default function PropertiesPage() {
       const text = e.target?.result;
       if (typeof text !== 'string') return;
       
+      const parseCsvRow = (row: string): string[] => {
+        const result: string[] = [];
+        let currentField = '';
+        let inQuotes = false;
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          if (char === '"') {
+            if (i + 1 < row.length && row[i + 1] === '"') {
+              // It's an escaped quote
+              currentField += '"';
+              i++; // Skip the next quote
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            result.push(currentField.trim());
+            currentField = '';
+          } else {
+            currentField += char;
+          }
+        }
+        result.push(currentField.trim());
+        return result;
+      };
+
       const rows = text.split('\n').filter(row => row.trim() !== '');
       if (rows.length <= 1) {
         toast({ title: 'Empty File', description: 'The CSV file is empty or invalid.', variant: 'destructive' });
@@ -629,7 +654,7 @@ export default function PropertiesPage() {
 
       rows.slice(1).forEach((row) => {
         if (!row) return;
-        const values = row.split(',').map(s => s.trim().replace(/"/g, ''));
+        const values = parseCsvRow(row);
         
         let newProperty: Omit<Property, 'id'>;
 
@@ -1320,3 +1345,6 @@ export default function PropertiesPage() {
 
 
 
+
+
+    
