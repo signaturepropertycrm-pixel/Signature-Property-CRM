@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect } from 'react';
@@ -37,8 +38,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-const propertyTypes: PropertyType[] = [
-    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+const propertyTypes: (PropertyType | 'Other')[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Other'
 ];
 
 /* ---------- schema ---------- */
@@ -51,6 +52,7 @@ const formSchema = z.object({
   area: z.string().min(1, 'Area is required'),
   address: z.string().min(1, 'Address is required'),
   property_type: z.enum(propertyTypes),
+  property_type_other: z.string().optional(),
   size_value: z.coerce.number().positive('Size must be positive'),
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
   storey: z.string().optional(),
@@ -82,6 +84,7 @@ const getNewPropertyDefaults = (
   area: '',
   address: '',
   property_type: 'House',
+  property_type_other: '',
   size_value: 0,
   size_unit: 'Marla',
   storey: '',
@@ -117,13 +120,17 @@ export function AddRentPropertyForm({
 
   const watchedFields = useWatch({
     control,
-    name: ['size_value', 'size_unit', 'property_type', 'area'],
+    name: ['size_value', 'size_unit', 'property_type', 'area', 'property_type_other'],
   });
+
+  const watchedPropertyType = watchedFields[2];
 
   /* initialise / edit */
   useEffect(() => {
     if (propertyToEdit) {
       const phoneWithoutCode = propertyToEdit.owner_number.replace(propertyToEdit.country_code || '+92', '');
+      const isOtherType = !propertyTypes.includes(propertyToEdit.property_type as any);
+
       reset({
         ...propertyToEdit,
         country_code: propertyToEdit.country_code || '+92',
@@ -133,6 +140,8 @@ export function AddRentPropertyForm({
         size_value: propertyToEdit.size_value || 0,
         storey: propertyToEdit.storey || '',
         message: propertyToEdit.message || '',
+        property_type: isOtherType ? 'Other' : propertyToEdit.property_type,
+        property_type_other: isOtherType ? propertyToEdit.property_type : '',
       });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -141,8 +150,8 @@ export function AddRentPropertyForm({
 
   /* auto title */
   useEffect(() => {
-    const [sizeValue, sizeUnit, propertyType, area] = watchedFields;
-    const finalPropertyType = propertyType;
+    const [sizeValue, sizeUnit, propertyType, area, otherType] = watchedFields;
+    const finalPropertyType = propertyType === 'Other' ? otherType : propertyType;
 
     const handler = setTimeout(async () => {
       if (sizeValue && sizeUnit && finalPropertyType && area) {
@@ -165,9 +174,14 @@ export function AddRentPropertyForm({
 
   /* submit */
   function onSubmit(values: AddRentPropertyFormValues) {
+    const finalPropertyType = values.property_type === 'Other' && values.property_type_other
+        ? values.property_type_other
+        : values.property_type;
+
     const finalValues = {
       ...values,
       owner_number: formatPhoneNumber(values.owner_number, values.country_code),
+      property_type: finalPropertyType,
     };
 
     const propertyData: Omit<Property, 'id'> = {
@@ -340,6 +354,22 @@ export function AddRentPropertyForm({
                   </FormItem>
                 )}
               />
+              
+              {watchedPropertyType === 'Other' && (
+                  <FormField
+                    control={control}
+                    name="property_type_other"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custom Property Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Penthouse" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              )}
 
               {/* Size + Unit */}
               <div className="grid grid-cols-2 gap-2">

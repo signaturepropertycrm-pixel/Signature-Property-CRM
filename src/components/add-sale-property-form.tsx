@@ -39,8 +39,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-const propertyTypes: PropertyType[] = [
-    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+const propertyTypes: (PropertyType | 'Other')[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Other'
 ];
 
 /* ---------- schema ---------- */
@@ -52,7 +52,8 @@ const formSchema = z.object({
   city: z.string().default('Lahore'),
   area: z.string().min(1, 'Area is required'),
   address: z.string().min(1, 'Address is required'),
-  property_type: z.enum(propertyTypes),
+  property_type: z.enum([...propertyTypes]),
+  property_type_other: z.string().optional(),
   size_value: z.coerce.number().positive('Size must be positive'),
   size_unit: z.enum(['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba']).default('Marla'),
   road_size_ft: z.coerce.number().int().optional().nullable(),
@@ -87,6 +88,7 @@ const getNewPropertyDefaults = (
   area: '',
   address: '',
   property_type: 'House',
+  property_type_other: '',
   size_value: 0,
   size_unit: 'Marla',
   road_size_ft: 0,
@@ -128,13 +130,17 @@ export function AddSalePropertyForm({
 
   const watchedFields = useWatch({
     control,
-    name: ['size_value', 'size_unit', 'property_type', 'area'],
+    name: ['size_value', 'size_unit', 'property_type', 'area', 'property_type_other'],
   });
+  
+  const watchedPropertyType = watchedFields[2];
 
   /* initialise / edit */
   useEffect(() => {
     if (propertyToEdit) {
       const phoneWithoutCode = propertyToEdit.owner_number.replace(propertyToEdit.country_code || '+92', '');
+      const isOtherType = !propertyTypes.includes(propertyToEdit.property_type as any);
+      
       reset({
         ...propertyToEdit,
         country_code: propertyToEdit.country_code || '+92',
@@ -147,6 +153,8 @@ export function AddSalePropertyForm({
         potential_rent_amount: propertyToEdit.potential_rent_amount ?? 0,
         front_ft: propertyToEdit.front_ft ?? 0,
         length_ft: propertyToEdit.length_ft ?? 0,
+        property_type: isOtherType ? 'Other' : propertyToEdit.property_type,
+        property_type_other: isOtherType ? propertyToEdit.property_type : '',
       });
     } else {
       reset(getNewPropertyDefaults(totalProperties, user?.uid, profile.agency_id));
@@ -155,15 +163,16 @@ export function AddSalePropertyForm({
 
   /* auto title */
   useEffect(() => {
-    const [sizeValue, sizeUnit, propertyType, area] = watchedFields;
+    const [sizeValue, sizeUnit, propertyType, area, otherType] = watchedFields;
+    const finalPropertyType = propertyType === 'Other' ? otherType : propertyType;
 
     const handler = setTimeout(async () => {
-      if (sizeValue && sizeUnit && propertyType && area) {
+      if (sizeValue && sizeUnit && finalPropertyType && area) {
         try {
           const { autoTitle } = await generateAutoTitle({
             sizeValue: Number(sizeValue),
             sizeUnit,
-            propertyType: propertyType,
+            propertyType: finalPropertyType,
             area,
           });
           setValue('auto_title', autoTitle);
@@ -178,9 +187,14 @@ export function AddSalePropertyForm({
 
   /* submit */
   function onSubmit(values: AddSalePropertyFormValues) {
+    const finalPropertyType = values.property_type === 'Other' && values.property_type_other
+        ? values.property_type_other
+        : values.property_type;
+
     const finalValues = {
       ...values,
       owner_number: formatPhoneNumber(values.owner_number, values.country_code),
+      property_type: finalPropertyType,
     };
 
     const propertyData: Omit<Property, 'id'> = {
@@ -351,6 +365,21 @@ export function AddSalePropertyForm({
                   </FormItem>
                 )}
               />
+              {watchedPropertyType === 'Other' && (
+                  <FormField
+                    control={control}
+                    name="property_type_other"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Custom Property Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Penthouse" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+              )}
 
               {/* Size + Unit */}
               <div className="grid grid-cols-2 gap-2">
