@@ -71,7 +71,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSearch, useUI } from '../layout';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
@@ -513,7 +513,7 @@ export default function PropertiesPage() {
   const handleExport = (type: 'For Sale' | 'For Rent') => {
     if (!allProperties) return;
     const propertiesToExport = sortProperties(
-        allProperties.filter(p => (p.listing_type === type || (!p.listing_type && type === 'For Sale')) && !p.is_deleted)
+        allProperties.filter(p => !p.is_deleted && (p.listing_type === type || (!p.listing_type && type === 'For Sale')))
     );
 
     if (propertiesToExport.length === 0) {

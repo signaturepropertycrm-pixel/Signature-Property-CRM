@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, MoreHorizontal, PlusCircle, Trash2, Phone, Home, Search, Filter, Wallet, Bookmark, Upload, Download, Ruler, Eye, CalendarPlus, UserCheck, Briefcase, Check, X, UserPlus, UserX, ChevronDown, MessageSquare, Sparkles, ChevronLeft, ChevronRight, DollarSign, ArrowUpDown } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Buyer, BuyerStatus, PriceUnit, SizeUnit, PropertyType, AppointmentContactType, Appointment, FollowUp, User, Activity, ListingType, PlanName, Property } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -471,7 +471,7 @@ export default function BuyersPage() {
 
     const handleExport = (type: 'For Sale' | 'For Rent') => {
         const buyersToExport = sortBuyers(
-            allBuyers?.filter(b => (b.listing_type === type || (!b.listing_type && type === 'For Sale')) && !b.is_deleted) || []
+            allBuyers?.filter(b => !b.is_deleted && (b.listing_type === type || (!b.listing_type && type === 'For Sale'))) || []
         );
 
         if (buyersToExport.length === 0) {
