@@ -23,7 +23,7 @@ import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useProfile } from '@/context/profile-context';
-import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc, deleteDoc } from 'firebase/firestore';
 
 interface ResetAccountDialogProps {
   isOpen: boolean;
