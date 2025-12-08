@@ -496,7 +496,7 @@ export default function PropertiesPage() {
   };
 
   const sortProperties = (propertiesToSort: Property[]) => {
-    return [...propertiesToSort].sort((a, b) => {
+    return [...propertiesToSort].filter(p => !p.is_deleted).sort((a, b) => {
         const aParts = a.serial_no.split('-');
         const bParts = b.serial_no.split('-');
         const aPrefix = aParts[0];
@@ -513,7 +513,7 @@ export default function PropertiesPage() {
   const handleExport = (type: 'For Sale' | 'For Rent') => {
     if (!allProperties) return;
     const propertiesToExport = sortProperties(
-        allProperties.filter(p => !p.is_deleted && (p.listing_type === type || (!p.listing_type && type === 'For Sale')))
+        allProperties.filter(p => p.listing_type === type || (!p.listing_type && type === 'For Sale'))
     );
 
     if (propertiesToExport.length === 0) {
@@ -604,7 +604,7 @@ export default function PropertiesPage() {
   };
 
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !profile.agency_id || !importType || !allProperties) return;
 
@@ -646,16 +646,24 @@ export default function PropertiesPage() {
       
       const listingTypeToImport: ListingType = importType;
 
-      const batch = writeBatch(firestore);
-      const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
       const totalSaleProperties = allProperties.filter(p => !p.is_for_rent).length;
       const totalRentProperties = allProperties.filter(p => p.is_for_rent).length;
-      let newCount = 0;
+      
+      const BATCH_SIZE = 499; // Firestore batch limit is 500
+      let batch = writeBatch(firestore);
+      let newPropertiesCount = 0;
 
-      rows.slice(1).forEach((row) => {
-        if (!row) return;
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row) continue;
+
+        newPropertiesCount++;
+        if (newPropertiesCount % BATCH_SIZE === 0) {
+            await batch.commit();
+            batch = writeBatch(firestore);
+        }
+
         const values = parseCsvRow(row);
-        
         let newProperty: Omit<Property, 'id'>;
 
         if (listingTypeToImport === 'For Sale') {
@@ -689,7 +697,7 @@ export default function PropertiesPage() {
             }
 
             newProperty = {
-                serial_no: `P-${totalSaleProperties + newCount + 1}`,
+                serial_no: `P-${totalSaleProperties + newPropertiesCount}`,
                 auto_title: `${size || 'N/A'} ${property_type || ''} in ${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
@@ -733,7 +741,7 @@ export default function PropertiesPage() {
             const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
 
             newProperty = {
-                serial_no: `RP-${totalRentProperties + newCount + 1}`,
+                serial_no: `RP-${totalRentProperties + newPropertiesCount}`,
                 auto_title: `${size || 'N/A'} ${property_type || ''} for rent in ${area || ''}`.trim(),
                 property_type: (property_type as PropertyType) || 'House',
                 area: area || '',
@@ -762,13 +770,12 @@ export default function PropertiesPage() {
             };
         }
         
-        batch.set(doc(collectionRef), newProperty);
-        newCount++;
-      });
+        batch.set(doc(collection(firestore, 'agencies', profile.agency_id, 'properties')), newProperty);
+      }
       
       try {
-        await batch.commit();
-        toast({ title: 'Import Successful', description: `${newCount} new properties have been added.` });
+        await batch.commit(); // Commit the last batch
+        toast({ title: 'Import Successful', description: `${newPropertiesCount} new properties have been added.` });
       } catch (error) {
         console.error(error);
         toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
@@ -778,6 +785,7 @@ export default function PropertiesPage() {
     if(importInputRef.current) importInputRef.current.value = '';
     setImportType(null); // Reset after import
   };
+
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

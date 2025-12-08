@@ -455,7 +455,7 @@ export default function BuyersPage() {
     };
     
     const sortBuyers = (buyersToSort: Buyer[]) => {
-        return [...buyersToSort].sort((a, b) => {
+        return [...buyersToSort].filter(b => !b.is_deleted).sort((a, b) => {
             const aParts = a.serial_no.split('-');
             const bParts = b.serial_no.split('-');
             const aPrefix = aParts[0];
@@ -471,7 +471,7 @@ export default function BuyersPage() {
 
     const handleExport = (type: 'For Sale' | 'For Rent') => {
         const buyersToExport = sortBuyers(
-            allBuyers?.filter(b => !b.is_deleted && (b.listing_type === type || (!b.listing_type && type === 'For Sale'))) || []
+            allBuyers?.filter(b => b.listing_type === type || (!b.listing_type && type === 'For Sale')) || []
         );
 
         if (buyersToExport.length === 0) {
@@ -533,7 +533,7 @@ export default function BuyersPage() {
         setIsImportDialogOpen(false);
     };
 
-    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !profile.agency_id || !importType) return;
     
@@ -575,18 +575,25 @@ export default function BuyersPage() {
           }
 
           const listingTypeToImport: ListingType = importType;
-    
-          const batch = writeBatch(firestore);
-          const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
           
           const currentBuyers = allBuyers || [];
           const totalSaleBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Sale').length;
           const totalRentBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Rent').length;
           
-          let newCount = 0;
-    
-          rows.slice(1).forEach((row) => {
-            if (!row) return;
+          let newBuyersCount = 0;
+          let batch = writeBatch(firestore);
+          const BATCH_SIZE = 499; // Firestore batch limit is 500
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row) continue;
+            
+            newBuyersCount++;
+            if (newBuyersCount % BATCH_SIZE === 0) {
+                await batch.commit();
+                batch = writeBatch(firestore);
+            }
+            
             const values = parseCsvRow(row);
             
             const [
@@ -616,7 +623,7 @@ export default function BuyersPage() {
             const currentTotal = listingTypeToImport === 'For Sale' ? totalSaleBuyersForImport : totalRentBuyersForImport;
 
             const newBuyer: Omit<Buyer, 'id'> = {
-                serial_no: `${listingTypeToImport === 'For Rent' ? 'RB' : 'B'}-${currentTotal + newCount + 1}`,
+                serial_no: `${listingTypeToImport === 'For Rent' ? 'RB' : 'B'}-${currentTotal + newBuyersCount}`,
                 name: name || 'N/A',
                 phone: formatPhoneNumber(number || '', '+92'),
                 country_code: '+92',
@@ -640,13 +647,12 @@ export default function BuyersPage() {
                 created_by: profile.user_id,
                 agency_id: profile.agency_id,
             };
-            batch.set(doc(collectionRef), newBuyer);
-            newCount++;
-          });
+            batch.set(doc(collection(firestore, 'agencies', profile.agency_id, 'buyers')), newBuyer);
+          }
           
           try {
-            await batch.commit();
-            toast({ title: 'Import Successful', description: `${newCount} new buyers have been added.` });
+            await batch.commit(); // Commit the last batch
+            toast({ title: 'Import Successful', description: `${newBuyersCount} new buyers have been added.` });
           } catch (error) {
             console.error(error);
             toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
@@ -656,6 +662,7 @@ export default function BuyersPage() {
         if (importInputRef.current) importInputRef.current.value = '';
         setImportType(null);
     };
+
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
