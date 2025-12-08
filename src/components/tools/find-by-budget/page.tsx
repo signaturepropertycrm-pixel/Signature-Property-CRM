@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -214,6 +213,7 @@ export default function FindByBudgetPage() {
     
     setShareStatus(prev => ({ ...prev, [buyerId]: confirmed ? 'shared' : 'idle' }));
   };
+
 
   const renderCards = () => (
     <ScrollArea className="h-64">
@@ -621,4 +621,3 @@ ${utilities || 'N/A'}
         </Dialog>
     );
 }
-
