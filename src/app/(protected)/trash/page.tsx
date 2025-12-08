@@ -33,7 +33,8 @@ export default function TrashPage() {
   const isLoading = apLoading || abLoading;
 
   const deletedProperties = useMemo(() => {
-      let props = (agencyProperties || []).filter(p => p.is_deleted);
+      if (!agencyProperties) return [];
+      let props = agencyProperties.filter(p => p.is_deleted);
       if (profile.role === 'Agent') {
           props = props.filter(p => p.created_by === profile.user_id);
       }
@@ -41,7 +42,8 @@ export default function TrashPage() {
   }, [agencyProperties, profile.role, profile.user_id]);
 
   const deletedBuyers = useMemo(() => {
-      let buyers = (agencyBuyers || []).filter(b => b.is_deleted);
+      if (!agencyBuyers) return [];
+      let buyers = agencyBuyers.filter(b => b.is_deleted);
       if (profile.role === 'Agent') {
           buyers = buyers.filter(b => b.created_by === profile.user_id);
       }
@@ -59,13 +61,9 @@ export default function TrashPage() {
     if (!profile.agency_id || !agencyProperties) return;
     const batch = writeBatch(firestore);
     
-    // 1. Delete the specified property
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propToDelete.id);
     batch.delete(docRef);
 
-    // 2. Resequence remaining properties of the same type
-    const prefix = propToDelete.is_for_rent ? 'RP' : 'P';
-    
     const remainingProperties = agencyProperties
       .filter(p => p.id !== propToDelete.id && !p.is_deleted && p.is_for_rent === propToDelete.is_for_rent)
       .sort((a, b) => {
@@ -74,6 +72,7 @@ export default function TrashPage() {
         return aNum - bNum;
       });
       
+    const prefix = propToDelete.is_for_rent ? 'RP' : 'P';
     remainingProperties.forEach((p, index) => {
       const newSerial = `${prefix}-${index + 1}`;
       if (p.serial_no !== newSerial) {
@@ -87,7 +86,7 @@ export default function TrashPage() {
   };
 
   const handleEmptyPropertiesTrash = async () => {
-    if (deletedProperties.length === 0 || !profile.agency_id) return;
+    if (deletedProperties.length === 0 || !profile.agency_id || !agencyProperties) return;
 
     const batch = writeBatch(firestore);
     deletedProperties.forEach(prop => {
@@ -96,7 +95,28 @@ export default function TrashPage() {
     });
 
     await batch.commit();
-    toast({ title: 'Properties Trash Emptied', variant: 'destructive', description: `${deletedProperties.length} properties have been permanently removed.` });
+
+    // Now, re-fetch and re-sequence all active properties
+    const activeSaleProperties = agencyProperties.filter(p => !p.is_deleted && !p.is_for_rent).sort((a,b) => parseInt(a.serial_no.split('-')[1], 10) - parseInt(b.serial_no.split('-')[1], 10));
+    const activeRentProperties = agencyProperties.filter(p => !p.is_deleted && p.is_for_rent).sort((a,b) => parseInt(a.serial_no.split('-')[1], 10) - parseInt(b.serial_no.split('-')[1], 10));
+
+    const resequenceBatch = writeBatch(firestore);
+    activeSaleProperties.forEach((p, index) => {
+        const newSerial = `P-${index + 1}`;
+        if (p.serial_no !== newSerial) {
+            resequenceBatch.update(doc(firestore, 'agencies', profile.agency_id, 'properties', p.id), { serial_no: newSerial });
+        }
+    });
+    activeRentProperties.forEach((p, index) => {
+        const newSerial = `RP-${index + 1}`;
+        if (p.serial_no !== newSerial) {
+            resequenceBatch.update(doc(firestore, 'agencies', profile.agency_id, 'properties', p.id), { serial_no: newSerial });
+        }
+    });
+    
+    await resequenceBatch.commit();
+
+    toast({ title: 'Properties Trash Emptied & Resequenced', variant: 'destructive', description: `${deletedProperties.length} properties have been permanently removed and all serials re-sequenced.` });
   }
   
   const handleRestoreBuyer = async (buyer: Buyer) => {
@@ -109,14 +129,10 @@ export default function TrashPage() {
     if (!profile.agency_id || !agencyBuyers) return;
     const batch = writeBatch(firestore);
     
-    // 1. Delete the buyer
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerToDelete.id);
     batch.delete(docRef);
-
-    // 2. Resequence remaining buyers of the same listing type
-    const buyerListingType = buyerToDelete.listing_type || 'For Sale';
-    const prefix = buyerListingType === 'For Rent' ? 'RB' : 'B';
     
+    const buyerListingType = buyerToDelete.listing_type || 'For Sale';
     const remainingBuyers = agencyBuyers
         .filter(b => b.id !== buyerToDelete.id && !b.is_deleted && (b.listing_type || 'For Sale') === buyerListingType)
         .sort((a, b) => {
@@ -125,6 +141,7 @@ export default function TrashPage() {
             return aNum - bNum;
         });
 
+    const prefix = buyerListingType === 'For Rent' ? 'RB' : 'B';
     remainingBuyers.forEach((b, index) => {
         const newSerial = `${prefix}-${index + 1}`;
         if (b.serial_no !== newSerial) {
@@ -138,7 +155,7 @@ export default function TrashPage() {
   };
 
   const handleEmptyBuyersTrash = async () => {
-    if (deletedBuyers.length === 0 || !profile.agency_id) return;
+    if (deletedBuyers.length === 0 || !profile.agency_id || !agencyBuyers) return;
 
     const batch = writeBatch(firestore);
     deletedBuyers.forEach(buyer => {
@@ -147,7 +164,28 @@ export default function TrashPage() {
     });
 
     await batch.commit();
-    toast({ title: 'Buyers Trash Emptied', variant: 'destructive', description: `${deletedBuyers.length} buyers have been permanently removed.` });
+
+    // Now, re-fetch and re-sequence all active buyers
+    const activeSaleBuyers = agencyBuyers.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).sort((a,b) => parseInt(a.serial_no.split('-')[1], 10) - parseInt(b.serial_no.split('-')[1], 10));
+    const activeRentBuyers = agencyBuyers.filter(b => !b.is_deleted && b.listing_type === 'For Rent').sort((a,b) => parseInt(a.serial_no.split('-')[1], 10) - parseInt(b.serial_no.split('-')[1], 10));
+
+    const resequenceBatch = writeBatch(firestore);
+    activeSaleBuyers.forEach((b, index) => {
+        const newSerial = `B-${index + 1}`;
+        if (b.serial_no !== newSerial) {
+            resequenceBatch.update(doc(firestore, 'agencies', profile.agency_id, 'buyers', b.id), { serial_no: newSerial });
+        }
+    });
+    activeRentBuyers.forEach((b, index) => {
+        const newSerial = `RB-${index + 1}`;
+        if (b.serial_no !== newSerial) {
+            resequenceBatch.update(doc(firestore, 'agencies', profile.agency_id, 'buyers', b.id), { serial_no: newSerial });
+        }
+    });
+    
+    await resequenceBatch.commit();
+
+    toast({ title: 'Buyers Trash Emptied & Resequenced', variant: 'destructive', description: `${deletedBuyers.length} buyers have been permanently removed and all serials re-sequenced.` });
   }
 
   const PermanentDeleteDialog = ({ onConfirm, title, description, children }: { onConfirm: () => void, title: string, description: string, children: React.ReactNode }) => (
@@ -197,7 +235,7 @@ export default function TrashPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete all {deletedProperties.length} properties in the trash. This action cannot be undone.
+                        This will permanently delete all {deletedProperties.length} properties in the trash and re-sequence all active property serial numbers. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -232,7 +270,7 @@ export default function TrashPage() {
                             </TooltipTrigger>
                             <TooltipContent><p>Restore</p></TooltipContent>
                           </Tooltip>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} title="Are you sure?" description="This action is permanent and cannot be undone.">
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteProperty(prop)} title="Are you sure?" description="This action is permanent, cannot be undone, and will re-sequence serial numbers.">
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
@@ -261,7 +299,7 @@ export default function TrashPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete all {deletedBuyers.length} buyers in the trash. This action cannot be undone.
+                        This will permanently delete all {deletedBuyers.length} buyers in the trash and re-sequence all active buyer serial numbers. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -298,7 +336,7 @@ export default function TrashPage() {
                             </TooltipTrigger>
                             <TooltipContent><p>Restore</p></TooltipContent>
                           </Tooltip>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent and cannot be undone.">
+                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent, cannot be undone, and will re-sequence serial numbers.">
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
