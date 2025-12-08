@@ -439,7 +439,7 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
 
     useEffect(() => {
         if (selectedProperty) {
-             const linksToShare = Object.entries(selectedLinks)
+            const linksToShare = Object.entries(selectedLinks)
                 .filter(([_, isSelected]) => isSelected)
                 .map(([platform]) => {
                     const link = selectedProperty.video_links?.[platform as VideoLinkPlatform];
@@ -447,13 +447,28 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
                 })
                 .filter(Boolean)
                 .join('\n');
-
             const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
+            
+            const demand = `${selectedProperty.demand_amount} ${selectedProperty.demand_unit}`;
+            const utilities = [
+                selectedProperty.meters?.gas && '- Gas',
+                selectedProperty.meters?.electricity && '- Electricity',
+                selectedProperty.meters?.water && '- Water'
+            ].filter(Boolean).join('\n');
 
-            const details = `*PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nDemand: ${selectedProperty.demand_amount} ${selectedProperty.demand_unit}${videoLinksSection}`;
-            setGeneratedMessage(details);
+            if (selectedProperty.is_for_rent) {
+                const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
+                const rentDetails = `*RENT PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nPortion: ${selectedProperty.storey || 'N/A'}\nDemand: ${rent}\n\n*Utilities:*\n${utilities || 'N/A'}${videoLinksSection}`;
+                setGeneratedMessage(rentDetails);
+            } else {
+                 const rentInBaseUnit = formatUnit(selectedProperty.potential_rent_amount || 0, selectedProperty.potential_rent_unit || 'Thousand');
+                const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
+                
+                const saleDetails = `*PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nFloor: ${selectedProperty.storey || 'N/A'}\nRoad Size: ${selectedProperty.road_size_ft ? `${selectedProperty.road_size_ft}ft` : 'N/A'}\nFront/Length: ${selectedProperty.front_ft ? `${selectedProperty.front_ft}/${selectedProperty.length_ft || ''}` : 'N/A'}\nDemand: ${demand}\n\n*Financials:*\n- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}\n\n*Utilities:*\n${utilities || 'N/A'}\n\n*Documents:* ${selectedProperty.documents || 'N/A'}${videoLinksSection}`;
+                setGeneratedMessage(saleDetails);
+            }
         }
-    }, [selectedProperty, selectedLinks]);
+    }, [selectedProperty, selectedLinks, currency]);
     
 
     const handleSetMessage = () => {
@@ -549,6 +564,7 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
         </Dialog>
     );
 }
+
 
 
 
