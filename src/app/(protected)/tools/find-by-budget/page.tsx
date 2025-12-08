@@ -51,6 +51,9 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { ChevronsUpDown } from 'lucide-react';
 
 
 interface FindBuyersByBudgetDialogProps {
@@ -494,11 +497,19 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
                                 <Command>
                                     <CommandList>
                                         <CommandEmpty>No properties found.</CommandEmpty>
-                                        {filteredProperties.map(prop => (
-                                            <CommandItem key={prop.id} onSelect={() => { setSelectedProperty(prop); setPropertySearch(''); }}>
-                                                {prop.auto_title} ({prop.serial_no})
-                                            </CommandItem>
-                                        ))}
+                                        <CommandGroup>
+                                            {filteredProperties.map(prop => (
+                                                <CommandItem
+                                                    key={prop.id}
+                                                    onSelect={() => {
+                                                        setSelectedProperty(prop);
+                                                        setPropertySearch('');
+                                                    }}
+                                                >
+                                                    <span>{prop.auto_title} ({prop.serial_no})</span>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
                                     </CommandList>
                                 </Command>
                             </ScrollArea>
@@ -538,5 +549,6 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
         </Dialog>
     );
 }
+
 
 
