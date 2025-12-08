@@ -137,7 +137,7 @@ export default function FindByBudgetPage() {
       return formatCurrency(minVal, currency);
     }
     const maxVal = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
-    return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
+    return `${''}${formatCurrency(minVal, currency)} - ${''}${formatCurrency(maxVal, currency)}`;
   }
 
   function onSubmit(values: FormValues) {
@@ -494,13 +494,13 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
                 .filter(([_, isSelected]) => isSelected)
                 .map(([platform]) => {
                     const link = selectedProperty.video_links?.[platform as VideoLinkPlatform];
-                    return link ? `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}` : null;
+                    return link ? `${''}${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${''}${link}` : null;
                 })
                 .filter(Boolean)
                 .join('\n');
-            const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
+            const videoLinksSection = linksToShare ? `\n*Video Links:*\n${''}${linksToShare}` : '';
             
-            const demand = `${selectedProperty.demand_amount} ${selectedProperty.demand_unit}`;
+            const demand = `${''}${selectedProperty.demand_amount} ${''}${selectedProperty.demand_unit}`;
             const utilities = [
                 selectedProperty.meters?.gas && '- Gas',
                 selectedProperty.meters?.electricity && '- Electricity',
@@ -508,39 +508,39 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
             ].filter(Boolean).join('\n');
 
             if (selectedProperty.is_for_rent) {
-                const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
+                const rent = `${''}${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${''}${selectedProperty.demand_unit}`}`;
                 const rentDetails = `*RENT PROPERTY DETAILS* 🏡
-Serial No: ${selectedProperty.serial_no}
-Area: ${selectedProperty.area}
-Type: ${selectedProperty.property_type}
-Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
-Portion: ${selectedProperty.storey || 'N/A'}
+Serial No: ${''}${selectedProperty.serial_no}
+Area: ${''}${selectedProperty.area}
+Type: ${''}${selectedProperty.property_type}
+Size/Marla: ${''}${selectedProperty.size_value} ${''}${selectedProperty.size_unit}
+Portion: ${''}${selectedProperty.storey || 'N/A'}
 Demand: ${rent}
 
 *Utilities:*
-${utilities || 'N/A'}${videoLinksSection}`;
+${utilities || 'N/A'}${''}${videoLinksSection}`;
                 setGeneratedMessage(rentDetails);
             } else {
                  const rentInBaseUnit = formatUnit(selectedProperty.potential_rent_amount || 0, selectedProperty.potential_rent_unit || 'Thousand');
-                const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
+                const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${''}${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
                 
                 const saleDetails = `*PROPERTY DETAILS* 🏡
-Serial No: ${selectedProperty.serial_no}
-Area: ${selectedProperty.area}
-Type: ${selectedProperty.property_type}
-Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
-Floor: ${selectedProperty.storey || 'N/A'}
-Road Size: ${selectedProperty.road_size_ft ? `${selectedProperty.road_size_ft}ft` : 'N/A'}
-Front/Length: ${selectedProperty.front_ft ? `${selectedProperty.front_ft}/${selectedProperty.length_ft || ''}` : 'N/A'}
+Serial No: ${''}${selectedProperty.serial_no}
+Area: ${''}${selectedProperty.area}
+Type: ${''}${selectedProperty.property_type}
+Size/Marla: ${''}${selectedProperty.size_value} ${''}${selectedProperty.size_unit}
+Floor: ${''}${selectedProperty.storey || 'N/A'}
+Road Size: ${''}${selectedProperty.road_size_ft ? `${''}${selectedProperty.road_size_ft}ft` : 'N/A'}
+Front/Length: ${''}${selectedProperty.front_ft ? `${''}${selectedProperty.front_ft}/${''}${selectedProperty.length_ft || ''}` : 'N/A'}
 Demand: ${demand}
 
 *Financials:*
-- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}
+- Potential Rent: ${''}${potentialRent.replace('RS ', 'Rs.')}
 
 *Utilities:*
 ${utilities || 'N/A'}
 
-*Documents:* ${selectedProperty.documents || 'N/A'}${videoLinksSection}`;
+*Documents:* ${''}${selectedProperty.documents || 'N/A'}${''}${videoLinksSection}`;
                 setGeneratedMessage(saleDetails);
             }
         }
@@ -643,3 +643,5 @@ ${utilities || 'N/A'}
         </Dialog>
     );
 }
+
+    
