@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -108,6 +109,25 @@ export default function FindByBudgetPage() {
       area: '',
     },
   });
+
+  // Effect to load saved state from localStorage
+  useEffect(() => {
+    try {
+        const savedFilters = localStorage.getItem('findByBudgetFilters');
+        const savedBuyers = localStorage.getItem('findByBudgetResults');
+
+        if (savedFilters) {
+            const parsedFilters = JSON.parse(savedFilters);
+            form.reset(parsedFilters);
+        }
+
+        if (savedBuyers) {
+            setFoundBuyers(JSON.parse(savedBuyers));
+        }
+    } catch (error) {
+        console.error("Failed to load state from localStorage", error);
+    }
+  }, [form]);
   
   const formatBuyerBudget = (buyer: Buyer) => {
     if (!buyer.budget_min_amount || !buyer.budget_min_unit) return 'N/A';
@@ -147,7 +167,9 @@ export default function FindByBudgetPage() {
     });
 
     setFoundBuyers(filtered);
-    // Initialize share status for found buyers
+    localStorage.setItem('findByBudgetFilters', JSON.stringify(values));
+    localStorage.setItem('findByBudgetResults', JSON.stringify(filtered));
+
     const initialStatus: Record<string, ShareStatus> = {};
     filtered.forEach(buyer => {
       initialStatus[buyer.id] = 'idle';
