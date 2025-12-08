@@ -77,6 +77,7 @@ export default function FindByBudgetPage() {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
   const { currency } = useCurrency();
   const [propertyMessage, setPropertyMessage] = useState('');
+  const [propertyToShare, setPropertyToShare] = useState<Property | null>(null);
   const [isShareMode, setIsShareMode] = useState(false);
   const { toast } = useToast();
   const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
@@ -182,25 +183,23 @@ export default function FindByBudgetPage() {
     document.body.removeChild(link);
   }
 
-  const handleShareToBuyer = (buyer: Buyer, sharedProperty: Property | null) => {
+  const handleShareToBuyer = (buyer: Buyer) => {
     const phone = formatPhoneNumberForWhatsApp(buyer.phone, buyer.country_code);
     const encodedMessage = encodeURIComponent(propertyMessage);
     window.open(`https://wa.me/${phone}?text=${encodedMessage}`, '_blank');
     toast({ title: 'Redirecting to WhatsApp...', description: `Confirm share for ${buyer.name} upon return.`});
-    setShareStatus(prev => ({...prev, [buyer.id]: 'confirming', sharedProperty: sharedProperty } as any));
+    setShareStatus(prev => ({...prev, [buyer.id]: 'confirming'}));
   };
   
   const handleConfirmShare = async (buyerId: string, confirmed: boolean) => {
-    const propertyToRecord = (shareStatus as any)[buyerId]?.sharedProperty;
-  
-    if (confirmed && propertyToRecord && profile.agency_id) {
+    if (confirmed && propertyToShare && profile.agency_id) {
         try {
             const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
             await updateDoc(buyerRef, {
                 sharedProperties: arrayUnion({
-                    propertyId: propertyToRecord.id,
-                    propertySerialNo: propertyToRecord.serial_no,
-                    propertyTitle: propertyToRecord.auto_title,
+                    propertyId: propertyToShare.id,
+                    propertySerialNo: propertyToShare.serial_no,
+                    propertyTitle: propertyToShare.auto_title,
                     sharedAt: new Date().toISOString(),
                 })
             });
@@ -236,7 +235,7 @@ export default function FindByBudgetPage() {
             {isShareMode && (
               <CardFooter className="justify-end">
                 {shareStatus[buyer.id] === 'idle' && (
-                  <Button size="sm" onClick={() => handleShareToBuyer(buyer, null)}>
+                  <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
                     <Share2 className="mr-2 h-4 w-4" /> Share
                   </Button>
                 )}
@@ -286,7 +285,7 @@ export default function FindByBudgetPage() {
                         {isShareMode && (
                           <TableCell className="text-right">
                             {shareStatus[buyer.id] === 'idle' && (
-                              <Button size="sm" onClick={() => handleShareToBuyer(buyer, (shareStatus as any)[buyer.id]?.sharedProperty)}>
+                              <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
                                 <Share2 className="mr-2 h-4 w-4" /> Share
                               </Button>
                             )}
@@ -416,12 +415,7 @@ export default function FindByBudgetPage() {
         setIsOpen={setIsShareDialogOpen}
         onSetMessage={(message, property) => {
             setPropertyMessage(message);
-            // Attach the property to the share status for each buyer
-            const newShareStatus: any = {};
-            foundBuyers.forEach(buyer => {
-                newShareStatus[buyer.id] = { status: 'idle', sharedProperty: property };
-            });
-            setShareStatus(newShareStatus);
+            setPropertyToShare(property);
         }}
         startSharing={() => setIsShareMode(true)}
         allProperties={allProperties || []}
