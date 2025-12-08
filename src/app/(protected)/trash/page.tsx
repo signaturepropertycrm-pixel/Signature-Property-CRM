@@ -330,20 +330,32 @@ export default function TrashPage() {
                         <TableCell>{buyer.name}</TableCell>
                         <TableCell>{buyer.phone}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="h-4 w-4" /></Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Restore</p></TooltipContent>
-                          </Tooltip>
-                          <PermanentDeleteDialog onConfirm={() => handlePermanentDeleteBuyer(buyer)} title="Are you sure?" description="This action is permanent, cannot be undone, and will re-sequence serial numbers.">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="icon" onClick={() => handleRestoreBuyer(buyer)}><RotateCcw className="h-4 w-4" /></Button>
                                 </TooltipTrigger>
-                                <TooltipContent><p>Delete Permanently</p></TooltipContent>
+                                <TooltipContent><p>Restore</p></TooltipContent>
                             </Tooltip>
-                          </PermanentDeleteDialog>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Delete Permanently</p></TooltipContent>
+                                    </Tooltip>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>This action is permanent, cannot be undone, and will re-sequence serial numbers.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handlePermanentDeleteBuyer(buyer)}>Continue</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                       </TableRow>
                     ))}
