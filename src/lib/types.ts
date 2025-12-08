@@ -20,6 +20,7 @@ export type User = {
   status?: 'Pending' | 'Active'; // New status for invitations
   invitedAt?: any; // Timestamp for pending invites
   planName?: PlanName;
+  planStartDate?: string;
 };
 
 export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | '';

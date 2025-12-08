@@ -77,9 +77,8 @@ export default function UpgradePage() {
         setIsPaymentDialogOpen(true);
     }
     
-    // For trial, we'll assume the trial is on the "Basic" plan.
     const currentPlanName = profile.planName || 'Basic'; 
-    const isTrialActive = profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0;
+    const isTrialing = !profile.planStartDate && (profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0);
 
   return (
     <>
@@ -95,9 +94,13 @@ export default function UpgradePage() {
           <Info className="h-4 w-4" />
           <AlertTitle className="font-bold">30-Day Free Trial</AlertTitle>
           <AlertDescription>
-            {isTrialActive ? (
+            {isTrialing ? (
                 <span>
                     Your free trial of the <strong>Basic</strong> plan ends in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial === 1 ? 'day' : 'days'}</strong> (on {format(new Date(profile.trialEndDate!), 'PPP')}).
+                </span>
+            ) : profile.planStartDate ? (
+                 <span>
+                    Your <strong>{profile.planName}</strong> plan is active. It will renew in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial === 1 ? 'day' : 'days'}</strong>.
                 </span>
             ) : (
                 'All new agency accounts automatically start on a 30-day free trial of our Basic plan.'
@@ -121,12 +124,12 @@ export default function UpgradePage() {
           const isCurrentPlan = plan.name === currentPlanName;
           const planIndex = plans.findIndex(p => p.name === plan.name);
           const currentPlanIndex = plans.findIndex(p => p.name === currentPlanName);
-          const isDisabled = isCurrentPlan && !isTrialActive;
+          const isDisabled = isCurrentPlan && !isTrialing;
 
           let buttonText: React.ReactNode = plan.cta;
           if (isDisabled) {
               buttonText = 'Current Plan';
-          } else if (isCurrentPlan && isTrialActive) {
+          } else if (isCurrentPlan && isTrialing) {
               buttonText = 'Activate Plan';
           } else if (planIndex > currentPlanIndex) {
               buttonText = 'Upgrade';
@@ -137,7 +140,7 @@ export default function UpgradePage() {
 
           return (
             <Card key={plan.name} className={cn("flex flex-col h-full relative", plan.isPopular && "border-primary border-2 shadow-primary/20", isCurrentPlan && "ring-2 ring-primary")}>
-              {isCurrentPlan && !isTrialActive && (
+              {isCurrentPlan && !isTrialing && (
                   <div className="absolute -top-3 right-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-lg">Current Plan</div>
               )}
               {plan.isPopular && (

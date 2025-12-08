@@ -22,6 +22,7 @@ export interface ProfileData {
   trialEndDate?: string;
   daysLeftInTrial?: number;
   planName?: PlanName;
+  planStartDate?: string;
 }
 
 interface ProfileContextType {
@@ -106,13 +107,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
         let trialEndDate: string | undefined;
         let daysLeftInTrial: number | undefined;
+        let planStartDate: string | undefined;
 
-        if (userProfile?.createdAt) {
-            const startDate = (userProfile.createdAt as Timestamp).toDate();
+        // Prioritize planStartDate if it exists
+        const startDateSource = agencyProfile?.planStartDate || userProfile?.createdAt;
+        if (startDateSource) {
+            const startDate = (startDateSource as Timestamp).toDate();
             const endDate = addDays(startDate, 30);
             const daysLeft = differenceInDays(endDate, new Date());
             trialEndDate = endDate.toISOString();
             daysLeftInTrial = Math.max(0, daysLeft);
+            if (agencyProfile?.planStartDate) {
+                planStartDate = startDate.toISOString();
+            }
         }
 
         const newProfileData: ProfileData = {
@@ -126,6 +133,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             trialEndDate,
             daysLeftInTrial,
             planName: agencyProfile?.planName || 'Basic',
+            planStartDate: planStartDate,
         };
         
         setProfileState(newProfileData);
