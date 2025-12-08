@@ -14,13 +14,27 @@ import { Buyer, PriceUnit, SizeUnit, User } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck, Check, UserPlus, Clock, History } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck, Check, UserPlus, Clock, History, Trash2 } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useFirestore } from '@/firebase/provider';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
@@ -69,6 +83,9 @@ export function BuyerDetailsDialog({
 }: BuyerDetailsDialogProps) {
   const { currency } = useCurrency();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
 
   const formatBudget = (minAmount?: number, minUnit?: PriceUnit, maxAmount?: number, maxUnit?: PriceUnit) => {
     if (!minAmount || !minUnit) {
@@ -87,6 +104,20 @@ export function BuyerDetailsDialog({
     if (!buyer.assignedTo) return 'Unassigned';
     return activeAgents.find(agent => agent.id === buyer.assignedTo)?.name || 'Unknown Agent';
   }, [buyer.assignedTo, activeAgents]);
+
+  const handleClearHistory = async () => {
+    if (!buyer.agency_id) return;
+    try {
+        const buyerRef = doc(firestore, 'agencies', buyer.agency_id, 'buyers', buyer.id);
+        await updateDoc(buyerRef, {
+            sharedProperties: []
+        });
+        toast({ title: "History Cleared", description: "The shared properties history has been cleared." });
+    } catch (error) {
+        console.error("Failed to clear history:", error);
+        toast({ title: "Error", description: "Could not clear history.", variant: "destructive" });
+    }
+  };
 
 
   if (!buyer) return null;
@@ -160,7 +191,29 @@ export function BuyerDetailsDialog({
                 <>
                     <Separator />
                     <div>
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><History/> Shared Properties History</h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-lg flex items-center gap-2"><History/> Shared Properties History</h3>
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Clear History
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will permanently clear the shared property history for this buyer. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleClearHistory}>Confirm & Clear</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                         <div className="border rounded-md">
                             <Table>
                                 <TableHeader>
