@@ -23,7 +23,7 @@ import { EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useProfile } from '@/context/profile-context';
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
 
 interface ResetAccountDialogProps {
   isOpen: boolean;
@@ -70,15 +70,36 @@ export function ResetAccountDialog({
     console.log("Triggering account data reset...");
     
     try {
-        const batch = writeBatch(firestore);
         const subCollections = ['properties', 'buyers', 'teamMembers', 'appointments', 'followUps', 'activityLogs'];
-        
-        for (const subCol of subCollections) {
-            const querySnapshot = await getDocs(collection(firestore, 'agencies', profile.agency_id, subCol));
-            querySnapshot.forEach(doc => batch.delete(doc.ref));
-        }
+        const BATCH_SIZE = 499;
 
-        await batch.commit();
+        for (const subCol of subCollections) {
+            const collectionRef = collection(firestore, 'agencies', profile.agency_id, subCol);
+            const querySnapshot = await getDocs(collectionRef);
+            
+            if (querySnapshot.empty) continue;
+
+            let batch = writeBatch(firestore);
+            let count = 0;
+            
+            for (const docSnapshot of querySnapshot.docs) {
+                batch.delete(docSnapshot.ref);
+                count++;
+                if (count === BATCH_SIZE) {
+                    await batch.commit();
+                    batch = writeBatch(firestore);
+                    count = 0;
+                }
+            }
+            if (count > 0) {
+                await batch.commit();
+            }
+        }
+        
+        // Remove the admin from the teamMembers subcollection
+        const adminTeamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', profile.user_id);
+        await deleteDoc(adminTeamMemberRef);
+
 
         toast({
             title: 'Account Reset Successful',
