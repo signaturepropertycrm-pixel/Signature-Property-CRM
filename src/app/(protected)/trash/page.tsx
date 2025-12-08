@@ -9,11 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2, RotateCcw } from 'lucide-react';
-import type { Property, Buyer } from '@/lib/types';
+import type { Property, Buyer, ListingType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -55,10 +55,34 @@ export default function TrashPage() {
     toast({ title: 'Property Restored', description: 'The property has been successfully restored.' });
   };
   
-  const handlePermanentDeleteProperty = async (prop: Property) => {
+  const handlePermanentDeleteProperty = async (propToDelete: Property) => {
     if (!profile.agency_id) return;
-    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id));
-    toast({ title: 'Property Deleted Permanently', variant: 'destructive', description: 'The property has been permanently removed.' });
+    const batch = writeBatch(firestore);
+    
+    // 1. Delete the specified property
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propToDelete.id);
+    batch.delete(docRef);
+
+    // 2. Resequence remaining properties of the same type
+    const prefix = propToDelete.is_for_rent ? 'RP' : 'P';
+    const remainingProperties = (agencyProperties || [])
+      .filter(p => p.id !== propToDelete.id && !p.is_deleted && p.is_for_rent === propToDelete.is_for_rent)
+      .sort((a, b) => {
+        const aNum = parseInt(a.serial_no.split('-')[1], 10);
+        const bNum = parseInt(b.serial_no.split('-')[1], 10);
+        return aNum - bNum;
+      });
+      
+    remainingProperties.forEach((p, index) => {
+      const newSerial = `${prefix}-${index + 1}`;
+      if (p.serial_no !== newSerial) {
+        const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', p.id);
+        batch.update(propRef, { serial_no: newSerial });
+      }
+    });
+
+    await batch.commit();
+    toast({ title: 'Property Deleted & Resequenced', variant: 'destructive', description: 'The property has been permanently removed and serials updated.' });
   };
 
   const handleEmptyPropertiesTrash = async () => {
@@ -80,10 +104,36 @@ export default function TrashPage() {
     toast({ title: 'Buyer Restored', description: 'The buyer has been successfully restored.' });
   };
   
-  const handlePermanentDeleteBuyer = async (buyer: Buyer) => {
+  const handlePermanentDeleteBuyer = async (buyerToDelete: Buyer) => {
     if (!profile.agency_id) return;
-    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id));
-    toast({ title: 'Buyer Deleted Permanently', variant: 'destructive', description: 'The buyer has been permanently removed.' });
+    const batch = writeBatch(firestore);
+    
+    // 1. Delete the buyer
+    const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerToDelete.id);
+    batch.delete(docRef);
+
+    // 2. Resequence remaining buyers of the same listing type
+    const buyerListingType = buyerToDelete.listing_type || 'For Sale';
+    const prefix = buyerListingType === 'For Rent' ? 'RB' : 'B';
+    
+    const remainingBuyers = (agencyBuyers || [])
+        .filter(b => b.id !== buyerToDelete.id && !b.is_deleted && (b.listing_type || 'For Sale') === buyerListingType)
+        .sort((a, b) => {
+            const aNum = parseInt(a.serial_no.split('-')[1], 10);
+            const bNum = parseInt(b.serial_no.split('-')[1], 10);
+            return aNum - bNum;
+        });
+
+    remainingBuyers.forEach((b, index) => {
+        const newSerial = `${prefix}-${index + 1}`;
+        if (b.serial_no !== newSerial) {
+            const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', b.id);
+            batch.update(buyerRef, { serial_no: newSerial });
+        }
+    });
+
+    await batch.commit();
+    toast({ title: 'Buyer Deleted & Resequenced', variant: 'destructive', description: 'The buyer has been permanently removed and serials updated.' });
   };
 
   const handleEmptyBuyersTrash = async () => {
@@ -269,5 +319,3 @@ export default function TrashPage() {
     </TooltipProvider>
   );
 }
-
-    
