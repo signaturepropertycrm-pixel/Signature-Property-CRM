@@ -56,7 +56,7 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteProperty = async (propToDelete: Property) => {
-    if (!profile.agency_id) return;
+    if (!profile.agency_id || !agencyProperties) return;
     const batch = writeBatch(firestore);
     
     // 1. Delete the specified property
@@ -66,12 +66,11 @@ export default function TrashPage() {
     // 2. Resequence remaining properties of the same type
     const prefix = propToDelete.is_for_rent ? 'RP' : 'P';
     
-    // CRITICAL FIX: Filter out ALL deleted properties (including the one being deleted) before sorting and re-indexing.
-    const remainingProperties = (agencyProperties || [])
+    const remainingProperties = agencyProperties
       .filter(p => p.id !== propToDelete.id && !p.is_deleted && p.is_for_rent === propToDelete.is_for_rent)
       .sort((a, b) => {
-        const aNum = parseInt(a.serial_no.split('-')[1], 10);
-        const bNum = parseInt(b.serial_no.split('-')[1], 10);
+        const aNum = parseInt(a.serial_no.split('-')[1], 10) || 0;
+        const bNum = parseInt(b.serial_no.split('-')[1], 10) || 0;
         return aNum - bNum;
       });
       
@@ -107,7 +106,7 @@ export default function TrashPage() {
   };
   
   const handlePermanentDeleteBuyer = async (buyerToDelete: Buyer) => {
-    if (!profile.agency_id) return;
+    if (!profile.agency_id || !agencyBuyers) return;
     const batch = writeBatch(firestore);
     
     // 1. Delete the buyer
@@ -118,12 +117,11 @@ export default function TrashPage() {
     const buyerListingType = buyerToDelete.listing_type || 'For Sale';
     const prefix = buyerListingType === 'For Rent' ? 'RB' : 'B';
     
-    // CRITICAL FIX: Filter out ALL deleted buyers (including the one being deleted) before sorting and re-indexing.
-    const remainingBuyers = (agencyBuyers || [])
+    const remainingBuyers = agencyBuyers
         .filter(b => b.id !== buyerToDelete.id && !b.is_deleted && (b.listing_type || 'For Sale') === buyerListingType)
         .sort((a, b) => {
-            const aNum = parseInt(a.serial_no.split('-')[1], 10);
-            const bNum = parseInt(b.serial_no.split('-')[1], 10);
+            const aNum = parseInt(a.serial_no.split('-')[1], 10) || 0;
+            const bNum = parseInt(b.serial_no.split('-')[1], 10) || 0;
             return aNum - bNum;
         });
 
