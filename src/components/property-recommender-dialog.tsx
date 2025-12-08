@@ -25,8 +25,12 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 import { cn } from '@/lib/utils';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
+import { useFirestore } from '@/firebase/provider';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { useProfile } from '@/context/profile-context';
 
 type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
+type ShareStatus = 'idle' | 'confirming' | 'shared';
 
 
 interface PropertyRecommenderDialogProps {
@@ -111,10 +115,13 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
     return { ...property, matchScore: finalScore, matchReasons: reasons };
 };
 
-const RecommendedPropertyCard = ({ property, buyer }: { property: RecommendedProperty, buyer: Buyer }) => {
+const RecommendedPropertyCard = ({ property, buyer, onShareConfirmed }: { property: RecommendedProperty, buyer: Buyer, onShareConfirmed: () => void }) => {
     const { currency } = useCurrency();
     const { toast } = useToast();
+    const { profile } = useProfile();
+    const firestore = useFirestore();
     const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({});
+    const [shareStatus, setShareStatus] = useState<ShareStatus>('idle');
 
     const availableLinks = useMemo(() => {
         if (!property.is_recorded || !property.video_links) return [];
@@ -145,7 +152,7 @@ const RecommendedPropertyCard = ({ property, buyer }: { property: RecommendedPro
             .filter(Boolean)
             .join('\n');
 
-        const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
+        const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : null;
     
         if (buyer.listing_type === 'For Rent') {
             const demand = `${property.demand_amount}${property.demand_unit === 'Thousand' ? 'K' : ` ${property.demand_unit}`}`;
@@ -166,7 +173,7 @@ Portion: ${property.storey || 'N/A'}
 Demand: ${demand}
 
 *Utilities:*
-${utilities || 'N/A'}${videoLinksSection}`;
+${utilities || 'N/A'}${videoLinksSection || ''}`;
     
         } else {
             const demand = `${property.demand_amount} ${property.demand_unit}`;
@@ -196,13 +203,41 @@ Demand: ${demand}
 *Utilities:*
 ${utilities || 'N/A'}
 
-*Documents:* ${property.documents || 'N/A'}${videoLinksSection}`;
+*Documents:* ${property.documents || 'N/A'}${videoLinksSection || ''}`;
         }
     
         const whatsappUrl = `https://wa.me/${buyerPhone}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
         toast({ title: 'Redirecting to WhatsApp', description: `Sharing ${property.serial_no} with ${buyer.name}` });
+        setShareStatus('confirming');
     };
+
+    const handleConfirmShare = async (confirmed: boolean) => {
+        if (confirmed) {
+            try {
+                if (!profile.agency_id) throw new Error('Agency ID not found');
+                const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
+                await updateDoc(buyerRef, {
+                    sharedProperties: arrayUnion({
+                        propertyId: property.id,
+                        propertySerialNo: property.serial_no,
+                        propertyTitle: property.auto_title,
+                        sharedAt: new Date().toISOString(),
+                    })
+                });
+                setShareStatus('shared');
+                toast({ title: "Shared property recorded!" });
+                onShareConfirmed();
+            } catch (error) {
+                console.error("Failed to record shared property:", error);
+                toast({ title: "Failed to record share", variant: "destructive" });
+                setShareStatus('idle');
+            }
+        } else {
+            setShareStatus('idle');
+        }
+    };
+
 
     const getScoreColor = (score: number) => {
         if (score >= 90) return 'bg-green-600';
@@ -256,11 +291,25 @@ ${utilities || 'N/A'}
                 </div>
             )}
 
-            <div className="text-right mt-3">
-                <Button size="sm" variant="outline" onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share via WhatsApp
-                </Button>
+             <div className="text-right mt-3">
+                {shareStatus === 'idle' && (
+                    <Button size="sm" variant="outline" onClick={handleShare}>
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share via WhatsApp
+                    </Button>
+                )}
+                {shareStatus === 'confirming' && (
+                    <div className="flex items-center justify-end gap-2">
+                        <span className="text-sm font-semibold">Shared?</span>
+                        <Button size="sm" variant="outline" onClick={() => handleConfirmShare(false)}>No</Button>
+                        <Button size="sm" onClick={() => handleConfirmShare(true)}>Yes</Button>
+                    </div>
+                )}
+                {shareStatus === 'shared' && (
+                    <div className="flex items-center justify-end gap-2 text-green-600 font-bold text-sm">
+                        <Badge variant="success">Recorded</Badge>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -316,7 +365,7 @@ export function PropertyRecommenderDialog({
                     <div className="space-y-4 py-4">
                         {recommendedProperties.length > 0 ? (
                             recommendedProperties.map(prop => (
-                                <RecommendedPropertyCard key={prop.id} property={prop} buyer={buyer} />
+                                <RecommendedPropertyCard key={prop.id} property={prop} buyer={buyer} onShareConfirmed={handleRefresh} />
                             ))
                         ) : (
                             <div className="text-center py-10 text-muted-foreground">
@@ -347,4 +396,3 @@ const ProgressIndicator = React.forwardRef<
   />
 ));
 ProgressIndicator.displayName = 'ProgressIndicator';
-

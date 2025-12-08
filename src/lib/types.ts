@@ -1,4 +1,5 @@
 
+'use client';
 
 export type UserRole = 'Admin' | 'Agent';
 export type PlanName = 'Basic' | 'Standard' | 'Premium';
@@ -146,6 +147,12 @@ export type Buyer = {
     is_deleted?: boolean;
     last_follow_up_note?: string;
     assignedTo?: string | null; // ID of the agent assigned to this buyer
+    sharedProperties?: {
+        propertyId: string;
+        propertySerialNo: string;
+        propertyTitle: string;
+        sharedAt: string;
+    }[];
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Completed';
@@ -250,4 +257,3 @@ export type UpgradeRequest = {
     reviewedAt?: any;
     reviewerId?: string;
 };
-  

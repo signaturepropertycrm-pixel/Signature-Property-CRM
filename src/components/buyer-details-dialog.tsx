@@ -14,12 +14,13 @@ import { Buyer, PriceUnit, SizeUnit, User } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck, Check, UserPlus } from 'lucide-react';
+import { Home, Tag, Wallet, Ruler, Phone, Mail, FileText, CalendarDays, UserCheck, Check, UserPlus, Clock, History } from 'lucide-react';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { useMemo, useState } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 interface BuyerDetailsDialogProps {
   buyer: Buyer;
@@ -154,6 +155,35 @@ export function BuyerDetailsDialog({
                     <DetailItem icon={<FileText />} label="Notes / Other Requirements" value={<p className="whitespace-pre-wrap">{buyer.notes || 'No notes provided.'}</p>} />
                  </div>
               </div>
+
+               {buyer.sharedProperties && buyer.sharedProperties.length > 0 && (
+                <>
+                    <Separator />
+                    <div>
+                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><History/> Shared Properties History</h3>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Property</TableHead>
+                                        <TableHead>Serial No</TableHead>
+                                        <TableHead className="text-right">Shared On</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {buyer.sharedProperties.sort((a,b) => new Date(b.sharedAt).getTime() - new Date(a.sharedAt).getTime()).map((prop, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="font-medium">{prop.propertyTitle}</TableCell>
+                                            <TableCell><Badge variant="outline">{prop.propertySerialNo}</Badge></TableCell>
+                                            <TableCell className="text-right">{new Date(prop.sharedAt).toLocaleDateString()}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </>
+               )}
 
             </div>
           </ScrollArea>
