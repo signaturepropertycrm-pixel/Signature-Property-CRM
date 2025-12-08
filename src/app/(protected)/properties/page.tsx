@@ -655,12 +655,12 @@ export default function PropertiesPage() {
       const BATCH_SIZE = 499; // Firestore batch limit is 500
       let batch = writeBatch(firestore);
       let newPropertiesCount = 0;
+      let skippedCount = 0;
 
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
         if (!row) continue;
 
-        newPropertiesCount++;
         if (newPropertiesCount > 0 && newPropertiesCount % BATCH_SIZE === 0) {
             await batch.commit();
             batch = writeBatch(firestore);
@@ -675,6 +675,12 @@ export default function PropertiesPage() {
                 road_size_ft, potential_rent, front_ft, length_ft, demand, documents,
                 tiktok, youtube, instagram, facebook, other
             ] = values;
+
+            if (!number || number.trim() === '') {
+                skippedCount++;
+                continue;
+            }
+            newPropertiesCount++;
 
             const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
             const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : [];
@@ -740,6 +746,12 @@ export default function PropertiesPage() {
                 tiktok, youtube, instagram, facebook, other
             ] = values;
 
+            if (!number || number.trim() === '') {
+                skippedCount++;
+                continue;
+            }
+            newPropertiesCount++;
+
             const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
             const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
 
@@ -778,7 +790,10 @@ export default function PropertiesPage() {
       
       try {
         await batch.commit(); // Commit the last batch
-        toast({ title: 'Import Successful', description: `${newPropertiesCount} new properties have been added.` });
+        toast({ 
+            title: 'Import Complete', 
+            description: `${newPropertiesCount} new properties have been added. ${skippedCount > 0 ? `${skippedCount} rows were skipped due to missing phone numbers.` : ''}` 
+        });
       } catch (error) {
         console.error(error);
         toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
@@ -1359,3 +1374,4 @@ export default function PropertiesPage() {
 
 
     
+

@@ -584,6 +584,7 @@ export default function BuyersPage() {
           const totalRentBuyersForImport = currentBuyers.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length;
           
           let newBuyersCount = 0;
+          let skippedCount = 0;
           let batch = writeBatch(firestore);
           const BATCH_SIZE = 499; // Firestore batch limit is 500
 
@@ -591,7 +592,6 @@ export default function BuyersPage() {
             const row = rows[i];
             if (!row) continue;
             
-            newBuyersCount++;
             if (newBuyersCount > 0 && newBuyersCount % BATCH_SIZE === 0) {
                 await batch.commit();
                 batch = writeBatch(firestore);
@@ -603,6 +603,12 @@ export default function BuyersPage() {
                 _serial, _date, number, name, email, city, area, property_type,
                 size, budget, status, investor, notes
             ] = values;
+
+            if (!number || number.trim() === '') {
+                skippedCount++;
+                continue;
+            }
+            newBuyersCount++;
             
             const parseRange = (rangeStr: string) => {
                 if (!rangeStr || rangeStr.toLowerCase() === 'n/a') {
@@ -655,7 +661,10 @@ export default function BuyersPage() {
           
           try {
             await batch.commit(); // Commit the last batch
-            toast({ title: 'Import Successful', description: `${newBuyersCount} new buyers have been added.` });
+            toast({ 
+                title: 'Import Complete', 
+                description: `${newBuyersCount} new buyers have been added. ${skippedCount > 0 ? `${skippedCount} rows were skipped due to missing phone numbers.` : ''}` 
+            });
           } catch (error) {
             console.error(error);
             toast({ title: 'Import Failed', description: 'An error occurred during import.', variant: 'destructive' });
