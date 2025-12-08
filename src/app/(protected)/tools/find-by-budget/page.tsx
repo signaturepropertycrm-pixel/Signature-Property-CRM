@@ -53,6 +53,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
 
 
@@ -194,94 +195,98 @@ export default function FindByBudgetPage() {
   };
 
   const renderCards = () => (
-    <div className="p-4 space-y-4">
-      {foundBuyers.map((buyer, index) => (
-        <Card key={buyer.id}>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-start">
-              <span>{index + 1}. {buyer.name}</span>
-              <Badge variant="outline">{buyer.serial_no}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {buyer.phone}</div>
-            <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /> {formatBuyerBudget(buyer)}</div>
-            <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> {buyer.area_preference || 'N/A'}</div>
-            <div className="flex items-start gap-2"><FileText className="h-4 w-4 text-muted-foreground mt-1" /> <p className="whitespace-pre-wrap">{buyer.notes || 'No notes.'}</p></div>
-          </CardContent>
-          {isShareMode && (
-            <CardFooter className="justify-end">
-              {shareStatus[buyer.id] === 'idle' && (
-                <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
-                  <Share2 className="mr-2 h-4 w-4" /> Share
-                </Button>
-              )}
-               {shareStatus[buyer.id] === 'confirming' && (
-                <div className="flex gap-2 justify-end">
-                  <span className="text-sm text-muted-foreground">Shared?</span>
-                  <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
-                  <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
-                </div>
-              )}
-              {shareStatus[buyer.id] === 'shared' && (
-                <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
-                  <Check className="h-5 w-5" /> Shared
-                </div>
-              )}
-            </CardFooter>
-          )}
-        </Card>
-      ))}
-    </div>
+    <ScrollArea className="h-64">
+      <div className="p-4 space-y-4">
+        {foundBuyers.map((buyer, index) => (
+          <Card key={buyer.id}>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-start">
+                <span>{index + 1}. {buyer.name}</span>
+                <Badge variant="outline">{buyer.serial_no}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {buyer.phone}</div>
+              <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /> {formatBuyerBudget(buyer)}</div>
+              <div className="flex items-center gap-2"><Home className="h-4 w-4 text-muted-foreground" /> {buyer.area_preference || 'N/A'}</div>
+              <div className="flex items-start gap-2"><FileText className="h-4 w-4 text-muted-foreground mt-1" /> <p className="whitespace-pre-wrap">{buyer.notes || 'No notes.'}</p></div>
+            </CardContent>
+            {isShareMode && (
+              <CardFooter className="justify-end">
+                {shareStatus[buyer.id] === 'idle' && (
+                  <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                    <Share2 className="mr-2 h-4 w-4" /> Share
+                  </Button>
+                )}
+                 {shareStatus[buyer.id] === 'confirming' && (
+                  <div className="flex gap-2 justify-end">
+                    <span className="text-sm text-muted-foreground">Shared?</span>
+                    <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
+                    <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
+                  </div>
+                )}
+                {shareStatus[buyer.id] === 'shared' && (
+                  <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
+                    <Check className="h-5 w-5" /> Shared
+                  </div>
+                )}
+              </CardFooter>
+            )}
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
   );
 
   const renderTable = () => (
-      <Table>
-          <TableHeader>
-              <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Budget</TableHead>
-                  <TableHead>Area</TableHead>
-                  <TableHead>Notes</TableHead>
-                  {isShareMode && <TableHead className="text-right">Action</TableHead>}
-              </TableRow>
-          </TableHeader>
-          <TableBody>
-              {foundBuyers.map((buyer, index) => (
-                  <TableRow key={buyer.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{buyer.name}</TableCell>
-                      <TableCell>{buyer.phone}</TableCell>
-                      <TableCell>{formatBuyerBudget(buyer)}</TableCell>
-                      <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
-                      <TableCell className="max-w-xs truncate">{buyer.notes || 'N/A'}</TableCell>
-                      {isShareMode && (
-                        <TableCell className="text-right">
-                          {shareStatus[buyer.id] === 'idle' && (
-                            <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
-                              <Share2 className="mr-2 h-4 w-4" /> Share
-                            </Button>
-                          )}
-                          {shareStatus[buyer.id] === 'confirming' && (
-                             <div className="flex gap-2 justify-end items-center">
-                              <span className="text-sm text-muted-foreground">Shared?</span>
-                              <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
-                              <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
-                            </div>
-                          )}
-                          {shareStatus[buyer.id] === 'shared' && (
-                            <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
-                              <Check className="h-5 w-5" /> Shared
-                            </div>
-                          )}
-                        </TableCell>
-                      )}
-                  </TableRow>
-              ))}
-          </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Budget</TableHead>
+                    <TableHead>Area</TableHead>
+                    <TableHead>Notes</TableHead>
+                    {isShareMode && <TableHead className="text-right">Action</TableHead>}
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {foundBuyers.map((buyer, index) => (
+                    <TableRow key={buyer.id}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{buyer.name}</TableCell>
+                        <TableCell>{buyer.phone}</TableCell>
+                        <TableCell>{formatBuyerBudget(buyer)}</TableCell>
+                        <TableCell>{buyer.area_preference || 'N/A'}</TableCell>
+                        <TableCell className="max-w-xs truncate">{buyer.notes || 'N/A'}</TableCell>
+                        {isShareMode && (
+                          <TableCell className="text-right">
+                            {shareStatus[buyer.id] === 'idle' && (
+                              <Button size="sm" onClick={() => handleShareToBuyer(buyer)}>
+                                <Share2 className="mr-2 h-4 w-4" /> Share
+                              </Button>
+                            )}
+                            {shareStatus[buyer.id] === 'confirming' && (
+                               <div className="flex gap-2 justify-end items-center">
+                                <span className="text-sm text-muted-foreground">Shared?</span>
+                                <Button size="sm" variant="destructive" onClick={() => handleConfirmShare(buyer.id, false)}>No</Button>
+                                <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700" onClick={() => handleConfirmShare(buyer.id, true)}>Yes</Button>
+                              </div>
+                            )}
+                            {shareStatus[buyer.id] === 'shared' && (
+                              <div className="flex items-center justify-end gap-2 text-green-600 font-bold">
+                                <Check className="h-5 w-5" /> Shared
+                              </div>
+                            )}
+                          </TableCell>
+                        )}
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+      </div>
   );
 
   return (
@@ -373,9 +378,9 @@ export default function FindByBudgetPage() {
         {foundBuyers.length > 0 && (
           <div className="mt-6 space-y-4 p-6 border-t">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
-            <ScrollArea className="h-64 border rounded-md">
+            <div className="border rounded-md">
                 {isMobile ? renderCards() : renderTable()}
-            </ScrollArea>
+            </div>
              <div className="flex justify-between items-center gap-2 pt-2">
                 <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download List</Button>
                 <Button onClick={() => setIsShareDialogOpen(true)}><Share2 className="mr-2 h-4 w-4"/> Share Detail</Button>
@@ -458,13 +463,38 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
 
             if (selectedProperty.is_for_rent) {
                 const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
-                const rentDetails = `*RENT PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nPortion: ${selectedProperty.storey || 'N/A'}\nDemand: ${rent}\n\n*Utilities:*\n${utilities || 'N/A'}${videoLinksSection}`;
+                const rentDetails = `*RENT PROPERTY DETAILS* 🏡
+Serial No: ${selectedProperty.serial_no}
+Area: ${selectedProperty.area}
+Type: ${selectedProperty.property_type}
+Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
+Portion: ${selectedProperty.storey || 'N/A'}
+Demand: ${rent}
+
+*Utilities:*
+${utilities || 'N/A'}${videoLinksSection}`;
                 setGeneratedMessage(rentDetails);
             } else {
                  const rentInBaseUnit = formatUnit(selectedProperty.potential_rent_amount || 0, selectedProperty.potential_rent_unit || 'Thousand');
                 const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
                 
-                const saleDetails = `*PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nFloor: ${selectedProperty.storey || 'N/A'}\nRoad Size: ${selectedProperty.road_size_ft ? `${selectedProperty.road_size_ft}ft` : 'N/A'}\nFront/Length: ${selectedProperty.front_ft ? `${selectedProperty.front_ft}/${selectedProperty.length_ft || ''}` : 'N/A'}\nDemand: ${demand}\n\n*Financials:*\n- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}\n\n*Utilities:*\n${utilities || 'N/A'}\n\n*Documents:* ${selectedProperty.documents || 'N/A'}${videoLinksSection}`;
+                const saleDetails = `*PROPERTY DETAILS* 🏡
+Serial No: ${selectedProperty.serial_no}
+Area: ${selectedProperty.area}
+Type: ${selectedProperty.property_type}
+Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
+Floor: ${selectedProperty.storey || 'N/A'}
+Road Size: ${selectedProperty.road_size_ft ? `${selectedProperty.road_size_ft}ft` : 'N/A'}
+Front/Length: ${selectedProperty.front_ft ? `${selectedProperty.front_ft}/${selectedProperty.length_ft || ''}` : 'N/A'}
+Demand: ${demand}
+
+*Financials:*
+- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}
+
+*Utilities:*
+${utilities || 'N/A'}
+
+*Documents:* ${selectedProperty.documents || 'N/A'}${videoLinksSection}`;
                 setGeneratedMessage(saleDetails);
             }
         }
@@ -564,6 +594,7 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
         </Dialog>
     );
 }
+
 
 
 
