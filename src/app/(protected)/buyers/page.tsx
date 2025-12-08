@@ -115,8 +115,8 @@ export default function BuyersPage() {
     const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
         if (!allBuyers) return { totalSaleBuyers: 0, totalRentBuyers: 0 };
         return {
-            totalSaleBuyers: allBuyers.filter(b => b.listing_type === 'For Sale').length,
-            totalRentBuyers: allBuyers.filter(b => b.listing_type === 'For Rent').length
+            totalSaleBuyers: allBuyers.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).length,
+            totalRentBuyers: allBuyers.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length
         };
     }, [allBuyers]);
 
@@ -471,7 +471,10 @@ export default function BuyersPage() {
 
     const handleExport = (type: 'For Sale' | 'For Rent') => {
         const buyersToExport = sortBuyers(
-            allBuyers?.filter(b => b.listing_type === type || (!b.listing_type && type === 'For Sale')) || []
+            (allBuyers || []).filter(b => {
+                const listingType = b.listing_type || 'For Sale';
+                return !b.is_deleted && listingType === type;
+            })
         );
 
         if (buyersToExport.length === 0) {
@@ -577,8 +580,8 @@ export default function BuyersPage() {
           const listingTypeToImport: ListingType = importType;
           
           const currentBuyers = allBuyers || [];
-          const totalSaleBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Sale').length;
-          const totalRentBuyersForImport = currentBuyers.filter(b => b.listing_type === 'For Rent').length;
+          const totalSaleBuyersForImport = currentBuyers.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).length;
+          const totalRentBuyersForImport = currentBuyers.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length;
           
           let newBuyersCount = 0;
           let batch = writeBatch(firestore);
@@ -589,7 +592,7 @@ export default function BuyersPage() {
             if (!row) continue;
             
             newBuyersCount++;
-            if (newBuyersCount % BATCH_SIZE === 0) {
+            if (newBuyersCount > 0 && newBuyersCount % BATCH_SIZE === 0) {
                 await batch.commit();
                 batch = writeBatch(firestore);
             }

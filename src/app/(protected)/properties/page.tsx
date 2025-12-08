@@ -513,7 +513,10 @@ export default function PropertiesPage() {
   const handleExport = (type: 'For Sale' | 'For Rent') => {
     if (!allProperties) return;
     const propertiesToExport = sortProperties(
-        allProperties.filter(p => p.listing_type === type || (!p.listing_type && type === 'For Sale'))
+        allProperties.filter(p => {
+            const listingType = p.is_for_rent ? 'For Rent' : 'For Sale';
+            return !p.is_deleted && listingType === type;
+        })
     );
 
     if (propertiesToExport.length === 0) {
@@ -646,8 +649,8 @@ export default function PropertiesPage() {
       
       const listingTypeToImport: ListingType = importType;
 
-      const totalSaleProperties = allProperties.filter(p => !p.is_for_rent).length;
-      const totalRentProperties = allProperties.filter(p => p.is_for_rent).length;
+      const totalSaleProperties = allProperties.filter(p => !p.is_deleted && !p.is_for_rent).length;
+      const totalRentProperties = allProperties.filter(p => !p.is_deleted && p.is_for_rent).length;
       
       const BATCH_SIZE = 499; // Firestore batch limit is 500
       let batch = writeBatch(firestore);
@@ -658,7 +661,7 @@ export default function PropertiesPage() {
         if (!row) continue;
 
         newPropertiesCount++;
-        if (newPropertiesCount % BATCH_SIZE === 0) {
+        if (newPropertiesCount > 0 && newPropertiesCount % BATCH_SIZE === 0) {
             await batch.commit();
             batch = writeBatch(firestore);
         }
