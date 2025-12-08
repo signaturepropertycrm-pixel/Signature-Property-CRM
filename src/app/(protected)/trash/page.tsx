@@ -65,6 +65,8 @@ export default function TrashPage() {
 
     // 2. Resequence remaining properties of the same type
     const prefix = propToDelete.is_for_rent ? 'RP' : 'P';
+    
+    // CRITICAL FIX: Filter out ALL deleted properties (including the one being deleted) before sorting and re-indexing.
     const remainingProperties = (agencyProperties || [])
       .filter(p => p.id !== propToDelete.id && !p.is_deleted && p.is_for_rent === propToDelete.is_for_rent)
       .sort((a, b) => {
@@ -116,6 +118,7 @@ export default function TrashPage() {
     const buyerListingType = buyerToDelete.listing_type || 'For Sale';
     const prefix = buyerListingType === 'For Rent' ? 'RB' : 'B';
     
+    // CRITICAL FIX: Filter out ALL deleted buyers (including the one being deleted) before sorting and re-indexing.
     const remainingBuyers = (agencyBuyers || [])
         .filter(b => b.id !== buyerToDelete.id && !b.is_deleted && (b.listing_type || 'For Sale') === buyerListingType)
         .sort((a, b) => {
