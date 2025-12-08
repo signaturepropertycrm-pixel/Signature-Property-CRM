@@ -73,6 +73,8 @@ export default function OverviewPage() {
     const canFetch = !isProfileLoading && profile.agency_id;
     const now = new Date();
     const last30DaysStart = subDays(now, 30);
+    const isTrialing = !profile.planStartDate && profile.planName === 'Basic' && (profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0);
+
 
     // --- Data Fetching ---
     const propertiesQuery = useMemoFirebase(() => {
@@ -276,14 +278,14 @@ export default function OverviewPage() {
                 <p className="text-muted-foreground">A quick overview of your performance and key metrics in the last 30 days.</p>
             </div>
             
-            {profile.role === 'Admin' && profile.trialEndDate && profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0 && (
+            {profile.role === 'Admin' && isTrialing && profile.trialEndDate && (
                  <Alert className="max-w-2xl mx-auto bg-primary/10 border-primary/30">
                     <Info className="h-4 w-4" />
                     <AlertTitle className="font-bold">
                         {profile.daysLeftInTrial > 1 ? `${profile.daysLeftInTrial} Days Left in Your Trial` : 'Your trial ends today!'}
                     </AlertTitle>
                     <AlertDescription>
-                        Your 30-day free trial of the Standard plan ends on {format(new Date(profile.trialEndDate), 'PPP')}.
+                        Your 30-day free trial of the Basic plan ends on {format(new Date(profile.trialEndDate), 'PPP')}.
                         <Link href="/upgrade" className="font-semibold text-primary underline ml-2">Upgrade now</Link> to keep your premium features.
                     </AlertDescription>
                 </Alert>
