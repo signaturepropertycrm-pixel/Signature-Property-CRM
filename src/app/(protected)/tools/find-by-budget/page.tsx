@@ -24,10 +24,10 @@ import {
 } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Buyer, PriceUnit } from '@/lib/types';
+import { Buyer, PriceUnit, Property } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText } from 'lucide-react';
+import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -48,6 +48,9 @@ import { collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 interface FindBuyersByBudgetDialogProps {
@@ -63,6 +66,8 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 type ShareStatus = 'idle' | 'confirming' | 'shared';
+type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
+
 
 export default function FindByBudgetPage() {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
@@ -74,6 +79,15 @@ export default function FindByBudgetPage() {
   const isMobile = useIsMobile();
   const { profile } = useProfile();
   const firestore = useFirestore();
+
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  // Fetch all properties for the new "From Property" tab
+  const propertiesQuery = useMemoFirebase(
+    () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
+    [profile.agency_id, firestore]
+  );
+  const { data: allProperties } = useCollection<Property>(propertiesQuery);
 
   const buyersQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null),
@@ -268,6 +282,7 @@ export default function FindByBudgetPage() {
   );
 
   return (
+    <>
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><DollarSign/> Find By Budget</h1>
@@ -360,35 +375,168 @@ export default function FindByBudgetPage() {
             </ScrollArea>
              <div className="flex justify-between items-center gap-2 pt-2">
                 <Button variant="outline" onClick={handleDownload}><Download className="mr-2 h-4 w-4" /> Download List</Button>
-                 <Dialog>
-                    <DialogTrigger asChild>
-                        <Button><Share2 className="mr-2 h-4 w-4"/> Share Detail</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Share Property Details</DialogTitle>
-                            <DialogDescription>Paste the property details you want to share with the found buyers.</DialogDescription>
-                        </DialogHeader>
-                        <Textarea 
-                            value={propertyMessage}
-                            onChange={(e) => setPropertyMessage(e.target.value)}
-                            rows={10}
-                            placeholder="Paste property details here..."
-                        />
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="outline">Cancel</Button>
-                            </DialogClose>
-                             <DialogClose asChild>
-                                <Button onClick={() => setIsShareMode(true)}>Set Message</Button>
-                            </DialogClose>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <Button onClick={() => setIsShareDialogOpen(true)}><Share2 className="mr-2 h-4 w-4"/> Share Detail</Button>
             </div>
           </div>
         )}
       </Card>
     </div>
+    <ShareDetailsDialog 
+        isOpen={isShareDialogOpen} 
+        setIsOpen={setIsShareDialogOpen}
+        onSetMessage={setPropertyMessage}
+        startSharing={() => setIsShareMode(true)}
+        allProperties={allProperties || []}
+        currency={currency}
+    />
+    </>
   );
 }
+
+// Share Dialog Component
+interface ShareDetailsDialogProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    onSetMessage: (message: string) => void;
+    startSharing: () => void;
+    allProperties: Property[];
+    currency: string;
+}
+
+function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, allProperties, currency }: ShareDetailsDialogProps) {
+    const [activeTab, setActiveTab] = useState('custom');
+    const [customMessage, setCustomMessage] = useState('');
+    const [propertySearch, setPropertySearch] = useState('');
+    const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+    const [generatedMessage, setGeneratedMessage] = useState('');
+    const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({});
+
+    const filteredProperties = useMemo(() => {
+        if (!propertySearch) return [];
+        const lowerQuery = propertySearch.toLowerCase();
+        return allProperties.filter(p => 
+            p.serial_no.toLowerCase().includes(lowerQuery) ||
+            p.auto_title.toLowerCase().includes(lowerQuery) ||
+            p.area.toLowerCase().includes(lowerQuery)
+        ).slice(0, 10);
+    }, [propertySearch, allProperties]);
+    
+    const availableLinks = useMemo(() => {
+        if (!selectedProperty?.is_recorded || !selectedProperty.video_links) return [];
+        return (Object.keys(selectedProperty.video_links) as VideoLinkPlatform[]).filter(key => !!selectedProperty.video_links![key]);
+    }, [selectedProperty]);
+
+    useEffect(() => {
+        if (selectedProperty) {
+            const initialSelected: Record<VideoLinkPlatform, boolean> = {};
+            availableLinks.forEach(link => initialSelected[link] = true);
+            setSelectedLinks(initialSelected);
+        }
+    }, [selectedProperty, availableLinks]);
+
+    useEffect(() => {
+        if (selectedProperty) {
+             const linksToShare = Object.entries(selectedLinks)
+                .filter(([_, isSelected]) => isSelected)
+                .map(([platform]) => {
+                    const link = selectedProperty.video_links?.[platform as VideoLinkPlatform];
+                    return link ? `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}` : null;
+                })
+                .filter(Boolean)
+                .join('\n');
+
+            const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
+
+            const details = `*PROPERTY DETAILS* 🏡\nSerial No: ${selectedProperty.serial_no}\nArea: ${selectedProperty.area}\nType: ${selectedProperty.property_type}\nSize: ${selectedProperty.size_value} ${selectedProperty.size_unit}\nDemand: ${selectedProperty.demand_amount} ${selectedProperty.demand_unit}${videoLinksSection}`;
+            setGeneratedMessage(details);
+        }
+    }, [selectedProperty, selectedLinks]);
+    
+
+    const handleSetMessage = () => {
+        const messageToSet = activeTab === 'custom' ? customMessage : generatedMessage;
+        onSetMessage(messageToSet);
+        startSharing();
+        setIsOpen(false);
+    }
+    
+     const handleLinkSelectionChange = (platform: VideoLinkPlatform) => {
+        setSelectedLinks(prev => ({ ...prev, [platform]: !prev[platform] }));
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent className="sm:max-w-xl">
+                <DialogHeader>
+                    <DialogTitle>Share Property Details</DialogTitle>
+                    <DialogDescription>Create a message to share with the found buyers.</DialogDescription>
+                </DialogHeader>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="custom">Custom Message</TabsTrigger>
+                        <TabsTrigger value="property">From Property</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="custom" className="mt-4">
+                        <Textarea 
+                            value={customMessage}
+                            onChange={(e) => setCustomMessage(e.target.value)}
+                            rows={10}
+                            placeholder="Type your custom message here..."
+                        />
+                    </TabsContent>
+                    <TabsContent value="property" className="mt-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="prop-search">Search Property (by SN, Title, Area)</Label>
+                            <Input id="prop-search" value={propertySearch} onChange={(e) => setPropertySearch(e.target.value)} />
+                        </div>
+                        {propertySearch && (
+                            <ScrollArea className="h-40 border rounded-md">
+                                <Command>
+                                    <CommandList>
+                                        <CommandEmpty>No properties found.</CommandEmpty>
+                                        {filteredProperties.map(prop => (
+                                            <CommandItem key={prop.id} onSelect={() => { setSelectedProperty(prop); setPropertySearch(''); }}>
+                                                {prop.auto_title} ({prop.serial_no})
+                                            </CommandItem>
+                                        ))}
+                                    </CommandList>
+                                </Command>
+                            </ScrollArea>
+                        )}
+                        {selectedProperty && (
+                             <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
+                                <p><span className="font-semibold">Selected:</span> {selectedProperty.auto_title} ({selectedProperty.serial_no})</p>
+                                {availableLinks.length > 0 && (
+                                    <div>
+                                        <Label className="font-semibold flex items-center gap-2 mb-2"><Video className="h-4 w-4" /> Include Video Links</Label>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                            {availableLinks.map(platform => (
+                                                <div key={platform} className="flex items-center space-x-2">
+                                                    <Checkbox 
+                                                        id={`share-${platform}`}
+                                                        checked={selectedLinks[platform]}
+                                                        onCheckedChange={() => handleLinkSelectionChange(platform)}
+                                                    />
+                                                    <Label htmlFor={`share-${platform}`} className="text-sm font-normal capitalize cursor-pointer">
+                                                        {platform}
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <Textarea readOnly value={generatedMessage} rows={8} />
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSetMessage}>Set Message & Start Sharing</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
