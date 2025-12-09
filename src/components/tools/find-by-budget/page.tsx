@@ -137,7 +137,7 @@ export default function FindByBudgetPage() {
       return formatCurrency(minVal, currency);
     }
     const maxVal = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
-    return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
+    return `${''}${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
   }
 
   function onSubmit(values: FormValues) {
@@ -360,82 +360,84 @@ export default function FindByBudgetPage() {
             <CardTitle>Find Buyers</CardTitle>
             <CardDescription>Enter a budget range and/or an area to find matching buyer leads.</CardDescription>
         </CardHeader>
-        <CardContent>
-            <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="flex items-end gap-2 lg:col-span-2">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-end gap-2 lg:col-span-2">
+                      <FormField
+                          control={form.control}
+                          name="minBudget"
+                          render={({ field }) => (
+                          <FormItem className="flex-1">
+                              <FormLabel>Min Budget</FormLabel>
+                              <FormControl>
+                              <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="maxBudget"
+                          render={({ field }) => (
+                          <FormItem className="flex-1">
+                              <FormLabel>Max Budget</FormLabel>
+                              <FormControl>
+                              <Input type="number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                          )}
+                      />
+                      <FormField
+                          control={form.control}
+                          name="budgetUnit"
+                          render={({ field }) => (
+                          <FormItem className="w-28">
+                              <FormLabel>Unit</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                      <SelectTrigger>
+                                          <SelectValue />
+                                      </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                      <SelectItem value="Lacs">Lacs</SelectItem>
+                                      <SelectItem value="Crore">Crore</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </FormItem>
+                          )}
+                      />
+                    </div>
                     <FormField
                         control={form.control}
-                        name="minBudget"
+                        name="area"
                         render={({ field }) => (
-                        <FormItem className="flex-1">
-                            <FormLabel>Min Budget</FormLabel>
+                        <FormItem>
+                            <FormLabel>Area Preference</FormLabel>
                             <FormControl>
-                            <Input type="number" {...field} />
+                            <Input {...field} placeholder="e.g. DHA, Bahria" />
                             </FormControl>
                             <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="maxBudget"
-                        render={({ field }) => (
-                        <FormItem className="flex-1">
-                            <FormLabel>Max Budget</FormLabel>
-                            <FormControl>
-                            <Input type="number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="budgetUnit"
-                        render={({ field }) => (
-                        <FormItem className="w-28">
-                            <FormLabel>Unit</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Lacs">Lacs</SelectItem>
-                                    <SelectItem value="Crore">Crore</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </FormItem>
                         )}
                     />
                   </div>
-                  <FormField
-                      control={form.control}
-                      name="area"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Area Preference</FormLabel>
-                          <FormControl>
-                          <Input {...field} placeholder="e.g. DHA, Bahria" />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
                 </div>
-                <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={handleReset}>
-                        <RotateCcw className="mr-2 h-4 w-4" />
-                        Reset
-                    </Button>
-                    <Button type="submit">Search</Button>
-                </div>
-            </form>
-            </Form>
-        </CardContent>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleReset}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reset
+                </Button>
+                <Button type="submit">Search</Button>
+            </CardFooter>
+          </form>
+        </Form>
         {foundBuyers.length > 0 && (
           <div className="mt-6 space-y-4 p-6 border-t">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
@@ -488,8 +490,8 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
         const lowerQuery = propertySearch.toLowerCase();
         return allProperties.filter(p => 
             p.serial_no.toLowerCase().includes(lowerQuery) ||
-            p.auto_title.toLowerCase().includes(lowerQuery) ||
-            p.area.toLowerCase().includes(lowerQuery)
+            (p.auto_title && p.auto_title.toLowerCase().includes(lowerQuery)) ||
+            (p.area && p.area.toLowerCase().includes(lowerQuery))
         ).slice(0, 10);
     }, [propertySearch, allProperties]);
     
@@ -636,11 +638,11 @@ ${utilities || 'N/A'}
                                             {availableLinks.map(platform => (
                                                 <div key={platform} className="flex items-center space-x-2">
                                                     <Checkbox 
-                                                        id={`share-${platform}`}
+                                                        id={`share-${''}${platform}`}
                                                         checked={selectedLinks[platform]}
                                                         onCheckedChange={() => handleLinkSelectionChange(platform)}
                                                     />
-                                                    <Label htmlFor={`share-${platform}`} className="text-sm font-normal capitalize cursor-pointer">
+                                                    <Label htmlFor={`share-${''}${platform}`} className="text-sm font-normal capitalize cursor-pointer">
                                                         {platform}
                                                     </Label>
                                                 </div>
@@ -661,9 +663,5 @@ ${utilities || 'N/A'}
         </Dialog>
     );
 }
-
-    
-
-    
 
     
