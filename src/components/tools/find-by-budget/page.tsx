@@ -48,7 +48,7 @@ import { collection, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -112,22 +112,18 @@ export default function FindByBudgetPage() {
 
   // Effect to load saved state from localStorage
   useEffect(() => {
-    try {
+    // ← sirf first mount pe load karo – page change par nahi
+    if (buyers?.length && foundBuyers.length === 0) {
+      try {
         const savedFilters = localStorage.getItem('findByBudgetFilters');
         const savedBuyers = localStorage.getItem('findByBudgetResults');
-
-        if (savedFilters) {
-            const parsedFilters = JSON.parse(savedFilters);
-            form.reset(parsedFilters);
-        }
-
-        if (savedBuyers) {
-            setFoundBuyers(JSON.parse(savedBuyers));
-        }
-    } catch (error) {
+        if (savedFilters) form.reset(JSON.parse(savedFilters));
+        if (savedBuyers) setFoundBuyers(JSON.parse(savedBuyers));
+      } catch (error) {
         console.error("Failed to load state from localStorage", error);
+      }
     }
-  }, [form]);
+  }, []); // ← empty dependency – kabhi dobara nahi chalega
   
   const formatBuyerBudget = (buyer: Buyer) => {
     if (!buyer.budget_min_amount || !buyer.budget_min_unit) return 'N/A';
@@ -147,7 +143,7 @@ export default function FindByBudgetPage() {
     }
 
     const searchMin = values.minBudget ? formatUnit(values.minBudget, values.budgetUnit) : 0;
-    const searchMax = values.maxBudget ? formatUnit(values.maxBudget, values.budgetUnit) : Infinity;
+    const searchMax = values.maxBudget ? formatUnit(values.budgetUnit, values.budgetUnit) : Infinity;
 
     const filtered = (buyers || []).filter(buyer => {
         let budgetMatch = true;
@@ -361,8 +357,8 @@ export default function FindByBudgetPage() {
             <CardDescription>Enter a budget range and/or an area to find matching buyer leads.</CardDescription>
         </CardHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent>
+              <form id="find-by-budget-form" onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="flex items-end gap-2 lg:col-span-2">
@@ -428,15 +424,19 @@ export default function FindByBudgetPage() {
                     />
                   </div>
                 </div>
+              </form>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={handleReset}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleReset}
+                >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Reset
                 </Button>
-                <Button type="submit">Search</Button>
+                <Button type="submit" form="find-by-budget-form">Search</Button>
             </CardFooter>
-          </form>
         </Form>
         {foundBuyers.length > 0 && (
           <div className="mt-6 space-y-4 p-6 border-t">
@@ -663,5 +663,7 @@ ${utilities || 'N/A'}
         </Dialog>
     );
 }
+
+    
 
     
