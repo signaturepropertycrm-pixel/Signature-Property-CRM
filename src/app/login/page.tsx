@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Home, Loader2, Eye, EyeOff, Download } from 'lucide-react';
+import { Home, Loader2, Eye, EyeOff, Download, Share, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +33,14 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { ProfileProvider } from '@/context/profile-context';
 import { Separator } from '@/components/ui/separator';
 import { doc, getDoc } from 'firebase/firestore';
+import Image from 'next/image';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email.'),
@@ -60,21 +68,20 @@ function LoginPageContent() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
-
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      remember: false,
-    },
-  });
+  const [isIos, setIsIos] = useState(false);
+  const [showIosInstall, setShowIosInstall] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setInstallPromptEvent(e as BeforeInstallPromptEvent);
     };
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    
+    setIsIos(isIosDevice && !isInStandaloneMode);
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
@@ -84,7 +91,9 @@ function LoginPageContent() {
   }, []);
 
   const handleInstallClick = () => {
-    if (installPromptEvent) {
+    if (isIos) {
+      setShowIosInstall(true);
+    } else if (installPromptEvent) {
       installPromptEvent.prompt();
       installPromptEvent.userChoice.then(choiceResult => {
         if (choiceResult.outcome === 'accepted') {
@@ -304,7 +313,7 @@ function LoginPageContent() {
                   Login
                 </Button>
 
-                {installPromptEvent && (
+                {(installPromptEvent || isIos) && (
                   <Button
                     type="button"
                     variant="outline"
@@ -315,6 +324,26 @@ function LoginPageContent() {
                     Install App
                   </Button>
                 )}
+                
+                <Dialog open={showIosInstall} onOpenChange={setShowIosInstall}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Install on iPhone/iPad</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4 text-center space-y-4">
+                        <p>To install the app on your device, tap the 'Share' icon in Safari and then select 'Add to Home Screen'.</p>
+                        <div className="flex justify-center">
+                            <Share className="h-8 w-8 text-primary" />
+                            <span className="mx-2">→</span>
+                            <Home className="h-8 w-8 text-primary" />
+                        </div>
+                        <div className="relative w-full aspect-[9/16] max-w-xs mx-auto mt-4 rounded-lg overflow-hidden border">
+                          <Image src="/images/add-to-home-screen-ios.png" alt="Add to Home Screen instruction for iOS" layout="fill" objectFit="contain" />
+                        </div>
+                      </div>
+                    </DialogContent>
+                </Dialog>
+
 
                 <div className="mt-4 text-center text-sm">
                   Don&apos;t have an agency account?{' '}
