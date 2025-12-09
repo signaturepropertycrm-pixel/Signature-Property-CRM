@@ -27,7 +27,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Buyer, PriceUnit, Property } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video } from 'lucide-react';
+import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video, RotateCcw } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -137,7 +137,7 @@ export default function FindByBudgetPage() {
       return formatCurrency(minVal, currency);
     }
     const maxVal = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
-    return `${''}${formatCurrency(minVal, currency)} - ${''}${formatCurrency(maxVal, currency)}`;
+    return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
   }
 
   function onSubmit(values: FormValues) {
@@ -157,6 +157,7 @@ export default function FindByBudgetPage() {
             } else {
                 const buyerMin = formatUnit(buyer.budget_min_amount, buyer.budget_min_unit);
                 const buyerMax = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
+                // Check for range overlap
                 budgetMatch = Math.max(searchMin, buyerMin) <= Math.min(searchMax, buyerMax);
             }
         }
@@ -177,6 +178,19 @@ export default function FindByBudgetPage() {
     setShareStatus(initialStatus);
     setIsShareMode(false);
   }
+
+  const handleReset = () => {
+    form.reset({
+        minBudget: 0,
+        maxBudget: 0,
+        budgetUnit: 'Lacs',
+        area: '',
+    });
+    setFoundBuyers([]);
+    localStorage.removeItem('findByBudgetFilters');
+    localStorage.removeItem('findByBudgetResults');
+    toast({ title: 'Filters Reset', description: 'Search has been cleared.' });
+  };
 
   const handleDownload = () => {
     const headers = ['Name', 'Phone', 'Budget', 'Area Preference', 'Notes'];
@@ -412,7 +426,11 @@ export default function FindByBudgetPage() {
                       )}
                   />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleReset}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset
+                    </Button>
                     <Button type="submit">Search</Button>
                 </div>
             </form>
@@ -494,13 +512,13 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
                 .filter(([_, isSelected]) => isSelected)
                 .map(([platform]) => {
                     const link = selectedProperty.video_links?.[platform as VideoLinkPlatform];
-                    return link ? `${''}${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${''}${link}` : null;
+                    return link ? `${platform.charAt(0).toUpperCase() + platform.slice(1)}: ${link}` : null;
                 })
                 .filter(Boolean)
                 .join('\n');
-            const videoLinksSection = linksToShare ? `\n*Video Links:*\n${''}${linksToShare}` : '';
+            const videoLinksSection = linksToShare ? `\n*Video Links:*\n${linksToShare}` : '';
             
-            const demand = `${''}${selectedProperty.demand_amount} ${''}${selectedProperty.demand_unit}`;
+            const demand = `${selectedProperty.demand_amount} ${selectedProperty.demand_unit}`;
             const utilities = [
                 selectedProperty.meters?.gas && '- Gas',
                 selectedProperty.meters?.electricity && '- Electricity',
@@ -508,39 +526,39 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
             ].filter(Boolean).join('\n');
 
             if (selectedProperty.is_for_rent) {
-                const rent = `${''}${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${''}${selectedProperty.demand_unit}`}`;
+                const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
                 const rentDetails = `*RENT PROPERTY DETAILS* 🏡
-Serial No: ${''}${selectedProperty.serial_no}
-Area: ${''}${selectedProperty.area}
-Type: ${''}${selectedProperty.property_type}
-Size/Marla: ${''}${selectedProperty.size_value} ${''}${selectedProperty.size_unit}
-Portion: ${''}${selectedProperty.storey || 'N/A'}
+Serial No: ${selectedProperty.serial_no}
+Area: ${selectedProperty.area}
+Type: ${selectedProperty.property_type}
+Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
+Portion: ${selectedProperty.storey || 'N/A'}
 Demand: ${rent}
 
 *Utilities:*
-${utilities || 'N/A'}${''}${videoLinksSection}`;
+${utilities || 'N/A'}${videoLinksSection}`;
                 setGeneratedMessage(rentDetails);
             } else {
                  const rentInBaseUnit = formatUnit(selectedProperty.potential_rent_amount || 0, selectedProperty.potential_rent_unit || 'Thousand');
-                const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${''}${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
+                const potentialRent = selectedProperty.potential_rent_amount ? `Rs. ${formatCurrency(rentInBaseUnit, currency)}` : 'N/A';
                 
                 const saleDetails = `*PROPERTY DETAILS* 🏡
-Serial No: ${''}${selectedProperty.serial_no}
-Area: ${''}${selectedProperty.area}
-Type: ${''}${selectedProperty.property_type}
-Size/Marla: ${''}${selectedProperty.size_value} ${''}${selectedProperty.size_unit}
-Floor: ${''}${selectedProperty.storey || 'N/A'}
-Road Size: ${''}${selectedProperty.road_size_ft ? `${''}${selectedProperty.road_size_ft}ft` : 'N/A'}
-Front/Length: ${''}${selectedProperty.front_ft ? `${''}${selectedProperty.front_ft}/${''}${selectedProperty.length_ft || ''}` : 'N/A'}
+Serial No: ${selectedProperty.serial_no}
+Area: ${selectedProperty.area}
+Type: ${selectedProperty.property_type}
+Size/Marla: ${selectedProperty.size_value} ${selectedProperty.size_unit}
+Floor: ${selectedProperty.storey || 'N/A'}
+Road Size: ${selectedProperty.road_size_ft ? `${selectedProperty.road_size_ft}ft` : 'N/A'}
+Front/Length: ${selectedProperty.front_ft ? `${selectedProperty.front_ft}/${selectedProperty.length_ft || ''}` : 'N/A'}
 Demand: ${demand}
 
 *Financials:*
-- Potential Rent: ${''}${potentialRent.replace('RS ', 'Rs.')}
+- Potential Rent: ${potentialRent.replace('RS ', 'Rs.')}
 
 *Utilities:*
 ${utilities || 'N/A'}
 
-*Documents:* ${''}${selectedProperty.documents || 'N/A'}${''}${videoLinksSection}`;
+*Documents:* ${selectedProperty.documents || 'N/A'}${videoLinksSection}`;
                 setGeneratedMessage(saleDetails);
             }
         }
@@ -643,5 +661,7 @@ ${utilities || 'N/A'}
         </Dialog>
     );
 }
+
+    
 
     
