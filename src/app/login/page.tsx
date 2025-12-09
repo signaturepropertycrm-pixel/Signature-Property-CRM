@@ -71,6 +71,15 @@ function LoginPageContent() {
   const [isIos, setIsIos] = useState(false);
   const [showIosInstall, setShowIosInstall] = useState(false);
 
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      remember: false,
+    },
+  });
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
