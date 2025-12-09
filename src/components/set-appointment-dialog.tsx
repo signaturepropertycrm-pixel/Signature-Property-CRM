@@ -20,9 +20,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Appointment, AppointmentContactType, User } from '@/lib/types';
+import { Appointment, AppointmentContactType, User, Buyer, Property } from '@/lib/types';
 import { useEffect, useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
@@ -73,6 +73,12 @@ export function SetAppointmentDialog({
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
   const { data: teamMembers } = useCollection<User>(teamMembersQuery);
 
+  const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: buyers } = useCollection<Buyer>(buyersQuery);
+  
+  const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const { data: properties } = useCollection<Property>(propertiesQuery);
+
   const assignableMembers = useMemo(() => {
     if (!teamMembers) return [];
     return teamMembers.filter(m => m.status === 'Active' && (m.role === 'Agent' || m.role === 'Admin'));
@@ -83,7 +89,30 @@ export function SetAppointmentDialog({
     resolver: zodResolver(formSchema),
   });
 
-  const { reset } = form;
+  const { reset, setValue } = form;
+  const watchedSerialNo = useWatch({ control: form.control, name: 'contactSerialNo' });
+
+
+  useEffect(() => {
+    if (!watchedSerialNo) return;
+
+    const serial = watchedSerialNo.toUpperCase();
+    
+    if (serial.startsWith('B-')) {
+        const buyer = buyers?.find(b => b.serial_no === serial);
+        if (buyer) {
+            setValue('contactType', 'Buyer');
+            setValue('contactName', buyer.name);
+        }
+    } else if (serial.startsWith('P-') || serial.startsWith('RP-')) {
+        const property = properties?.find(p => p.serial_no === serial);
+        if (property) {
+            setValue('contactType', 'Owner');
+            setValue('contactName', `Owner of ${serial}`);
+        }
+    }
+  }, [watchedSerialNo, buyers, properties, setValue]);
+
 
   useEffect(() => {
     if (isOpen) {
