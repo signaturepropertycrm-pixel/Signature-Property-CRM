@@ -30,7 +30,7 @@ function AppointmentsPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const typeFilter = searchParams.get('type') || 'Buyer';
+  const activeTab = searchParams.get('tab') || 'buyer';
 
   const firestore = useFirestore();
   const { profile } = useProfile();
@@ -171,7 +171,7 @@ function AppointmentsPageContent() {
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
 
-  const { scheduledAppointments, historicalAppointments } = useMemo(() => {
+  const { buyerAppointments, ownerAppointments, historicalAppointments } = useMemo(() => {
     const allAppointments = (appointmentsData || []).filter(a => {
         if (profile.role === 'Agent') {
             return a.agentName === profile.name;
@@ -188,15 +188,15 @@ function AppointmentsPageContent() {
         isWithinInterval(parseISO(a.date), { start: sevenDaysAgo, end: now })
     ).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
     
-    return { scheduledAppointments: scheduled, historicalAppointments: historical };
+    const buyers = scheduled.filter(a => a.contactType === 'Buyer');
+    const owners = scheduled.filter(a => a.contactType === 'Owner');
+    
+    return { buyerAppointments: buyers, ownerAppointments: owners, historicalAppointments: historical };
 }, [appointmentsData, profile.role, profile.name]);
 
 
-  const buyerAppointments = useMemo(() => scheduledAppointments.filter(a => a.contactType === 'Buyer'), [scheduledAppointments]);
-  const ownerAppointments = useMemo(() => scheduledAppointments.filter(a => a.contactType === 'Owner'), [scheduledAppointments]);
-  
   const handleTabChange = (value: string) => {
-    const url = `${pathname}?type=${value}`;
+    const url = `${pathname}?tab=${value}`;
     router.push(url);
   };
 
@@ -277,9 +277,8 @@ function AppointmentsPageContent() {
     );
   }
 
-  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[], emptyMessage: string) => (
+  const renderAppointmentList = (appointments: Appointment[], emptyMessage: string) => (
      <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">{icon} {title}</h2>
         {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointments.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {appointments.map(renderAppointmentCard)}
@@ -310,17 +309,20 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-      <Tabs defaultValue="scheduled" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+      <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="buyer">Buyer</TabsTrigger>
+                <TabsTrigger value="owner">Owner</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
-            <TabsContent value="scheduled" className="mt-6 space-y-8">
-                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments, 'No buyer appointments scheduled.')}
-                {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments, 'No owner appointments scheduled.')}
+            <TabsContent value="buyer" className="mt-6">
+                {renderAppointmentList(buyerAppointments, 'No buyer appointments scheduled.')}
+            </TabsContent>
+            <TabsContent value="owner" className="mt-6">
+                 {renderAppointmentList(ownerAppointments, 'No owner appointments scheduled.')}
             </TabsContent>
             <TabsContent value="history" className="mt-6">
-                 {renderSection('Last 7 Days', <History className="text-primary"/>, historicalAppointments, 'No completed or cancelled appointments in the last 7 days.')}
+                 {renderAppointmentList(historicalAppointments, 'No completed or cancelled appointments in the last 7 days.')}
             </TabsContent>
         </Tabs>
 
