@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users, Eye } from 'lucide-react';
+import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users, Eye, History } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Appointment, AppointmentStatus, Activity, Buyer, Property } from '@/lib/types';
@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
+import { isWithinInterval, subDays, parseISO } from 'date-fns';
+import { Separator } from '@/components/ui/separator';
 
 
 function AppointmentsPageContent() {
@@ -169,8 +171,29 @@ function AppointmentsPageContent() {
     Cancelled: { variant: 'destructive', icon: XCircle },
   };
 
-  const buyerAppointments = useMemo(() => (appointmentsData || []).filter(a => a.contactType === 'Buyer'), [appointmentsData]);
-  const ownerAppointments = useMemo(() => (appointmentsData || []).filter(a => a.contactType === 'Owner'), [appointmentsData]);
+  const { scheduledAppointments, historicalAppointments } = useMemo(() => {
+    const allAppointments = (appointmentsData || []).filter(a => {
+        if (profile.role === 'Agent') {
+            return a.agentName === profile.name;
+        }
+        return true;
+    });
+
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7);
+
+    const scheduled = allAppointments.filter(a => a.status === 'Scheduled');
+    const historical = allAppointments.filter(a => 
+        (a.status === 'Completed' || a.status === 'Cancelled') &&
+        isWithinInterval(parseISO(a.date), { start: sevenDaysAgo, end: now })
+    ).sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+    
+    return { scheduledAppointments: scheduled, historicalAppointments: historical };
+}, [appointmentsData, profile.role, profile.name]);
+
+
+  const buyerAppointments = useMemo(() => scheduledAppointments.filter(a => a.contactType === 'Buyer'), [scheduledAppointments]);
+  const ownerAppointments = useMemo(() => scheduledAppointments.filter(a => a.contactType === 'Owner'), [scheduledAppointments]);
   
   const handleTabChange = (value: string) => {
     const url = `${pathname}?type=${value}`;
@@ -227,18 +250,22 @@ function AppointmentsPageContent() {
                     <DropdownMenuContent align="end" className="glass-card">
                         <DropdownMenuItem onSelect={() => handleViewDetails(appt)}><Eye /> View Contact Details</DropdownMenuItem>
                         <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, appt)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
-                            <Check />
-                            Mark as Completed
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Cancelled')}>
-                            <XCircle />
-                            Mark as Cancelled
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleReschedule(appt)}>
-                            <Edit />
-                            Reschedule
-                        </DropdownMenuItem>
+                        {appt.status === 'Scheduled' && (
+                            <>
+                                <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
+                                    <Check />
+                                    Mark as Completed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Cancelled')}>
+                                    <XCircle />
+                                    Mark as Cancelled
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleReschedule(appt)}>
+                                    <Edit />
+                                    Reschedule
+                                </DropdownMenuItem>
+                            </>
+                        )}
                         <DropdownMenuItem onSelect={() => handleDeleteAppointment(appt)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                             <Trash2 />
                             Delete
@@ -250,7 +277,7 @@ function AppointmentsPageContent() {
     );
   }
 
-  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[]) => (
+  const renderSection = (title: string, icon: React.ReactNode, appointments: Appointment[], emptyMessage: string) => (
      <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">{icon} {title}</h2>
         {isLoading ? <p className="text-muted-foreground text-center py-10">Loading...</p> : appointments.length > 0 ? (
@@ -259,7 +286,7 @@ function AppointmentsPageContent() {
             </div>
         ) : (
             <Card className="flex items-center justify-center h-32">
-                <p className="text-muted-foreground">No {title.toLowerCase()} scheduled.</p>
+                <p className="text-muted-foreground">{emptyMessage}</p>
             </Card>
         )}
     </div>
@@ -267,7 +294,7 @@ function AppointmentsPageContent() {
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">
@@ -283,16 +310,17 @@ function AppointmentsPageContent() {
         </Button>
       </div>
 
-      <Tabs defaultValue={typeFilter} onValueChange={handleTabChange} className="w-full">
+      <Tabs defaultValue="scheduled" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="Buyer">Buyer</TabsTrigger>
-                <TabsTrigger value="Owner">Owner</TabsTrigger>
+                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
-            <TabsContent value="Buyer" className="mt-6">
-                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments)}
+            <TabsContent value="scheduled" className="mt-6 space-y-8">
+                {renderSection('Buyer Appointments', <Users className="text-primary"/>, buyerAppointments, 'No buyer appointments scheduled.')}
+                {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments, 'No owner appointments scheduled.')}
             </TabsContent>
-            <TabsContent value="Owner" className="mt-6">
-                 {renderSection('Owner Appointments', <Building className="text-primary"/>, ownerAppointments)}
+            <TabsContent value="history" className="mt-6">
+                 {renderSection('Last 7 Days', <History className="text-primary"/>, historicalAppointments, 'No completed or cancelled appointments in the last 7 days.')}
             </TabsContent>
         </Tabs>
 
@@ -339,3 +367,4 @@ export default function AppointmentsPage() {
         </Suspense>
     );
 }
+
