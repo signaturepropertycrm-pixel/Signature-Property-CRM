@@ -111,19 +111,26 @@ export default function FindByBudgetPage() {
   });
 
   // Effect to load saved state from localStorage
-  useEffect(() => {
-    // ← sirf first mount pe load karo – page change par nahi
-    if (buyers?.length && foundBuyers.length === 0) {
+    useEffect(() => {
+    if (buyers?.length) { // Wait until buyers are loaded before checking storage
       try {
         const savedFilters = localStorage.getItem('findByBudgetFilters');
-        const savedBuyers = localStorage.getItem('findByBudgetResults');
-        if (savedFilters) form.reset(JSON.parse(savedFilters));
-        if (savedBuyers) setFoundBuyers(JSON.parse(savedBuyers));
+        const savedBuyersJSON = localStorage.getItem('findByBudgetResults');
+        
+        if (savedFilters) {
+          form.reset(JSON.parse(savedFilters));
+        }
+        
+        if (savedBuyersJSON) {
+          setFoundBuyers(JSON.parse(savedBuyersJSON));
+        }
       } catch (error) {
         console.error("Failed to load state from localStorage", error);
+        localStorage.removeItem('findByBudgetFilters');
+        localStorage.removeItem('findByBudgetResults');
       }
     }
-  }, []); // ← empty dependency – kabhi dobara nahi chalega
+  }, [buyers, form]);
   
   const formatBuyerBudget = (buyer: Buyer) => {
     if (!buyer.budget_min_amount || !buyer.budget_min_unit) return 'N/A';
@@ -143,7 +150,7 @@ export default function FindByBudgetPage() {
     }
 
     const searchMin = values.minBudget ? formatUnit(values.minBudget, values.budgetUnit) : 0;
-    const searchMax = values.maxBudget ? formatUnit(values.budgetUnit, values.budgetUnit) : Infinity;
+    const searchMax = values.maxBudget ? formatUnit(values.maxBudget, values.budgetUnit) : Infinity;
 
     const filtered = (buyers || []).filter(buyer => {
         let budgetMatch = true;
@@ -357,86 +364,82 @@ export default function FindByBudgetPage() {
             <CardDescription>Enter a budget range and/or an area to find matching buyer leads.</CardDescription>
         </CardHeader>
         <Form {...form}>
-            <CardContent>
-              <form id="find-by-budget-form" onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="flex items-end gap-2 lg:col-span-2">
-                      <FormField
-                          control={form.control}
-                          name="minBudget"
-                          render={({ field }) => (
-                          <FormItem className="flex-1">
-                              <FormLabel>Min Budget</FormLabel>
-                              <FormControl>
-                              <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-                      <FormField
-                          control={form.control}
-                          name="maxBudget"
-                          render={({ field }) => (
-                          <FormItem className="flex-1">
-                              <FormLabel>Max Budget</FormLabel>
-                              <FormControl>
-                              <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-                      <FormField
-                          control={form.control}
-                          name="budgetUnit"
-                          render={({ field }) => (
-                          <FormItem className="w-28">
-                              <FormLabel>Unit</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                      <SelectTrigger>
-                                          <SelectValue />
-                                      </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                      <SelectItem value="Lacs">Lacs</SelectItem>
-                                      <SelectItem value="Crore">Crore</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                          </FormItem>
-                          )}
-                      />
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent>
+                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex items-end gap-2 lg:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="minBudget"
+                            render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Min Budget</FormLabel>
+                                <FormControl>
+                                <Input type="number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="maxBudget"
+                            render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Max Budget</FormLabel>
+                                <FormControl>
+                                <Input type="number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="budgetUnit"
+                            render={({ field }) => (
+                            <FormItem className="w-28">
+                                <FormLabel>Unit</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Lacs">Lacs</SelectItem>
+                                        <SelectItem value="Crore">Crore</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="area"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Area Preference</FormLabel>
+                                <FormControl>
+                                <Input {...field} placeholder="e.g. DHA, Bahria" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                     </div>
-                    <FormField
-                        control={form.control}
-                        name="area"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Area Preference</FormLabel>
-                            <FormControl>
-                            <Input {...field} placeholder="e.g. DHA, Bahria" />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                  </div>
-                </div>
-              </form>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleReset}
-                >
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Reset
-                </Button>
-                <Button type="submit" form="find-by-budget-form">Search</Button>
-            </CardFooter>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleReset}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset
+                    </Button>
+                    <Button type="submit">Search</Button>
+                </CardFooter>
+            </form>
         </Form>
         {foundBuyers.length > 0 && (
           <div className="mt-6 space-y-4 p-6 border-t">
