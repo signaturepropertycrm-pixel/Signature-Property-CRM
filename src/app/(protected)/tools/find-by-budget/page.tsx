@@ -46,7 +46,7 @@ import { collection, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -579,7 +579,7 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
             ].filter(Boolean).join('\n');
 
             if (selectedProperty.is_for_rent) {
-                const rent = `${selectedProperty.demand_amount} ${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
+                const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
                 const rentDetails = `*RENT PROPERTY DETAILS* 🏡
 Serial No: ${selectedProperty.serial_no}
 Area: ${selectedProperty.area}
