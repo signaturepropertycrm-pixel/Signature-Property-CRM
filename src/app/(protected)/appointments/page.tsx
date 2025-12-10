@@ -4,7 +4,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users, Eye, History } from 'lucide-react';
+import { Calendar, Check, Clock, PlusCircle, User, Briefcase, Building, MessageSquare, MoreHorizontal, Edit, Trash2, XCircle, Users, Eye, History, CalendarPlus as AddToCalendarIcon } from 'lucide-react';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Appointment, AppointmentStatus, Activity, Buyer, Property } from '@/lib/types';
@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
-import { isWithinInterval, subDays, parseISO } from 'date-fns';
+import { isWithinInterval, subDays, parseISO, format } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 
 
@@ -163,7 +163,38 @@ function AppointmentsPageContent() {
     } else {
         toast({ title: 'Phone number not found', variant: 'destructive' });
     }
-};
+  };
+  
+    const handleAddToCalendar = (e: React.MouseEvent, appointment: Appointment) => {
+        e.stopPropagation();
+        
+        const startTimeStr = `${appointment.date}T${appointment.time}:00`;
+        const startTime = new Date(startTimeStr);
+        if (isNaN(startTime.getTime())) {
+            toast({ title: 'Invalid Date/Time', description: 'Cannot add to calendar due to invalid appointment time.', variant: 'destructive' });
+            return;
+        }
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Add 1 hour
+
+        const formatDate = (date: Date) => format(date, "yyyyMMdd'T'HHmmss");
+
+        const details = `Appointment with ${appointment.contactName}.\nPurpose: ${appointment.message}\nAssigned Agent: ${appointment.agentName}`;
+        
+        let location = 'N/A';
+        if(appointment.contactType === 'Owner' && propertiesData) {
+            const property = propertiesData.find(p => p.serial_no === appointment.contactSerialNo);
+            if(property) location = property.address;
+        }
+
+        const url = new URL('https://www.google.com/calendar/render');
+        url.searchParams.set('action', 'TEMPLATE');
+        url.searchParams.set('text', `Appointment: ${appointment.contactName}`);
+        url.searchParams.set('dates', `${formatDate(startTime)}/${formatDate(endTime)}`);
+        url.searchParams.set('details', details);
+        url.searchParams.set('location', location);
+        
+        window.open(url.toString(), '_blank');
+    };
 
   const statusConfig: { [key in AppointmentStatus]: { variant: 'default' | 'secondary' | 'destructive', icon?: React.ComponentType<{ className?: string }> } } = {
     Scheduled: { variant: 'secondary', icon: Clock },
@@ -250,6 +281,9 @@ function AppointmentsPageContent() {
                     <DropdownMenuContent align="end" className="glass-card">
                         <DropdownMenuItem onSelect={() => handleViewDetails(appt)}><Eye /> View Contact Details</DropdownMenuItem>
                         <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, appt)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
+                         {appt.status === 'Scheduled' && (
+                          <DropdownMenuItem onSelect={(e) => handleAddToCalendar(e, appt)}><AddToCalendarIcon /> Add to Calendar</DropdownMenuItem>
+                         )}
                         {appt.status === 'Scheduled' && (
                             <>
                                 <DropdownMenuItem onSelect={() => handleOpenStatusUpdate(appt, 'Completed')}>
