@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Buyer, PriceUnit, Property, PropertyType, BuyerStatus } from '@/lib/types';
+import { Buyer, PriceUnit, Property, PropertyType, BuyerStatus, ListingType } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video, RotateCcw } from 'lucide-react';
@@ -64,9 +64,10 @@ interface FindBuyersByBudgetDialogProps {
 }
 
 const formSchema = z.object({
+  listing_type: z.enum(['For Sale', 'For Rent']).default('For Sale'),
   minBudget: z.coerce.number().min(0, 'Minimum budget must be positive').optional(),
   maxBudget: z.coerce.number().min(0, 'Maximum budget must be positive').optional(),
-  budgetUnit: z.enum(['Lacs', 'Crore']).default('Lacs'),
+  budgetUnit: z.enum(['Lacs', 'Crore', 'Thousand']).default('Lacs'),
   area: z.string().optional(),
   status: z.string().optional(),
   propertyType: z.string().optional(),
@@ -107,6 +108,7 @@ export default function FindByBudgetPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      listing_type: 'For Sale',
       minBudget: 0,
       maxBudget: 0,
       budgetUnit: 'Lacs',
@@ -159,6 +161,11 @@ export default function FindByBudgetPage() {
     const searchMax = values.maxBudget ? formatUnit(values.maxBudget, values.budgetUnit) : Infinity;
 
     const filtered = (buyers || []).filter(buyer => {
+        const buyerListingType = buyer.listing_type || 'For Sale';
+        if (buyerListingType !== values.listing_type) {
+            return false;
+        }
+
         let budgetMatch = true;
         if (searchMin > 0 || searchMax < Infinity) {
             if (!buyer.budget_min_amount || !buyer.budget_max_amount || !buyer.budget_min_unit || !buyer.budget_max_unit) {
@@ -192,6 +199,7 @@ export default function FindByBudgetPage() {
 
   const handleReset = () => {
     form.reset({
+        listing_type: 'For Sale',
         minBudget: 0,
         maxBudget: 0,
         budgetUnit: 'Lacs',
@@ -377,6 +385,27 @@ export default function FindByBudgetPage() {
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <CardContent>
                     <div className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="listing_type"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Buyer Listing Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="For Sale">For Sale</SelectItem>
+                                <SelectItem value="For Rent">For Rent</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="flex items-end gap-2 lg:col-span-2">
                         <FormField
@@ -418,6 +447,7 @@ export default function FindByBudgetPage() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
+                                        <SelectItem value="Thousand">Thousand</SelectItem>
                                         <SelectItem value="Lacs">Lacs</SelectItem>
                                         <SelectItem value="Crore">Crore</SelectItem>
                                     </SelectContent>
@@ -716,3 +746,4 @@ ${utilities || 'N/A'}
 }
 
     
+
