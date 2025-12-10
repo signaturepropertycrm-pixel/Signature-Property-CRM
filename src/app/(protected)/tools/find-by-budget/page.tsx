@@ -24,10 +24,10 @@ import {
 } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Buyer, PriceUnit, Property } from '@/lib/types';
+import { Buyer, PriceUnit, Property, PropertyType, BuyerStatus } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
-import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video } from 'lucide-react';
+import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video, RotateCcw } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -40,22 +40,24 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection } from 'firebase/firestore';
+import { collection, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
+import { buyerStatuses } from '@/lib/data';
 
+const propertyTypesForFilter: PropertyType[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+];
 
 interface FindBuyersByBudgetDialogProps {
   buyers: Buyer[];
@@ -66,6 +68,8 @@ const formSchema = z.object({
   maxBudget: z.coerce.number().min(0, 'Maximum budget must be positive').optional(),
   budgetUnit: z.enum(['Lacs', 'Crore']).default('Lacs'),
   area: z.string().optional(),
+  status: z.string().optional(),
+  propertyType: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -77,6 +81,7 @@ export default function FindByBudgetPage() {
   const [foundBuyers, setFoundBuyers] = useState<Buyer[]>([]);
   const { currency } = useCurrency();
   const [propertyMessage, setPropertyMessage] = useState('');
+  const [propertyToShare, setPropertyToShare] = useState<Property | null>(null);
   const [isShareMode, setIsShareMode] = useState(false);
   const { toast } = useToast();
   const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
@@ -106,8 +111,32 @@ export default function FindByBudgetPage() {
       maxBudget: 0,
       budgetUnit: 'Lacs',
       area: '',
+      status: 'All',
+      propertyType: 'All',
     },
   });
+
+  // Effect to load saved state from localStorage
+    useEffect(() => {
+    if (buyers?.length) { // Wait until buyers are loaded before checking storage
+      try {
+        const savedFilters = localStorage.getItem('findByBudgetFilters');
+        const savedBuyersJSON = localStorage.getItem('findByBudgetResults');
+        
+        if (savedFilters) {
+          form.reset(JSON.parse(savedFilters));
+        }
+        
+        if (savedBuyersJSON) {
+          setFoundBuyers(JSON.parse(savedBuyersJSON));
+        }
+      } catch (error) {
+        console.error("Failed to load state from localStorage", error);
+        localStorage.removeItem('findByBudgetFilters');
+        localStorage.removeItem('findByBudgetResults');
+      }
+    }
+  }, [buyers, form]);
   
   const formatBuyerBudget = (buyer: Buyer) => {
     if (!buyer.budget_min_amount || !buyer.budget_min_unit) return 'N/A';
@@ -117,7 +146,7 @@ export default function FindByBudgetPage() {
       return formatCurrency(minVal, currency);
     }
     const maxVal = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
-    return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
+    return `${''}${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
   }
 
   function onSubmit(values: FormValues) {
@@ -137,17 +166,22 @@ export default function FindByBudgetPage() {
             } else {
                 const buyerMin = formatUnit(buyer.budget_min_amount, buyer.budget_min_unit);
                 const buyerMax = formatUnit(buyer.budget_max_amount, buyer.budget_max_unit);
+                // Check for range overlap
                 budgetMatch = Math.max(searchMin, buyerMin) <= Math.min(searchMax, buyerMax);
             }
         }
         
         const areaMatch = !values.area || (buyer.area_preference && buyer.area_preference.toLowerCase().includes(values.area.toLowerCase()));
+        const statusMatch = !values.status || values.status === 'All' || buyer.status === values.status;
+        const propertyTypeMatch = !values.propertyType || values.propertyType === 'All' || buyer.property_type_preference === values.propertyType;
 
-        return budgetMatch && areaMatch;
+        return budgetMatch && areaMatch && statusMatch && propertyTypeMatch;
     });
 
     setFoundBuyers(filtered);
-    // Initialize share status for found buyers
+    localStorage.setItem('findByBudgetFilters', JSON.stringify(values));
+    localStorage.setItem('findByBudgetResults', JSON.stringify(filtered));
+
     const initialStatus: Record<string, ShareStatus> = {};
     filtered.forEach(buyer => {
       initialStatus[buyer.id] = 'idle';
@@ -155,6 +189,21 @@ export default function FindByBudgetPage() {
     setShareStatus(initialStatus);
     setIsShareMode(false);
   }
+
+  const handleReset = () => {
+    form.reset({
+        minBudget: 0,
+        maxBudget: 0,
+        budgetUnit: 'Lacs',
+        area: '',
+        status: 'All',
+        propertyType: 'All'
+    });
+    setFoundBuyers([]);
+    localStorage.removeItem('findByBudgetFilters');
+    localStorage.removeItem('findByBudgetResults');
+    toast({ title: 'Filters Reset', description: 'Search has been cleared.' });
+  };
 
   const handleDownload = () => {
     const headers = ['Name', 'Phone', 'Budget', 'Area Preference', 'Notes'];
@@ -190,9 +239,30 @@ export default function FindByBudgetPage() {
     setShareStatus(prev => ({...prev, [buyer.id]: 'confirming'}));
   };
   
-  const handleConfirmShare = (buyerId: string, confirmed: boolean) => {
+  const handleConfirmShare = async (buyerId: string, confirmed: boolean) => {
+    if (confirmed && propertyToShare && profile.agency_id) {
+        try {
+            const buyerRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyerId);
+            await updateDoc(buyerRef, {
+                sharedProperties: arrayUnion({
+                    propertyId: propertyToShare.id,
+                    propertySerialNo: propertyToShare.serial_no,
+                    propertyTitle: propertyToShare.auto_title,
+                    sharedAt: new Date().toISOString(),
+                })
+            });
+            toast({ title: 'Shared property recorded!' });
+        } catch (error) {
+            console.error("Failed to record shared property:", error);
+            toast({ title: "Failed to record share", variant: "destructive" });
+            setShareStatus(prev => ({ ...prev, [buyerId]: 'idle' }));
+            return;
+        }
+    }
+    
     setShareStatus(prev => ({ ...prev, [buyerId]: confirmed ? 'shared' : 'idle' }));
   };
+
 
   const renderCards = () => (
     <ScrollArea className="h-64">
@@ -303,78 +373,122 @@ export default function FindByBudgetPage() {
             <CardTitle>Find Buyers</CardTitle>
             <CardDescription>Enter a budget range and/or an area to find matching buyer leads.</CardDescription>
         </CardHeader>
-        <CardContent>
-            <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="flex items-end gap-2 lg:col-span-2">
-                    <FormField
-                        control={form.control}
-                        name="minBudget"
-                        render={({ field }) => (
-                        <FormItem className="flex-1">
-                            <FormLabel>Min Budget</FormLabel>
-                            <FormControl>
-                            <Input type="number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="maxBudget"
-                        render={({ field }) => (
-                        <FormItem className="flex-1">
-                            <FormLabel>Max Budget</FormLabel>
-                            <FormControl>
-                            <Input type="number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="budgetUnit"
-                        render={({ field }) => (
-                        <FormItem className="w-28">
-                            <FormLabel>Unit</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent>
+                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex items-end gap-2 lg:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="minBudget"
+                            render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Min Budget</FormLabel>
                                 <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                <Input type="number" {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Lacs">Lacs</SelectItem>
-                                    <SelectItem value="Crore">Crore</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                        )}
-                    />
-                  </div>
-                  <FormField
-                      control={form.control}
-                      name="area"
-                      render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Area Preference</FormLabel>
-                          <FormControl>
-                          <Input {...field} placeholder="e.g. DHA, Bahria" />
-                          </FormControl>
-                          <FormMessage />
-                      </FormItem>
-                      )}
-                  />
-                </div>
-                <div className="flex justify-end">
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="maxBudget"
+                            render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Max Budget</FormLabel>
+                                <FormControl>
+                                <Input type="number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="budgetUnit"
+                            render={({ field }) => (
+                            <FormItem className="w-28">
+                                <FormLabel>Unit</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Lacs">Lacs</SelectItem>
+                                        <SelectItem value="Crore">Crore</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        <FormField
+                            control={form.control}
+                            name="area"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Area Preference</FormLabel>
+                                <FormControl>
+                                <Input {...field} placeholder="e.g. DHA, Bahria" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Buyer Status</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Statuses</SelectItem>
+                                            {buyerStatuses.map(status => (
+                                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="propertyType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Property Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Types</SelectItem>
+                                            {propertyTypesForFilter.map(type => (
+                                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={handleReset}>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Reset
+                    </Button>
                     <Button type="submit">Search</Button>
-                </div>
+                </CardFooter>
             </form>
-            </Form>
-        </CardContent>
+        </Form>
         {foundBuyers.length > 0 && (
           <div className="mt-6 space-y-4 p-6 border-t">
             <h4 className="font-semibold">Found {foundBuyers.length} Matching Buyers</h4>
@@ -392,7 +506,10 @@ export default function FindByBudgetPage() {
     <ShareDetailsDialog 
         isOpen={isShareDialogOpen} 
         setIsOpen={setIsShareDialogOpen}
-        onSetMessage={setPropertyMessage}
+        onSetMessage={(message, property) => {
+            setPropertyMessage(message);
+            setPropertyToShare(property);
+        }}
         startSharing={() => setIsShareMode(true)}
         allProperties={allProperties || []}
         currency={currency}
@@ -405,7 +522,7 @@ export default function FindByBudgetPage() {
 interface ShareDetailsDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
-    onSetMessage: (message: string) => void;
+    onSetMessage: (message: string, property: Property | null) => void;
     startSharing: () => void;
     allProperties: Property[];
     currency: string;
@@ -424,8 +541,8 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
         const lowerQuery = propertySearch.toLowerCase();
         return allProperties.filter(p => 
             p.serial_no.toLowerCase().includes(lowerQuery) ||
-            p.auto_title.toLowerCase().includes(lowerQuery) ||
-            p.area.toLowerCase().includes(lowerQuery)
+            (p.auto_title && p.auto_title.toLowerCase().includes(lowerQuery)) ||
+            (p.area && p.area.toLowerCase().includes(lowerQuery))
         ).slice(0, 10);
     }, [propertySearch, allProperties]);
     
@@ -462,7 +579,7 @@ function ShareDetailsDialog({ isOpen, setIsOpen, onSetMessage, startSharing, all
             ].filter(Boolean).join('\n');
 
             if (selectedProperty.is_for_rent) {
-                const rent = `${selectedProperty.demand_amount}${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
+                const rent = `${selectedProperty.demand_amount} ${selectedProperty.demand_unit === 'Thousand' ? 'K' : ` ${selectedProperty.demand_unit}`}`;
                 const rentDetails = `*RENT PROPERTY DETAILS* 🏡
 Serial No: ${selectedProperty.serial_no}
 Area: ${selectedProperty.area}
@@ -502,8 +619,11 @@ ${utilities || 'N/A'}
     
 
     const handleSetMessage = () => {
-        const messageToSet = activeTab === 'custom' ? customMessage : generatedMessage;
-        onSetMessage(messageToSet);
+        if (activeTab === 'custom') {
+            onSetMessage(customMessage, null);
+        } else {
+            onSetMessage(generatedMessage, selectedProperty);
+        }
         startSharing();
         setIsOpen(false);
     }
@@ -569,11 +689,11 @@ ${utilities || 'N/A'}
                                             {availableLinks.map(platform => (
                                                 <div key={platform} className="flex items-center space-x-2">
                                                     <Checkbox 
-                                                        id={`share-${platform}`}
+                                                        id={`share-${''}${platform}`}
                                                         checked={selectedLinks[platform]}
                                                         onCheckedChange={() => handleLinkSelectionChange(platform)}
                                                     />
-                                                    <Label htmlFor={`share-${platform}`} className="text-sm font-normal capitalize cursor-pointer">
+                                                    <Label htmlFor={`share-${''}${platform}`} className="text-sm font-normal capitalize cursor-pointer">
                                                         {platform}
                                                     </Label>
                                                 </div>
@@ -595,7 +715,4 @@ ${utilities || 'N/A'}
     );
 }
 
-
-
-
-
+    
