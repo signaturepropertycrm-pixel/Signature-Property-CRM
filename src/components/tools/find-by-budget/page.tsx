@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/form';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Buyer, PriceUnit, Property } from '@/lib/types';
+import { Buyer, PriceUnit, Property, PropertyType, BuyerStatus } from '@/lib/types';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
 import { Download, Share2, Check, Phone, Wallet, Home, DollarSign, FileText, Video, RotateCcw } from 'lucide-react';
@@ -40,8 +40,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -55,7 +53,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
+import { buyerStatuses } from '@/lib/data';
 
+const propertyTypesForFilter: PropertyType[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+];
 
 interface FindBuyersByBudgetDialogProps {
   buyers: Buyer[];
@@ -66,6 +68,8 @@ const formSchema = z.object({
   maxBudget: z.coerce.number().min(0, 'Maximum budget must be positive').optional(),
   budgetUnit: z.enum(['Lacs', 'Crore']).default('Lacs'),
   area: z.string().optional(),
+  status: z.string().optional(),
+  propertyType: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -107,6 +111,8 @@ export default function FindByBudgetPage() {
       maxBudget: 0,
       budgetUnit: 'Lacs',
       area: '',
+      status: 'All',
+      propertyType: 'All',
     },
   });
 
@@ -166,8 +172,10 @@ export default function FindByBudgetPage() {
         }
         
         const areaMatch = !values.area || (buyer.area_preference && buyer.area_preference.toLowerCase().includes(values.area.toLowerCase()));
+        const statusMatch = !values.status || values.status === 'All' || buyer.status === values.status;
+        const propertyTypeMatch = !values.propertyType || values.propertyType === 'All' || buyer.property_type_preference === values.propertyType;
 
-        return budgetMatch && areaMatch;
+        return budgetMatch && areaMatch && statusMatch && propertyTypeMatch;
     });
 
     setFoundBuyers(filtered);
@@ -188,6 +196,8 @@ export default function FindByBudgetPage() {
         maxBudget: 0,
         budgetUnit: 'Lacs',
         area: '',
+        status: 'All',
+        propertyType: 'All'
     });
     setFoundBuyers([]);
     localStorage.removeItem('findByBudgetFilters');
@@ -427,6 +437,44 @@ export default function FindByBudgetPage() {
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
+                            )}
+                        />
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Buyer Status</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Statuses</SelectItem>
+                                            {buyerStatuses.map(status => (
+                                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="propertyType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Property Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="All">All Types</SelectItem>
+                                            {propertyTypesForFilter.map(type => (
+                                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
                             )}
                         />
                     </div>
