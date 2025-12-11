@@ -102,7 +102,6 @@ export function UpcomingEvents({
                         modifiersClassNames={{
                             events: 'has-event'
                         }}
-                        className="p-0"
                         styles={{
                             day: {
                                 position: 'relative'
