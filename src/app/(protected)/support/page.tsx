@@ -41,7 +41,7 @@ export default function SupportPage() {
 
     const handleWhatsAppClick = () => {
         const phone = '923001234567'; // Replace with your support WhatsApp number
-        const message = "Hello, I need support with SignatureCRM.";
+        const message = "Hello, I need support with Asaan Estate.";
         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     }
@@ -80,7 +80,7 @@ export default function SupportPage() {
                     Contact via WhatsApp
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">or email us at</p>
-                <p className="text-center font-semibold">signaturepropertycrm@gmail.com</p>
+                <p className="text-center font-semibold">contact@asaan.estate</p>
                  <Separator />
                 <div className="flex justify-center gap-4">
                     <Button variant="outline" size="icon" asChild>

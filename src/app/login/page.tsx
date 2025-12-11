@@ -186,7 +186,7 @@ function LoginPageContent() {
           <div className="flex justify-center items-center gap-3 mb-4">
             
             <h1 className="text-3xl font-extrabold text-foreground font-headline tracking-tight">
-              Signature Property CRM
+              Asaan Estate
             </h1>
           </div>
           <p className="text-muted-foreground">

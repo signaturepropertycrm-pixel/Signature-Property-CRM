@@ -362,7 +362,7 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2">
                     <Home className="text-primary size-8" />
                     <span className="font-bold text-xl font-headline text-primary">
-                        S.P CRM
+                        Asaan Estate
                     </span>
                 </div>
             </Link>

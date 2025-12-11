@@ -1,8 +1,8 @@
-# Prompt for Building a Real Estate CRM: "SignatureCRM"
+# Prompt for Building a Real Estate CRM: "Asaan Estate"
 
 ## 1. Application Overview
 
-**App Name:** SignatureCRM
+**App Name:** Asaan Estate
 
 **Core Idea:** A comprehensive Customer Relationship Management (CRM) application designed specifically for real estate agencies in Pakistan. It helps agents and admins manage properties, buyers, team members, appointments, and performance, all in one place.
 
@@ -149,4 +149,4 @@ The main dashboard should provide a quick overview of the agency's performance.
     *   **Tables:** Use clean, modern tables with alternating row colors on hover for better readability.
     *   **Icons:** Use the `lucide-react` icon library for a consistent, flat, and modern look.
 
-This detailed prompt provides a complete blueprint for the SignatureCRM application. The AI should be able to use this to build the application feature by feature, using Supabase as its backend.
+This detailed prompt provides a complete blueprint for the Asaan Estate application. The AI should be able to use this to build the application feature by feature, using Supabase as its backend.

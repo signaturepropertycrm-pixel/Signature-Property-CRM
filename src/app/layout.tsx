@@ -4,8 +4,8 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'SignatureCRM',
-  description: 'The ultimate real-estate CRM.',
+  title: 'Asaan Estate',
+  description: 'The ultimate real-estate CRM, simplified.',
   manifest: '/manifest.json',
 };
 
