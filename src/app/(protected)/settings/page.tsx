@@ -31,7 +31,7 @@ import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2 } from 'lucide-react';
+import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             setCountryCode(selectedCountry.dial_code);
             setLocalProfile({ ...profile, phone: phone.substring(selectedCountry.dial_code.length) });
         } else {
-            const code = phone.substring(0, phone.search(/\d{10}$/));
+            const code = phone.substring(0, phone.search(/\\d{10}$/));
             setCountryCode(code || '+92');
             setLocalProfile({ ...profile, phone: phone.substring(code.length) });
         }
@@ -199,7 +199,7 @@ export default function SettingsPage() {
     
     let fullPhoneNumber = localProfile.phone || '';
     if (localProfile.phone && !localProfile.phone.startsWith('+')) {
-      fullPhoneNumber = `${countryCode}${localProfile.phone.replace(/\D/g, '')}`;
+      fullPhoneNumber = `${countryCode}${localProfile.phone.replace(/\\D/g, '')}`;
     }
 
 
@@ -869,6 +869,29 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">Receive an email every time a new buyer is added.</p>
                 </div>
                 <Switch defaultChecked disabled />
+            </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2"><LinkIcon /> Integrations</CardTitle>
+            <CardDescription>
+                Connect with third-party services to enhance your workflow.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg border">
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                        <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#4285F4" d="M21.35 12.16c0-1.53-.14-3.03-.4-4.5H12v2.73h5.24c-.24 1.74-1.3 3.23-2.94 4.22v2.28h2.95c1.72-1.58 2.7-3.9 2.7-6.73z"></path><path fill="#34A853" d="M12 22c3.27 0 6.02-1.08 8.02-2.92l-2.95-2.28c-1.08.73-2.45 1.16-4.07 1.16-3.13 0-5.78-2.1-6.73-4.96H2.2v2.36C4.14 19.83 7.8 22 12 22z"></path><path fill="#FBBC05" d="M5.27 13.75a7.1 7.1 0 0 1 0-3.5V7.89H2.2c-.68 1.35-1.05 2.85-1.05 4.36s.37 3.01 1.05 4.36l3.07-2.36z"></path><path fill="#EA4335" d="M12 5.04c1.77 0 3.35.61 4.6 1.8l2.6-2.6A11.5 11.5 0 0 0 12 2a11.95 11.95 0 0 0-9.8 5.89l3.07 2.36c.95-2.86 3.6-4.96 6.73-4.96z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 className="font-bold">Google Calendar</h3>
+                        <p className="text-sm text-muted-foreground">Sync your CRM appointments with your Google Calendar.</p>
+                    </div>
+                </div>
+                <Button variant="secondary" className="mt-2 sm:mt-0" disabled>Connect</Button>
             </div>
         </CardContent>
       </Card>

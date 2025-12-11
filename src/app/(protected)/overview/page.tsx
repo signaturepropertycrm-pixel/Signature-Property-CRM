@@ -19,6 +19,7 @@ import { PerformanceChart } from '@/components/performance-chart';
 import { LeadsChart } from '@/components/leads-chart';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { UpcomingEvents } from '@/components/upcoming-events';
 
 interface StatCardProps {
     title: string;
@@ -299,6 +300,8 @@ export default function OverviewPage() {
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}
             </div>
             
+            <UpcomingEvents appointments={appointments || []} isLoading={isAppointmentsLoading} />
+
             <div className="grid grid-cols-1 gap-8 pt-8">
                 <PerformanceChart properties={properties || []} />
                 <LeadsChart properties={properties || []} buyers={buyers || []} />
