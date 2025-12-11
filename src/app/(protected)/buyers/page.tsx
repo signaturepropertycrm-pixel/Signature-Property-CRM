@@ -97,6 +97,8 @@ export default function BuyersPage() {
     const firestore = useFirestore();
     const importInputRef = useRef<HTMLInputElement>(null);
 
+    const [agentViewTab, setAgentViewTab] = useState<'myLeads' | 'assignedLeads'>('myLeads');
+
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
     const { data: allBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
@@ -374,13 +376,17 @@ export default function BuyersPage() {
 
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
-        let filtered: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
+        let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        filtered = filtered.filter(b => (b.listing_type || 'For Sale') === activeTab);
-
-        if (profile.role === 'Agent') {
-            filtered = filtered.filter(b => b.created_by === profile.user_id);
+        if (profile.role === 'Agent' && user?.uid) {
+            if (agentViewTab === 'myLeads') {
+                baseBuyers = baseBuyers.filter(b => b.created_by === user.uid);
+            } else { // assignedLeads
+                baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid);
+            }
         }
+        
+        let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
         if (activeStatusFilter && activeStatusFilter !== 'All') {
             filtered = filtered.filter(b => b.status === activeStatusFilter);
@@ -413,7 +419,8 @@ export default function BuyersPage() {
             const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
             return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
         });
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder]);
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder, agentViewTab, user?.uid]);
+
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
 
@@ -425,7 +432,7 @@ export default function BuyersPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedBuyers([]);
-    }, [searchQuery, filters, activeTab, activeStatusFilter]);
+    }, [searchQuery, filters, activeTab, activeStatusFilter, agentViewTab]);
 
 
     const handleTabChange = (value: string) => {
@@ -1100,6 +1107,16 @@ export default function BuyersPage() {
                         </CardContent>
                     </Card>
 
+                    {profile.role === 'Agent' && (
+                        <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
+                            <TabsList className='grid w-full grid-cols-2'>
+                                <TabsTrigger value="myLeads">My Leads</TabsTrigger>
+                                <TabsTrigger value="assignedLeads">Assigned Leads</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    )}
+
+
                     <div className="flex items-center justify-between gap-4">
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                             <TabsList className='grid w-full grid-cols-2'>
@@ -1239,6 +1256,7 @@ export default function BuyersPage() {
 
 
     
+
 
 
 
