@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,12 +132,16 @@ export default function OverviewPage() {
         return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
     };
 
-    const handleSaveAppointment = async (appointment: Appointment) => {
+    const handleSaveCrmAppointment = async (appointment: Omit<Appointment, 'id' | 'status' | 'agency_id'>) => {
         if (!profile.agency_id) return;
         const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
-        const { id, ...newAppointmentData } = appointment; // remove id if it exists
-        await addDoc(collectionRef, newAppointmentData);
-        toast({ title: 'Appointment Set!', description: `Appointment with ${appointment.contactName} has been scheduled.`});
+        const newAppointment = {
+            ...appointment,
+            status: 'Scheduled',
+            agency_id: profile.agency_id,
+        };
+        await addDoc(collectionRef, newAppointment);
+        toast({ title: 'Event/Appointment Saved!', description: `${appointment.contactName} has been added to your CRM calendar.`});
     };
     
     const handleAddAppointment = () => {
@@ -146,21 +151,6 @@ export default function OverviewPage() {
 
     const handleAddEvent = () => {
         setIsEventOpen(true);
-    };
-
-    const handleSaveEvent = (event: EventDetails) => {
-        const startTime = new Date(`${event.date}T${event.time}:00`);
-        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Default to 1 hour
-        const formatDate = (date: Date) => format(date, "yyyyMMdd'T'HHmmss");
-        
-        const url = new URL('https://www.google.com/calendar/render');
-        url.searchParams.set('action', 'TEMPLATE');
-        url.searchParams.set('text', event.title);
-        url.searchParams.set('dates', `${formatDate(startTime)}/${formatDate(endTime)}`);
-        url.searchParams.set('details', event.description);
-        
-        window.open(url.toString(), '_blank');
-        toast({ title: 'Redirecting to Google Calendar', description: 'Please save the event in the new tab.' });
     };
 
 
@@ -381,13 +371,20 @@ export default function OverviewPage() {
             <SetAppointmentDialog 
                 isOpen={isAppointmentOpen}
                 setIsOpen={setIsAppointmentOpen}
-                onSave={handleSaveAppointment}
+                onSave={(data) => handleSaveCrmAppointment(data as any)}
                 appointmentDetails={appointmentDetails}
             />
             <AddEventDialog 
                 isOpen={isEventOpen}
                 setIsOpen={setIsEventOpen}
-                onSave={handleSaveEvent}
+                onSave={(data) => handleSaveCrmAppointment({
+                    contactName: data.title,
+                    contactType: 'Owner', // Generic type
+                    message: data.description || 'Custom Event',
+                    agentName: profile.name,
+                    date: data.date,
+                    time: data.time,
+                })}
             />
         </div>
     );
