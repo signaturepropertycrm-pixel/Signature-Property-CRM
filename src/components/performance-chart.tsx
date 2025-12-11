@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -11,77 +11,95 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  BarChart,
+  Bar,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { TrendingUp, Home, Building } from 'lucide-react';
 import { Property } from '@/lib/types';
 import { useTheme } from 'next-themes';
-import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, subDays, subMonths, startOfDay, parseISO, eachDayOfInterval, eachMonthOfInterval, startOfMonth } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency } from '@/lib/formatters';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// This function initializes the data structure for the last 12 months with zero revenue.
-const initializeMonthlyData = () => {
-    const data = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-        const date = subMonths(now, i);
-        data.push({
-            month: format(date, "MMM '’'yy"),
-            salesRevenue: 0,
-            rentRevenue: 0,
-        });
-    }
-    return data;
-};
+
+type TimeRange = '7d' | '30d' | '6m' | '12m';
 
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
    const { theme } = useTheme();
    const { currency } = useCurrency();
+   const [timeRange, setTimeRange] = useState<TimeRange>('12m');
 
    const chartData = React.useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+    let dataMap: { [key: string]: { salesRevenue: number, rentRevenue: number } } = {};
+    let dateFormat: string;
+    let interval;
+
+    switch (timeRange) {
+        case '7d':
+            startDate = subDays(now, 6);
+            dateFormat = 'EEE'; // e.g., Mon
+            interval = eachDayOfInterval({ start: startDate, end: now });
+            break;
+        case '30d':
+            startDate = subDays(now, 29);
+            dateFormat = 'd MMM'; // e.g., 25 Dec
+            interval = eachDayOfInterval({ start: startDate, end: now });
+            break;
+        case '6m':
+            startDate = subMonths(now, 5);
+            dateFormat = "MMM '’'yy";
+            interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
+            break;
+        case '12m':
+        default:
+            startDate = subMonths(now, 11);
+            dateFormat = "MMM '’'yy";
+            interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
+            break;
+    }
+    
+    interval.forEach(date => {
+        const key = format(date, dateFormat);
+        dataMap[key] = { salesRevenue: 0, rentRevenue: 0 };
+    });
+
     const saleProperties = properties.filter((p) => p.status === 'Sold' && p.sale_date && p.total_commission);
     const rentProperties = properties.filter((p) => p.status === 'Rent Out' && p.rent_out_date && p.rent_total_commission);
 
-    const monthlyDataMap: { [key: string]: { salesRevenue: number, rentRevenue: number } } = {};
-    const now = new Date();
-
-    // Initialize map for the last 12 months
-    for (let i = 11; i >= 0; i--) {
-        const date = subMonths(now, i);
-        const monthKey = format(date, "MMM '’'yy");
-        monthlyDataMap[monthKey] = { salesRevenue: 0, rentRevenue: 0 };
-    }
-    
     saleProperties.forEach((p) => {
         const saleDate = parseISO(p.sale_date!);
-        const monthKey = format(saleDate, "MMM '’'yy");
-        if (monthKey in monthlyDataMap) {
-            monthlyDataMap[monthKey].salesRevenue += p.total_commission!;
+        if (saleDate >= startDate) {
+            const key = format(saleDate, dateFormat);
+            if (key in dataMap) {
+                dataMap[key].salesRevenue += p.total_commission!;
+            }
         }
     });
 
     rentProperties.forEach((p) => {
         const rentDate = parseISO(p.rent_out_date!);
-        const monthKey = format(rentDate, "MMM '’'yy");
-        if (monthKey in monthlyDataMap) {
-            monthlyDataMap[monthKey].rentRevenue += p.rent_total_commission!;
+        if (rentDate >= startDate) {
+            const key = format(rentDate, dateFormat);
+            if (key in dataMap) {
+                dataMap[key].rentRevenue += p.rent_total_commission!;
+            }
         }
     });
     
-    // If there's no data at all, return an initialized array with zeros to show an empty chart
-    if (saleProperties.length === 0 && rentProperties.length === 0) {
-        return initializeMonthlyData();
-    }
-
-
-    return Object.keys(monthlyDataMap).map(month => ({
-        month,
-        salesRevenue: monthlyDataMap[month].salesRevenue,
-        rentRevenue: monthlyDataMap[month].rentRevenue,
+    return Object.keys(dataMap).map(key => ({
+        month: key,
+        salesRevenue: dataMap[key].salesRevenue,
+        rentRevenue: dataMap[key].rentRevenue,
     }));
     
-  }, [properties]);
+  }, [properties, timeRange]);
+
+  const ChartComponent = timeRange === '7d' || timeRange === '30d' ? BarChart : AreaChart;
+  const ChartElement = timeRange === '7d' || timeRange === '30d' ? Bar : Area;
 
 
   return (
@@ -93,13 +111,21 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                 <TrendingUp />
                 Monthly Revenue
               </CardTitle>
-              <CardDescription>Revenue from sales and rentals over the last 12 months.</CardDescription>
+              <CardDescription>Revenue from sales and rentals.</CardDescription>
             </div>
+             <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+                <TabsList>
+                    <TabsTrigger value="7d">7D</TabsTrigger>
+                    <TabsTrigger value="30d">30D</TabsTrigger>
+                    <TabsTrigger value="6m">6M</TabsTrigger>
+                    <TabsTrigger value="12m">12M</TabsTrigger>
+                </TabsList>
+            </Tabs>
         </div>
       </CardHeader>
       <CardContent className="h-[400px] w-full pt-6">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <ChartComponent
             data={chartData}
             margin={{
               top: 5,
@@ -134,7 +160,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                         <div className="bg-background/80 backdrop-blur-sm border p-3 rounded-lg shadow-lg">
                             <p className="font-bold text-lg mb-2">{label}</p>
                             {payload.map(pld => (
-                                <p key={pld.dataKey} style={{ color: pld.color }}>
+                                <p key={pld.dataKey} style={{ color: pld.color || pld.fill }}>
                                     {`${pld.name}: ${formatCurrency(pld.value as number, currency)}`}
                                 </p>
                             ))}
@@ -145,7 +171,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
               }}
             />
              <Legend verticalAlign="bottom" wrapperStyle={{paddingTop: 20}} />
-             <Area 
+              <ChartElement 
                 type="monotone"
                 dataKey="salesRevenue"
                 name="Sales Revenue"
@@ -156,7 +182,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                 dot={{ r: 4, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                 activeDot={{ r: 6, fill: 'hsl(var(--background))', stroke: 'hsl(var(--primary))' }}
             />
-            <Area 
+            <ChartElement 
                 type="monotone"
                 dataKey="rentRevenue"
                 name="Rent Revenue"
@@ -167,7 +193,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                 dot={{ r: 4, fill: '#22c55e', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                 activeDot={{ r: 6, fill: 'hsl(var(--background))', stroke: '#22c55e' }}
             />
-          </AreaChart>
+          </ChartComponent>
         </ResponsiveContainer>
       </CardContent>
     </Card>
