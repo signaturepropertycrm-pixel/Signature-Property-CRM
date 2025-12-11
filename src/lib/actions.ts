@@ -1,6 +1,7 @@
 
 'use server';
 
+// This function is not used by the form anymore but is kept for potential future use.
 import {
   generateAutoTitle as originalGenerateAutoTitle,
   type AutoTitleInput,
@@ -14,5 +15,6 @@ import type { ShareableTextOutput, ShareableTextInput } from '@/ai/flows/shareab
 
 
 export async function generateAutoTitle(input: AutoTitleInput) {
-  return originalGenerateAutoTitle(input);
+  // This now uses a simple local function instead of an AI call.
+  return { autoTitle: `${input.sizeValue} ${input.sizeUnit} ${input.propertyType} in ${input.area}` };
 }

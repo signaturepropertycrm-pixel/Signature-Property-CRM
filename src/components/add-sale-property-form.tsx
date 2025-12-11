@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { generateAutoTitle } from '@/ai/flows/auto-title-generation';
+import { generateAutoTitle } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
@@ -168,24 +168,13 @@ export function AddSalePropertyForm({
     const [sizeValue, sizeUnit, propertyType, area, otherType] = watchedFields;
     const finalPropertyType = propertyType === 'Other' ? otherType : propertyType;
 
-    const handler = setTimeout(async () => {
-      if (sizeValue && sizeUnit && finalPropertyType && area) {
-        try {
-          const { autoTitle } = await generateAutoTitle({
-            sizeValue: Number(sizeValue),
-            sizeUnit,
-            propertyType: finalPropertyType,
-            area,
-          });
-          setValue('auto_title', autoTitle);
-        } catch (error) {
-          console.error('Failed to generate auto title:', error);
-        }
-      }
-    }, 500);
+    if (sizeValue && sizeUnit && finalPropertyType && area) {
+        // Local title generation
+        const title = `${sizeValue} ${sizeUnit} ${finalPropertyType} in ${area}`;
+        setValue('auto_title', title);
+    }
+}, [watchedFields, setValue]);
 
-    return () => clearTimeout(handler);
-  }, [watchedFields, setValue]);
 
   /* submit */
   function onSubmit(values: AddSalePropertyFormValues) {
