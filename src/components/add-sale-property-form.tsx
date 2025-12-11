@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -25,8 +24,6 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { generateAutoTitle } from '@/lib/actions';
-import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
 import type { Property, PropertyType } from '@/lib/types';
@@ -119,7 +116,6 @@ export function AddSalePropertyForm({
   propertyToEdit,
   totalProperties,
 }: AddSalePropertyFormProps) {
-  const { toast } = useToast();
   const { user } = useUser();
   const { profile } = useProfile();
   const [countryCodePopoverOpen, setCountryCodePopoverOpen] = useState(false);
