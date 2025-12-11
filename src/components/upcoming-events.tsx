@@ -52,8 +52,7 @@ export function UpcomingEvents({
     }, [appointments]);
 
     const selectedDayEvents = eventsByDate.get(format(selectedDay, 'yyyy-MM-dd')) || [];
-    const eventDays = Array.from(eventsByDate.keys()).map(dateStr => parseISO(dateStr));
-
+    
     const handlePreviousDay = () => {
         setSelectedDay(prev => subDays(prev, 1));
     };
@@ -65,8 +64,7 @@ export function UpcomingEvents({
     if (isLoading) {
         return (
              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-1"><CardHeader><Skeleton className="h-6 w-48" /></CardHeader><CardContent><Skeleton className="h-64 w-full" /></CardContent></Card>
-                <Card className="lg:col-span-2"><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-4"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></CardContent></Card>
+                <Card className="lg:col-span-3"><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-4"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></CardContent></Card>
             </div>
         )
     }
@@ -85,46 +83,8 @@ export function UpcomingEvents({
 
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            <Card className="bg-card/70 lg:col-span-1">
-                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline">
-                        <Calendar />
-                        Calendar
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                     <DayPicker
-                        mode="single"
-                        selected={selectedDay}
-                        onSelect={(day) => day && setSelectedDay(day)}
-                        modifiers={{ events: eventDays }}
-                        modifiersClassNames={{
-                            events: 'has-event'
-                        }}
-                        styles={{
-                            day: {
-                                position: 'relative'
-                            },
-                        }}
-                        components={{
-                            DayContent: (props) => {
-                                const { date } = props;
-                                const dateKey = format(date, 'yyyy-MM-dd');
-                                const hasEvent = eventsByDate.has(dateKey);
-                                return (
-                                    <div className="relative">
-                                        {props.children}
-                                        {hasEvent && <div className="absolute bottom-1 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-primary" />}
-                                    </div>
-                                );
-                            },
-                        }}
-                    />
-                </CardContent>
-            </Card>
-
-            <Card className="bg-card/70 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 items-start">
+            <Card className="bg-card/70 w-full">
                 <CardHeader className="flex flex-row items-center justify-between">
                      <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" onClick={handlePreviousDay}><ChevronLeft /></Button>
