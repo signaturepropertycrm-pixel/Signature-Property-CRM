@@ -57,7 +57,11 @@ const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCa
                 </CardHeader>
                 <CardContent>
                     <div className="text-3xl font-bold">{value}</div>
-                    <p className="text-xs text-muted-foreground">{change}</p>
+                    <p className={cn(
+                        "text-xs text-muted-foreground",
+                        change.startsWith('+') && "text-green-600",
+                        change.startsWith('-') && "text-red-600"
+                    )}>{change}</p>
                 </CardContent>
             </Card>
         </Link>
@@ -322,3 +326,5 @@ export default function OverviewPage() {
         </div>
     );
 }
+
+    
