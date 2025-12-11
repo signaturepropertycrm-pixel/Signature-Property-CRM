@@ -435,6 +435,9 @@ export default function PropertiesPage() {
       sold_price_unit: null,
       sale_date: null,
       sold_by_agent_id: null,
+      buyerId: null,
+      buyerName: null,
+      buyerSerialNo: null,
       commission_from_buyer: null,
       commission_from_buyer_unit: null,
       commission_from_seller: null,
@@ -477,20 +480,24 @@ export default function PropertiesPage() {
   const handleSaveProperty = async (propertyData: Omit<Property, 'id'> & { id?: string }) => {
     if (!profile.agency_id) return;
     
-    if (propertyToEdit && propertyData.id) {
-        const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propertyData.id);
-        await setDoc(docRef, propertyData, { merge: true });
-        toast({ title: 'Property Updated' });
-    } else {
-        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
-        const { id, ...restOfData } = propertyData;
-        
-        await addDoc(collectionRef, { 
-            ...restOfData,
-            created_by: profile.user_id,
-            agency_id: profile.agency_id
-        });
-        toast({ title: 'Property Added' });
+    try {
+        if (propertyToEdit && propertyData.id) {
+            const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propertyData.id);
+            await setDoc(docRef, propertyData, { merge: true });
+            toast({ title: 'Property Updated' });
+        } else {
+            const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'properties');
+            const { id, ...restOfData } = propertyData;
+            await addDoc(collectionRef, {
+                ...restOfData,
+                created_by: profile.user_id,
+                agency_id: profile.agency_id
+            });
+            toast({ title: 'Property Added' });
+        }
+    } catch (error) {
+        console.error("Error saving property: ", error);
+        toast({ title: "Save Failed", description: "Could not save the property.", variant: 'destructive' });
     }
     setPropertyToEdit(null);
   };
@@ -1398,3 +1405,6 @@ export default function PropertiesPage() {
 
 
 
+
+
+    
