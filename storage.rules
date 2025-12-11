@@ -10,8 +10,13 @@ service firebase.storage {
 
     // Allow authenticated users to upload their upgrade receipts
     match /upgrade_receipts/{agencyId}/{fileName} {
-      allow write: if request.auth != null && request.auth.uid == resource.metadata.ownerId;
+      allow write: if request.auth != null && request.resource.metadata.ownerId == request.auth.uid;
       allow read: if request.auth != null; // Or more restrictive if needed
+    }
+    
+    // Allow authenticated agency members to manage documents
+    match /documents/{agencyId}/{propertyId}/{fileName} {
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/agencies/$(agencyId)/teamMembers/$(request.auth.uid));
     }
   }
 }

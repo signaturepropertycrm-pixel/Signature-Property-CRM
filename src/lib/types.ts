@@ -30,6 +30,13 @@ export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out';
 export type ListingType = 'For Sale' | 'For Rent';
 
+export type UploadedDocument = {
+    name: string;
+    url: string;
+    uploadedAt: string;
+    fileName: string; // Stored for deletion
+};
+
 export type Property = {
   id: string;
   serial_no: string;
@@ -102,6 +109,15 @@ export type Property = {
   rent_total_commission?: number;
   rent_agent_share?: number;
   rent_agent_share_unit?: PriceUnit;
+
+  // Tenant Details
+  tenant_name?: string;
+  tenant_phone?: string;
+  tenant_cnic?: string;
+  tenant_family_members?: number;
+  
+  // Document Management
+  uploaded_documents?: UploadedDocument[];
 };
 
 export type RecommendedProperty = Property & {

@@ -10,16 +10,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Property, PriceUnit } from '@/lib/types';
+import { Property, PriceUnit, UploadedDocument } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { SharePropertyDialog } from './share-property-dialog';
 import { useState } from 'react';
-import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare, Phone, Share2 } from 'lucide-react';
+import { BedDouble, Bath, Car, Ruler, CalendarDays, Tag, Wallet, LandPlot, Building, Briefcase, Link as LinkIcon, Video, Percent, User, CircleDollarSign, MessageSquare, Phone, Share2, FileArchive } from 'lucide-react';
 import { VideoLinksDialog } from './video-links-dialog';
 import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { DocumentManager } from './document-manager';
 
 interface PropertyDetailsDialogProps {
   property: Property;
@@ -135,17 +136,29 @@ export function PropertyDetailsDialog({
                  </div>
               </div>
               
-              {property.status === 'Sold' && !property.is_for_rent && (
+              {(property.status === 'Sold' || property.status === 'Rent Out') && (
                 <>
                   <Separator />
                   <div>
-                    <h3 className="font-bold text-lg mb-4">Sale Details</h3>
+                    <h3 className="font-bold text-lg mb-4">{property.status === 'Sold' ? 'Sale Details' : 'Rental Details'}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                      <DetailItem icon={<Wallet />} label="Sold Price" value={formatCurrency(property.sold_price || 0, currency)} />
-                      <DetailItem icon={<CircleDollarSign />} label="Total Commission" value={formatCurrency(property.total_commission || 0, currency)} />
-                      <DetailItem icon={<Percent />} label="Agent Share" value={`${property.agent_share_percentage || 0}%`} />
-                      <DetailItem icon={<User />} label="Sold By" value={property.sold_by_agent_id} />
-                       <DetailItem icon={<CalendarDays />} label="Sale Date" value={property.sale_date ? new Date(property.sale_date).toLocaleDateString() : 'N/A'} />
+                      {property.status === 'Sold' ? (
+                          <>
+                            <DetailItem icon={<Wallet />} label="Sold Price" value={formatCurrency(property.sold_price || 0, currency)} />
+                            <DetailItem icon={<CircleDollarSign />} label="Total Commission" value={formatCurrency(property.total_commission || 0, currency)} />
+                            <DetailItem icon={<Percent />} label="Agent Share" value={`${property.agent_share_percentage || 0}%`} />
+                            <DetailItem icon={<User />} label="Sold By" value={property.sold_by_agent_id} />
+                            <DetailItem icon={<CalendarDays />} label="Sale Date" value={property.sale_date ? new Date(property.sale_date).toLocaleDateString() : 'N/A'} />
+                          </>
+                      ) : (
+                          <>
+                            <DetailItem icon={<Wallet />} label="Final Rent" value={formatPrice(property.final_rent_amount, property.final_rent_unit)} />
+                            <DetailItem icon={<User />} label="Tenant Name" value={property.tenant_name} />
+                            <DetailItem icon={<Phone />} label="Tenant Phone" value={property.tenant_phone} />
+                            <DetailItem icon={<User />} label="Family Members" value={property.tenant_family_members} />
+                            <DetailItem icon={<CalendarDays />} label="Rent Out Date" value={property.rent_out_date ? new Date(property.rent_out_date).toLocaleDateString() : 'N/A'} />
+                          </>
+                      )}
                     </div>
                   </div>
                 </>
@@ -169,6 +182,13 @@ export function PropertyDetailsDialog({
                     <div className="text-sm">{property.is_for_rent ? (property.message || 'N/A') : (property.documents || 'N/A')}</div>
                   </div>
                 </div>
+              </div>
+              
+              <Separator />
+
+              <div>
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileArchive /> Property Documents</h3>
+                  <DocumentManager property={property} />
               </div>
 
             </div>

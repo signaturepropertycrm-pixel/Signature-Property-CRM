@@ -53,6 +53,11 @@ const formSchema = z.object({
   rent_commission_from_owner_unit: z.enum(priceUnits).default('Thousand'),
   rent_agent_share: z.coerce.number().min(0).optional(),
   rent_agent_share_unit: z.enum(priceUnits).default('Thousand'),
+  // Tenant Details
+  tenant_name: z.string().min(1, 'Tenant name is required.'),
+  tenant_phone: z.string().min(1, 'Tenant phone number is required.'),
+  tenant_cnic: z.string().optional(),
+  tenant_family_members: z.coerce.number().min(0).optional(),
 });
 
 type MarkAsRentOutFormValues = z.infer<typeof formSchema>;
@@ -117,6 +122,10 @@ export function MarkAsRentOutDialog({
             rent_commission_from_owner_unit: property.rent_commission_from_owner_unit || 'Thousand',
             rent_agent_share: property.rent_agent_share || 0,
             rent_agent_share_unit: property.rent_agent_share_unit || 'Thousand',
+            tenant_name: property.tenant_name || '',
+            tenant_phone: property.tenant_phone || '',
+            tenant_cnic: property.tenant_cnic || '',
+            tenant_family_members: property.tenant_family_members || 0,
         });
     }
   }, [isOpen, property, form]);
@@ -141,6 +150,11 @@ export function MarkAsRentOutDialog({
         rent_total_commission: totalCommission,
         rent_agent_share: values.rent_agent_share,
         rent_agent_share_unit: values.rent_agent_share_unit,
+        // Tenant Details
+        tenant_name: values.tenant_name,
+        tenant_phone: values.tenant_phone,
+        tenant_cnic: values.tenant_cnic,
+        tenant_family_members: values.tenant_family_members,
     };
     
     const batch = writeBatch(firestore);
@@ -180,7 +194,7 @@ export function MarkAsRentOutDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-headline">Mark Property as Rent Out</DialogTitle>
           <DialogDescription>
@@ -316,6 +330,56 @@ export function MarkAsRentOutDialog({
                         />
                     </div>
                 </div>
+
+                <Separator />
+                <h4 className="text-sm font-medium text-muted-foreground">Tenant Details</h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="tenant_name"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Tenant Name</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="tenant_phone"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Tenant Phone</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="tenant_cnic"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Tenant CNIC</FormLabel>
+                                <FormControl><Input {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="tenant_family_members"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Family Members</FormLabel>
+                                <FormControl><Input type="number" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
 
                 <Separator />
                 <h4 className="text-sm font-medium text-muted-foreground">Commission Details (PKR)</h4>
