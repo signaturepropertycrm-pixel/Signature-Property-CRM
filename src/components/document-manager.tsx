@@ -2,10 +2,10 @@
 'use client';
 import { useState, useRef } from 'react';
 import { Property, UploadedDocument } from '@/lib/types';
-import { useFirestore } from '@/firebase/provider';
+import { useFirestore, useStorage } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -35,6 +35,7 @@ export function DocumentManager({ property }: DocumentManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const firestore = useFirestore();
+  const storage = useStorage();
   const { profile } = useProfile();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +58,6 @@ export function DocumentManager({ property }: DocumentManagerProps) {
 
     setIsUploading(true);
     try {
-      const storage = getStorage();
       const uniqueFileName = `${new Date().getTime()}-${file.name}`;
       const filePath = `documents/${profile.agency_id}/${property.id}/${uniqueFileName}`;
       const fileStorageRef = storageRef(storage, filePath);
@@ -95,7 +95,6 @@ export function DocumentManager({ property }: DocumentManagerProps) {
         
         try {
             // Delete from Storage
-            const storage = getStorage();
             const filePath = `documents/${profile.agency_id}/${property.id}/${docToDelete.fileName}`;
             const fileStorageRef = storageRef(storage, filePath);
             await deleteObject(fileStorageRef);
