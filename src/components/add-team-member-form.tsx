@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { User, UserRole } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
@@ -87,22 +87,35 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             await updateDoc(memberRef, { role: values.role, name: values.name });
             toast({ title: 'Member Updated', description: `Details for ${values.name} have been updated.` });
         } else {
-            // Add a new active team member directly.
+             // Check if user with this email already exists in the team
             const teamMembersCollectionRef = collection(firestore, 'agencies', profile.agency_id, 'teamMembers');
-            
+            const q = query(teamMembersCollectionRef, where("email", "==", values.email));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                toast({
+                    title: 'Member Already Exists',
+                    description: `${values.email} is already a part of this agency.`,
+                    variant: 'destructive',
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            // Create a new document with an auto-generated ID
             await addDoc(teamMembersCollectionRef, {
                 name: values.name,
                 email: values.email,
                 role: values.role,
-                status: 'Active', // Set status to Active immediately
+                status: 'Pending', // User is invited and needs to sign up to become 'Active'
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
                 createdAt: serverTimestamp()
             });
 
             toast({ 
-                title: 'Member Added!', 
-                description: `${values.name} (${values.email}) has been added to your agency as an ${values.role}.` 
+                title: 'Invitation Sent!', 
+                description: `An invitation has been sent to ${values.email}. They will appear as 'Active' once they sign up.` 
             });
         }
         setDialogOpen(false);
@@ -176,10 +189,12 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
           </Button>
           <Button type="submit" className="glowing-btn" disabled={isLoading}>
             {isLoading && <Loader2 className="animate-spin" />}
-            {memberToEdit ? 'Save Changes' : 'Add Member'}
+            {memberToEdit ? 'Save Changes' : 'Invite Member'}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+
+    
