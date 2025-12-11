@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Appointment } from "@/lib/types";
@@ -71,7 +72,6 @@ export function UpcomingEvents({ appointments, isLoading, onAddAppointment, onAd
                             <Button size="sm">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add
-                                <ChevronDown className="ml-2 h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
@@ -88,7 +88,7 @@ export function UpcomingEvents({ appointments, isLoading, onAddAppointment, onAd
                 </div>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                <div className="flex justify-center">
+                <div className="border rounded-lg p-2 bg-background">
                     <DayPicker
                         mode="single"
                         selected={selectedDay}
@@ -119,7 +119,7 @@ export function UpcomingEvents({ appointments, isLoading, onAddAppointment, onAd
                 </div>
                 <div>
                     <h4 className="font-semibold mb-3">{format(selectedDay, "EEEE, MMMM d")}</h4>
-                    <div className="space-y-3 h-64 overflow-y-auto">
+                    <div className="space-y-3 h-64 overflow-y-auto pr-2">
                         {selectedDayEvents.length > 0 ? selectedDayEvents.map(appt => (
                             <div key={appt.id} className="flex items-center gap-4 p-3 rounded-lg bg-background">
                                 <div className={`flex items-center justify-center rounded-full h-10 w-10 flex-shrink-0 ${appt.contactType === 'Buyer' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300'}`}>
