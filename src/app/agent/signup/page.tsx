@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -30,6 +31,7 @@ import { doc, setDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileProvider } from '@/context/profile-context';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
@@ -214,14 +216,13 @@ function AgentSignupPageContent() {
                   )}
                   Create Account
                 </Button>
-                <div className="mt-4 text-center text-sm">
-                  Already have an account?{' '}
-                  <Link
-                    href="/login"
-                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Login
-                  </Link>
+                
+                <Separator className="my-4" />
+                <div className="space-y-2 text-center">
+                  <p className="text-sm text-muted-foreground">Already have an account?</p>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/login">Login</Link>
+                  </Button>
                 </div>
               </form>
             </Form>
