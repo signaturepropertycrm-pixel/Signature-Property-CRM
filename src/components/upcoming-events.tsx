@@ -2,10 +2,10 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Appointment, AppointmentStatus } from "@/lib/types";
-import { Calendar, Clock, Briefcase, Building, Plus, CalendarPlus, ChevronDown, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle, Users } from "lucide-react";
+import { Calendar, Clock, Briefcase, Building, Plus, CalendarPlus, ChevronDown, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { DayPicker } from "react-day-picker";
-import { isToday, isTomorrow, format, parseISO } from "date-fns";
+import { isToday, isTomorrow, format, parseISO, addDays, subDays } from "date-fns";
 import { useMemo } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -53,6 +53,14 @@ export function UpcomingEvents({
 
     const selectedDayEvents = eventsByDate.get(format(selectedDay, 'yyyy-MM-dd')) || [];
     const eventDays = Array.from(eventsByDate.keys()).map(dateStr => parseISO(dateStr));
+
+    const handlePreviousDay = () => {
+        setSelectedDay(prev => subDays(prev, 1));
+    };
+
+    const handleNextDay = () => {
+        setSelectedDay(prev => addDays(prev, 1));
+    };
     
     if (isLoading) {
         return (
@@ -119,7 +127,11 @@ export function UpcomingEvents({
 
             <Card className="bg-card/70 lg:col-span-2">
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="font-headline">{format(selectedDay, "EEEE, MMMM d")}</CardTitle>
+                     <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={handlePreviousDay}><ChevronLeft /></Button>
+                        <CardTitle className="font-headline">{format(selectedDay, "EEEE, MMMM d")}</CardTitle>
+                        <Button variant="ghost" size="icon" onClick={handleNextDay}><ChevronRight /></Button>
+                    </div>
                     <div className="flex items-center gap-2">
                         <Button asChild variant="ghost" size="sm">
                             <Link href="/appointments">View All</Link>
