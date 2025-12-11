@@ -109,6 +109,7 @@ function SignupPageContent() {
                   status: 'Active',
                   createdAt: serverTimestamp(),
                   avatar: user.photoURL,
+                  agency_id: agencyId,
               });
 
               await batch.commit();
@@ -213,6 +214,7 @@ function SignupPageContent() {
             role: 'Admin',
             status: 'Active',
             createdAt: serverTimestamp(),
+            agency_id: agencyId,
         });
         
         await batch.commit();
