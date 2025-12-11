@@ -19,7 +19,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { isWithinInterval, subDays, parseISO, format } from 'date-fns';
@@ -404,3 +404,6 @@ export default function AppointmentsPage() {
     );
 }
 
+
+
+    
