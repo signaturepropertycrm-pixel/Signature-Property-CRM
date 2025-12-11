@@ -1,8 +1,7 @@
-
 'use client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Appointment } from "@/lib/types";
-import { Calendar, Clock, Briefcase, Building, Plus } from "lucide-react";
+import { Calendar, Clock, Briefcase, Building, Plus, CalendarPlus, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { isToday, isTomorrow, format, parseISO } from "date-fns";
@@ -17,9 +16,10 @@ interface UpcomingEventsProps {
     appointments: Appointment[];
     isLoading: boolean;
     onAddAppointment: () => void;
+    onAddEvent: () => void;
 }
 
-export function UpcomingEvents({ appointments, isLoading, onAddAppointment }: UpcomingEventsProps) {
+export function UpcomingEvents({ appointments, isLoading, onAddAppointment, onAddEvent }: UpcomingEventsProps) {
     const [selectedDay, setSelectedDay] = useState<Date>(new Date());
     
     const eventsByDate = useMemo(() => {
@@ -66,10 +66,25 @@ export function UpcomingEvents({ appointments, isLoading, onAddAppointment }: Up
                     <Button asChild variant="ghost" size="sm">
                         <Link href="/appointments">View All</Link>
                     </Button>
-                    <Button size="sm" onClick={onAddAppointment}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Appointment
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="sm">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={onAddAppointment}>
+                                <Calendar />
+                                <span className="ml-2">Add Appointment</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={onAddEvent}>
+                                <CalendarPlus />
+                                <span className="ml-2">Add Event</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">

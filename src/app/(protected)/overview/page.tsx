@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +21,8 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { UpcomingEvents } from '@/components/upcoming-events';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { AddEventDialog, type EventDetails } from '@/components/add-event-dialog';
+
 
 interface StatCardProps {
     title: string;
@@ -78,6 +79,8 @@ export default function OverviewPage() {
     const { currency } = useCurrency();
     const { toast } = useToast();
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+    const [isEventOpen, setIsEventOpen] = useState(false);
+
     const [appointmentDetails, setAppointmentDetails] = useState<{
         contactType: AppointmentContactType;
         contactName: string;
@@ -139,6 +142,25 @@ export default function OverviewPage() {
     const handleAddAppointment = () => {
         setAppointmentDetails(null); // Clear previous details
         setIsAppointmentOpen(true);
+    };
+
+    const handleAddEvent = () => {
+        setIsEventOpen(true);
+    };
+
+    const handleSaveEvent = (event: EventDetails) => {
+        const startTime = new Date(`${event.date}T${event.time}:00`);
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Default to 1 hour
+        const formatDate = (date: Date) => format(date, "yyyyMMdd'T'HHmmss");
+        
+        const url = new URL('https://www.google.com/calendar/render');
+        url.searchParams.set('action', 'TEMPLATE');
+        url.searchParams.set('text', event.title);
+        url.searchParams.set('dates', `${formatDate(startTime)}/${formatDate(endTime)}`);
+        url.searchParams.set('details', event.description);
+        
+        window.open(url.toString(), '_blank');
+        toast({ title: 'Redirecting to Google Calendar', description: 'Please save the event in the new tab.' });
     };
 
 
@@ -329,6 +351,7 @@ export default function OverviewPage() {
                 appointments={appointments || []} 
                 isLoading={isAppointmentsLoading}
                 onAddAppointment={handleAddAppointment}
+                onAddEvent={handleAddEvent}
             />
 
             <div className="grid grid-cols-1 gap-8 pt-8">
@@ -360,6 +383,11 @@ export default function OverviewPage() {
                 setIsOpen={setIsAppointmentOpen}
                 onSave={handleSaveAppointment}
                 appointmentDetails={appointmentDetails}
+            />
+            <AddEventDialog 
+                isOpen={isEventOpen}
+                setIsOpen={setIsEventOpen}
+                onSave={handleSaveEvent}
             />
         </div>
     );
