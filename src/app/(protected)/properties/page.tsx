@@ -516,16 +516,23 @@ export default function PropertiesPage() {
   };
 
   const handleExport = (type: 'For Sale' | 'For Rent') => {
-    if (!allProperties) return;
+    if (!allProperties || !user?.uid) return;
+
+    let sourceProperties = allProperties;
+    // If user is an agent, only export their own leads
+    if (profile.role === 'Agent') {
+        sourceProperties = allProperties.filter(p => p.created_by === user.uid);
+    }
+    
     const propertiesToExport = sortProperties(
-        allProperties.filter(p => {
+        sourceProperties.filter(p => {
             const listingType = p.is_for_rent ? 'For Rent' : 'For Sale';
             return !p.is_deleted && listingType === type;
         })
     );
 
     if (propertiesToExport.length === 0) {
-      toast({ title: 'No Data', description: `There are no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
+      toast({ title: 'No Data', description: `You have no properties for ${type.toLowerCase()} to export.`, variant: 'destructive' });
       return;
     }
 
@@ -614,7 +621,7 @@ export default function PropertiesPage() {
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile.agency_id || !importType || !allProperties) return;
+    if (!file || !profile.agency_id || !importType || !allProperties || !user?.uid) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -629,9 +636,8 @@ export default function PropertiesPage() {
           const char = row[i];
           if (char === '"') {
             if (i + 1 < row.length && row[i + 1] === '"') {
-              // It's an escaped quote
               currentField += '"';
-              i++; // Skip the next quote
+              i++;
             } else {
               inQuotes = !inQuotes;
             }
@@ -654,10 +660,15 @@ export default function PropertiesPage() {
       
       const listingTypeToImport: ListingType = importType;
 
-      const totalSaleProperties = allProperties.filter(p => !p.is_deleted && !p.is_for_rent).length;
-      const totalRentProperties = allProperties.filter(p => !p.is_deleted && p.is_for_rent).length;
+      let myProperties = allProperties;
+      if (profile.role === 'Agent') {
+          myProperties = allProperties.filter(p => p.created_by === user.uid);
+      }
+
+      const totalSaleProperties = myProperties.filter(p => !p.is_deleted && !p.is_for_rent).length;
+      const totalRentProperties = myProperties.filter(p => !p.is_deleted && p.is_for_rent).length;
       
-      const BATCH_SIZE = 499; // Firestore batch limit is 500
+      const BATCH_SIZE = 499;
       let batch = writeBatch(firestore);
       let newPropertiesCount = 0;
       let skippedCount = 0;
@@ -744,7 +755,7 @@ export default function PropertiesPage() {
                     water: utilities?.includes('Water') || false,
                 },
             };
-        } else { // Rent import
+        } else {
              const [
                 _serial, video_recorded, _date, number, city, area, address, property_type, size,
                 storey, utilities, status, rent,
@@ -770,7 +781,7 @@ export default function PropertiesPage() {
                 size_value: size_value_str ? parseFloat(size_value_str) : 0,
                 size_unit: (size_unit_str as SizeUnit) || 'Marla',
                 demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
-                demand_unit: 'Thousand', // Rent is always in thousands for now
+                demand_unit: 'Thousand',
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
                 country_code: '+92',
@@ -794,7 +805,7 @@ export default function PropertiesPage() {
       }
       
       try {
-        await batch.commit(); // Commit the last batch
+        await batch.commit();
         toast({ 
             title: 'Import Complete', 
             description: `${newPropertiesCount} new properties have been added. ${skippedCount > 0 ? `${skippedCount} rows were skipped due to missing phone numbers.` : ''}` 
@@ -806,7 +817,7 @@ export default function PropertiesPage() {
     };
     reader.readAsText(file);
     if(importInputRef.current) importInputRef.current.value = '';
-    setImportType(null); // Reset after import
+    setImportType(null);
   };
 
 
@@ -1139,132 +1150,128 @@ export default function PropertiesPage() {
                         </div>
                     </div>
                   )}
-                  {(profile.role === 'Admin' || profile.role === 'Editor') && (
-                      <>
-                        {selectedProperties.length > 0 && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" className="rounded-full">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete ({selectedProperties.length})
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will move {selectedProperties.length} properties to the trash. You can restore them later.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                        <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                            <PopoverTrigger asChild>
-                            <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                            <div className="grid gap-4">
-                                <div className="space-y-2">
-                                <h4 className="font-medium leading-none">Filters</h4>
-                                <p className="text-sm text-muted-foreground">Refine your property search.</p>
-                                </div>
-                                <div className="grid gap-2">
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label>Serial No</Label>
-                                    <div className="col-span-2 grid grid-cols-2 gap-2">
-                                        <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'P' | 'RP') => handleFilterChange('serialNoPrefix', value)}>
-                                            <SelectTrigger className="h-8">
-                                                <SelectValue placeholder="Prefix" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All</SelectItem>
-                                                <SelectItem value="P">P</SelectItem>
-                                                <SelectItem value="RP">RP</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label htmlFor="area">Area</Label>
-                                    <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label htmlFor="propertyType">Type</Label>
-                                    <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                                    <SelectTrigger className="col-span-2 h-8">
-                                        <SelectValue placeholder="Property Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {propertyTypesForFilter.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                                    </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label>Size</Label>
-                                    <div className="col-span-2 grid grid-cols-2 gap-2">
-                                    <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={(e) => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                                    <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={(e) => handleFilterChange('maxSize', e.target.value)} className="h-8" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label></Label>
-                                    <div className="col-span-2">
-                                    <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                  {selectedProperties.length > 0 && profile.role !== 'Agent' && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="rounded-full">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete ({selectedProperties.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will move {selectedProperties.length} properties to the trash. You can restore them later.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
+                    <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                        <PopoverTrigger asChild>
+                        <Button variant="outline" className="rounded-full"><Filter className="mr-2 h-4 w-4" />Filters</Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                        <div className="grid gap-4">
+                            <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Filters</h4>
+                            <p className="text-sm text-muted-foreground">Refine your property search.</p>
+                            </div>
+                            <div className="grid gap-2">
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label>Serial No</Label>
+                                <div className="col-span-2 grid grid-cols-2 gap-2">
+                                    <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'P' | 'RP') => handleFilterChange('serialNoPrefix', value)}>
                                         <SelectTrigger className="h-8">
-                                        <SelectValue placeholder="Unit" />
+                                            <SelectValue placeholder="Prefix" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                        <SelectItem value="All">All Units</SelectItem>
-                                        <SelectItem value="Marla">Marla</SelectItem>
-                                        <SelectItem value="SqFt">SqFt</SelectItem>
-                                        <SelectItem value="Kanal">Kanal</SelectItem>
-                                        <SelectItem value="Acre">Acre</SelectItem>
-                                        <SelectItem value="Maraba">Maraba</SelectItem>
+                                            <SelectItem value="All">All</SelectItem>
+                                            <SelectItem value="P">P</SelectItem>
+                                            <SelectItem value="RP">RP</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label>Demand</Label>
-                                    <div className="col-span-2 grid grid-cols-2 gap-2">
-                                    <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={(e) => handleFilterChange('minDemand', e.target.value)} className="h-8" />
-                                    <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={(e) => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 items-center gap-4">
-                                    <Label></Label>
-                                    <div className="col-span-2">
-                                    <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
-                                        <SelectTrigger className="h-8">
-                                        <SelectValue placeholder="Unit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                        <SelectItem value="All">All Units</SelectItem>
-                                        <SelectItem value="Lacs">Lacs</SelectItem>
-                                        <SelectItem value="Crore">Crore</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    </div>
-                                </div>
-                                </div>
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                                    <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                                    <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
                                 </div>
                             </div>
-                            </PopoverContent>
-                        </Popover>
-                        <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
-                        <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                        <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
-                      </>
-                  )}
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="area">Area</Label>
+                                <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="propertyType">Type</Label>
+                                <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                                <SelectTrigger className="col-span-2 h-8">
+                                    <SelectValue placeholder="Property Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {propertyTypesForFilter.map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label>Size</Label>
+                                <div className="col-span-2 grid grid-cols-2 gap-2">
+                                <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={(e) => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                                <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={(e) => handleFilterChange('maxSize', e.target.value)} className="h-8" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label></Label>
+                                <div className="col-span-2">
+                                <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    <SelectItem value="All">All Units</SelectItem>
+                                    <SelectItem value="Marla">Marla</SelectItem>
+                                    <SelectItem value="SqFt">SqFt</SelectItem>
+                                    <SelectItem value="Kanal">Kanal</SelectItem>
+                                    <SelectItem value="Acre">Acre</SelectItem>
+                                    <SelectItem value="Maraba">Maraba</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label>Demand</Label>
+                                <div className="col-span-2 grid grid-cols-2 gap-2">
+                                <Input id="minDemand" placeholder="Min" type="number" value={filters.minDemand} onChange={(e) => handleFilterChange('minDemand', e.target.value)} className="h-8" />
+                                <Input id="maxDemand" placeholder="Max" type="number" value={filters.maxDemand} onChange={(e) => handleFilterChange('maxDemand', e.target.value)} className="h-8" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 items-center gap-4">
+                                <Label></Label>
+                                <div className="col-span-2">
+                                <Select value={filters.demandUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('demandUnit', value)}>
+                                    <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Unit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    <SelectItem value="All">All Units</SelectItem>
+                                    <SelectItem value="Lacs">Lacs</SelectItem>
+                                    <SelectItem value="Crore">Crore</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                </div>
+                            </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                                <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                            </div>
+                        </div>
+                        </PopoverContent>
+                    </Popover>
+                    <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                    <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
+                    <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
               </div>
             </div>
             
@@ -1388,5 +1395,6 @@ export default function PropertiesPage() {
 
 
     
+
 
 
