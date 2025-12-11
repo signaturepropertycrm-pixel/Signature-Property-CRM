@@ -22,6 +22,7 @@ interface UpcomingEventsProps {
     onUpdateStatus: (appointment: Appointment, status: 'Completed' | 'Cancelled') => void;
     onDelete: (appointment: Appointment) => void;
     onAddToCalendar: (event: React.MouseEvent, appointment: Appointment) => void;
+    onAllEventsClick: () => void;
 }
 
 export function UpcomingEvents({ 
@@ -32,6 +33,7 @@ export function UpcomingEvents({
     onUpdateStatus,
     onDelete,
     onAddToCalendar,
+    onAllEventsClick,
 }: UpcomingEventsProps) {
     const [selectedDay, setSelectedDay] = useState<Date>(new Date());
     
@@ -92,8 +94,8 @@ export function UpcomingEvents({
                         <Button variant="ghost" size="icon" onClick={handleNextDay}><ChevronRight /></Button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button asChild variant="ghost" size="sm">
-                            <Link href="/appointments">View All</Link>
+                        <Button variant="ghost" size="sm" onClick={onAllEventsClick}>
+                            View All
                         </Button>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

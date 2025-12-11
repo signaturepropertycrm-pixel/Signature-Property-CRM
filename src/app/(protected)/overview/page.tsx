@@ -24,6 +24,7 @@ import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AddEventDialog, type EventDetails } from '@/components/add-event-dialog';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
+import { AllEventsDialog } from '@/components/all-events-dialog';
 
 
 interface StatCardProps {
@@ -82,6 +83,7 @@ export default function OverviewPage() {
     const { toast } = useToast();
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
     const [isEventOpen, setIsEventOpen] = useState(false);
+    const [isAllEventsOpen, setIsAllEventsOpen] = useState(false);
     const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
     const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
 
@@ -430,6 +432,7 @@ export default function OverviewPage() {
                 onUpdateStatus={handleOpenStatusUpdate}
                 onDelete={handleDeleteAppointment}
                 onAddToCalendar={handleAddToCalendar}
+                onAllEventsClick={() => setIsAllEventsOpen(true)}
             />
 
             <div className="grid grid-cols-1 gap-8 pt-8">
@@ -476,6 +479,12 @@ export default function OverviewPage() {
                     onUpdate={handleUpdateStatus}
                 />
             )}
+             <AllEventsDialog
+                isOpen={isAllEventsOpen}
+                setIsOpen={setIsAllEventsOpen}
+                appointments={appointments || []}
+            />
         </div>
     );
 }
+
