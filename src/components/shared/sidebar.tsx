@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -81,13 +82,13 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
-  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
+  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin', 'Agent'] },
+  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin', 'Agent'] },
   { 
     href: '/tools', 
     label: 'Tools', 
     icon: <ClipboardList />, 
-    roles: ['Admin'],
+    roles: ['Admin', 'Agent'],
     subItems: [
         { href: '/tools/list-generator', label: 'List Generator' },
         { href: '/tools/find-by-budget', label: 'Find By Budget' },
