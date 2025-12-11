@@ -44,8 +44,8 @@ const fieldLabels: Record<SelectableField, string> = {
   documents: 'Documents'
 };
 
-const propertyTypesForFilter: (PropertyType | 'All')[] = [
-    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+const propertyTypesForFilter: (PropertyType | 'All' | 'Other')[] = [
+    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Other'
 ];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
 const demandUnits: PriceUnit[] = ['Lacs', 'Crore'];
@@ -58,7 +58,8 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
     'status', 'road_size_ft', 'storey', 'utilities', 'documents'
   ]);
   const [areaFilter, setAreaFilter] = useState('');
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyType | 'All'>('All');
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyType | 'All' | 'Other'>('All');
+  const [otherPropertyTypeFilter, setOtherPropertyTypeFilter] = useState('');
   const [minSizeFilter, setMinSizeFilter] = useState('');
   const [maxSizeFilter, setMaxSizeFilter] = useState('');
   const [sizeUnitFilter, setSizeUnitFilter] = useState<SizeUnit>('Marla');
@@ -89,7 +90,16 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
         const demandBase = formatUnit(p.demand_amount, p.demand_unit);
 
         const areaMatch = !areaFilter || p.area.toLowerCase().includes(areaFilter.toLowerCase());
-        const typeMatch = propertyTypeFilter === 'All' || p.property_type === propertyTypeFilter;
+        
+        let typeMatch = true;
+        if (propertyTypeFilter !== 'All') {
+            if (propertyTypeFilter === 'Other') {
+                typeMatch = p.property_type.toLowerCase().includes(otherPropertyTypeFilter.toLowerCase());
+            } else {
+                typeMatch = p.property_type === propertyTypeFilter;
+            }
+        }
+        
         const minSizeMatch = !minSizeFilter || (p.size_value >= parseFloat(minSizeFilter) && p.size_unit === sizeUnitFilter);
         const maxSizeMatch = !maxSizeFilter || (p.size_value <= parseFloat(maxSizeFilter) && p.size_unit === sizeUnitFilter);
         const minDemandMatch = !minDemandFilter || demandBase >= minDemandBase;
@@ -226,6 +236,14 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
                                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                <SelectContent>{propertyTypesForFilter.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                            </Select>
+                           {propertyTypeFilter === 'Other' && (
+                                <Input 
+                                    value={otherPropertyTypeFilter}
+                                    onChange={(e) => setOtherPropertyTypeFilter(e.target.value)}
+                                    placeholder="Enter custom type..."
+                                    className="mt-2"
+                                />
+                           )}
                         </div>
                         <div>
                             <Label>Size</Label>
@@ -301,7 +319,7 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
                         </div>
                     ) : (
                         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                            {areaFilter ? 'No properties found for this area.' : 'Filter by area to see properties.'}
+                            {areaFilter || propertyTypeFilter !== 'All' || minSizeFilter || minDemandFilter ? 'No properties found for these filters.' : 'Filter properties to see a list.'}
                         </div>
                     )}
                 </ScrollArea>
