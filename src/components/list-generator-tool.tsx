@@ -14,13 +14,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Property, PropertyType } from '@/lib/types';
+import { Property, PropertyType, SizeUnit, PriceUnit } from '@/lib/types';
 import { useProfile } from '@/context/profile-context';
 import { useToast } from '@/hooks/use-toast';
 import { ClipboardCopy, ClipboardCheck, Settings, FileText, List, SlidersHorizontal, CheckSquare } from 'lucide-react';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { formatUnit } from '@/lib/formatters';
 
 interface ListGeneratorToolProps {
   allProperties: Property[];
@@ -42,23 +44,28 @@ const fieldLabels: Record<SelectableField, string> = {
   documents: 'Documents'
 };
 
+const propertyTypesForFilter: (PropertyType | 'All')[] = [
+    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+];
+const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
+const demandUnits: PriceUnit[] = ['Lacs', 'Crore'];
+
 export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
   const { profile } = useProfile();
   const { toast } = useToast();
   const [selectedFields, setSelectedFields] = useState<SelectableField[]>([
-    'serial_no',
-    'area',
-    'address',
-    'size',
-    'demand',
-    'property_type',
-    'status',
-    'road_size_ft',
-    'storey',
-    'utilities',
-    'documents'
+    'serial_no', 'area', 'address', 'size', 'demand', 'property_type',
+    'status', 'road_size_ft', 'storey', 'utilities', 'documents'
   ]);
   const [areaFilter, setAreaFilter] = useState('');
+  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyType | 'All'>('All');
+  const [minSizeFilter, setMinSizeFilter] = useState('');
+  const [maxSizeFilter, setMaxSizeFilter] = useState('');
+  const [sizeUnitFilter, setSizeUnitFilter] = useState<SizeUnit>('Marla');
+  const [minDemandFilter, setMinDemandFilter] = useState('');
+  const [maxDemandFilter, setMaxDemandFilter] = useState('');
+  const [demandUnitFilter, setDemandUnitFilter] = useState<PriceUnit>('Lacs');
+
   const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [generatedList, setGeneratedList] = useState('');
@@ -74,11 +81,23 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
   
   const handleFilterProperties = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const filtered = allProperties.filter(
-      (p) =>
-        p.status === 'Available' &&
-        (!areaFilter || p.area.toLowerCase().includes(areaFilter.toLowerCase()))
-    );
+    
+    const minDemandBase = minDemandFilter ? formatUnit(parseFloat(minDemandFilter), demandUnitFilter) : 0;
+    const maxDemandBase = maxDemandFilter ? formatUnit(parseFloat(maxDemandFilter), demandUnitFilter) : Infinity;
+
+    const filtered = allProperties.filter(p => {
+        const demandBase = formatUnit(p.demand_amount, p.demand_unit);
+
+        const areaMatch = !areaFilter || p.area.toLowerCase().includes(areaFilter.toLowerCase());
+        const typeMatch = propertyTypeFilter === 'All' || p.property_type === propertyTypeFilter;
+        const minSizeMatch = !minSizeFilter || (p.size_value >= parseFloat(minSizeFilter) && p.size_unit === sizeUnitFilter);
+        const maxSizeMatch = !maxSizeFilter || (p.size_value <= parseFloat(maxSizeFilter) && p.size_unit === sizeUnitFilter);
+        const minDemandMatch = !minDemandFilter || demandBase >= minDemandBase;
+        const maxDemandMatch = !maxDemandFilter || demandBase <= maxDemandBase;
+        
+        return p.status === 'Available' && areaMatch && typeMatch && minSizeMatch && maxSizeMatch && minDemandMatch && maxDemandMatch;
+    });
+
     setFilteredProperties(filtered);
     setSelectedProperties([]); // Reset selection
     setGeneratedList('');
@@ -190,18 +209,49 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
             <div className="space-y-4">
                 <h3 className="font-semibold flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" />Step 1: Filters & Options</h3>
                 <div className="p-4 border rounded-lg space-y-4 bg-muted/30 h-full">
-                    <div>
-                        <Label htmlFor="area-filter">Filter by Area</Label>
-                        <form onSubmit={handleFilterProperties} className="flex gap-2 mt-2">
+                    <form onSubmit={handleFilterProperties} className="space-y-4">
+                         <div>
+                            <Label htmlFor="area-filter">Filter by Area</Label>
                             <Input 
                                 id="area-filter"
                                 value={areaFilter}
                                 onChange={(e) => setAreaFilter(e.target.value)}
                                 placeholder="e.g., DHA, Bahria"
+                                className="mt-1"
                             />
-                            <Button type="submit">Filter</Button>
-                        </form>
-                    </div>
+                        </div>
+                        <div>
+                           <Label>Property Type</Label>
+                           <Select value={propertyTypeFilter} onValueChange={(v) => setPropertyTypeFilter(v as any)}>
+                               <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                               <SelectContent>{propertyTypesForFilter.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                           </Select>
+                        </div>
+                        <div>
+                            <Label>Size</Label>
+                            <div className="flex gap-2 items-center mt-1">
+                                <Input type="number" placeholder="Min" value={minSizeFilter} onChange={e => setMinSizeFilter(e.target.value)} />
+                                <Input type="number" placeholder="Max" value={maxSizeFilter} onChange={e => setMaxSizeFilter(e.target.value)} />
+                                <Select value={sizeUnitFilter} onValueChange={v => setSizeUnitFilter(v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>{sizeUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                         <div>
+                            <Label>Demand</Label>
+                            <div className="flex gap-2 items-center mt-1">
+                                <Input type="number" placeholder="Min" value={minDemandFilter} onChange={e => setMinDemandFilter(e.target.value)} />
+                                <Input type="number" placeholder="Max" value={maxDemandFilter} onChange={e => setMaxDemandFilter(e.target.value)} />
+                                <Select value={demandUnitFilter} onValueChange={v => setDemandUnitFilter(v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>{demandUnits.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <Button type="submit" className="w-full">Filter Properties</Button>
+                    </form>
+                    <Separator />
                     <div>
                         <Label>Fields to Include</Label>
                         <div className="grid grid-cols-2 gap-2 mt-2">
