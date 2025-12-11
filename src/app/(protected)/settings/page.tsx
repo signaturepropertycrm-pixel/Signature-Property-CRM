@@ -888,10 +888,9 @@ export default function SettingsPage() {
                     </div>
                     <div>
                         <h3 className="font-bold">Google Calendar</h3>
-                        <p className="text-sm text-muted-foreground">Sync your CRM appointments with your Google Calendar.</p>
+                        <p className="text-sm text-muted-foreground">Use the "Add to Calendar" feature on appointments to sync them.</p>
                     </div>
                 </div>
-                <Button variant="secondary" className="mt-2 sm:mt-0" disabled>Connect</Button>
             </div>
         </CardContent>
       </Card>
