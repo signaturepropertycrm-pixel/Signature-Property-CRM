@@ -128,13 +128,23 @@ export function AppSidebar() {
       setOpenCollapsibles(prev => ({...prev, [href]: !prev[href]}));
   }
 
-  const mobileNavItems = [
-     { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-     { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
-     { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'], isCenter: true },
-     { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
-     { href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent'], isSheet: true },
-  ].filter(item => item.roles.includes(profile.role));
+  const allMobileNavItems = [
+     { id: 'team', href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+     { id: 'overview', href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'], isCenter: true },
+     { id: 'buyers', href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
+     { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent'], isSheet: true },
+  ];
+  
+  // Filter items based on role, but use a placeholder for layout stability
+  const mobileNavItems = allMobileNavItems.map(item => {
+      if (item.roles.includes(profile.role)) {
+          return item;
+      }
+      // If role doesn't match, return a placeholder to maintain grid layout
+      return { id: item.id, placeholder: true, roles: [] };
+  });
+
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/overview', '/properties', '/buyers', '/team'].includes(item.href) &&
@@ -277,7 +287,11 @@ export function AppSidebar() {
       <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
         <div className="grid h-full grid-cols-5 relative">
           {mobileNavItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            if ('placeholder' in item) {
+                return <div key={item.id} />;
+            }
+            
+            const isActive = pathname.startsWith(item.href!);
             
             if (item.isSheet) {
                 return (
@@ -309,7 +323,7 @@ export function AppSidebar() {
                             onClick={() => setIsMoreMenuOpen(prev => !prev)}
                             className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary z-50')}
                         >
-                            {isMoreMenuOpen ? <X className="h-5 w-5" /> : React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                            {isMoreMenuOpen ? <X className="h-5 w-5" /> : React.cloneElement(item.icon!, { className: 'h-5 w-5' })}
                             <span>{item.label}</span>
                         </button>
                     </div>
@@ -318,13 +332,13 @@ export function AppSidebar() {
             if (item.isCenter) {
                 return (
                     <div key={item.href} className="relative flex items-center justify-center">
-                        <Link href={item.href}>
+                        <Link href={item.href!}>
                              <div className={cn(
                                 'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
                                 'bg-gradient-to-br from-primary to-blue-500',
                                 isActive && 'ring-4 ring-primary/30'
                              )}>
-                                {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                                {React.cloneElement(item.icon!, { className: 'h-7 w-7' })}
                             </div>
                         </Link>
                     </div>
@@ -333,13 +347,13 @@ export function AppSidebar() {
             return (
                 <Link
                     key={item.href}
-                    href={item.href}
+                    href={item.href!}
                     className={cn(
                         'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
                         isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
                     )}
                 >
-                    {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                    {React.cloneElement(item.icon!, { className: 'h-5 w-5' })}
                     <span>{item.label}</span>
                 </Link>
             )
