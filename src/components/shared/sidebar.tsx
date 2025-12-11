@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -37,6 +36,7 @@ import {
   Menu,
   Gem,
   ShieldCheck,
+  PieChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-is-mobile';
@@ -81,7 +81,8 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/analytics', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
+  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
+  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
   { 
     href: '/tools', 
     label: 'Tools', 

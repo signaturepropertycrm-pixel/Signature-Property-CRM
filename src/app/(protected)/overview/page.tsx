@@ -332,7 +332,7 @@ export default function OverviewPage() {
             change: `From ${stats.soldInLast30DaysCount} sales`,
             icon: <DollarSign className="h-4 w-4" />,
             color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
-            href: "/properties?status=Sold",
+            href: "/reports",
             isLoading
         },
         {
@@ -341,7 +341,7 @@ export default function OverviewPage() {
             change: "From new rentals",
             icon: <DollarSign className="h-4 w-4" />,
             color: "bg-lime-100 dark:bg-lime-900 text-lime-600 dark:text-lime-300",
-            href: "/properties?status=Rent Out",
+            href: "/reports",
             isLoading
         },
         {
@@ -350,7 +350,7 @@ export default function OverviewPage() {
             change: "Closed deals this month",
             icon: <CheckCircle className="h-4 w-4" />,
             color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
-            href: "/properties?status=Sold",
+            href: "/reports",
             isLoading,
         },
         {
@@ -435,11 +435,6 @@ export default function OverviewPage() {
                 onAllEventsClick={() => setIsAllEventsOpen(true)}
             />
 
-            <div className="grid grid-cols-1 gap-8 pt-8">
-                <PerformanceChart properties={properties || []} />
-                <LeadsChart properties={properties || []} buyers={buyers || []} />
-            </div>
-
             <Card className="mt-12 bg-gradient-to-r from-primary/90 to-blue-500/90 text-primary-foreground shadow-2xl">
                 <div className="flex flex-col md:flex-row items-center justify-between p-8 gap-6">
                     <div className="flex-shrink-0">
@@ -487,4 +482,3 @@ export default function OverviewPage() {
         </div>
     );
 }
-
