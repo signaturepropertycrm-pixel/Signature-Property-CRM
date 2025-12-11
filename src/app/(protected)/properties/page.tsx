@@ -160,6 +160,7 @@ export default function PropertiesPage() {
   const { data: allProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   
   const [listingType, setListingType] = useState<ListingType>('For Sale');
+  const [agentViewTab, setAgentViewTab] = useState<'myLeads' | 'assignedLeads'>('myLeads');
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -239,8 +240,12 @@ export default function PropertiesPage() {
     
     let baseProperties = allProperties.filter(p => !p.is_deleted);
     
-    if (profile.role === 'Agent') {
-      baseProperties = baseProperties.filter(p => p.created_by === user?.uid || p.assignedTo === user?.uid);
+    if (profile.role === 'Agent' && user?.uid) {
+        if (agentViewTab === 'myLeads') {
+            baseProperties = baseProperties.filter(p => p.created_by === user.uid);
+        } else { // assignedLeads
+            baseProperties = baseProperties.filter(p => p.assignedTo === user.uid);
+        }
     }
 
     // 1. Primary Filter: Search Query
@@ -308,7 +313,7 @@ export default function PropertiesPage() {
         return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder, agentViewTab]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -320,7 +325,7 @@ export default function PropertiesPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedProperties([]);
-    }, [searchQuery, filters, statusFilterFromURL]);
+    }, [searchQuery, filters, statusFilterFromURL, agentViewTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -437,7 +442,7 @@ export default function PropertiesPage() {
       total_commission: null,
       agent_commission_amount: null,
       agent_commission_unit: null,
-      agent_share_percentage: null
+      agent_share_percentage: null,
     }, { merge: true });
     toast({ title: 'Property Status Updated', description: `${prop.serial_no} marked as Available again.` });
   };
@@ -1273,6 +1278,15 @@ export default function PropertiesPage() {
                 </CardContent>
             </Card>
 
+            {profile.role === 'Agent' && (
+                <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
+                    <TabsList className='grid w-full grid-cols-2'>
+                        <TabsTrigger value="myLeads">My Leads</TabsTrigger>
+                        <TabsTrigger value="assignedLeads">Assigned Leads</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            )}
+
             <div className="mt-4">
               {renderContent(paginatedProperties)}
             </div>
@@ -1374,4 +1388,5 @@ export default function PropertiesPage() {
 
 
     
+
 
