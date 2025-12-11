@@ -8,8 +8,8 @@ import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { collection, query, where, Timestamp, addDoc } from 'firebase/firestore';
-import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType } from '@/lib/types';
+import { collection, query, where, Timestamp, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO, format } from 'date-fns';
@@ -23,6 +23,7 @@ import { UpcomingEvents } from '@/components/upcoming-events';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AddEventDialog, type EventDetails } from '@/components/add-event-dialog';
+import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 
 
 interface StatCardProps {
@@ -62,7 +63,7 @@ const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCa
                 </CardHeader>
                 <CardContent>
                     <div className="text-3xl font-bold">{value}</div>
-                    <p className={cn(
+                     <p className={cn(
                         "text-xs text-muted-foreground",
                         change.startsWith('+') && "text-green-600",
                         change.startsWith('-') && "text-red-600"
@@ -81,6 +82,9 @@ export default function OverviewPage() {
     const { toast } = useToast();
     const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
     const [isEventOpen, setIsEventOpen] = useState(false);
+    const [appointmentToUpdateStatus, setAppointmentToUpdateStatus] = useState<Appointment | null>(null);
+    const [newStatus, setNewStatus] = useState<AppointmentStatus | null>(null);
+
 
     const [appointmentDetails, setAppointmentDetails] = useState<{
         contactType: AppointmentContactType;
@@ -131,8 +135,23 @@ export default function OverviewPage() {
         if (!dateString) return false;
         return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
     };
+    
+    const logActivity = async (action: string, target: string, details: any = null) => {
+        if (!profile.agency_id) return;
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity: Omit<Activity, 'id'> = {
+        userName: profile.name,
+        action,
+        target,
+        targetType: 'Appointment',
+        details,
+        timestamp: new Date().toISOString(),
+        agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
+    };
 
-    const handleSaveCrmAppointment = async (appointment: Omit<Appointment, 'id' | 'status' | 'agency_id'>) => {
+    const handleSaveAppointment = async (appointment: Omit<Appointment, 'id' | 'status' | 'agency_id'>) => {
         if (!profile.agency_id) return;
         const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
         const newAppointment = {
@@ -141,7 +160,20 @@ export default function OverviewPage() {
             agency_id: profile.agency_id,
         };
         await addDoc(collectionRef, newAppointment);
-        toast({ title: 'Event/Appointment Saved!', description: `${appointment.contactName} has been added to your CRM calendar.`});
+        toast({ title: 'Appointment Saved!', description: `Appointment with ${appointment.contactName} has been scheduled.`});
+    };
+    
+    const handleSaveEvent = async (event: EventDetails) => {
+        if (!profile.agency_id) return;
+         await handleSaveAppointment({
+            contactName: event.title,
+            contactType: 'Owner', // Generic type for events
+            message: event.description || 'Custom Event',
+            agentName: profile.name,
+            date: event.date,
+            time: event.time,
+        });
+        toast({ title: 'Event Saved to CRM!', description: `${event.title} has been added to your CRM calendar.`});
     };
     
     const handleAddAppointment = () => {
@@ -152,6 +184,29 @@ export default function OverviewPage() {
     const handleAddEvent = () => {
         setIsEventOpen(true);
     };
+
+    const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
+      if (!profile.agency_id) return;
+      const appointment = appointments?.find(a => a.id === appointmentId);
+      if (!appointment) return;
+
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'appointments', appointmentId);
+      await setDoc(docRef, { status, notes: notes || '' }, { merge: true });
+      toast({ title: 'Appointment Updated', description: `Status has been changed to ${status}.` });
+      await logActivity('updated appointment status', appointment.contactName, { from: appointment.status, to: status });
+  };
+  
+  const handleOpenStatusUpdate = (appointment: Appointment, status: 'Completed' | 'Cancelled') => {
+      setAppointmentToUpdateStatus(appointment);
+      setNewStatus(status);
+  };
+  
+  const handleDeleteAppointment = async (appointment: Appointment) => {
+    if (!profile.agency_id) return;
+    await deleteDoc(doc(firestore, 'agencies', profile.agency_id, 'appointments', appointment.id));
+    toast({ title: 'Appointment Deleted', variant: 'destructive' });
+    await logActivity('deleted an appointment', appointment.contactName);
+  };
 
 
     // --- Memoized Stats ---
@@ -342,6 +397,8 @@ export default function OverviewPage() {
                 isLoading={isAppointmentsLoading}
                 onAddAppointment={handleAddAppointment}
                 onAddEvent={handleAddEvent}
+                onUpdateStatus={handleOpenStatusUpdate}
+                onDelete={handleDeleteAppointment}
             />
 
             <div className="grid grid-cols-1 gap-8 pt-8">
@@ -371,21 +428,23 @@ export default function OverviewPage() {
             <SetAppointmentDialog 
                 isOpen={isAppointmentOpen}
                 setIsOpen={setIsAppointmentOpen}
-                onSave={(data) => handleSaveCrmAppointment(data as any)}
+                onSave={(data) => handleSaveAppointment(data as any)}
                 appointmentDetails={appointmentDetails}
             />
             <AddEventDialog 
                 isOpen={isEventOpen}
                 setIsOpen={setIsEventOpen}
-                onSave={(data) => handleSaveCrmAppointment({
-                    contactName: data.title,
-                    contactType: 'Owner', // Generic type
-                    message: data.description || 'Custom Event',
-                    agentName: profile.name,
-                    date: data.date,
-                    time: data.time,
-                })}
+                onSave={handleSaveEvent}
             />
+             {appointmentToUpdateStatus && newStatus && (
+                <UpdateAppointmentStatusDialog
+                    isOpen={!!appointmentToUpdateStatus}
+                    setIsOpen={() => setAppointmentToUpdateStatus(null)}
+                    appointment={appointmentToUpdateStatus}
+                    newStatus={newStatus}
+                    onUpdate={handleUpdateStatus}
+                />
+            )}
         </div>
     );
 }
