@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home, LayoutDashboard } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -14,6 +14,8 @@ import TrueFocus from '@/components/true-focus';
 import { InfiniteScroller } from '@/components/infinite-scroller';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import DotGrid from '@/components/dot-grid';
+import { useUser } from '@/firebase/auth/use-user';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 // Placeholder data - replace with real data or fetch from an API
@@ -106,6 +108,7 @@ export default function LandingPage() {
   const { setTheme, theme } = useTheme();
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const dashboardPreviewImage = PlaceHolderImages.find(img => img.id === 'dashboard-preview');
+  const { user, isUserLoading } = useUser();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,12 +140,22 @@ export default function LandingPage() {
                         <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                         <span className="sr-only">Toggle theme</span>
                     </Button>
-                     <Button variant="ghost" asChild>
-                        <Link href="/login">Login</Link>
-                    </Button>
-                    <Button asChild className="glowing-btn">
-                        <Link href="/signup">Get Started</Link>
-                    </Button>
+                    {isUserLoading ? (
+                        <Skeleton className="h-10 w-24" />
+                    ) : user ? (
+                        <Button asChild>
+                            <Link href="/overview"><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</Link>
+                        </Button>
+                    ) : (
+                        <>
+                            <Button variant="ghost" asChild>
+                                <Link href="/login">Login</Link>
+                            </Button>
+                            <Button asChild className="glowing-btn">
+                                <Link href="/signup">Get Started</Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
         </header>
