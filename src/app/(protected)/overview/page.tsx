@@ -1,15 +1,15 @@
 
 'use client';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, AddToCalendarIcon, CalendarPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { collection, query, where, Timestamp } from 'firebase/firestore';
-import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit } from '@/lib/types';
+import { collection, query, where, Timestamp, addDoc } from 'firebase/firestore';
+import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO, format } from 'date-fns';
@@ -20,6 +20,8 @@ import { LeadsChart } from '@/components/leads-chart';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { UpcomingEvents } from '@/components/upcoming-events';
+import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface StatCardProps {
     title: string;
@@ -74,6 +76,15 @@ export default function OverviewPage() {
     const { profile, isLoading: isProfileLoading } = useProfile();
     const firestore = useFirestore();
     const { currency } = useCurrency();
+    const { toast } = useToast();
+    const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+    const [appointmentDetails, setAppointmentDetails] = useState<{
+        contactType: AppointmentContactType;
+        contactName: string;
+        contactSerialNo?: string;
+        message: string;
+    } | null>(null);
+
 
     const canFetch = !isProfileLoading && profile.agency_id;
     const now = new Date();
@@ -116,6 +127,20 @@ export default function OverviewPage() {
         if (!dateString) return false;
         return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
     };
+
+    const handleSaveAppointment = async (appointment: Appointment) => {
+        if (!profile.agency_id) return;
+        const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'appointments');
+        const { id, ...newAppointmentData } = appointment; // remove id if it exists
+        await addDoc(collectionRef, newAppointmentData);
+        toast({ title: 'Appointment Set!', description: `Appointment with ${appointment.contactName} has been scheduled.`});
+    };
+    
+    const handleAddAppointment = () => {
+        setAppointmentDetails(null); // Clear previous details
+        setIsAppointmentOpen(true);
+    };
+
 
     // --- Memoized Stats ---
     const stats = useMemo(() => {
@@ -300,7 +325,11 @@ export default function OverviewPage() {
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}
             </div>
             
-            <UpcomingEvents appointments={appointments || []} isLoading={isAppointmentsLoading} />
+            <UpcomingEvents 
+                appointments={appointments || []} 
+                isLoading={isAppointmentsLoading}
+                onAddAppointment={handleAddAppointment}
+            />
 
             <div className="grid grid-cols-1 gap-8 pt-8">
                 <PerformanceChart properties={properties || []} />
@@ -326,8 +355,12 @@ export default function OverviewPage() {
                 </div>
             </Card>
 
+            <SetAppointmentDialog 
+                isOpen={isAppointmentOpen}
+                setIsOpen={setIsAppointmentOpen}
+                onSave={handleSaveAppointment}
+                appointmentDetails={appointmentDetails}
+            />
         </div>
     );
 }
-
-    
