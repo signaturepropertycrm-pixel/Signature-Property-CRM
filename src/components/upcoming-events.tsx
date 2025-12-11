@@ -66,22 +66,10 @@ export function UpcomingEvents({ appointments, isLoading, onAddAppointment }: Up
                     <Button asChild variant="ghost" size="sm">
                         <Link href="/appointments">View All</Link>
                     </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="sm">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={onAddAppointment}>
-                                Add Appointment
-                            </DropdownMenuItem>
-                            <DropdownMenuItem disabled>
-                                Add Event
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button size="sm" onClick={onAddAppointment}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Appointment
+                    </Button>
                 </div>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
