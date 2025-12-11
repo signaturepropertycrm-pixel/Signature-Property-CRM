@@ -2,7 +2,7 @@
 'use client';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Appointment, AppointmentStatus } from "@/lib/types";
-import { Calendar, Clock, Briefcase, Building, Plus, CalendarPlus, ChevronDown, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Clock, Briefcase, Building, Plus, CalendarPlus, ChevronDown, MoreHorizontal, Edit, Trash2, CheckCircle, XCircle, Users } from "lucide-react";
 import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { isToday, isTomorrow, format, parseISO } from "date-fns";
@@ -21,6 +21,7 @@ interface UpcomingEventsProps {
     onAddEvent: () => void;
     onUpdateStatus: (appointment: Appointment, status: 'Completed' | 'Cancelled') => void;
     onDelete: (appointment: Appointment) => void;
+    onAddToCalendar: (event: React.MouseEvent, appointment: Appointment) => void;
 }
 
 export function UpcomingEvents({ 
@@ -30,6 +31,7 @@ export function UpcomingEvents({
     onAddEvent,
     onUpdateStatus,
     onDelete,
+    onAddToCalendar,
 }: UpcomingEventsProps) {
     const [selectedDay, setSelectedDay] = useState<Date>(new Date());
     
@@ -60,6 +62,19 @@ export function UpcomingEvents({
             </div>
         )
     }
+
+    const getIcon = (appt: Appointment) => {
+        if (appt.contactType === 'Buyer') return <Briefcase className="h-5 w-5" />;
+        if (appt.contactType === 'Owner' && appt.contactSerialNo) return <Building className="h-5 w-5" />;
+        return <Users className="h-5 w-5" />; // Generic event
+    };
+
+    const getIconBgColor = (appt: Appointment) => {
+        if (appt.contactType === 'Buyer') return 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300';
+        if (appt.contactType === 'Owner' && appt.contactSerialNo) return 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300';
+        return 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300'; // Generic event
+    }
+
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -133,8 +148,8 @@ export function UpcomingEvents({
                     <div className="space-y-3 h-80 overflow-y-auto pr-2 -mr-2">
                         {selectedDayEvents.length > 0 ? selectedDayEvents.map(appt => (
                             <div key={appt.id} className="flex items-start gap-4 p-3 rounded-lg bg-background hover:bg-accent/50 transition-colors group">
-                                <div className={`flex items-center justify-center rounded-full h-10 w-10 flex-shrink-0 ${appt.contactType === 'Buyer' ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300' : 'bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300'}`}>
-                                    {appt.contactType === 'Buyer' ? <Briefcase className="h-5 w-5" /> : <Building className="h-5 w-5" />}
+                                <div className={`flex items-center justify-center rounded-full h-10 w-10 flex-shrink-0 ${getIconBgColor(appt)}`}>
+                                    {getIcon(appt)}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-semibold">{appt.contactName}</p>
@@ -150,6 +165,10 @@ export function UpcomingEvents({
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
+                                            <DropdownMenuItem onSelect={(e) => onAddToCalendar(e, appt)}>
+                                                <CalendarPlus className="mr-2 h-4 w-4" /> Add to Calendar
+                                            </DropdownMenuItem>
+                                            <Separator />
                                              <DropdownMenuItem onSelect={() => onUpdateStatus(appt, 'Completed')}>
                                                 <CheckCircle className="mr-2 h-4 w-4"/> Mark as Completed
                                             </DropdownMenuItem>

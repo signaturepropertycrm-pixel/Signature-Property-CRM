@@ -2,7 +2,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, AddToCalendarIcon, CalendarPlus } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -208,6 +208,36 @@ export default function OverviewPage() {
     await logActivity('deleted an appointment', appointment.contactName);
   };
 
+  const handleAddToCalendar = (e: React.MouseEvent, appointment: Appointment) => {
+        e.stopPropagation();
+        
+        const startTimeStr = `${appointment.date}T${appointment.time}:00`;
+        const startTime = new Date(startTimeStr);
+        if (isNaN(startTime.getTime())) {
+            toast({ title: 'Invalid Date/Time', description: 'Cannot add to calendar due to invalid appointment time.', variant: 'destructive' });
+            return;
+        }
+        const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // Add 1 hour
+
+        const formatDateForCalendar = (date: Date) => format(date, "yyyyMMdd'T'HHmmss");
+
+        const details = `Appointment with ${appointment.contactName}.\nPurpose: ${appointment.message}\nAssigned Agent: ${appointment.agentName}`;
+        
+        let location = 'N/A';
+        if(appointment.contactType === 'Owner' && properties) {
+            const property = properties.find(p => p.serial_no === appointment.contactSerialNo);
+            if(property) location = property.address;
+        }
+
+        const url = new URL('https://www.google.com/calendar/render');
+        url.searchParams.set('action', 'TEMPLATE');
+        url.searchParams.set('text', `Appointment: ${appointment.contactName}`);
+        url.searchParams.set('dates', `${formatDateForCalendar(startTime)}/${formatDateForCalendar(endTime)}`);
+        url.searchParams.set('details', details);
+        url.searchParams.set('location', location);
+        
+        window.open(url.toString(), '_blank');
+  };
 
     // --- Memoized Stats ---
     const stats = useMemo(() => {
@@ -388,7 +418,7 @@ export default function OverviewPage() {
                 </Alert>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {statCardsData.map(card => <StatCard key={card.title} {...card} />)}
             </div>
             
@@ -399,6 +429,7 @@ export default function OverviewPage() {
                 onAddEvent={handleAddEvent}
                 onUpdateStatus={handleOpenStatusUpdate}
                 onDelete={handleDeleteAppointment}
+                onAddToCalendar={handleAddToCalendar}
             />
 
             <div className="grid grid-cols-1 gap-8 pt-8">
