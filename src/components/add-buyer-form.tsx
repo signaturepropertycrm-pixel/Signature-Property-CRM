@@ -38,8 +38,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-const propertyTypes: PropertyType[] = [
-    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+const propertyTypes: (PropertyType | 'Other')[] = [
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Other'
 ];
 const sizeUnits: SizeUnit[] = ['Marla', 'SqFt', 'Kanal', 'Acre', 'Maraba'];
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
@@ -58,6 +58,7 @@ const formSchema = z.object({
   city: z.string().optional(),
   area_preference: z.string().optional(),
   property_type_preference: z.enum(propertyTypes).optional(),
+  property_type_other: z.string().optional(),
   size_min_value: z.coerce.number().optional().nullable(),
   size_min_unit: z.enum(sizeUnits).optional(),
   size_max_value: z.coerce.number().optional().nullable(),
@@ -90,11 +91,14 @@ const getInitialFormValues = (
 ): AddBuyerFormValues => {
     if (buyerToEdit) {
         const phoneWithoutCode = buyerToEdit.phone.replace(buyerToEdit.country_code || '+92', '');
+        const isOtherType = buyerToEdit.property_type_preference ? !propertyTypes.includes(buyerToEdit.property_type_preference) : false;
+
         return {
             ...buyerToEdit,
             country_code: buyerToEdit.country_code || '+92',
             phone: phoneWithoutCode,
-            property_type_preference: buyerToEdit.property_type_preference || '',
+            property_type_preference: isOtherType ? 'Other' : (buyerToEdit.property_type_preference || undefined),
+            property_type_other: isOtherType ? buyerToEdit.property_type_preference : '',
             size_min_unit: buyerToEdit.size_min_unit || 'Marla',
             size_max_unit: buyerToEdit.size_max_unit || 'Marla',
             budget_min_unit: buyerToEdit.budget_min_unit || 'Lacs',
@@ -124,7 +128,8 @@ const getInitialFormValues = (
         email: '',
         city: 'Lahore',
         area_preference: '',
-        property_type_preference: '',
+        property_type_preference: undefined,
+        property_type_other: '',
         notes: '',
         status: 'New',
         is_investor: false,
@@ -156,6 +161,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
 
   const { reset, setValue, watch, control } = form;
   const watchedListingType = watch('listing_type');
+  const watchedPropertyType = watch('property_type_preference');
 
   useEffect(() => {
     // Only update serial number for new buyers when listing type changes
@@ -171,9 +177,14 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
   }, [buyerToEdit, totalSaleBuyers, totalRentBuyers, user, profile.agency_id, reset, watchedListingType]);
 
   function onSubmit(values: AddBuyerFormValues) {
+     const finalPropertyType = values.property_type_preference === 'Other' && values.property_type_other
+        ? values.property_type_other
+        : values.property_type_preference;
+
      const buyerData = {
         ...buyerToEdit, // Keep original data like ID, created_at, etc.
         ...values, // Overwrite with new form values
+        property_type_preference: finalPropertyType,
         phone: formatPhoneNumber(values.phone, values.country_code),
         serial_no: form.getValues('serial_no'), // Use the dynamically set serial number
         created_at: buyerToEdit?.created_at || new Date().toISOString(),
@@ -428,6 +439,21 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
                         </FormItem>
                         )}
                     />
+                    {watchedPropertyType === 'Other' && (
+                        <FormField
+                            control={form.control}
+                            name="property_type_other"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Custom Property Type</FormLabel>
+                                <FormControl>
+                                <Input placeholder="e.g. Penthouse" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
