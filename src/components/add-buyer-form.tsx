@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Buyer, BuyerStatus, PriceUnit, PropertyType, SizeUnit, ListingType } from '@/lib/types';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
@@ -147,6 +147,7 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
   const { toast } = useToast();
   const { user } = useUser();
   const { profile } = useProfile();
+  const [countryCodePopoverOpen, setCountryCodePopoverOpen] = useState(false);
   
   const form = useForm<AddBuyerFormValues>({
     resolver: zodResolver(formSchema),
@@ -258,14 +259,44 @@ export function AddBuyerForm({ setDialogOpen, totalSaleBuyers, totalRentBuyers, 
                             name="country_code"
                             render={({ field }) => (
                                 <FormItem className="w-1/3">
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Popover open={countryCodePopoverOpen} onOpenChange={setCountryCodePopoverOpen}>
+                                    <PopoverTrigger asChild>
                                     <FormControl>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                        >
+                                        {field.value || "Code"}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
                                     </FormControl>
-                                    <SelectContent>
-                                        {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
-                                    </SelectContent>
-                                    </Select>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search code..." />
+                                        <CommandList>
+                                        <CommandEmpty>No country found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {countryCodes.map((country) => (
+                                            <CommandItem
+                                                value={country.dial_code}
+                                                key={country.code}
+                                                onSelect={() => {
+                                                    form.setValue("country_code", country.dial_code);
+                                                    setCountryCodePopoverOpen(false);
+                                                }}
+                                            >
+                                                <Check className={cn("mr-2 h-4 w-4", country.dial_code === field.value ? "opacity-100" : "opacity-0")} />
+                                                {country.dial_code} ({country.code})
+                                            </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
                                 </FormItem>
                             )}
                             />

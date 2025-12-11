@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -121,6 +122,7 @@ export function AddSalePropertyForm({
   const { toast } = useToast();
   const { user } = useUser();
   const { profile } = useProfile();
+  const [countryCodePopoverOpen, setCountryCodePopoverOpen] = useState(false);
 
   const form = useForm<AddSalePropertyFormValues>({
     resolver: zodResolver(formSchema),
@@ -565,20 +567,43 @@ export function AddSalePropertyForm({
                   name="country_code"
                   render={({ field }) => (
                     <FormItem className="w-1/3">
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {countryCodes.map((c) => (
-                            <SelectItem key={c.code} value={c.dial_code}>
-                              {c.dial_code} ({c.code})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <Popover open={countryCodePopoverOpen} onOpenChange={setCountryCodePopoverOpen}>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant="outline"
+                                role="combobox"
+                                className={cn("w-full justify-between", !field.value && "text-muted-foreground")}
+                                >
+                                {field.value || "Code"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                            <Command>
+                                <CommandInput placeholder="Search code..." />
+                                <CommandList>
+                                <CommandEmpty>No country found.</CommandEmpty>
+                                <CommandGroup>
+                                    {countryCodes.map((country) => (
+                                    <CommandItem
+                                        value={country.dial_code}
+                                        key={country.code}
+                                        onSelect={() => {
+                                            form.setValue("country_code", country.dial_code);
+                                            setCountryCodePopoverOpen(false);
+                                        }}
+                                    >
+                                        <Check className={cn("mr-2 h-4 w-4", country.dial_code === field.value ? "opacity-100" : "opacity-0")} />
+                                        {country.dial_code} ({country.code})
+                                    </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                                </CommandList>
+                            </Command>
+                            </PopoverContent>
+                        </Popover>
                     </FormItem>
                   )}
                 />

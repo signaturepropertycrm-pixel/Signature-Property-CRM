@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,7 @@ import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon } from 'lucide-react';
+import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon, ChevronsUpDown, Check } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
@@ -46,6 +47,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { formatPhoneNumber } from '@/lib/utils';
 import { countryCodes } from '@/lib/data';
 import { AvatarCropDialog } from '@/components/avatar-crop-dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 const passwordFormSchema = z.object({
     currentPassword: z.string().min(1, 'Current password is required.'),
@@ -81,6 +85,7 @@ export default function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
   const [countryCode, setCountryCode] = useState('+92');
+  const [countryCodePopoverOpen, setCountryCodePopoverOpen] = useState(false);
   
   const [isUploading, setIsUploading] = useState(false);
   const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
@@ -493,12 +498,37 @@ export default function SettingsPage() {
                              <div className="space-y-2">
                                 <Label htmlFor="phone">Phone Number</Label>
                                 <div className="flex gap-2">
-                                    <Select value={countryCode} onValueChange={setCountryCode}>
-                                        <SelectTrigger className="w-1/3"><SelectValue/></SelectTrigger>
-                                        <SelectContent>
-                                            {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={countryCodePopoverOpen} onOpenChange={setCountryCodePopoverOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button variant="outline" role="combobox" className="w-1/3 justify-between">
+                                            {countryCode || "Code"}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Command>
+                                            <CommandInput placeholder="Search code..." />
+                                            <CommandList>
+                                                <CommandEmpty>No country found.</CommandEmpty>
+                                                <CommandGroup>
+                                                {countryCodes.map((c) => (
+                                                    <CommandItem
+                                                    key={c.code}
+                                                    value={c.dial_code}
+                                                    onSelect={(currentValue) => {
+                                                        setCountryCode(currentValue === countryCode ? "" : currentValue);
+                                                        setCountryCodePopoverOpen(false);
+                                                    }}
+                                                    >
+                                                    <Check className={cn("mr-2 h-4 w-4", countryCode === c.dial_code ? "opacity-100" : "opacity-0")} />
+                                                    {c.dial_code} ({c.name})
+                                                    </CommandItem>
+                                                ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="flex-1" placeholder="3001234567" />
                                 </div>
                             </div>
@@ -665,12 +695,37 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                  <div className="flex gap-2">
-                    <Select value={countryCode} onValueChange={setCountryCode}>
-                        <SelectTrigger className="w-1/3"><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            {countryCodes.map(c => <SelectItem key={c.code} value={c.dial_code}>{c.dial_code} ({c.code})</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Popover open={countryCodePopoverOpen} onOpenChange={setCountryCodePopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-1/3 justify-between">
+                            {countryCode || "Code"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Command>
+                            <CommandInput placeholder="Search code..." />
+                            <CommandList>
+                                <CommandEmpty>No country found.</CommandEmpty>
+                                <CommandGroup>
+                                {countryCodes.map((c) => (
+                                    <CommandItem
+                                    key={c.code}
+                                    value={c.dial_code}
+                                    onSelect={(currentValue) => {
+                                        setCountryCode(currentValue === countryCode ? "" : currentValue);
+                                        setCountryCodePopoverOpen(false);
+                                    }}
+                                    >
+                                    <Check className={cn("mr-2 h-4 w-4", countryCode === c.dial_code ? "opacity-100" : "opacity-0")} />
+                                    {c.dial_code} ({c.name})
+                                    </CommandItem>
+                                ))}
+                                </CommandGroup>
+                            </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                     <Input id="phone" value={localProfile.phone || ''} onChange={handleProfileChange} className="flex-1" placeholder="3001234567" />
                   </div>
               </div>
