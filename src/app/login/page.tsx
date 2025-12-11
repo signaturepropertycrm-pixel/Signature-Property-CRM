@@ -354,23 +354,15 @@ function LoginPageContent() {
                 </Dialog>
 
 
-                <div className="mt-4 text-center text-sm">
-                  Don&apos;t have an agency account?{' '}
-                  <Link
-                    href="/signup"
-                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Create an Account
-                  </Link>
-                </div>
-                 <div className="mt-2 text-center text-sm">
-                  Don&apos;t have an agent account?{' '}
-                  <Link
-                    href="/agent/signup"
-                    className="font-semibold text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Create an Account
-                  </Link>
+                <Separator className="my-4" />
+                <div className="space-y-2 text-center">
+                  <p className="text-sm text-muted-foreground">Don't have an account?</p>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/signup">Create Agency Account</Link>
+                  </Button>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/agent/signup">Create Agent Account</Link>
+                  </Button>
                 </div>
               </form>
             </Form>
