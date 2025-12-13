@@ -14,7 +14,6 @@ import TrueFocus from '@/components/true-focus';
 import { InfiniteScroller } from '@/components/infinite-scroller';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import DotGrid from '@/components/dot-grid';
-import { useUser } from '@/firebase/auth/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
@@ -108,7 +107,9 @@ export default function LandingPage() {
   const { setTheme, theme } = useTheme();
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const dashboardPreviewImage = PlaceHolderImages.find(img => img.id === 'dashboard-preview');
-  const { user, isUserLoading } = useUser();
+  
+  // No longer needed here
+  // const { user, isUserLoading } = useUser();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -140,22 +141,14 @@ export default function LandingPage() {
                         <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                         <span className="sr-only">Toggle theme</span>
                     </Button>
-                    {isUserLoading ? (
-                        <Skeleton className="h-10 w-24" />
-                    ) : user ? (
-                        <Button asChild>
-                            <Link href="/overview"><LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard</Link>
+                    <>
+                        <Button variant="ghost" asChild>
+                            <Link href="/login">Login</Link>
                         </Button>
-                    ) : (
-                        <>
-                            <Button variant="ghost" asChild>
-                                <Link href="/login">Login</Link>
-                            </Button>
-                            <Button asChild className="glowing-btn">
-                                <Link href="/signup">Get Started</Link>
-                            </Button>
-                        </>
-                    )}
+                        <Button asChild className="glowing-btn">
+                            <Link href="/signup">Get Started</Link>
+                        </Button>
+                    </>
                 </div>
             </div>
         </header>
