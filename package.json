@@ -3,13 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx next dev",
+    "dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "preinstall": "npx rimraf node_modules",
-    "postinstall": "patch-package"
+    "postinstall": "npx patch-package"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -28,6 +27,7 @@
     "@radix-ui/react-scroll-area": "^1.2.3",
     "@radix-ui/react-select": "^2.1.6",
     "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-toast": "^1.2.15",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -40,19 +40,20 @@
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.475.0",
-    "next": "14.2.35",
+    "next": "14.2.3",
     "next-pwa": "^5.6.0",
-    "next-themes": "^0.3.0",
+    "next-themes": "^0.4.4",
     "patch-package": "^8.0.0",
-    "react": "^18.3.1",
+    "react": "^18.2.0",
     "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
+    "react-dom": "^18.2.0",
     "react-hook-form": "^7.54.2",
     "react-image-crop": "^11.0.6",
     "recharts": "^2.15.1",
     "rimraf": "^5.0.7",
     "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jspdf": "^2.0.0",
