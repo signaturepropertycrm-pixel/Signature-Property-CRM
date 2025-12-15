@@ -15,7 +15,7 @@ import { Buyer, Property, RecommendedProperty } from '@/lib/types';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Share2, Sparkles, RefreshCw, Video } from 'lucide-react';
+import { Share2, Sparkles, RefreshCw, Video, Eye } from 'lucide-react';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useCurrency } from '@/context/currency-context';
@@ -28,6 +28,7 @@ import { Label } from './ui/label';
 import { useFirestore } from '@/firebase/provider';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
+import { PropertyDetailsDialog } from './property-details-dialog';
 
 type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
 type ShareStatus = 'idle' | 'confirming' | 'shared';
@@ -115,7 +116,7 @@ const calculateMatchScore = (buyer: Buyer, property: Property): RecommendedPrope
     return { ...property, matchScore: finalScore, matchReasons: reasons };
 };
 
-const RecommendedPropertyCard = ({ property, buyer, onShareConfirmed }: { property: RecommendedProperty, buyer: Buyer, onShareConfirmed: () => void }) => {
+const RecommendedPropertyCard = ({ property, buyer, onShareConfirmed, onViewDetails }: { property: RecommendedProperty, buyer: Buyer, onShareConfirmed: () => void, onViewDetails: (property: Property) => void }) => {
     const { currency } = useCurrency();
     const { toast } = useToast();
     const { profile } = useProfile();
@@ -162,7 +163,7 @@ const RecommendedPropertyCard = ({ property, buyer, onShareConfirmed }: { proper
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `*RENT PROPERTY DETAILS*
+            message = `*RENT PROPERTY DETAILS* 🏡
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
@@ -185,7 +186,7 @@ ${utilities || 'N/A'}${videoLinksSection || ''}`;
                 property.meters?.water && '- Water'
             ].filter(Boolean).join('\n');
     
-            message = `*PROPERTY DETAILS*
+            message = `*PROPERTY DETAILS* 🏡
 *Recommended:* ${property.matchScore}%
 
 Serial No: ${property.serial_no}
@@ -291,7 +292,11 @@ ${utilities || 'N/A'}
                 </div>
             )}
 
-             <div className="text-right mt-3">
+             <div className="flex justify-end items-center gap-2 mt-3">
+                <Button size="sm" variant="ghost" onClick={() => onViewDetails(property)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                </Button>
                 {shareStatus === 'idle' && (
                     <Button size="sm" variant="outline" onClick={handleShare}>
                         <Share2 className="mr-2 h-4 w-4" />
@@ -325,6 +330,8 @@ export function PropertyRecommenderDialog({
     
     const { toast } = useToast();
     const [refreshKey, setRefreshKey] = useState(0);
+    const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     const handleRefresh = useCallback(() => {
         setRefreshKey(prev => prev + 1);
@@ -342,45 +349,65 @@ export function PropertyRecommenderDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [buyer, properties, refreshKey]);
 
+    const handleViewDetails = (property: Property) => {
+        setPropertyForDetails(property);
+        setIsDetailsOpen(true);
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-3xl">
-                <DialogHeader>
-                    <div className="flex justify-between items-center">
-                         <DialogTitle className="font-headline flex items-center gap-2 text-2xl">
-                            <Sparkles />
-                            Property Recommendations for {buyer.name}
-                        </DialogTitle>
-                        <Button variant="outline" size="sm" onClick={handleRefresh}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                            Refresh
-                        </Button>
-                    </div>
-                    <DialogDescription>
-                        Based on the buyer's preferences, here are the top property matches.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent className="sm:max-w-3xl">
+                    <DialogHeader>
+                        <div className="flex justify-between items-center">
+                            <DialogTitle className="font-headline flex items-center gap-2 text-2xl">
+                                <Sparkles />
+                                Property Recommendations for {buyer.name}
+                            </DialogTitle>
+                            <Button variant="outline" size="sm" onClick={handleRefresh}>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Refresh
+                            </Button>
+                        </div>
+                        <DialogDescription>
+                            Based on the buyer's preferences, here are the top property matches.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <ScrollArea className="h-[60vh] pr-4">
-                    <div className="space-y-4 py-4">
-                        {recommendedProperties.length > 0 ? (
-                            recommendedProperties.map(prop => (
-                                <RecommendedPropertyCard key={prop.id} property={prop} buyer={buyer} onShareConfirmed={handleRefresh} />
-                            ))
-                        ) : (
-                            <div className="text-center py-10 text-muted-foreground">
-                                <p>No suitable properties found based on the current criteria.</p>
-                                <p className="text-xs">Try adjusting the buyer's preferences for better results.</p>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
+                    <ScrollArea className="h-[60vh] pr-4">
+                        <div className="space-y-4 py-4">
+                            {recommendedProperties.length > 0 ? (
+                                recommendedProperties.map(prop => (
+                                    <RecommendedPropertyCard 
+                                        key={prop.id} 
+                                        property={prop} 
+                                        buyer={buyer} 
+                                        onShareConfirmed={handleRefresh} 
+                                        onViewDetails={handleViewDetails}
+                                    />
+                                ))
+                            ) : (
+                                <div className="text-center py-10 text-muted-foreground">
+                                    <p>No suitable properties found based on the current criteria.</p>
+                                    <p className="text-xs">Try adjusting the buyer's preferences for better results.</p>
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
 
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => setIsOpen(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    <DialogFooter>
+                        <Button variant="secondary" onClick={() => setIsOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {propertyForDetails && (
+                <PropertyDetailsDialog 
+                    property={propertyForDetails}
+                    isOpen={isDetailsOpen}
+                    setIsOpen={setIsDetailsOpen}
+                />
+            )}
+        </>
     );
 }
 
