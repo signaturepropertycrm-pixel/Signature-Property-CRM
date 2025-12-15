@@ -28,10 +28,11 @@ interface ListGeneratorToolProps {
   allProperties: Property[];
 }
 
-type SelectableField = 'serial_no' | 'area' | 'address' | 'size' | 'demand' | 'property_type' | 'status' | 'road_size_ft' | 'storey' | 'utilities' | 'documents';
+type SelectableField = 'serial_no' | 'owner_number' | 'area' | 'address' | 'size' | 'demand' | 'property_type' | 'status' | 'road_size_ft' | 'storey' | 'utilities' | 'documents';
 
 const fieldLabels: Record<SelectableField, string> = {
   serial_no: 'Serial No',
+  owner_number: 'Owner Number',
   area: 'Area',
   address: 'Full Address',
   size: 'Size',
@@ -164,6 +165,7 @@ export function ListGeneratorTool({ allProperties }: ListGeneratorToolProps) {
                 listString += `*${index + 1}).*\n`;
                 
                 if (selectedFields.includes('serial_no')) listString += `*Serial:* ${p.serial_no}\n`;
+                if (selectedFields.includes('owner_number')) listString += `*Number:* ${p.owner_number}\n`;
                 if (selectedFields.includes('property_type')) listString += `*Type:* ${p.property_type}\n`;
                 if (selectedFields.includes('size')) listString += `*Size:* ${p.size_value} ${p.size_unit}\n`;
                 if (selectedFields.includes('storey')) listString += `*Storey:* ${p.storey || 'N/A'}\n`;
