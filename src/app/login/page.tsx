@@ -374,11 +374,11 @@ function LoginPageContent() {
 }
 
 export default function LoginPage() {
-    return (
-        <FirebaseClientProvider>
-          <ProfileProvider>
-            <LoginPageContent />
-          </ProfileProvider>
-        </FirebaseClientProvider>
-    );
+  return (
+    <FirebaseClientProvider>
+      <ProfileProvider>
+        <LoginPageContent />
+      </ProfileProvider>
+    </FirebaseClientProvider>
+  );
 }

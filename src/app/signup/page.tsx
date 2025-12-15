@@ -425,9 +425,3 @@ export default function SignupPage() {
         </FirebaseClientProvider>
     );
 }
-
-    
-
-    
-
-    
