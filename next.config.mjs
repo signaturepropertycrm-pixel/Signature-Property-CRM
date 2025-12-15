@@ -1,14 +1,7 @@
-import type {NextConfig} from 'next';
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-});
+import withPWAInit from 'next-pwa';
 
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -42,6 +35,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+const withPWA = withPWAInit({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+});
 
-// Inert comment to force cache invalidation - 3
+export default withPWA(nextConfig);

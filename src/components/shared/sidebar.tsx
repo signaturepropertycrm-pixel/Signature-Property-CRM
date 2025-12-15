@@ -40,7 +40,7 @@ import {
   PieChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-is-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Tooltip,
   TooltipContent,
@@ -95,6 +95,7 @@ const mainMenuItems = [
         { href: '/tools/post-generator', label: 'Post Generator' },
     ]
   },
+  { href: '/follow-ups', label: 'Follow Ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
   { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
