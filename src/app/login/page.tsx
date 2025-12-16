@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Home, Loader2, Eye, EyeOff, Download, Share, X } from 'lucide-react';
+import { Home, Loader2, Eye, EyeOff, Download, Share, X, Moon, Sun } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useTheme } from 'next-themes';
 
 
 const formSchema = z.object({
@@ -70,6 +71,7 @@ function LoginPageContent() {
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
   const [showIosInstall, setShowIosInstall] = useState(false);
+  const { setTheme, theme } = useTheme();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
@@ -181,6 +183,13 @@ function LoginPageContent() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-blue-100 dark:from-slate-900 dark:via-slate-800 dark:to-violet-900 p-4 font-body">
+      <div className="absolute top-4 right-4">
+        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="rounded-full">
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
+      </div>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="flex justify-center items-center gap-3 mb-4">
