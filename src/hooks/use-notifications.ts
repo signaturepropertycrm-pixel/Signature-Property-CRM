@@ -285,8 +285,22 @@ export const useNotifications = () => {
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
         const batch = writeBatch(firestore);
         const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-        batch.update(invRef, { status: 'Active', id: userId });
-
+        
+        // This is a temporary doc, so we delete it and create a new one with the user's UID
+        batch.delete(invRef);
+        
+        const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
+        const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
+        
+        batch.set(newMemberRef, {
+             name: invitationData.email, // Or a default name
+             email: invitationData.email,
+             role: invitationData.role,
+             status: 'Active',
+             agency_id: agencyId,
+             createdAt: new Date(),
+        });
+        
         const userRef = doc(firestore, 'users', userId);
         batch.update(userRef, { agency_id: agencyId });
 
@@ -307,5 +321,3 @@ export const useNotifications = () => {
 
     return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh };
 };
-
-    

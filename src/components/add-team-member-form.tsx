@@ -110,7 +110,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 status: 'Pending', // User is invited and needs to sign up to become 'Active'
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
-                createdAt: serverTimestamp()
+                invitedAt: serverTimestamp()
             });
 
             toast({ 
@@ -196,5 +196,3 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
     </Form>
   );
 }
-
-    
