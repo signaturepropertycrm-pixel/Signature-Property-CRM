@@ -35,5 +35,12 @@ service cloud.firestore {
     match /upgradeRequests/{requestId} {
       allow create: if request.auth != null;
     }
+
+    match /invitations/{inviteId} {
+      // Allow creation if the user is authenticated (Agency Owner)
+      allow create: if request.auth != null;
+      // Allow READ/UPDATE only if the 'toEmail' field matches the logged-in user's email
+      allow read, update: if request.auth != null && resource.data.toEmail == request.auth.token.email;
+    }
   }
 }

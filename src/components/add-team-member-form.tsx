@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -102,16 +100,34 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 return;
             }
 
-            // Create a new document with an auto-generated ID
-            await addDoc(teamMembersCollectionRef, {
+            const batch = writeBatch(firestore);
+
+            // 1. Write to the agency's subcollection (for agency view)
+            const teamMemberRef = doc(teamMembersCollectionRef); // Create a new doc with auto-ID
+            batch.set(teamMemberRef, {
                 name: values.name,
                 email: values.email,
                 role: values.role,
-                status: 'Pending', // User is invited and needs to sign up to become 'Active'
+                status: 'Pending',
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
-                invitedAt: serverTimestamp()
+                createdAt: serverTimestamp()
             });
+            
+            // 2. Write to the root 'invitations' collection (for agent lookup)
+            const invitationId = `${values.email}_${profile.agency_id}`;
+            const invitationRef = doc(firestore, 'invitations', invitationId);
+            batch.set(invitationRef, {
+                toEmail: values.email,
+                fromAgencyId: profile.agency_id,
+                fromAgencyName: profile.agencyName,
+                status: 'pending',
+                role: values.role,
+                createdAt: serverTimestamp()
+            });
+
+            await batch.commit();
+
 
             toast({ 
                 title: 'Invitation Sent!', 
