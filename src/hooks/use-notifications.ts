@@ -284,9 +284,9 @@ export const useNotifications = () => {
     
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
         const batch = writeBatch(firestore);
-        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
         
         // This is a temporary doc, so we delete it and create a new one with the user's UID
+        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
         batch.delete(invRef);
         
         const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
