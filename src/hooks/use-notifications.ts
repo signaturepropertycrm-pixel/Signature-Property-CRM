@@ -287,7 +287,6 @@ export const useNotifications = () => {
         
         // This is a temporary doc, so we delete it and create a new one with the user's UID
         const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-        batch.delete(invRef);
         
         const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
         const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
@@ -303,6 +302,9 @@ export const useNotifications = () => {
         
         const userRef = doc(firestore, 'users', userId);
         batch.update(userRef, { agency_id: agencyId });
+
+        // Finally, delete the original invitation document
+        batch.delete(invRef);
 
         await batch.commit().catch((error) => {
             throw new FirestorePermissionError({ operation: 'write', path: `batch write for invitation` });
