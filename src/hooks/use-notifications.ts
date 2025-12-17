@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useFirestore, useAuth } from '@/firebase/provider';
-import { collection, collectionGroup, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit } from 'firebase/firestore';
+import { collection, collectionGroup, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit, setDoc } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -289,7 +289,7 @@ export const useNotifications = () => {
         const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
         if (!invitationData) throw new Error("Invitation not found locally");
         
-        // 1. Create a new member document in the agency's subcollection with the user's actual UID
+        // 1. Create a new member document in the agency's subcollection
         const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
         batch.set(newMemberRef, {
              name: user?.displayName || invitationData.email,
@@ -297,12 +297,12 @@ export const useNotifications = () => {
              role: invitationData.role,
              status: 'Active',
              agency_id: agencyId,
-             invitedAt: invitationData.timestamp, // Keep the original invite time
+             invitedAt: invitationData.timestamp,
         });
         
         // 2. Update the main user document to link them to the agency
         const userRef = doc(firestore, 'users', userId);
-        batch.update(userRef, { agency_id: agencyId });
+        batch.set(userRef, { agency_id: agencyId }, { merge: true });
 
         // 3. Delete the invitation from the root collection
         const invRef = doc(firestore, 'invitations', invitationId);
@@ -316,7 +316,6 @@ export const useNotifications = () => {
     };
 
     const rejectInvitation = async (invitationId: string) => {
-        // Just delete the invitation from the root collection
         const invRef = doc(firestore, 'invitations', invitationId);
         await deleteDoc(invRef).catch((error) => {
             throw new FirestorePermissionError({ operation: 'delete', path: invRef.path });
