@@ -1,4 +1,5 @@
 
+
 'use client';
 
 export type UserRole = 'Admin' | 'Agent';
@@ -232,8 +233,8 @@ export interface BaseNotification {
 
 export interface InvitationNotification extends BaseNotification {
     type: 'invitation';
-    agencyId: string;
-    agencyName: string;
+    fromAgencyId: string;
+    fromAgencyName: string;
     role: UserRole;
     email: string;
 }

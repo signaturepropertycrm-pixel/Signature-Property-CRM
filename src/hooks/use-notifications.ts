@@ -29,25 +29,26 @@ export const useNotifications = () => {
         setRefreshKey(prev => prev + 1);
     }, []);
 
-    const canFetch = !!firestore && !!user && !!profile.agency_id;
+    const canFetch = !!firestore && !!user;
+    const canFetchAgencyData = canFetch && !!profile.agency_id;
 
     // Queries
     const invitationsQuery = useMemoFirebase(() => {
         if (firestore && user?.email) {
             return query(
-                collectionGroup(firestore, 'teamMembers'), 
-                where('email', '==', user.email),
-                where('status', '==', 'Pending')
+                collection(firestore, 'invitations'), 
+                where('toEmail', '==', user.email),
+                where('status', '==', 'pending')
             );
         }
         return null;
     }, [firestore, user?.email, refreshKey]);
 
-    const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id, refreshKey]);
-    const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id, refreshKey]);
+    const appointmentsQuery = useMemoFirebase(() => canFetchAgencyData ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
+    const followUpsQuery = useMemoFirebase(() => canFetchAgencyData ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
     
     const activitiesQuery = useMemoFirebase(() => {
-        if(!canFetch) return null;
+        if(!canFetchAgencyData) return null;
         const oneDayAgo = sub(new Date(), { days: 1 });
         return query(
             collection(firestore, 'agencies', profile.agency_id, 'activityLogs'),
@@ -55,7 +56,7 @@ export const useNotifications = () => {
             orderBy('timestamp', 'desc'),
             limit(10)
         );
-    }, [canFetch, firestore, profile.agency_id, refreshKey]);
+    }, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
 
     const getStoredIds = (key: string): string[] => {
         try {
@@ -126,14 +127,14 @@ export const useNotifications = () => {
                 const invitationNotifications = snapshot.docs.map(doc => ({
                     id: doc.id,
                     type: 'invitation',
-                    title: `Invitation to join ${doc.data().agency_name}`,
+                    title: `Invitation to join ${doc.data().fromAgencyName}`,
                     description: `You have been invited to join as a ${doc.data().role}.`,
                     timestamp: doc.data().invitedAt?.toDate() || new Date(),
                     isRead: readIds.includes(doc.id),
-                    agencyId: doc.data().agency_id,
-                    agencyName: doc.data().agency_name,
+                    fromAgencyId: doc.data().fromAgencyId,
+                    fromAgencyName: doc.data().fromAgencyName,
                     role: doc.data().role,
-                    email: doc.data().email,
+                    email: doc.data().toEmail,
                 } as InvitationNotification));
                 
                 updateAndSortNotifications(invitationNotifications, 'invitation');
@@ -285,35 +286,38 @@ export const useNotifications = () => {
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
         const batch = writeBatch(firestore);
         
-        // This is a temporary doc, so we delete it and create a new one with the user's UID
-        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
-        
-        const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
         const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
+        if (!invitationData) throw new Error("Invitation not found locally");
         
+        // 1. Create a new member document in the agency's subcollection with the user's actual UID
+        const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
         batch.set(newMemberRef, {
-             name: invitationData.email, // Or a default name
+             name: user?.displayName || invitationData.email,
              email: invitationData.email,
              role: invitationData.role,
              status: 'Active',
              agency_id: agencyId,
-             createdAt: new Date(),
+             invitedAt: invitationData.timestamp, // Keep the original invite time
         });
         
+        // 2. Update the main user document to link them to the agency
         const userRef = doc(firestore, 'users', userId);
         batch.update(userRef, { agency_id: agencyId });
 
-        // Finally, delete the original invitation document
+        // 3. Delete the invitation from the root collection
+        const invRef = doc(firestore, 'invitations', invitationId);
         batch.delete(invRef);
+        
 
         await batch.commit().catch((error) => {
-            throw new FirestorePermissionError({ operation: 'write', path: `batch write for invitation` });
+            throw new FirestorePermissionError({ operation: 'write', path: `batch write for invitation acceptance` });
         });
         deleteNotification(invitationId);
     };
 
-    const rejectInvitation = async (invitationId: string, agencyId: string) => {
-        const invRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationId);
+    const rejectInvitation = async (invitationId: string) => {
+        // Just delete the invitation from the root collection
+        const invRef = doc(firestore, 'invitations', invitationId);
         await deleteDoc(invRef).catch((error) => {
             throw new FirestorePermissionError({ operation: 'delete', path: invRef.path });
         });

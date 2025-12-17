@@ -111,7 +111,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 status: 'Pending',
                 agency_id: profile.agency_id,
                 agency_name: profile.agencyName,
-                createdAt: serverTimestamp()
+                invitedAt: serverTimestamp() // Use invitedAt for consistency
             });
             
             // 2. Write to the root 'invitations' collection (for agent lookup)
@@ -123,7 +123,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
                 fromAgencyName: profile.agencyName,
                 status: 'pending',
                 role: values.role,
-                createdAt: serverTimestamp()
+                invitedAt: serverTimestamp() // Use invitedAt for consistency
             });
 
             await batch.commit();
