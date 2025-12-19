@@ -260,7 +260,7 @@ export default function PropertiesPage() {
                 prop.area.toLowerCase().includes(lowercasedQuery) ||
                 prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
                 (prop.owner_number && prop.owner_number.replace(/\D/g, '').includes(numericQuery)) ||
-                (prop.video_links && Object.values(prop.video_links).some(link => link && link.toLowerCase().includes(lowercasedQuery)))
+                (prop.video_links && Object.values(prop.video_links).some(link => link && link.includes(searchQuery)))
         );
     }
 
@@ -1408,3 +1408,4 @@ export default function PropertiesPage() {
 
 
     
+
