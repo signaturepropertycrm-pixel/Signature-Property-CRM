@@ -10,6 +10,7 @@ import { useMemoFirebase } from '@/firebase/hooks';
 import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, Activity, ActivityNotification, Appointment, FollowUp } from '@/lib/types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { isBefore, sub, differenceInHours } from 'date-fns';
+import { useCollection } from '@/firebase/firestore/use-collection';
 
 const NOTIFICATION_READ_STATUS_KEY = 'signaturecrm_read_notifications';
 const DELETED_NOTIFICATIONS_KEY = 'signaturecrm_deleted_notifications';
