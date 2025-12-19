@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -107,7 +106,7 @@ function SignupPageContent() {
                   email: user.email,
                   role: 'Admin',
                   status: 'Active',
-                  createdAt: serverTimestamp(),
+                  joinedAt: serverTimestamp(),
                   avatar: user.photoURL,
                   agency_id: agencyId,
               });
@@ -213,7 +212,7 @@ function SignupPageContent() {
             email: values.email,
             role: 'Admin',
             status: 'Active',
-            createdAt: serverTimestamp(),
+            joinedAt: serverTimestamp(),
             agency_id: agencyId,
         });
         
