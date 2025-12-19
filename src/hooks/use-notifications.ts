@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, writeBatch, deleteDoc, DocumentData, QuerySnapshot, FirestoreError, orderBy, limit, setDoc, updateDoc } from 'firebase/firestore';
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -28,20 +29,17 @@ export const useNotifications = () => {
     const canFetch = !!firestore && !!user;
     const canFetchAgencyData = canFetch && !!profile.agency_id;
 
-    // --- FIX 1: Query ab 'invitations' collection se data laye gi ---
     const invitationsQuery = useMemoFirebase(() => {
         if (firestore && user?.email) {
             return query(
                 collection(firestore, 'invitations'), 
                 where('toEmail', '==', user.email),
-                // Yahan hum dono check kar lenge taake spelling mistake ka masla na ho
                 where('status', 'in', ['pending', 'Pending']) 
             );
         }
         return null;
     }, [firestore, user?.email, refreshKey]);
 
-    // ... (Appointments, FollowUps, Activities Queries - Same as before) ...
     const appointmentsQuery = useMemoFirebase(() => canFetchAgencyData ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
     const followUpsQuery = useMemoFirebase(() => canFetchAgencyData ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
     
@@ -56,14 +54,24 @@ export const useNotifications = () => {
         );
     }, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
 
-    // ... (LocalStorage Helpers - Same as before) ...
     const getStoredIds = (key: string): string[] => {
         try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
     };
     const setStoredIds = (key: string, ids: string[]) => localStorage.setItem(key, JSON.stringify(ids));
 
-    const markAsRead = (id: string) => { /* ... same code ... */ };
-    const markAllAsRead = () => { /* ... same code ... */ };
+    const markAsRead = (id: string) => {
+        const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
+        if (!readIds.includes(id)) {
+            const newReadIds = [...readIds, id];
+            setStoredIds(NOTIFICATION_READ_STATUS_KEY, newReadIds);
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+        }
+    };
+    const markAllAsRead = () => {
+        const currentIds = notifications.map(n => n.id);
+        setStoredIds(NOTIFICATION_READ_STATUS_KEY, currentIds);
+        setNotifications(prev => prev.map(n => ({...n, isRead: true})));
+    };
     
     const deleteNotification = (notificationId: string) => {
         const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
@@ -80,24 +88,20 @@ export const useNotifications = () => {
         const readIds = getStoredIds(NOTIFICATION_READ_STATUS_KEY);
         const unsubscribers: (() => void)[] = [];
         let allNotifications: Notification[] = [];
-        // Simplified loading state tracking
         let activeListeners = 0; 
         const checkLoading = () => { activeListeners--; if (activeListeners <= 0) setIsLoading(false); };
 
         const updateNotifications = (newNotifs: Notification[], type: string) => {
              const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
-             // Remove old notifs of this type and add new ones
              allNotifications = [
                 ...allNotifications.filter(n => n.type !== type), 
                 ...newNotifs
              ].filter(n => !deletedIds.includes(n.id));
              
-             // Sort by date
              allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
              setNotifications([...allNotifications]);
         };
 
-        // 1. Invitations Listener
         if(invitationsQuery) {
             activeListeners++;
             const unsubInvites = onSnapshot(invitationsQuery, (snapshot) => {
@@ -106,14 +110,13 @@ export const useNotifications = () => {
                     type: 'invitation',
                     title: `Invitation from ${doc.data().fromAgencyName}`,
                     description: `Role: ${doc.data().role}. Click Accept to join.`,
-                    timestamp: doc.data().createdAt?.toDate() || new Date(),
+                    timestamp: doc.data().invitedAt?.toDate() || new Date(),
                     isRead: readIds.includes(doc.id),
-                    // Zaroori Data:
                     fromAgencyId: doc.data().fromAgencyId,
                     fromAgencyName: doc.data().fromAgencyName,
                     role: doc.data().role,
                     email: doc.data().toEmail,
-                    memberDocId: doc.data().memberDocId // <--- YE BOHOT ZAROORI HAI
+                    memberDocId: doc.data().memberDocId 
                 } as InvitationNotification));
                 
                 updateNotifications(invites, 'invitation');
@@ -121,22 +124,16 @@ export const useNotifications = () => {
             }, (err) => { console.error(err); checkLoading(); });
             unsubscribers.push(unsubInvites);
         }
-
-        // ... (Keep Appointments, Followups, Activity listeners same as your original file) ...
-        // Bas logic same rakhna updateNotifications wali.
         
-        // Temporary fix to stop infinite loading if no queries run
         if (activeListeners === 0) setIsLoading(false);
 
         return () => unsubscribers.forEach(u => u());
-    }, [canFetch, firestore, user, profile.agency_id, refreshKey]); // Removed complex dependencies
+    }, [canFetch, firestore, user, profile.agency_id, refreshKey]); 
     
     
-    // --- FIX 2: Accept Logic (Updates existing doc instead of creating new) ---
     const acceptInvitation = async (invitationId: string, agencyId: string, userId: string) => {
         const batch = writeBatch(firestore);
         
-        // Local state se data uthao
         const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
         
         if (!invitationData) {
@@ -144,29 +141,18 @@ export const useNotifications = () => {
             throw new Error("Invitation not found");
         }
         
-        // 1. Agency ke andar jo 'Pending' member hai, usay 'Active' karo
-        // Note: Hum 'memberDocId' use kar rahe hain jo humne invite create karte waqt save kiya tha
-        if (invitationData.memberDocId) {
-            const memberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationData.memberDocId);
-            batch.update(memberRef, {
-                 status: 'Active',
-                 user_id: userId, // Link actual User ID
-                 joinedAt: new Date()
-            });
-        } else {
-            // Fallback: Agar memberDocId nahi mila (purane invites ke liye), to naya bana lo
-            const newMemberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', userId);
-            batch.set(newMemberRef, {
-                name: user?.displayName || invitationData.email,
-                email: invitationData.email,
-                role: invitationData.role,
-                status: 'Active',
-                agency_id: agencyId,
-                joinedAt: new Date()
-            });
+        if (!invitationData.memberDocId) {
+             console.error("memberDocId is missing from the invitation. Cannot accept.");
+             throw new Error("Invitation is corrupted or old. Please ask the admin to resend it.");
         }
         
-        // 2. User ki apni profile update karo (Agency ID set karo)
+        const memberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationData.memberDocId);
+        batch.update(memberRef, {
+             status: 'Active',
+             user_id: userId,
+             joinedAt: serverTimestamp()
+        });
+        
         const userRef = doc(firestore, 'users', userId);
         batch.set(userRef, { 
             agency_id: agencyId,
@@ -174,30 +160,30 @@ export const useNotifications = () => {
             agencyName: invitationData.fromAgencyName
         }, { merge: true });
 
-        // 3. Invitation delete karo
         const invRef = doc(firestore, 'invitations', invitationId);
         batch.delete(invRef);
         
-        try {
-            await batch.commit();
-            // Local state se bhi hatao
-            deleteNotification(invitationId);
-            // Page refresh taake naya agency data load ho jaye
-            window.location.reload(); 
-        } catch (error: any) {
-            console.error("Accept Error:", error);
-            // Permission Error ka check
-            if (error.code === 'permission-denied') {
-                throw new Error("Permission Denied: Check Firestore Rules for 'teamMembers' collection.");
-            }
-            throw error;
-        }
+        await batch.commit();
+        deleteNotification(invitationId);
+        window.location.reload(); 
     };
 
-    const rejectInvitation = async (invitationId: string) => {
-        // ... (Same logic as yours)
+    const rejectInvitation = async (invitationId: string, agencyId: string) => {
+        const invitationData = notifications.find(n => n.id === invitationId) as InvitationNotification;
+        if (!invitationData) return;
+
+        const batch = writeBatch(firestore);
+
         const invRef = doc(firestore, 'invitations', invitationId);
-        await deleteDoc(invRef);
+        batch.delete(invRef);
+
+        // Delete the pending member doc too
+        if (invitationData.memberDocId) {
+            const memberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationData.memberDocId);
+            batch.delete(memberRef);
+        }
+
+        await batch.commit();
         deleteNotification(invitationId);
     };
 
