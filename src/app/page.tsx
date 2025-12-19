@@ -128,7 +128,7 @@ export default function LandingPage() {
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center gap-2 font-bold text-lg font-headline text-primary">
                     <Building />
-                    <span>Signature Property CRM</span>
+                    <span>S.P CRM</span>
                 </Link>
                 <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
                     <Link href="#features" className="transition-colors hover:text-primary">Features</Link>
