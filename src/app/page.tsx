@@ -204,14 +204,14 @@ export default function LandingPage() {
                 <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Operating System for Modern Real Estate Agencies</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Apkay Business, ko Nayi Raftaar" 
+                        sentence="Close More Deals, Faster" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
                     />
                 </div>
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-                    Signature Property CRM Pakistan ki real estate agencies ke liye banaya gaya wahid platform hai jo aapke tamam leads, team, aur deals ko ek jaga par manage karke apkay business ko tarakki deta hai.
+                    Signature Property CRM is the all-in-one platform built for Pakistani real estate agencies to streamline operations, manage leads, and accelerate growth.
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
@@ -231,34 +231,34 @@ export default function LandingPage() {
         <section className="py-20 md:py-32">
             <div className="container mx-auto px-4">
                 <div className="text-center max-w-3xl mx-auto">
-                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Manual Kam se Niklein, Technology ko Apnayein</h2>
+                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Escape Manual Work, Embrace Technology</h2>
                     <p className="mt-4 text-muted-foreground">
-                        Scattered leads, bhoolay hue follow-ups, aur team ki performance ka andaza na hona ab maazi ki baat hui.
+                        Scattered leads, forgotten follow-ups, and a lack of team visibility are things of the past.
                     </p>
                 </div>
                 <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                     <Card className="border-red-500/30 bg-red-500/5">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-red-600"><AlertTriangle /> Without Signature Property CRM</CardTitle>
+                            <CardTitle className="flex items-center gap-3 text-red-600"><AlertTriangle /> Without S.P CRM</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-muted-foreground">
-                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Leads registers aur Excel sheets mein bikhray hue.</p>
-                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Important follow-ups miss ho jatay hain.</p>
-                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Team ki progress ka koi andaza nahi hota.</p>
-                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Dealers ko list bhejne mein ghanton lagtay hain.</p>
-                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Agency ki asal performance ka pata nahi chalta.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Leads are scattered in registers and Excel sheets.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Important follow-ups are frequently missed.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> No clear visibility into team performance.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Sharing property lists with dealers takes hours.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> True agency performance remains a mystery.</p>
                         </CardContent>
                     </Card>
                      <Card className="border-green-500/30 bg-green-500/5">
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-3 text-green-600"><Check className="bg-green-600 text-white rounded-full p-1" /> With Signature Property CRM</CardTitle>
+                            <CardTitle className="flex items-center gap-3 text-green-600"><Check className="bg-green-600 text-white rounded-full p-1" /> With S.P CRM</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-foreground">
-                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Tamam properties aur buyers ek central dashboard par.</p>
-                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Automatic reminders appointments aur follow-ups ke liye.</p>
-                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Admin ko har agent ki performance ka live view.</p>
-                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Sirf 2 clicks mein properties ki professional list banayein.</p>
-                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Revenue, lead growth, aur sold properties par reports hasil karein.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> All properties and buyers on a central dashboard.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Automatic reminders for appointments and follow-ups.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Live view of each agent's performance for admins.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Generate professional property lists in just two clicks.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Get reports on revenue, lead growth, and sold properties.</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -269,9 +269,9 @@ export default function LandingPage() {
         <section id="features" className="py-20 md:py-32 bg-muted/30">
             <div className="container mx-auto px-4">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Aapki Agency ke liye banaye gaye Features</h2>
+                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Features Built For Your Agency</h2>
                     <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
-                        Har tool aapke rozmarra ke kaam ko aasan aur tezz karne ke liye design kiya gaya hai.
+                        Every tool is designed to make your daily tasks easier and faster.
                     </p>
                 </div>
                 <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
