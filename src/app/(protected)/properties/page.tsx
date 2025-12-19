@@ -41,6 +41,7 @@ import {
   ChevronRight,
   ChevronLeft,
   ArrowUpDown,
+  Link as LinkIcon,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -118,6 +119,7 @@ interface Filters {
   demandUnit: PriceUnit | 'All';
   serialNoPrefix: 'All' | 'P' | 'RP';
   serialNo: string;
+  videoLink: string;
 }
 
 const propertyStatuses = [
@@ -191,6 +193,7 @@ export default function PropertiesPage() {
     demandUnit: 'All',
     serialNoPrefix: 'All',
     serialNo: '',
+    videoLink: '',
   });
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -231,6 +234,7 @@ export default function PropertiesPage() {
       demandUnit: 'All',
       serialNoPrefix: 'All',
       serialNo: '',
+      videoLink: '',
     });
     setIsFilterPopoverOpen(false);
   };
@@ -275,6 +279,10 @@ export default function PropertiesPage() {
         const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
         baseProperties = baseProperties.filter(p => p.serial_no === fullSerialNo);
     }
+    if (filters.videoLink) {
+        baseProperties = baseProperties.filter(p => p.video_links && Object.values(p.video_links).some(link => link && link.includes(filters.videoLink)));
+    }
+
 
     // 3. Final Filter: URL Status Param
     const currentStatusFilter = statusFilterFromURL || 'All (Sale)';
@@ -417,8 +425,6 @@ export default function PropertiesPage() {
         status: 'Available', 
         rent_out_date: null,
         rented_by_agent_id: null,
-        rent_commission_from_tenant: null,
-        rent_commission_from_owner: null,
         rent_total_commission: null,
         rent_agent_share: null
     }, { merge: true });
@@ -1210,6 +1216,10 @@ export default function PropertiesPage() {
                                 <Label htmlFor="area">Area</Label>
                                 <Input id="area" value={filters.area} onChange={(e) => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
                             </div>
+                             <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="videoLink" className="flex items-center gap-1"><LinkIcon className="h-3 w-3"/>Video Link</Label>
+                                <Input id="videoLink" value={filters.videoLink} onChange={(e) => handleFilterChange('videoLink', e.target.value)} className="col-span-2 h-8" />
+                            </div>
                             <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="propertyType">Type</Label>
                                 <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
@@ -1408,5 +1418,6 @@ export default function PropertiesPage() {
 
 
     
+
 
 
