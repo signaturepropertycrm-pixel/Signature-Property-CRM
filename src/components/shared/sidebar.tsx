@@ -379,7 +379,7 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2">
                     <Home className="text-primary size-8" />
                     <span className="font-bold text-xl font-headline text-primary">
-                        Signature Property
+                        S.P CRM
                     </span>
                 </div>
             </Link>
