@@ -4,20 +4,18 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home, LayoutDashboard, GanttChartSquare, ClipboardList, PhoneCall, Workflow, Sparkles, AlertTriangle, X } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import TrueFocus from '@/components/true-focus';
 import { InfiniteScroller } from '@/components/infinite-scroller';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import DotGrid from '@/components/dot-grid';
-import { Skeleton } from '@/components/ui/skeleton';
+import { motion, useAnimation, useInView } from "framer-motion"
 
-
-// Placeholder data - replace with real data or fetch from an API
 const plans = [
     {
         name: 'Basic',
@@ -63,22 +61,43 @@ const plans = [
     },
 ];
 
-const features = [
+const coreFeatures = [
     {
-        icon: <Building className="h-10 w-10 text-primary" />,
-        title: 'Property Management',
-        description: 'Easily add, track, and manage all your property listings, from available to sold, in one central place.',
+        icon: <Building className="h-8 w-8" />,
+        title: 'Property & Buyer Management',
+        description: 'Centralize all your listings and buyer leads. Track every detail from initial contact to deal closure with an auto-generated serial number system.',
+        image: '/images/feature-properties.png'
     },
     {
-        icon: <Users className="h-10 w-10 text-primary" />,
-        title: 'Buyer Lead Tracking',
-        description: 'Capture and manage buyer details, their requirements, budget, and status to close deals faster.',
+        icon: <Workflow className="h-8 w-8" />,
+        title: 'Team Collaboration & Roles',
+        description: 'Invite agents, assign roles (Admin/Agent), and manage permissions seamlessly. Assign leads and track performance across your entire agency.',
+        image: '/images/feature-team.png'
     },
     {
-        icon: <LineChart className="h-10 w-10 text-primary" />,
-        title: 'Performance Analytics',
-        description: 'Get a clear view of your agency\'s performance with insightful reports on sales, revenue, and team activity.',
-    }
+        icon: <GanttChartSquare className="h-8 w-8" />,
+        title: 'Appointment & Follow-up System',
+        description: 'Schedule appointments, set reminders for follow-ups, and manage your calendar without missing a single opportunity.',
+        image: '/images/feature-appointments.png'
+    },
+    {
+        icon: <Sparkles className="h-8 w-8" />,
+        title: 'Powerful Productivity Tools',
+        description: 'Generate formatted property lists for dealers, find matching buyers by budget, and automatically create social media posts to boost your marketing.',
+        image: '/images/feature-tools.png'
+    },
+    {
+        icon: <LineChart className="h-8 w-8" />,
+        title: 'Insightful Analytics & Reports',
+        description: 'Get a clear view of your agency\'s performance. Track revenue, lead growth, and team activity with beautiful charts and downloadable reports.',
+        image: '/images/feature-analytics.png'
+    },
+     {
+        icon: <PhoneCall className="h-8 w-8" />,
+        title: 'Lead Assignment & Tracking',
+        description: 'Admins can assign buyer leads to specific agents, enabling focused follow-ups and clear accountability within the team.',
+        image: '/images/feature-assign.png'
+    },
 ];
 
 const testimonials = [
@@ -102,15 +121,33 @@ const testimonials = [
   },
 ];
 
+const FeatureCard = ({ feature, index }: { feature: (typeof coreFeatures)[0], index: number }) => {
+    const ref = React.useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.3 });
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 50 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            className="rounded-2xl border bg-card/50 p-6 flex flex-col items-start gap-4 hover:shadow-lg transition-shadow"
+        >
+            <div className="p-3 bg-primary/10 text-primary rounded-lg">{feature.icon}</div>
+            <h3 className="text-xl font-bold font-headline">{feature.title}</h3>
+            <p className="text-muted-foreground flex-1">{feature.description}</p>
+            <div className="w-full aspect-video rounded-lg overflow-hidden border mt-4">
+                 <Image src={feature.image} alt={feature.title} width={1280} height={720} className="w-full h-full object-cover" />
+            </div>
+        </motion.div>
+    );
+};
+
 
 export default function LandingPage() {
   const { setTheme, theme } = useTheme();
   const [headerScrolled, setHeaderScrolled] = useState(false);
-  const dashboardPreviewImage = PlaceHolderImages.find(img => img.id === 'dashboard-preview');
   
-  // No longer needed here
-  // const { user, isUserLoading } = useUser();
-
   useEffect(() => {
     const handleScroll = () => {
       setHeaderScrolled(window.scrollY > 10);
@@ -164,55 +201,89 @@ export default function LandingPage() {
                 activeColor={theme === 'dark' ? '#38BDF8' : '#3B82F6'}
              />
             <div className="container mx-auto px-4 animate-fade-in-up">
-                <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Ultimate Real Estate CRM</Badge>
+                <Badge variant="outline" className="mb-4 border-primary/50 text-primary">The Operating System for Modern Real Estate Agencies</Badge>
                 <div className="min-h-[140px] md:min-h-[100px] flex items-center justify-center">
                    <TrueFocus 
-                        sentence="Close More Deals, Faster" 
+                        sentence="Apkay Business, ko Nayi Raftaar" 
                         separator=","
                         borderColor="hsl(var(--primary))"
                         glowColor="hsl(var(--primary))"
                     />
                 </div>
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-                    Signature Property CRM is the all-in-one platform built for Pakistani real estate agencies to streamline operations and close more deals, faster.
+                    Signature Property CRM Pakistan ki real estate agencies ke liye banaya gaya wahid platform hai jo aapke tamam leads, team, aur deals ko ek jaga par manage karke apkay business ko tarakki deta hai.
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
-                        <Link href="/signup">Start Your Free Trial</Link>
+                        <Link href="/signup">Start Your Free 30-Day Trial</Link>
                     </Button>
                 </div>
             </div>
         </section>
+        
+        {/* Social Proof */}
+        <section className="py-12">
+            <p className="text-center text-sm font-semibold text-muted-foreground mb-4">TRUSTED BY TOP AGENCIES IN PAKISTAN</p>
+            <InfiniteScroller />
+        </section>
 
-
-        {/* Features Section */}
-        <section id="features" className="py-20 md:py-32">
+        {/* Problem/Solution */}
+        <section className="py-20 md:py-32">
             <div className="container mx-auto px-4">
-                <div className="text-center">
-                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Everything Your Agency Needs</h2>
-                    <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
-                        From lead management to performance tracking, we've got you covered.
+                <div className="text-center max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Manual Kam se Niklein, Technology ko Apnayein</h2>
+                    <p className="mt-4 text-muted-foreground">
+                        Scattered leads, bhoolay hue follow-ups, aur team ki performance ka andaza na hona ab maazi ki baat hui.
                     </p>
                 </div>
-                <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
-                    {features.map((feature, index) => (
-                        <div key={feature.title} className="text-center p-8 border rounded-2xl bg-card/50 hover:shadow-lg transition-shadow animate-fade-in-up" style={{ animationDelay: `${''}${0.4 + index * 0.1}s` }}>
-                            {feature.icon}
-                            <h3 className="mt-6 text-xl font-bold font-headline">{feature.title}</h3>
-                            <p className="mt-2 text-muted-foreground">{feature.description}</p>
-                        </div>
+                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <Card className="border-red-500/30 bg-red-500/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3 text-red-600"><AlertTriangle /> Without Signature Property CRM</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-muted-foreground">
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Leads registers aur Excel sheets mein bikhray hue.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Important follow-ups miss ho jatay hain.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Team ki progress ka koi andaza nahi hota.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Dealers ko list bhejne mein ghanton lagtay hain.</p>
+                            <p className="flex items-center gap-2"><X className="text-red-500 flex-shrink-0" /> Agency ki asal performance ka pata nahi chalta.</p>
+                        </CardContent>
+                    </Card>
+                     <Card className="border-green-500/30 bg-green-500/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3 text-green-600"><Check className="bg-green-600 text-white rounded-full p-1" /> With Signature Property CRM</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-foreground">
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Tamam properties aur buyers ek central dashboard par.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Automatic reminders appointments aur follow-ups ke liye.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Admin ko har agent ki performance ka live view.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Sirf 2 clicks mein properties ki professional list banayein.</p>
+                            <p className="flex items-center gap-2"><Check className="text-green-500 flex-shrink-0" /> Revenue, lead growth, aur sold properties par reports hasil karein.</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-20 md:py-32 bg-muted/30">
+            <div className="container mx-auto px-4">
+                <div className="text-center">
+                    <h2 className="text-3xl font-bold font-headline md:text-4xl">Aapki Agency ke liye banaye gaye Features</h2>
+                    <p className="mt-4 max-w-xl mx-auto text-muted-foreground">
+                        Har tool aapke rozmarra ke kaam ko aasan aur tezz karne ke liye design kiya gaya hai.
+                    </p>
+                </div>
+                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {coreFeatures.map((feature, index) => (
+                       <FeatureCard key={feature.title} feature={feature} index={index} />
                     ))}
                 </div>
             </div>
         </section>
 
-        {/* Infinite Scroller */}
-        <section className="py-12">
-            <InfiniteScroller />
-        </section>
-
         {/* Pricing Section */}
-        <section id="pricing" className="py-20 md:py-24 bg-muted/30">
+        <section id="pricing" className="py-20 md:py-24">
             <div className="container mx-auto px-4">
                  <div className="text-center">
                     <h2 className="text-3xl font-bold font-headline md:text-4xl">Simple, Transparent Pricing</h2>
@@ -253,7 +324,7 @@ export default function LandingPage() {
         </section>
         
         {/* Testimonials Section */}
-        <section id="testimonials" className="py-20 md:py-32">
+        <section id="testimonials" className="py-20 md:py-32 bg-muted/30">
             <div className="container mx-auto px-4">
                  <div className="text-center">
                     <h2 className="text-3xl font-bold font-headline md:text-4xl">Trusted by Agencies Across Pakistan</h2>
@@ -278,7 +349,7 @@ export default function LandingPage() {
         </section>
 
         {/* Final CTA */}
-        <section className="py-20 text-center bg-muted/30">
+        <section className="py-20 text-center">
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold font-headline md:text-4xl">Ready to Grow Your Business?</h2>
                 <p className="mx-auto mt-4 max-w-md text-muted-foreground">
