@@ -41,7 +41,7 @@ export default function SupportPage() {
 
     const handleWhatsAppClick = () => {
         const phone = '923001234567'; // Replace with your support WhatsApp number
-        const message = "Hello, I need support with Asaan Estate.";
+        const message = "Hello, I need support with Signature Property CRM.";
         const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
     }

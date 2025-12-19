@@ -85,7 +85,7 @@ const testimonials = [
   {
     name: 'Ali Khan',
     agency: 'Khan Properties',
-    quote: 'Asaan Estate has transformed how we manage our leads. Our closing rate has increased by 30%!',
+    quote: 'Signature Property CRM has transformed how we manage our leads. Our closing rate has increased by 30%!',
     avatar: 'https://images.unsplash.com/photo-1590086782792-42dd2350140d?w=50&h=50&fit=crop&crop=entropy'
   },
   {
@@ -128,7 +128,7 @@ export default function LandingPage() {
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center gap-2 font-bold text-lg font-headline text-primary">
                     <Building />
-                    <span>Asaan Estate</span>
+                    <span>Signature Property CRM</span>
                 </Link>
                 <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
                     <Link href="#features" className="transition-colors hover:text-primary">Features</Link>
@@ -174,7 +174,7 @@ export default function LandingPage() {
                     />
                 </div>
                 <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-                    Asaan Estate is the all-in-one platform built for Pakistani real estate agencies to streamline operations and close more deals, faster.
+                    Signature Property CRM is the all-in-one platform built for Pakistani real estate agencies to streamline operations and close more deals, faster.
                 </p>
                 <div className="mt-10 flex justify-center gap-4">
                     <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
@@ -262,7 +262,7 @@ export default function LandingPage() {
                     {testimonials.map(testimonial => (
                         <Card key={testimonial.name} className="flex flex-col">
                             <CardContent className="pt-6">
-                                <p className="italic text-muted-foreground">"{testimonial.quote.replace('SignatureCRM', 'Asaan Estate')}"</p>
+                                <p className="italic text-muted-foreground">"{testimonial.quote.replace('SignatureCRM', 'Signature Property CRM')}"</p>
                             </CardContent>
                             <CardFooter className="mt-auto flex items-center gap-4">
                                 <Image src={testimonial.avatar} alt={testimonial.name} width={40} height={40} className="rounded-full" />
@@ -282,7 +282,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold font-headline md:text-4xl">Ready to Grow Your Business?</h2>
                 <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-                    Join dozens of agencies who trust Asaan Estate to streamline their operations.
+                    Join dozens of agencies who trust Signature Property CRM to streamline their operations.
                 </p>
                 <div className="mt-8">
                      <Button size="lg" asChild className="glowing-btn text-lg h-14 px-8">
@@ -295,7 +295,7 @@ export default function LandingPage() {
 
         <footer className="border-t">
             <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-8 md:flex-row">
-                <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Asaan Estate. All rights reserved.</p>
+                <p className="text-sm text-muted-foreground">&copy; {new Date().getFullYear()} Signature Property CRM. All rights reserved.</p>
                 <div className="flex items-center gap-4 text-sm">
                     <Link href="#" className="transition-colors hover:text-primary">Terms of Service</Link>
                     <Link href="#" className="transition-colors hover:text-primary">Privacy Policy</Link>

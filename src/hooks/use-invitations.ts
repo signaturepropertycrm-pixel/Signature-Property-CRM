@@ -1,21 +1,18 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { collectionGroup, query, where, onSnapshot, DocumentData, QuerySnapshot, FirestoreError } from 'firebase/firestore';
-import { useUser } from '@/firebase/auth/use-user';
+import { collection, query, where, onSnapshot, DocumentData, QuerySnapshot, FirestoreError } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-
-// DEPRECATED: This logic is now part of use-notifications.ts
 
 export interface Invitation {
     id: string;
-    agency_id: string;
-    agency_name: string;
-    email: string;
+    fromAgencyId: string;   // Changed from agency_id
+    fromAgencyName: string; // Changed from agency_name
+    toEmail: string;        // Changed from email
     role: 'Agent';
-    status: 'Pending';
+    status: 'pending';      // lowercase 'pending' consistent with our create logic
+    memberDocId: string;    // Reference to the agency doc
 }
 
 export const useInvitations = (userEmail: string | null | undefined) => {
@@ -25,10 +22,12 @@ export const useInvitations = (userEmail: string | null | undefined) => {
 
     const invitationsQuery = useMemoFirebase(() => {
         if (userEmail && firestore) {
+            // FIX: Ab hum 'teamMembers' nahi balkay 'invitations' collection check kar rahe hain
+            // Hum 'toEmail' check karenge jo humne pichle step me save karwaya tha
             return query(
-                collectionGroup(firestore, 'teamMembers'), 
-                where('email', '==', userEmail),
-                where('status', '==', 'Pending')
+                collection(firestore, 'invitations'), 
+                where('toEmail', '==', userEmail),
+                where('status', '==', 'pending')
             );
         }
         return null;
