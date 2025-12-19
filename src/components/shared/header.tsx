@@ -27,9 +27,9 @@ import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 import { formatDistanceToNow } from 'date-fns';
-import { AppointmentNotification, FollowUpNotification, Notification, ActivityNotification } from '@/lib/types';
+import { AppointmentNotification, FollowUpNotification, Notification, ActivityNotification, InvitationNotification } from '@/lib/types';
 import { NotificationAppointmentDialog } from '../notification-appointment-dialog';
 import { NotificationFollowupDialog } from '../notification-followup-dialog';
 import { NotificationActivityDialog } from '../notification-activity-dialog';
@@ -220,10 +220,10 @@ export function AppHeader({
                                     <div className="flex items-center gap-1 w-20 justify-end">
                                         {updatingInvite === notification.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                                             <>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={(e) => {e.stopPropagation(); handleReject(notification.id, (notification as any).agencyId)}}>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:text-red-500 hover:bg-red-500/10" onClick={(e) => {e.stopPropagation(); handleReject(notification.id, (notification as InvitationNotification).fromAgencyId)}}>
                                                     <X className="h-4 w-4" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={(e) => {e.stopPropagation(); handleAccept(notification.id, (notification as any).agencyId)}}>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-500 hover:text-green-500 hover:bg-green-500/10" onClick={(e) => {e.stopPropagation(); handleAccept(notification.id, (notification as InvitationNotification).fromAgencyId)}}>
                                                     <Check className="h-4 w-4" />
                                                 </Button>
                                             </>

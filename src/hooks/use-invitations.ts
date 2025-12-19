@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ export interface Invitation {
     fromAgencyName: string; // Changed from agency_name
     toEmail: string;        // Changed from email
     role: 'Agent';
-    status: 'pending';      // lowercase 'pending' consistent with our create logic
+    status: 'pending' | 'Pending'; // Allow both cases
     memberDocId: string;    // Reference to the agency doc
 }
 
@@ -22,12 +23,11 @@ export const useInvitations = (userEmail: string | null | undefined) => {
 
     const invitationsQuery = useMemoFirebase(() => {
         if (userEmail && firestore) {
-            // FIX: Ab hum 'teamMembers' nahi balkay 'invitations' collection check kar rahe hain
-            // Hum 'toEmail' check karenge jo humne pichle step me save karwaya tha
+            // FIX: Check for both 'pending' and 'Pending' to catch all cases.
             return query(
                 collection(firestore, 'invitations'), 
                 where('toEmail', '==', userEmail),
-                where('status', '==', 'pending')
+                where('status', 'in', ['pending', 'Pending'])
             );
         }
         return null;

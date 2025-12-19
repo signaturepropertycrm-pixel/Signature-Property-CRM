@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, doc, writeBatch, deleteDoc, Docum
 import { useUser } from '@/firebase/auth/use-user';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, Activity, ActivityNotification, Appointment, FollowUp } from '@/lib/types';
+import type { Notification, InvitationNotification, AppointmentNotification, FollowUpNotification, Activity, ActivityNotification, Appointment, FollowUp, UserRole } from '@/lib/types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { isBefore, sub, differenceInHours } from 'date-fns';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -91,7 +91,7 @@ export const useNotifications = () => {
                 isRead: readIds.includes(doc.id),
                 fromAgencyId: doc.fromAgencyId,
                 fromAgencyName: doc.fromAgencyName,
-                role: doc.role,
+                role: doc.role as UserRole,
                 email: doc.toEmail,
                 memberDocId: doc.memberDocId 
             }));
@@ -198,7 +198,7 @@ export const useNotifications = () => {
         batch.update(memberRef, {
              status: 'Active',
              user_id: userId,
-             joinedAt: serverTimestamp()
+             joinedAt: new Date().toISOString()
         });
         
         const userRef = doc(firestore, 'users', userId);
