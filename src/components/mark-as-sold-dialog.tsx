@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -264,7 +263,7 @@ export function MarkAsSoldDialog({
           <AlertDescription>
             If this property was sold by another party, you can mark it as sold externally.
           </AlertDescription>
-          <Button variant="outline" size="sm" className="mt-2" onClick={handleSoldExternally}>Mark as Sold by External Party</Button>
+          <Button variant="outline" size="sm" className="mt-2" onClick={handleSoldExternally}>Sold by Other Party</Button>
         </Alert>
 
         <Form {...form}>
