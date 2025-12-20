@@ -80,7 +80,9 @@ export function useCollection<T = any>(
           ...(doc.data() as T),
           id: doc.id
         }));
-        setData(results);
+        // By creating a new array instance, we ensure that React's change detection
+        // is triggered, which will cause dependent useEffects to re-run.
+        setData([...results]);
         setError(null);
         setIsLoading(false);
       },
