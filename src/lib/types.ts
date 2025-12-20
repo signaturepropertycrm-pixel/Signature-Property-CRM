@@ -85,6 +85,7 @@ export type Property = {
   sold_price?: number;
   sold_price_unit?: PriceUnit;
   sale_date?: string;
+  sold_externally_date?: string; // New field for external sales tracking
   sold_by_agent_id?: string;
   buyerId?: string | null;
   buyerName?: string | null;

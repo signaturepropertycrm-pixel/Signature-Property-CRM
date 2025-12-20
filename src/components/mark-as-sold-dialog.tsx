@@ -162,7 +162,7 @@ export function MarkAsSoldDialog({
 
     // 1. Update property status
     const propertyRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
-    batch.update(propertyRef, { status: 'Sold (External)' });
+    batch.update(propertyRef, { status: 'Sold (External)', sold_externally_date: new Date().toISOString() });
 
     // 2. Log activity
     const activityLogRef = doc(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'));
