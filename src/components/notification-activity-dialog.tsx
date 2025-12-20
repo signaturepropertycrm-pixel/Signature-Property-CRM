@@ -68,11 +68,13 @@ export function NotificationActivityDialog({
              <div className="flex items-start text-sm">
                 <p className="font-semibold">{activity.target}</p>
             </div>
-            <div className="flex items-center gap-2 text-sm pt-3 border-t">
-                <Badge variant="secondary">{activity.details.from}</Badge>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <Badge variant="default">{activity.details.to}</Badge>
-            </div>
+            {activity.details && (
+              <div className="flex items-center gap-2 text-sm pt-3 border-t">
+                  <Badge variant="secondary">{activity.details.from}</Badge>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <Badge variant="default">{activity.details.to}</Badge>
+              </div>
+            )}
         </div>
         <DialogFooter className="sm:justify-between">
             <Button variant="outline" onClick={handleGoToPage}>Go to {activity.targetType}s</Button>
