@@ -28,7 +28,7 @@ export type User = {
 export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
-export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out';
+export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)';
 export type ListingType = 'For Sale' | 'For Rent';
 
 export type UploadedDocument = {

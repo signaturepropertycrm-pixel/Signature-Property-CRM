@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName, PropertyStatus } from '@/lib/types';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -126,6 +126,7 @@ const propertyStatuses = [
     { value: 'All (Sale)', label: 'All (Sale)' },
     { value: 'Available (Sale)', label: 'Available (Sale)' },
     { value: 'Sold', label: 'Sold' },
+    { value: 'Sold (External)', label: 'Sold (External)' },
     { value: 'All (Rent)', label: 'All (Rent)' },
     { value: 'Available (Rent)', label: 'Available (Rent)' },
     { value: 'Rent Out', label: 'Rent Out' },
@@ -296,6 +297,9 @@ export default function PropertiesPage() {
             break;
         case 'Sold':
             baseProperties = baseProperties.filter(p => p.status === 'Sold' && !p.is_for_rent);
+            break;
+        case 'Sold (External)':
+            baseProperties = baseProperties.filter(p => p.status === 'Sold (External)');
             break;
         case 'All (Rent)':
             baseProperties = baseProperties.filter(p => p.is_for_rent);
@@ -924,7 +928,7 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex flex-col gap-1 items-start">
-                    <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground'}>
+                    <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground'}>
                     {prop.status}
                     </Badge>
                 </div>
@@ -950,7 +954,7 @@ export default function PropertiesPage() {
                     {prop.status === 'Available' && !prop.is_for_rent && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
-                    {prop.status === 'Sold' && (
+                    {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</DropdownMenuItem>
                     )}
                     {(profile.role === 'Admin') && (
@@ -1022,7 +1026,7 @@ export default function PropertiesPage() {
                           </div>
                       </div>
                       <div className="flex flex-col gap-1 items-end">
-                          <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-primary text-primary-foreground')}>
+                          <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground')}>
                               {prop.status}
                           </Badge>
                       </div>
@@ -1058,7 +1062,7 @@ export default function PropertiesPage() {
                           {prop.status === 'Available' && !prop.is_for_rent && (
                               <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
                           )}
-                          {prop.status === 'Sold' && (
+                          {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
                               <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
                           )}
                           {(profile.role === 'Admin') && (
@@ -1418,6 +1422,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 

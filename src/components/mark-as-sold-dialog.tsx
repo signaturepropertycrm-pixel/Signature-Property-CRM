@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Property, PriceUnit, User, Buyer } from '@/lib/types';
+import { Property, PriceUnit, User, Buyer, Activity } from '@/lib/types';
 import { formatCurrency, formatUnit } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -39,6 +40,7 @@ import { Card, CardContent } from './ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from './ui/command';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription } from './ui/alert';
 
 const priceUnits: PriceUnit[] = ['Thousand', 'Lacs', 'Crore'];
 
@@ -154,6 +156,36 @@ export function MarkAsSoldDialog({
     }
   }, [isOpen, property, form]);
 
+  const handleSoldExternally = async () => {
+    if (!profile.agency_id) return;
+    const batch = writeBatch(firestore);
+
+    // 1. Update property status
+    const propertyRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
+    batch.update(propertyRef, { status: 'Sold (External)' });
+
+    // 2. Log activity
+    const activityLogRef = doc(collection(firestore, 'agencies', profile.agency_id, 'activityLogs'));
+    const newActivity: Omit<Activity, 'id'> = {
+      userName: profile.name,
+      action: 'marked property as sold externally',
+      target: property.serial_no,
+      targetType: 'Property',
+      details: null,
+      timestamp: new Date().toISOString(),
+      agency_id: profile.agency_id,
+    };
+    batch.set(activityLogRef, newActivity);
+    
+    await batch.commit();
+
+    toast({
+        title: 'Property Status Updated',
+        description: `${property.serial_no} has been marked as "Sold (External)".`,
+    });
+    setIsOpen(false);
+  };
+
   async function onSubmit(values: MarkAsSoldFormValues) {
     const agent = activeAgents.find(a => a.id === values.sold_by_agent_id);
     const buyer = availableBuyers.find(b => b.id === values.buyerId);
@@ -227,6 +259,14 @@ export function MarkAsSoldDialog({
             Enter the final sale details for: {property.auto_title}.
           </DialogDescription>
         </DialogHeader>
+
+        <Alert variant="default" className="border-amber-500/50 bg-amber-500/10">
+          <AlertDescription>
+            If this property was sold by another party, you can mark it as sold externally.
+          </AlertDescription>
+          <Button variant="outline" size="sm" className="mt-2" onClick={handleSoldExternally}>Mark as Sold by External Party</Button>
+        </Alert>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <ScrollArea className="h-[60vh] pr-4">
