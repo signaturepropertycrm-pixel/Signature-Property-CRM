@@ -28,7 +28,8 @@ export function initializeFirebase(): {
     const firebaseApp = initializeApp(firebaseConfig);
     return getSdks(firebaseApp);
   }
-  return getSdks(getApp());
+  const app = getApp();
+  return getSdks(app);
 }
 
 // Re-export core modules for convenience, but encourage using hooks from provider.
@@ -38,3 +39,4 @@ export { getFirestore } from 'firebase/firestore';
 export { getStorage } from 'firebase/storage';
 
 export * from './config';
+
