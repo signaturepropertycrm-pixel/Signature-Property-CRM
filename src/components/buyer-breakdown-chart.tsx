@@ -21,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 type TimeRange = '7d' | '30d' | '6m' | '12m' | 'all';
 
 export const BuyerBreakdownChart = ({ buyers, properties }: { buyers: Buyer[], properties: Property[] }) => {
-   const [timeRange, setTimeRange] = useState<TimeRange>('all');
+   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
    const chartData = useMemo(() => {
     let interval;

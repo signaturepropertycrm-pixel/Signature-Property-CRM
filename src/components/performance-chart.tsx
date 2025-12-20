@@ -29,7 +29,7 @@ type TimeRange = '7d' | '30d' | '6m' | '12m' | 'all';
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
    const { theme } = useTheme();
    const { currency } = useCurrency();
-   const [timeRange, setTimeRange] = useState<TimeRange>('all');
+   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
    const chartData = React.useMemo(() => {
     const now = new Date();

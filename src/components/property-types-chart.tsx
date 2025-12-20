@@ -23,7 +23,7 @@ type TimeRange = '7d' | '30d' | 'all';
 
 export const PropertyTypesChart = ({ properties }: { properties: Property[] }) => {
    const { theme } = useTheme();
-   const [timeRange, setTimeRange] = useState<TimeRange>('all');
+   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
    const chartData = useMemo(() => {
     let filteredProperties = properties;
