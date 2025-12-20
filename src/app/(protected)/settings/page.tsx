@@ -34,10 +34,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon, ChevronsUpDown, Check, Building } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
-import { useFirestore, useAuth } from '@/firebase/provider';
+import { useFirestore, useAuth, useStorage } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, GoogleAuthProvider, reauthenticateWithPopup } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -156,32 +157,42 @@ export default function SettingsPage() {
   const handleAvatarUpdate = async (dataUrl: string) => {
     if (!user) return;
     setIsUploading(true);
-  
+    const storage = getStorage();
+
     try {
+        const filePath = `avatars/${profile.agency_id}/${user.uid}.jpg`;
+        const imageRef = storageRef(storage, filePath);
+
+        // Upload the image
+        await uploadString(imageRef, dataUrl, 'data_url');
+        
+        // Get the public URL
+        const downloadURL = await getDownloadURL(imageRef);
+
         const batch = writeBatch(firestore);
         const isUserAdmin = profile.role === 'Admin';
   
-        // Update Firestore document(s)
+        // Update Firestore document(s) with the URL
         if (isUserAdmin) {
             if (profile.agency_id) {
                 const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-                batch.update(agencyDocRef, { avatar: dataUrl });
+                batch.update(agencyDocRef, { avatar: downloadURL });
                 const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-                batch.update(teamMemberRef, { avatar: dataUrl });
+                batch.update(teamMemberRef, { avatar: downloadURL });
             }
         } else { // It's an Agent
             if (profile.agency_id) {
                 const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-                batch.update(teamMemberRef, { avatar: dataUrl });
+                batch.update(teamMemberRef, { avatar: downloadURL });
             }
             const agentDocRef = doc(firestore, 'agents', user.uid);
-            batch.update(agentDocRef, { avatar: dataUrl });
+            batch.update(agentDocRef, { avatar: downloadURL });
         }
         
         await batch.commit();
         
         // Update local context
-        setProfile({ ...profile, avatar: dataUrl });
+        setProfile({ ...profile, avatar: downloadURL });
   
         toast({ title: 'Profile Picture Updated!' });
     } catch (error: any) {
