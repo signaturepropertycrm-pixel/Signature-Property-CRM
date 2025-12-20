@@ -110,7 +110,8 @@ function formatSize(value: number, unit: string) {
 
 interface Filters {
   area: string;
-  propertyType: PropertyType | 'All';
+  propertyType: PropertyType | 'All' | 'Other';
+  otherPropertyType: string;
   minSize: string;
   maxSize: string;
   sizeUnit: SizeUnit | 'All';
@@ -133,7 +134,7 @@ const propertyStatuses = [
     { value: 'Recorded', label: 'Recorded' },
 ];
 
-const propertyTypesForFilter: (PropertyType | 'All')[] = [
+const propertyTypesForFilter: (PropertyType | 'All' | 'Other')[] = [
     'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Residential Property', 'Commercial Property', 'Semi Commercial', 'Other'
 ];
 
@@ -186,6 +187,7 @@ export default function PropertiesPage() {
   const [filters, setFilters] = useState<Filters>({
     area: '',
     propertyType: 'All',
+    otherPropertyType: '',
     minSize: '',
     maxSize: '',
     sizeUnit: 'All',
@@ -219,7 +221,7 @@ export default function PropertiesPage() {
     return formatCurrency(valueInPkr, currency);
   };
 
-  const handleFilterChange = (key: keyof Filters, value: string | PropertyType | SizeUnit | PriceUnit) => {
+  const handleFilterChange = (key: keyof Filters, value: string | PropertyType | 'Other' | SizeUnit | PriceUnit) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -227,6 +229,7 @@ export default function PropertiesPage() {
     setFilters({
       area: '',
       propertyType: 'All',
+      otherPropertyType: '',
       minSize: '',
       maxSize: '',
       sizeUnit: 'All',
@@ -271,7 +274,17 @@ export default function PropertiesPage() {
 
     // 2. Secondary Filter: Advanced Filters Popover
     if (filters.area) baseProperties = baseProperties.filter((p) => p.area.toLowerCase().includes(filters.area.toLowerCase()));
-    if (filters.propertyType !== 'All') baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
+    
+    if (filters.propertyType !== 'All') {
+        if (filters.propertyType === 'Other') {
+            if (filters.otherPropertyType) {
+                 baseProperties = baseProperties.filter((p) => p.property_type.toLowerCase().includes(filters.otherPropertyType.toLowerCase()));
+            }
+        } else {
+             baseProperties = baseProperties.filter((p) => p.property_type === filters.propertyType);
+        }
+    }
+    
     if (filters.minSize) baseProperties = baseProperties.filter((p) => p.size_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
     if (filters.maxSize) baseProperties = baseProperties.filter((p) => p.size_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_unit === filters.sizeUnit));
     if (filters.minDemand) baseProperties = baseProperties.filter((p) => p.demand_amount >= Number(filters.minDemand) && (filters.demandUnit === 'All' || p.demand_unit === filters.demandUnit));
@@ -1226,7 +1239,7 @@ export default function PropertiesPage() {
                             </div>
                             <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="propertyType">Type</Label>
-                                <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                                <Select value={filters.propertyType} onValueChange={(value) => handleFilterChange('propertyType', value as PropertyType | 'All' | 'Other')}>
                                 <SelectTrigger className="col-span-2 h-8">
                                     <SelectValue placeholder="Property Type" />
                                 </SelectTrigger>
@@ -1235,6 +1248,18 @@ export default function PropertiesPage() {
                                 </SelectContent>
                                 </Select>
                             </div>
+                            {filters.propertyType === 'Other' && (
+                                <div className="grid grid-cols-3 items-center gap-4">
+                                    <Label htmlFor="otherPropertyType" className="text-right pr-4">Custom</Label>
+                                    <Input 
+                                        id="otherPropertyType" 
+                                        value={filters.otherPropertyType} 
+                                        onChange={(e) => handleFilterChange('otherPropertyType', e.target.value)} 
+                                        className="col-span-2 h-8" 
+                                        placeholder="Enter type..."
+                                    />
+                                </div>
+                            )}
                             <div className="grid grid-cols-3 items-center gap-4">
                                 <Label>Size</Label>
                                 <div className="col-span-2 grid grid-cols-2 gap-2">
@@ -1422,6 +1447,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 
