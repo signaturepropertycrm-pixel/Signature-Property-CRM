@@ -32,7 +32,7 @@ import { useTheme } from 'next-themes';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon, ChevronsUpDown, Check } from 'lucide-react';
+import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as LinkIcon, ChevronsUpDown, Check, Building } from 'lucide-react';
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useFirestore, useAuth } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
@@ -465,6 +465,15 @@ export default function SettingsPage() {
                     <h1 className="text-3xl font-bold tracking-tight font-headline">Agent Settings</h1>
                     <p className="text-muted-foreground">Manage your personal profile and account settings.</p>
                 </div>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Building /> Agency Information</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">You are currently a member of:</p>
+                        <p className="text-lg font-semibold">{profile.agencyName}</p>
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader><CardTitle>My Profile</CardTitle></CardHeader>
                     <form onSubmit={handleProfileSave}>

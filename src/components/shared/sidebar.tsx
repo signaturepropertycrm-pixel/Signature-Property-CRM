@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -384,6 +383,14 @@ export function AppSidebar() {
                 </div>
             </Link>
           </SidebarMenuButton>
+            {profile.agencyName && (
+                <div className="px-3 group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:flex group-data-[state=collapsed]:justify-center">
+                    <Badge variant="secondary" className="truncate group-data-[state=collapsed]:w-8 group-data-[state=collapsed]:h-8 group-data-[state=collapsed]:p-0 group-data-[state=collapsed]:justify-center">
+                        <span className="group-data-[state=collapsed]:hidden">{profile.agencyName}</span>
+                         <span className="hidden group-data-[state=collapsed]:inline-block">{profile.agencyName.charAt(0)}</span>
+                    </Badge>
+                </div>
+            )}
         </SidebarHeader>
 
         <SidebarContent className="flex-1">
