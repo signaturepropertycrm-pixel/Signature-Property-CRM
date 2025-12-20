@@ -38,7 +38,7 @@ import { useFirestore, useAuth, useStorage } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL, uploadBytes } from 'firebase/storage';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { EmailAuthProvider, reauthenticateWithCredential, deleteUser, updatePassword, GoogleAuthProvider, reauthenticateWithPopup } from 'firebase/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -162,9 +162,13 @@ export default function SettingsPage() {
     try {
         const filePath = `avatars/${profile.agency_id}/${user.uid}.jpg`;
         const imageRef = storageRef(storage, filePath);
+        
+        // Convert data URL to blob for uploading
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
 
-        // Upload the image
-        await uploadString(imageRef, dataUrl, 'data_url');
+        // Upload the blob
+        await uploadBytes(imageRef, blob);
         
         // Get the public URL
         const downloadURL = await getDownloadURL(imageRef);
@@ -241,7 +245,11 @@ export default function SettingsPage() {
         // Admin updates the agency doc
         if (isUserAdmin && profile.agency_id) {
             const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
-            batch.update(agencyDocRef, { agencyName: formattedProfile.agencyName, name: formattedProfile.name, phone: formattedProfile.phone });
+            batch.update(agencyDocRef, { 
+                agencyName: formattedProfile.agencyName, 
+                name: formattedProfile.name, 
+                phone: formattedProfile.phone 
+            });
         }
 
         // Every user (admin or agent) updates their teamMember doc
@@ -258,11 +266,17 @@ export default function SettingsPage() {
 
         await batch.commit();
         
+        // This is an additional update for display name in some parts of the app that might use `users` collection directly.
         if (auth.currentUser && formattedProfile.name !== profile.name) {
           await updateDoc(doc(firestore, 'users', user.uid), {name: formattedProfile.name});
         }
 
-        setProfile(formattedProfile);
+        setProfile({
+            name: formattedProfile.name,
+            agencyName: formattedProfile.agencyName,
+            phone: formattedProfile.phone
+        });
+
         toast({
           title: 'Profile Updated',
           description: 'Your profile information has been saved successfully.',
