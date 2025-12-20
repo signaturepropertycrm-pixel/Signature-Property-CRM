@@ -11,6 +11,7 @@ import { Property, Buyer } from '@/lib/types';
 import { PerformanceChart } from '@/components/performance-chart';
 import { LeadsChart } from '@/components/leads-chart';
 import { SalesBreakdownChart } from '@/components/sales-breakdown-chart';
+import { PropertyTypesChart } from '@/components/property-types-chart';
 import { PieChart } from 'lucide-react';
 
 
@@ -53,7 +54,10 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-8 pt-8">
           <PerformanceChart properties={properties || []} />
           <LeadsChart properties={properties || []} buyers={buyers || []} />
-          <SalesBreakdownChart properties={properties || []} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <SalesBreakdownChart properties={properties || []} />
+            <PropertyTypesChart properties={properties || []} />
+          </div>
       </div>
 
     </div>
