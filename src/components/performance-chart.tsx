@@ -24,16 +24,16 @@ import { formatCurrency } from '@/lib/formatters';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
-type TimeRange = '7d' | '30d' | '6m' | '12m';
+type TimeRange = '7d' | '30d' | '6m' | '12m' | 'all';
 
 export const PerformanceChart = ({ properties }: { properties: Property[] }) => {
    const { theme } = useTheme();
    const { currency } = useCurrency();
-   const [timeRange, setTimeRange] = useState<TimeRange>('12m');
+   const [timeRange, setTimeRange] = useState<TimeRange>('all');
 
    const chartData = React.useMemo(() => {
     const now = new Date();
-    let startDate: Date;
+    let startDate: Date | null = null;
     let dataMap: { [key: string]: { salesRevenue: number, rentRevenue: number } } = {};
     let dateFormat: string;
     let interval;
@@ -55,11 +55,22 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
             interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
             break;
         case '12m':
-        default:
             startDate = subMonths(now, 11);
             dateFormat = "MMM '’'yy";
             interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
             break;
+        case 'all':
+        default:
+            dateFormat = "MMM '’'yy";
+            const allDates = properties
+                .map(p => p.sale_date || p.rent_out_date)
+                .filter(Boolean)
+                .map(d => parseISO(d!));
+            if (allDates.length === 0) return [];
+            const firstDate = allDates.reduce((min, d) => d < min ? d : min, allDates[0]);
+            interval = eachMonthOfInterval({ start: startOfMonth(firstDate), end: now });
+            break;
+
     }
     
     interval.forEach(date => {
@@ -72,7 +83,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
 
     saleProperties.forEach((p) => {
         const saleDate = parseISO(p.sale_date!);
-        if (saleDate >= startDate) {
+        if (!startDate || saleDate >= startDate) {
             const key = format(saleDate, dateFormat);
             if (key in dataMap) {
                 dataMap[key].salesRevenue += p.total_commission!;
@@ -82,7 +93,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
 
     rentProperties.forEach((p) => {
         const rentDate = parseISO(p.rent_out_date!);
-        if (rentDate >= startDate) {
+        if (!startDate || rentDate >= startDate) {
             const key = format(rentDate, dateFormat);
             if (key in dataMap) {
                 dataMap[key].rentRevenue += p.rent_total_commission!;
@@ -119,6 +130,7 @@ export const PerformanceChart = ({ properties }: { properties: Property[] }) => 
                     <TabsTrigger value="30d">30D</TabsTrigger>
                     <TabsTrigger value="6m">6M</TabsTrigger>
                     <TabsTrigger value="12m">12M</TabsTrigger>
+                    <TabsTrigger value="all">All</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>

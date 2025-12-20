@@ -5,7 +5,7 @@ export const properties: Property[] = [];
 
 export const buyerStatuses: BuyerStatus[] = [
     'New', 'Interested', 'Not Interested', 'Follow Up',
-    'Visited Property', 'Deal Closed'
+    'Visited Property', 'Deal Closed', 'Deal Lost'
 ];
 
 export const buyers: Buyer[] = [];

@@ -21,16 +21,16 @@ import { useTheme } from 'next-themes';
 import { format, subDays, subMonths, parseISO, eachDayOfInterval, eachMonthOfInterval, startOfMonth } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 
-type TimeRange = '7d' | '30d' | '6m' | '12m';
+type TimeRange = '7d' | '30d' | '6m' | '12m' | 'all';
 
 
 export const LeadsChart = ({ properties, buyers }: { properties: Property[], buyers: Buyer[] }) => {
    const { theme } = useTheme();
-   const [timeRange, setTimeRange] = useState<TimeRange>('12m');
+   const [timeRange, setTimeRange] = useState<TimeRange>('all');
 
    const chartData = React.useMemo(() => {
     const now = new Date();
-    let startDate: Date;
+    let startDate: Date | null = null;
     let dataMap: { [key: string]: { newSaleProperties: number; newRentProperties: number; newSaleBuyers: number; newRentBuyers: number; } } = {};
     let dateFormat: string;
     let interval;
@@ -52,10 +52,20 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
             interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
             break;
         case '12m':
-        default:
             startDate = subMonths(now, 11);
             dateFormat = "MMM '’'yy";
             interval = eachMonthOfInterval({ start: startOfMonth(startDate), end: now });
+            break;
+        case 'all':
+        default:
+            dateFormat = "MMM '’'yy";
+            const allDates = [
+                ...properties.map(p => p.created_at),
+                ...buyers.map(b => b.created_at)
+            ].filter(Boolean).map(d => parseISO(d!));
+            if (allDates.length === 0) return [];
+            const firstDate = allDates.reduce((min, d) => d < min ? d : min, allDates[0]);
+            interval = eachMonthOfInterval({ start: startOfMonth(firstDate), end: now });
             break;
     }
     
@@ -67,7 +77,7 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
     properties.forEach((p) => {
         if (!p.created_at) return;
         const createdDate = parseISO(p.created_at);
-        if (createdDate >= startDate) {
+        if (!startDate || createdDate >= startDate) {
             const key = format(createdDate, dateFormat);
             if (key in dataMap) {
                 if (p.is_for_rent) dataMap[key].newRentProperties += 1;
@@ -79,7 +89,7 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
     buyers.forEach((b) => {
         if (!b.created_at) return;
         const createdDate = parseISO(b.created_at);
-        if (createdDate >= startDate) {
+        if (!startDate || createdDate >= startDate) {
             const key = format(createdDate, dateFormat);
             if (key in dataMap) {
                 if (b.listing_type === 'For Rent') dataMap[key].newRentBuyers += 1;
@@ -116,6 +126,7 @@ export const LeadsChart = ({ properties, buyers }: { properties: Property[], buy
                     <TabsTrigger value="30d">30D</TabsTrigger>
                     <TabsTrigger value="6m">6M</TabsTrigger>
                     <TabsTrigger value="12m">12M</TabsTrigger>
+                    <TabsTrigger value="all">All</TabsTrigger>
                 </TabsList>
             </Tabs>
         </div>

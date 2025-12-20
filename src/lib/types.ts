@@ -1,5 +1,4 @@
 
-
 'use client';
 
 export type UserRole = 'Admin' | 'Agent';
@@ -134,7 +133,8 @@ export type BuyerStatus =
   | 'Not Interested'
   | 'Follow Up'
   | 'Visited Property'
-  | 'Deal Closed';
+  | 'Deal Closed'
+  | 'Deal Lost';
 
 
 export type Buyer = {
@@ -171,6 +171,7 @@ export type Buyer = {
         propertyTitle: string;
         sharedAt: string;
     }[];
+    deal_lost_date?: string; // New field
 };
 
 export type FollowUpStatus = 'Scheduled' | 'Completed';
