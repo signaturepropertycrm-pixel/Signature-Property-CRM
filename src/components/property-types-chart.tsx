@@ -43,8 +43,7 @@ export const PropertyTypesChart = ({ properties }: { properties: Property[] }) =
 
     return Object.keys(typeCounts)
         .map(type => ({ type, count: typeCounts[type] }))
-        .sort((a,b) => b.count - a.count)
-        .slice(0, 7); // Show top 7 property types
+        .sort((a,b) => b.count - a.count);
     
   }, [properties, timeRange]);
 
