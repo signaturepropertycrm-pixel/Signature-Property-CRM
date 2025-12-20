@@ -134,7 +134,7 @@ const propertyStatuses = [
 ];
 
 const propertyTypesForFilter: (PropertyType | 'All')[] = [
-    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Residential Property', 'Commercial Property', 'Semi Commercial'
 ];
 
 
@@ -1422,6 +1422,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 

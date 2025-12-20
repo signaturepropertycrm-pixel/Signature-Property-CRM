@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
 const propertyTypes: (PropertyType | 'Other')[] = [
-    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Other'
+    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Residential Property', 'Commercial Property', 'Semi Commercial', 'Other'
 ];
 
 /* ---------- schema ---------- */
@@ -154,24 +154,12 @@ export function AddRentPropertyForm({
     const [sizeValue, sizeUnit, propertyType, area, otherType] = watchedFields;
     const finalPropertyType = propertyType === 'Other' ? otherType : propertyType;
 
-    const handler = setTimeout(async () => {
-      if (sizeValue && sizeUnit && finalPropertyType && area) {
-        try {
-          const { autoTitle } = await generateAutoTitle({
-            sizeValue: Number(sizeValue),
-            sizeUnit,
-            propertyType: finalPropertyType,
-            area,
-          });
-          setValue('auto_title', autoTitle);
-        } catch (error) {
-          console.error('Failed to generate auto title:', error);
-        }
-      }
-    }, 500);
+    if (sizeValue && sizeUnit && finalPropertyType && area) {
+        const title = `${sizeValue} ${sizeUnit} ${finalPropertyType} for rent in ${area}`;
+        setValue('auto_title', title);
+    }
+}, [watchedFields, setValue]);
 
-    return () => clearTimeout(handler);
-  }, [watchedFields, setValue]);
 
   /* submit */
   function onSubmit(values: AddRentPropertyFormValues) {

@@ -55,8 +55,8 @@ import { cn } from '@/lib/utils';
 import { ChevronsUpDown } from 'lucide-react';
 import { buyerStatuses } from '@/lib/data';
 
-const propertyTypesForFilter: PropertyType[] = [
-    'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building'
+const propertyTypesForFilter: (PropertyType | 'All')[] = [
+    'All', 'House', 'Flat', 'Farm House', 'Penthouse', 'Plot', 'Residential Plot', 'Commercial Plot', 'Agricultural Land', 'Industrial Land', 'Office', 'Shop', 'Warehouse', 'Factory', 'Building', 'Residential Property', 'Commercial Property', 'Semi Commercial'
 ];
 
 interface FindBuyersByBudgetDialogProps {
@@ -747,3 +747,6 @@ ${utilities || 'N/A'}
 
     
 
+    
+
+    
