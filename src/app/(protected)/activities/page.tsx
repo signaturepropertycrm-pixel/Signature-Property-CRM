@@ -12,6 +12,8 @@ import {
   CalendarPlus,
   ArrowRight,
   Trash2,
+  Check,
+  X,
 } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { Activity } from '@/lib/types';
@@ -41,6 +43,8 @@ const getActionIcon = (action: string) => {
   if (action.includes('updated the status')) return <Edit className="h-4 w-4" />;
   if (action.includes('marked property as "Sold"')) return <CheckCircle className="h-4 w-4" />;
   if (action.includes('scheduled an appointment')) return <CalendarPlus className="h-4 w-4" />;
+  if (action.includes('accepted the invitation')) return <Check className="h-4 w-4 text-green-500" />;
+  if (action.includes('rejected the invitation')) return <X className="h-4 w-4 text-red-500" />;
   return <Edit className="h-4 w-4" />;
 };
 

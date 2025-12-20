@@ -106,6 +106,7 @@ export function AddTeamMemberForm({ setDialogOpen, memberToEdit }: AddTeamMember
             // 1. Create a new document in the agency's subcollection to get its ID
             const newMemberRef = doc(teamMembersCollectionRef);
             batch.set(newMemberRef, {
+                id: newMemberRef.id, // Store the ID within the document
                 name: values.name,
                 email: values.email,
                 role: values.role,

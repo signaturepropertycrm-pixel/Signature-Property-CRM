@@ -213,7 +213,7 @@ export type Activity = {
     userAvatar?: string;
     action: string;
     target: string;
-    targetType: 'Property' | 'Buyer' | 'Appointment' | 'User' | 'FollowUp';
+    targetType: 'Property' | 'Buyer' | 'Appointment' | 'User' | 'FollowUp' | 'Invitation';
     details: { from: string; to: string } | null;
     timestamp: string;
     agency_id: string;
@@ -237,6 +237,7 @@ export interface InvitationNotification extends BaseNotification {
     fromAgencyName: string;
     role: UserRole;
     email: string;
+    memberDocId: string;
 }
 
 export interface AppointmentNotification extends BaseNotification {

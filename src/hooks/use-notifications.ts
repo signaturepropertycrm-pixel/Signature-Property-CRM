@@ -58,7 +58,7 @@ export const useNotifications = () => {
             collection(firestore, 'agencies', profile.agency_id, 'activityLogs'),
             where('timestamp', '>=', oneDayAgo.toISOString()),
             orderBy('timestamp', 'desc'),
-            limit(10)
+            limit(20)
         );
     }, [canFetchAgencyData, firestore, profile.agency_id, refreshKey]);
     const { data: activitiesData, isLoading: isActivitiesLoading } = useCollection<Activity>(activitiesQuery);
@@ -136,19 +136,23 @@ export const useNotifications = () => {
         
         // 4. Process Activities
         if (activitiesData) {
-            const statusUpdateActivities = activitiesData
-                .filter(act => act.action.includes('updated') && act.details && act.userName !== profile.name)
+            const activityNotifications: ActivityNotification[] = activitiesData
+                .filter(act => 
+                    (act.action.includes('updated') && act.details && act.userName !== profile.name) ||
+                    (act.targetType === 'Invitation') // Include invitation acceptance/rejection
+                )
                 .map(act => ({
                     id: `act_${act.id}`,
                     type: 'activity',
-                    title: `Status Update by ${act.userName}`,
-                    description: `${act.target} status changed from ${act.details.from} to ${act.details.to}`,
+                    title: act.targetType === 'Invitation' ? 'Invitation Response' : `Status Update by ${act.userName}`,
+                    description: act.targetType === 'Invitation' ? act.action : `${act.target} status changed from ${act.details.from} to ${act.details.to}`,
                     timestamp: new Date(act.timestamp),
                     isRead: readIds.includes(`act_${act.id}`),
                     activity: act
-                } as ActivityNotification));
-            allNotifications.push(...statusUpdateActivities);
+                }));
+            allNotifications.push(...activityNotifications);
         }
+
 
         // Filter out deleted notifications and sort
         allNotifications = allNotifications
@@ -211,6 +215,19 @@ export const useNotifications = () => {
         const invRef = doc(firestore, 'invitations', invitationId);
         batch.delete(invRef);
         
+        // Log activity for agency
+        const activityLogRef = doc(collection(firestore, 'agencies', agencyId, 'activityLogs'));
+        batch.set(activityLogRef, {
+            userName: profile.name,
+            userAvatar: profile.avatar || '',
+            action: `${profile.name} accepted the invitation to join ${invitationData.fromAgencyName}.`,
+            target: invitationData.fromAgencyName,
+            targetType: 'Invitation',
+            details: null,
+            timestamp: new Date().toISOString(),
+            agency_id: agencyId
+        });
+        
         await batch.commit();
         deleteNotification(invitationId);
         window.location.reload(); 
@@ -229,6 +246,19 @@ export const useNotifications = () => {
             const memberRef = doc(firestore, 'agencies', agencyId, 'teamMembers', invitationData.memberDocId);
             batch.delete(memberRef);
         }
+        
+        // Log activity for agency
+        const activityLogRef = doc(collection(firestore, 'agencies', agencyId, 'activityLogs'));
+        batch.set(activityLogRef, {
+            userName: profile.name,
+            userAvatar: profile.avatar || '',
+            action: `${profile.name} rejected the invitation to join.`,
+            target: invitationData.fromAgencyName,
+            targetType: 'Invitation',
+            details: null,
+            timestamp: new Date().toISOString(),
+            agency_id: agencyId
+        });
 
         await batch.commit();
         deleteNotification(invitationId);
