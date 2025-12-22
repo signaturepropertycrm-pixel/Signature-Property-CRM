@@ -42,6 +42,7 @@ import {
   ChevronLeft,
   ArrowUpDown,
   Link as LinkIcon,
+  FileArchive,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -919,6 +920,16 @@ export default function PropertiesPage() {
                         </TooltipContent>
                       </Tooltip>
                     )}
+                     {prop.uploaded_documents && prop.uploaded_documents.length > 0 && (
+                       <Tooltip>
+                        <TooltipTrigger asChild>
+                           <FileArchive className="h-4 w-4 text-primary" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Documents are uploaded</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
@@ -1447,6 +1458,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 

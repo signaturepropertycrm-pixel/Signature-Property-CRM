@@ -37,6 +37,7 @@ import {
   Gem,
   ShieldCheck,
   PieChart,
+  FileArchive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -81,6 +82,7 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin', 'Agent'] },
   { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin', 'Agent'] },
   { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin', 'Agent'] },
   { 

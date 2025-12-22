@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Property } from '@/lib/types';
-import { Copy, Share2, Check, Video } from 'lucide-react';
+import type { Property, UploadedDocument } from '@/lib/types';
+import { Copy, Share2, Check, Video, FileArchive } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
@@ -27,7 +27,7 @@ interface SharePropertyDialogProps {
 
 type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
 
-const generateShareableText = (property: Property, selectedLinks: Record<VideoLinkPlatform, boolean> = {}) => {
+const generateShareableText = (property: Property, selectedLinks: Record<VideoLinkPlatform, boolean> = {}, includeDocs: boolean = false) => {
     if (!property) return { forCustomer: '', forAgent: '' };
 
     const formatLink = (platform: string, link: string) => {
@@ -44,6 +44,10 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         .filter(Boolean)
         .join('\n');
 
+    const docsToShare = includeDocs && property.uploaded_documents 
+        ? property.uploaded_documents.map(doc => `- ${doc.name}: ${doc.url}`).join('\n')
+        : null;
+
     const details = {
         serialNo: `Serial No: ${property.serial_no}`,
         area: `Area: ${property.area}`,
@@ -57,7 +61,8 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         ownerNumber: `Owner Number: ${property.owner_number}`,
         potentialRent: property.potential_rent_amount ? `- Potential Rent: ${property.potential_rent_amount}K` : '- Potential Rent: N/A',
         documents: `Documents: ${property.documents || 'N/A'}`,
-        videoLinks: linksToShare ? `\n*Video Links:*\n${linksToShare}` : null
+        videoLinks: linksToShare ? `\n*Video Links:*\n${linksToShare}` : null,
+        uploadedDocs: docsToShare ? `\n*Document Links:*\n${docsToShare}` : null,
     };
 
     const utilities = [
@@ -84,6 +89,7 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         details.documents,
     ];
     if (details.videoLinks) baseCustomerParts.push(details.videoLinks);
+    if (details.uploadedDocs) baseCustomerParts.push(details.uploadedDocs);
     const forCustomer = baseCustomerParts.filter(Boolean).join('\n');
 
     const baseAgentParts = [
@@ -106,6 +112,7 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         details.documents,
     ];
     if (details.videoLinks) baseAgentParts.push(details.videoLinks);
+    if (details.uploadedDocs) baseAgentParts.push(details.uploadedDocs);
     const forAgent = baseAgentParts.filter(Boolean).join('\n');
 
     return { forCustomer, forAgent };
@@ -122,6 +129,7 @@ export function SharePropertyDialog({
   const [customerText, setCustomerText] = useState('');
   const [agentText, setAgentText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [includeDocs, setIncludeDocs] = useState(true);
   const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({
       tiktok: false, youtube: false, instagram: false, facebook: false, other: false
   });
@@ -143,20 +151,20 @@ export function SharePropertyDialog({
              other: !!property.video_links?.other
         };
         setSelectedLinks(initialSelected);
-        const { forCustomer, forAgent } = generateShareableText(property, initialSelected);
+        const { forCustomer, forAgent } = generateShareableText(property, initialSelected, includeDocs);
         setCustomerText(forCustomer);
         setAgentText(forAgent);
         setLoading(false);
     }
-  }, [isOpen, property]);
+  }, [isOpen, property, includeDocs]);
 
   useEffect(() => {
     if (isOpen && property) {
-       const { forCustomer, forAgent } = generateShareableText(property, selectedLinks);
+       const { forCustomer, forAgent } = generateShareableText(property, selectedLinks, includeDocs);
        setCustomerText(forCustomer);
        setAgentText(forAgent);
     }
-  }, [selectedLinks, isOpen, property]);
+  }, [selectedLinks, isOpen, property, includeDocs]);
 
   const handleLinkSelectionChange = (platform: VideoLinkPlatform) => {
       setSelectedLinks(prev => ({ ...prev, [platform]: !prev[platform] }));
@@ -189,9 +197,9 @@ export function SharePropertyDialog({
           </DialogTitle>
         </DialogHeader>
 
+          {(availableLinks.length > 0 || (property.uploaded_documents && property.uploaded_documents.length > 0)) && <Separator />}
+
           {availableLinks.length > 0 && (
-            <>
-              <Separator />
               <div className="space-y-2">
                 <Label className="font-semibold flex items-center gap-2"><Video /> Include Video Links</Label>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -209,7 +217,15 @@ export function SharePropertyDialog({
                     ))}
                 </div>
               </div>
-            </>
+          )}
+
+          {property.uploaded_documents && property.uploaded_documents.length > 0 && (
+             <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="include-docs" checked={includeDocs} onCheckedChange={(checked) => setIncludeDocs(checked as boolean)} />
+                    <Label htmlFor="include-docs" className="font-semibold flex items-center gap-2 cursor-pointer"><FileArchive/> Include Document Links</Label>
+                </div>
+             </div>
           )}
 
           <Tabs defaultValue="customer">
