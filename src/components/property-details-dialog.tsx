@@ -184,13 +184,6 @@ export function PropertyDetailsDialog({
                 </div>
               </div>
               
-              <Separator />
-
-              <div>
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileArchive /> Property Documents</h3>
-                  <DocumentManager property={property} />
-              </div>
-
             </div>
           </ScrollArea>
           <DialogFooter className="border-t pt-4 sm:justify-between">
