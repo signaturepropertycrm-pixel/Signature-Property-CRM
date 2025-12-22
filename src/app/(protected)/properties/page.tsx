@@ -546,6 +546,19 @@ export default function PropertiesPage() {
     });
   };
 
+  const escapeCsvField = (field: any): string => {
+    if (field === null || field === undefined) {
+        return '""';
+    }
+    const stringField = String(field);
+    // If the field contains a comma, double quote, or newline, enclose it in double quotes.
+    if (/[",\n]/.test(stringField)) {
+        // Escape any double quotes within the field by doubling them.
+        return `"${stringField.replace(/"/g, '""')}"`;
+    }
+    return `"${stringField}"`;
+  };
+
   const handleExport = (type: 'For Sale' | 'For Rent') => {
     if (!allProperties || !user?.uid) return;
 
@@ -589,44 +602,44 @@ export default function PropertiesPage() {
         const phoneNumber = p.owner_number.replace(p.country_code || '+92', '').replace(/\D/g, '');
 
         const baseRow = [
-                `"${p.serial_no}"`,
-                `"${p.is_recorded ? 'Yes' : 'No'}"`,
-                `"${formattedDate}"`,
-                `"${phoneNumber}"`,
-                `"${p.city}"`,
-                `"${p.area}"`,
-                `"${p.address}"`,
-                `"${p.property_type}"`,
-                `"${p.size_value} ${p.size_unit}"`,
-                `"${p.storey || ''}"`,
-                `"${utilities}"`,
-                `"${p.status}"`
+                escapeCsvField(p.serial_no),
+                escapeCsvField(p.is_recorded ? 'Yes' : 'No'),
+                escapeCsvField(formattedDate),
+                escapeCsvField(phoneNumber),
+                escapeCsvField(p.city),
+                escapeCsvField(p.area),
+                escapeCsvField(p.address),
+                escapeCsvField(p.property_type),
+                escapeCsvField(`${p.size_value} ${p.size_unit}`),
+                escapeCsvField(p.storey || ''),
+                escapeCsvField(utilities),
+                escapeCsvField(p.status)
             ];
 
         if (type === 'For Sale') {
              return [
                 ...baseRow,
-                `"${p.road_size_ft ? `${p.road_size_ft} ft` : ''}"`,
-                `"${potentialRentValue}"`,
-                `"${p.front_ft || ''}"`,
-                `"${p.length_ft || ''}"`,
-                `"${demandValue}"`,
-                `"${p.documents || ''}"`,
-                `"${p.video_links?.tiktok || ''}"`,
-                `"${p.video_links?.youtube || ''}"`,
-                `"${p.video_links?.instagram || ''}"`,
-                `"${p.video_links?.facebook || ''}"`,
-                `"${p.video_links?.other || ''}"`
+                escapeCsvField(p.road_size_ft ? `${p.road_size_ft} ft` : ''),
+                escapeCsvField(potentialRentValue),
+                escapeCsvField(p.front_ft || ''),
+                escapeCsvField(p.length_ft || ''),
+                escapeCsvField(demandValue),
+                escapeCsvField(p.documents || ''),
+                escapeCsvField(p.video_links?.tiktok || ''),
+                escapeCsvField(p.video_links?.youtube || ''),
+                escapeCsvField(p.video_links?.instagram || ''),
+                escapeCsvField(p.video_links?.facebook || ''),
+                escapeCsvField(p.video_links?.other || '')
             ].join(',');
         } else { // For Rent
              return [
                 ...baseRow,
-                `"${demandValue}"`,
-                `"${p.video_links?.tiktok || ''}"`,
-                `"${p.video_links?.youtube || ''}"`,
-                `"${p.video_links?.instagram || ''}"`,
-                `"${p.video_links?.facebook || ''}"`,
-                `"${p.video_links?.other || ''}"`
+                escapeCsvField(demandValue),
+                escapeCsvField(p.video_links?.tiktok || ''),
+                escapeCsvField(p.video_links?.youtube || ''),
+                escapeCsvField(p.video_links?.instagram || ''),
+                escapeCsvField(p.video_links?.facebook || ''),
+                escapeCsvField(p.video_links?.other || '')
             ].join(',');
         }
       })
@@ -1458,6 +1471,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 

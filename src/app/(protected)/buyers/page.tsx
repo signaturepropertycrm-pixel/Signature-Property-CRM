@@ -476,6 +476,17 @@ export default function BuyersPage() {
         });
     };
 
+    const escapeCsvField = (field: any): string => {
+        if (field === null || field === undefined) {
+            return '""';
+        }
+        const stringField = String(field);
+        if (/[",\n]/.test(stringField)) {
+            return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return `"${stringField}"`;
+    };
+
     const handleExport = (type: 'For Sale' | 'For Rent') => {
         if (!allBuyers || !user?.uid) return;
 
@@ -515,19 +526,19 @@ export default function BuyersPage() {
 
 
               const row = [
-                `"${b.serial_no}"`,
-                `"${formattedDate}"`,
-                `"${phoneNumber}"`,
-                `"${b.name}"`,
-                `"${b.email || ''}"`,
-                `"${b.city || ''}"`,
-                `"${b.area_preference || ''}"`,
-                `"${b.property_type_preference || ''}"`,
-                `"${size}"`,
-                `"${budget}"`,
-                `"${b.status}"`,
-                `"${b.is_investor ? 'Yes' : 'No'}"`,
-                `"${b.notes || ''}"`
+                escapeCsvField(b.serial_no),
+                escapeCsvField(formattedDate),
+                escapeCsvField(phoneNumber),
+                escapeCsvField(b.name),
+                escapeCsvField(b.email || ''),
+                escapeCsvField(b.city || ''),
+                escapeCsvField(b.area_preference || ''),
+                escapeCsvField(b.property_type_preference || ''),
+                escapeCsvField(size),
+                escapeCsvField(budget),
+                escapeCsvField(b.status),
+                escapeCsvField(b.is_investor ? 'Yes' : 'No'),
+                escapeCsvField(b.notes || '')
               ];
               return row.join(',');
           })
@@ -1256,6 +1267,7 @@ export default function BuyersPage() {
 
 
     
+
 
 
 
