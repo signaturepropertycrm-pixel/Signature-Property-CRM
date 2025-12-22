@@ -5,6 +5,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Loader2, Upload, FileText, Download, Trash2, Search, Link as LinkIcon, FileArchive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useStorage } from '@/firebase/provider';
