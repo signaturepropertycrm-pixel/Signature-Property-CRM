@@ -934,6 +934,8 @@ export default function PropertiesPage() {
     if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
     
+    const hasVideoLinks = (prop: Property) => prop.is_recorded && prop.video_links && Object.values(prop.video_links).some(link => !!link);
+
     return (
       <Table>
         <TableHeader>
@@ -980,7 +982,7 @@ export default function PropertiesPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-bold font-headline text-base flex items-center gap-2">
                     {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-                    {prop.is_recorded && (
+                    {hasVideoLinks(prop) && (
                        <Tooltip>
                         <TooltipTrigger asChild>
                            <Video className="h-4 w-4 text-primary" />
@@ -1089,6 +1091,9 @@ export default function PropertiesPage() {
   const renderCards = (properties: Property[]) => {
     if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
     if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
+    
+    const hasVideoLinks = (prop: Property) => prop.is_recorded && prop.video_links && Object.values(prop.video_links).some(link => !!link);
+    
     return (
       <div className="space-y-4">
         {properties.map((prop, index) => (
@@ -1114,7 +1119,7 @@ export default function PropertiesPage() {
                           <div className="flex-1">
                               <CardTitle className="font-bold font-headline text-base flex items-center gap-2">
                               {prop.auto_title || `${prop.size_value} ${prop.size_unit} ${prop.property_type} in ${prop.area}`}
-                              {prop.is_recorded && <Video className="h-4 w-4 text-primary" />}
+                              {hasVideoLinks(prop) && <Video className="h-4 w-4 text-primary" />}
                               </CardTitle>
                               <div className="text-xs text-muted-foreground flex items-center gap-2 pt-1">
                                   <Badge

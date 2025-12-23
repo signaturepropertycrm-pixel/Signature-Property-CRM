@@ -76,9 +76,10 @@ export function RecordVideoDialog({
 
 
   function onSubmit(values: RecordVideoFormValues) {
+    const hasLinks = Object.values(values).some(link => !!link);
     const updatedProperty: Property = {
         ...property,
-        is_recorded: true,
+        is_recorded: hasLinks,
         video_links: values
     };
     onUpdateProperty(updatedProperty);
