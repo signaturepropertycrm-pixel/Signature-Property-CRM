@@ -2,11 +2,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Video, Check, MoreHorizontal, XCircle } from 'lucide-react';
+import { Video, Check, MoreHorizontal, XCircle, Eye } from 'lucide-react';
 import type { Property } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
@@ -18,6 +17,8 @@ import { useSearch } from '../layout';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { CannotRecordDialog } from '@/components/cannot-record-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 
 export default function RecordingPage() {
   const { toast } = useToast();
@@ -25,6 +26,8 @@ export default function RecordingPage() {
   const { profile } = useProfile();
   const { searchQuery, setSearchQuery } = useSearch();
   const [propertyForReason, setPropertyForReason] = useState<Property | null>(null);
+  const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const propertiesQuery = useMemoFirebase(() => 
     profile.agency_id && profile.user_id
@@ -91,6 +94,11 @@ export default function RecordingPage() {
       }
   }
 
+  const handleCardClick = (property: Property) => {
+      setPropertyForDetails(property);
+      setIsDetailsOpen(true);
+  }
+
   return (
     <>
     <div className="space-y-6">
@@ -109,45 +117,52 @@ export default function RecordingPage() {
           />
       </div>
       
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Serial No</TableHead>
-                <TableHead>Property</TableHead>
-                <TableHead>Area</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center h-24">Loading pending recordings...</TableCell></TableRow>
-              ) : filteredProperties.length > 0 ? (
-                filteredProperties.map(prop => (
-                  <TableRow key={prop.id}>
-                    <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
-                    <TableCell className="font-medium">{prop.auto_title}</TableCell>
-                    <TableCell>{prop.area}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                       <Button variant="destructive" size="sm" onClick={() => handleCannotRecord(prop)}>
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Cannot Record
+      {isLoading ? (
+        <div className="text-center py-10 text-muted-foreground">Loading pending recordings...</div>
+      ) : filteredProperties.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map(prop => (
+                <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleCardClick(prop)}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <Badge variant="outline">{prop.serial_no}</Badge>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Mark as Recorded
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Cannot Record
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                        <p className="text-sm text-muted-foreground">{prop.area}</p>
+                    </CardContent>
+                    <CardFooter>
+                         <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleCardClick(prop)}}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
                         </Button>
-                      <Button onClick={() => handleMarkAsRecorded(prop)}>
-                        <Check className="mr-2 h-4 w-4" />
-                        Mark as Recorded
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={4} className="text-center h-24">No pending recordings found.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    </CardFooter>
+                </Card>
+            ))}
+        </div>
+      ) : (
+        <div className="text-center py-20 text-muted-foreground bg-card rounded-lg">
+            No pending recordings found.
+        </div>
+      )}
     </div>
     {propertyForReason && (
         <CannotRecordDialog 
@@ -155,6 +170,13 @@ export default function RecordingPage() {
             setIsOpen={() => setPropertyForReason(null)}
             property={propertyForReason}
             onSave={handleSaveReason}
+        />
+    )}
+     {propertyForDetails && (
+        <PropertyDetailsDialog
+            property={propertyForDetails}
+            isOpen={isDetailsOpen}
+            setIsOpen={setIsDetailsOpen}
         />
     )}
     </>
