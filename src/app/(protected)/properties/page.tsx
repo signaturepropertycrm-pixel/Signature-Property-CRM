@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -998,7 +997,7 @@ export default function PropertiesPage() {
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
                     
-                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Add/Edit Video Links</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
 
                     {(profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
@@ -1102,7 +1101,7 @@ export default function PropertiesPage() {
                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
                           )}
                           
-                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Add/Edit Video Links</Button>
+                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
 
                           {(profile.role !== 'Agent') && (
                             <>
@@ -1443,3 +1442,5 @@ export default function PropertiesPage() {
       </>
     );
   }
+
+    
