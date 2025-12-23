@@ -146,15 +146,9 @@ export function AppSidebar() {
      { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent', 'Video Recorder'], isSheet: true },
   ];
   
-  // Filter items based on role, but use a placeholder for layout stability
-  const mobileNavItems = allMobileNavItems.map(item => {
-      if (item.roles.includes(profile.role)) {
-          return item;
-      }
-      // If role doesn't match, return a placeholder to maintain grid layout
-      return { id: item.id, placeholder: true, roles: [] };
-  });
-
+  const mobileNavItems = allMobileNavItems.filter(item => 
+      item.roles.includes(profile.role)
+  );
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
       !['/overview', '/properties', '/buyers', '/team', '/recording', '/editing'].includes(item.href) &&
@@ -285,6 +279,50 @@ export function AppSidebar() {
   }
 
   if (isMobile) {
+    if (profile.role === 'Video Recorder') {
+      const recorderNavItems = [
+        { href: '/recording', label: 'Recording', icon: <Video />, roles: [] },
+        { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: [], isCenter: true },
+        { href: '/editing', label: 'Editing', icon: <Edit />, roles: [] },
+      ];
+      return (
+        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+          <div className="grid h-full grid-cols-3 relative">
+            {recorderNavItems.map(item => {
+              const isActive = pathname.startsWith(item.href);
+              if (item.isCenter) {
+                return (
+                  <div key={item.href} className="relative flex items-center justify-center">
+                    <Link href={item.href}>
+                      <div className={cn(
+                        'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
+                        'bg-gradient-to-br from-primary to-blue-500',
+                        isActive && 'ring-4 ring-primary/30'
+                      )}>
+                        {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                      </div>
+                    </Link>
+                  </div>
+                )
+              }
+              return (
+                 <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                        isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+                    )}
+                >
+                    {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                    <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )
+    }
     return (
       <TooltipProvider>
         {isMoreMenuOpen && (
