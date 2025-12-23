@@ -14,6 +14,7 @@ import { PlusCircle, AlertCircle } from 'lucide-react';
 import type { Buyer } from '@/lib/types';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { useProfile } from '@/context/profile-context';
 
 interface AddBuyerDialogProps {
     isOpen: boolean;
@@ -34,20 +35,25 @@ export function AddBuyerDialog({
     onSave,
     limitReached,
 }: AddBuyerDialogProps) {
+    const { profile } = useProfile();
 
     if (limitReached && !buyerToEdit) {
+        const isAgent = profile.role === 'Agent';
         return (
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2"><AlertCircle className="text-destructive" /> Limit Reached</DialogTitle>
                         <DialogDescription>
-                            You have reached your buyer limit for the current plan. To add more buyers, please upgrade your plan.
+                            {isAgent 
+                                ? "You have reached your personal limit for adding new buyers. You can still receive unlimited assigned leads from your agency."
+                                : "You have reached your buyer limit for the current plan. To add more buyers, please upgrade your plan."
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                        <Button asChild><Link href="/upgrade">Upgrade Plan</Link></Button>
+                        {!isAgent && <Button asChild><Link href="/upgrade">Upgrade Plan</Link></Button>}
                     </div>
                 </DialogContent>
             </Dialog>

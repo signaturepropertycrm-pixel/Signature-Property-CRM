@@ -17,6 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import type { Property, ListingType } from '@/lib/types';
 import { useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useProfile } from '@/context/profile-context';
 
 interface AddPropertyDialogProps {
     isOpen: boolean;
@@ -29,7 +30,7 @@ interface AddPropertyDialogProps {
 }
 
 export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, allProperties, listingType, limitReached }: AddPropertyDialogProps) {
-
+    const { profile } = useProfile();
     const totalSaleProperties = useMemo(() => {
         return allProperties.filter(p => p.listing_type === 'For Sale').length;
     }, [allProperties]);
@@ -46,18 +47,22 @@ export function AddPropertyDialog({ isOpen, setIsOpen, onSave, propertyToEdit, a
     }, [isOpen]);
     
     if (limitReached && !propertyToEdit) {
+        const isAgent = profile.role === 'Agent';
         return (
              <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2"><AlertCircle className="text-destructive" /> Limit Reached</DialogTitle>
                         <DialogDescription>
-                            You have reached your property limit for the current plan. To add more properties, please upgrade your plan.
+                            {isAgent 
+                                ? "You have reached your personal limit for adding new properties. You can still receive unlimited assigned properties from your agency."
+                                : "You have reached your property limit for the current plan. To add more properties, please upgrade your plan."
+                            }
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button>
-                        <Button asChild><Link href="/upgrade">Upgrade Plan</Link></Button>
+                        {!isAgent && <Button asChild><Link href="/upgrade">Upgrade Plan</Link></Button>}
                     </div>
                 </DialogContent>
             </Dialog>

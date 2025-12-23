@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -102,6 +103,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 
 const ITEMS_PER_PAGE = 50;
+const AGENT_LEAD_LIMIT = 100;
 
 const planLimits = {
     Basic: { properties: 500, buyers: 500, team: 3 },
@@ -212,9 +214,17 @@ export default function PropertiesPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
 
+  const isAgent = profile.role === 'Agent';
   const currentPlan = (profile?.planName as PlanName) || 'Basic';
-  const limit = planLimits[currentPlan]?.properties || 0;
-  const currentCount = allProperties?.length || 0;
+  const agencyLimit = planLimits[currentPlan]?.properties || 0;
+  
+  const myLeadsCount = useMemo(() => {
+    if (!allProperties || !user) return 0;
+    return allProperties.filter(p => p.created_by === user.uid).length;
+  }, [allProperties, user]);
+
+  const limit = isAgent ? AGENT_LEAD_LIMIT : agencyLimit;
+  const currentCount = isAgent ? myLeadsCount : (allProperties?.length || 0);
   const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
   const isLimitReached = currentCount >= limit;
 
@@ -407,8 +417,8 @@ export default function PropertiesPage() {
     }
      if (isLimitReached) {
         toast({
-            title: "Property Limit Reached",
-            description: `You have reached your limit of ${limit} properties. Please upgrade your plan to add more.`,
+            title: isAgent ? "Personal Lead Limit Reached" : "Property Limit Reached",
+            description: `You have reached your limit of ${limit} properties. ${isAgent ? 'You can still receive unlimited assigned leads.' : 'Please upgrade your plan to add more.'}`,
             variant: "destructive",
         });
         return;
@@ -1405,7 +1415,7 @@ export default function PropertiesPage() {
              <Card>
                 <CardContent className="p-4">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Property Leads Usage</span>
+                        <span className="text-sm font-medium text-muted-foreground">{isAgent ? "My Property Leads Usage" : "Property Leads Usage"}</span>
                         <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
                     </div>
                     <Progress value={progress} />
@@ -1508,3 +1518,4 @@ export default function PropertiesPage() {
       </>
     );
   }
+

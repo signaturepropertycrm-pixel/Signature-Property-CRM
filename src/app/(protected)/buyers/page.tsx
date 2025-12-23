@@ -43,6 +43,8 @@ import { Progress } from '@/components/ui/progress';
 
 const ITEMS_PER_PAGE = 50;
 
+const AGENT_LEAD_LIMIT = 100;
+
 const planLimits = {
     Basic: { properties: 500, buyers: 500, team: 3 },
     Standard: { properties: 2500, buyers: 2500, team: 10 },
@@ -144,11 +146,21 @@ export default function BuyersPage() {
     const [selectedBuyerForDetails, setSelectedBuyerForDetails] = useState<Buyer | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+    // -- Limit Calculation --
+    const isAgent = profile.role === 'Agent';
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
-    const limit = planLimits[currentPlan]?.buyers || 0;
-    const currentCount = allBuyers?.length || 0;
+    const agencyLimit = planLimits[currentPlan]?.buyers || 0;
+    
+    const myLeadsCount = useMemo(() => {
+        if (!allBuyers || !user) return 0;
+        return allBuyers.filter(b => b.created_by === user.uid).length;
+    }, [allBuyers, user]);
+
+    const limit = isAgent ? AGENT_LEAD_LIMIT : agencyLimit;
+    const currentCount = isAgent ? myLeadsCount : (allBuyers?.length || 0);
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
     const isLimitReached = currentCount >= limit;
+
 
     const buyerFollowUp = useMemo(() => {
         if (!buyerForFollowUp || !followUps) return null;
@@ -1130,7 +1142,7 @@ export default function BuyersPage() {
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-muted-foreground">Buyer Leads Usage</span>
+                                <span className="text-sm font-medium text-muted-foreground">{isAgent ? "My Buyer Leads Usage" : "Buyer Leads Usage"}</span>
                                 <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
                             </div>
                             <Progress value={progress} />
