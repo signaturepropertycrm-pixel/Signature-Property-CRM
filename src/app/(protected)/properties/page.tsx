@@ -997,7 +997,7 @@ export default function PropertiesPage() {
                     {(profile.role === 'Admin') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
-                    {(profile.role === 'Admin') && (
+                    {(profile.role === 'Admin' || profile.role === 'Video Recorder') && (
                       prop.is_recorded ? (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
                       ) : (
@@ -1471,6 +1471,7 @@ export default function PropertiesPage() {
 
 
     
+
 
 
 

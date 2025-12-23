@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -29,7 +30,7 @@ import { doc, setDoc, serverTimestamp, writeBatch, updateDoc, collection, addDoc
 import { useProfile } from '@/context/profile-context';
 import { Loader2 } from 'lucide-react';
 
-const roles: UserRole[] = ['Admin', 'Agent'];
+const roles: UserRole[] = ['Admin', 'Agent', 'Video Recorder'];
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),

@@ -1,7 +1,8 @@
 
+
 'use client';
 
-export type UserRole = 'Admin' | 'Agent';
+export type UserRole = 'Admin' | 'Agent' | 'Video Recorder';
 export type PlanName = 'Basic' | 'Standard' | 'Premium';
 
 export type User = {
