@@ -1124,7 +1124,7 @@ export default function PropertiesPage() {
               <CardFooter className="flex justify-end">
                   <Sheet>
                       <SheetTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
+                           <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
                               <MoreHorizontal className="h-4 w-4" />
                               <span className="sr-only">Toggle menu</span>
                           </Button>
@@ -1415,8 +1415,8 @@ export default function PropertiesPage() {
             {profile.role === 'Agent' && (
                 <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
                     <TabsList className='grid w-full grid-cols-2'>
-                        <TabsTrigger value="myLeads">My Leads</TabsTrigger>
-                        <TabsTrigger value="assignedLeads">Assigned Leads</TabsTrigger>
+                        <TabsTrigger value="myLeads">My Properties</TabsTrigger>
+                        <TabsTrigger value="assignedLeads">Assigned Properties</TabsTrigger>
                     </TabsList>
                 </Tabs>
             )}

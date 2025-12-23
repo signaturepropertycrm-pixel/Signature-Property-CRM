@@ -884,12 +884,12 @@ export default function BuyersPage() {
                             <CardFooter className="flex justify-end">
                                  <Sheet>
                                     <SheetTrigger asChild>
-                                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => { e.stopPropagation(); }}>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
                                             <MoreHorizontal className="h-4 w-4" />
                                             <span className="sr-only">Toggle menu</span>
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="bottom" className="w-full" onClick={e => e.stopPropagation()}>
+                                    <SheetContent side="bottom" className="w-full">
                                         <SheetHeader className="text-left mb-4">
                                             <SheetTitle>Actions for {buyer.serial_no}</SheetTitle>
                                         </SheetHeader>
@@ -901,9 +901,9 @@ export default function BuyersPage() {
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
                                              <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="justify-start w-full" onClick={(e) => e.stopPropagation()}><UserPlus />Assign Agent</Button>
+                                                    <Button variant="outline" className="justify-start w-full"><UserPlus />Assign Agent</Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenuContent side="top">
                                                     {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                     <DropdownMenuSeparator />
                                                     {assignableAgents.map((agent) => (
@@ -915,9 +915,9 @@ export default function BuyersPage() {
                                             </DropdownMenu>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="justify-start" onClick={(e) => e.stopPropagation()}><Bookmark />Change Status</Button>
+                                                    <Button variant="outline" className="justify-start"><Bookmark />Change Status</Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenuContent side="top">
                                                     {buyerStatuses.map((status) => (
                                                         <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status);}} disabled={buyer.status === status}>
                                                             {status}
@@ -1140,8 +1140,8 @@ export default function BuyersPage() {
                     {profile.role === 'Agent' && (
                         <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
                             <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value="myLeads">My Leads</TabsTrigger>
-                                <TabsTrigger value="assignedLeads">Assigned Leads</TabsTrigger>
+                                <TabsTrigger value="myLeads">My Buyers</TabsTrigger>
+                                <TabsTrigger value="assignedLeads">Assigned Buyers</TabsTrigger>
                             </TabsList>
                         </Tabs>
                     )}
@@ -1286,4 +1286,3 @@ export default function BuyersPage() {
 
 
     
-
