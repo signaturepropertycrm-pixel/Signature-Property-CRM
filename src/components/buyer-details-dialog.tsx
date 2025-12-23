@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -40,8 +41,6 @@ interface BuyerDetailsDialogProps {
   buyer: Buyer;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  activeAgents?: User[];
-  onAssign?: (buyer: Buyer, agentId: string | null) => void;
 }
 
 const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: React.ReactNode }) => (
@@ -78,11 +77,8 @@ export function BuyerDetailsDialog({
   buyer,
   isOpen,
   setIsOpen,
-  activeAgents = [],
-  onAssign = () => {},
 }: BuyerDetailsDialogProps) {
   const { currency } = useCurrency();
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -99,11 +95,6 @@ export function BuyerDetailsDialog({
     const maxVal = formatUnit(maxAmount, maxUnit);
     return `${formatCurrency(minVal, currency)} - ${formatCurrency(maxVal, currency)}`;
   };
-  
-  const assignedAgentName = useMemo(() => {
-    if (!buyer.assignedTo) return 'Unassigned';
-    return activeAgents.find(agent => agent.id === buyer.assignedTo)?.name || 'Unknown Agent';
-  }, [buyer.assignedTo, activeAgents]);
 
   const handleClearHistory = async () => {
     if (!buyer.agency_id) return;
@@ -240,36 +231,7 @@ export function BuyerDetailsDialog({
 
             </div>
           </ScrollArea>
-          <DialogFooter className="border-t pt-4 sm:justify-between">
-            <div className="flex items-center gap-2">
-                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                    <PopoverTrigger asChild>
-                        <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" />Assign Agent</Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-0">
-                         <Command>
-                            <CommandInput placeholder="Search agents..." />
-                            <CommandList>
-                                <CommandEmpty>No agents found.</CommandEmpty>
-                                <CommandGroup>
-                                    {buyer.assignedTo && (
-                                        <CommandItem key="unassign-agent" onSelect={() => { onAssign(buyer, null); setPopoverOpen(false); }}>
-                                            Unassign
-                                        </CommandItem>
-                                    )}
-                                    {activeAgents.map(agent => (
-                                        <CommandItem key={agent.id} onSelect={() => { onAssign(buyer, agent.id); setPopoverOpen(false); }} disabled={buyer.assignedTo === agent.id}>
-                                            <Check className={buyer.assignedTo === agent.id ? 'mr-2 h-4 w-4 opacity-100' : 'mr-2 h-4 w-4 opacity-0'} />
-                                            {agent.name}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                            </CommandList>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
-                {buyer.assignedTo && <Badge variant="secondary" className="text-sm">{assignedAgentName}</Badge>}
-            </div>
+          <DialogFooter className="border-t pt-4">
              <Button variant="secondary" onClick={() => setIsOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>

@@ -267,20 +267,10 @@ export default function BuyersPage() {
     const handleAssignAgent = async (buyer: Buyer, agentId: string | null) => {
         if (!profile.agency_id) return;
     
-        // This is the safety check.
         const newAssignedTo = agentId === undefined ? null : agentId;
     
         const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await setDoc(docRef, { assignedTo: newAssignedTo }, { merge: true });
-        
-        // This is the crucial part: update the local state immediately
-        // so the dialog reflects the change without needing a full data refetch.
-        if (selectedBuyerForDetails) {
-            setSelectedBuyerForDetails({
-                ...selectedBuyerForDetails,
-                assignedTo: newAssignedTo,
-            });
-        }
         
         const agentName = activeAgents.find(a => a.id === newAssignedTo)?.name;
     
@@ -804,6 +794,20 @@ export default function BuyersPage() {
                                             {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                             <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                             <DropdownMenuSub>
+                                                <DropdownMenuSubTrigger><UserPlus />Assign Agent</DropdownMenuSubTrigger>
+                                                <DropdownMenuPortal>
+                                                    <DropdownMenuSubContent>
+                                                        {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
+                                                        <DropdownMenuSeparator />
+                                                        {activeAgents.map((agent) => (
+                                                            <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                            {agent.name}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </DropdownMenuSubContent>
+                                                </DropdownMenuPortal>
+                                            </DropdownMenuSub>
                                             <DropdownMenuSub>
                                                 <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
                                                 <DropdownMenuPortal>
@@ -893,7 +897,20 @@ export default function BuyersPage() {
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
                                             <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</Button>
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
-                                            
+                                             <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" className="justify-start" onClick={(e) => e.stopPropagation()}><UserPlus />Assign Agent</Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                                    {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
+                                                    <DropdownMenuSeparator />
+                                                    {activeAgents.map((agent) => (
+                                                        <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                        {agent.name}
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="outline" className="justify-start" onClick={(e) => e.stopPropagation()}><Bookmark />Change Status</Button>
@@ -1204,7 +1221,7 @@ export default function BuyersPage() {
 
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
-            {selectedBuyerForDetails && (<BuyerDetailsDialog buyer={selectedBuyerForDetails} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} activeAgents={activeAgents} onAssign={handleAssignAgent} />)}
+            {selectedBuyerForDetails && (<BuyerDetailsDialog buyer={selectedBuyerForDetails} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />)}
             {buyerForRecommendation && allProperties && (
                 <PropertyRecommenderDialog
                     isOpen={isRecommenderOpen}
@@ -1267,10 +1284,3 @@ export default function BuyersPage() {
 
 
     
-
-
-
-
-
-
-
