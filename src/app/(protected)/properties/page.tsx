@@ -291,7 +291,7 @@ export default function PropertiesPage() {
       timestamp: new Date().toISOString(),
       agency_id: profile.agency_id,
       assignedToId: userId,
-      assignedToName: memberName
+      assignedToName: memberName || null
     };
     await addDoc(activityLogRef, newActivity);
 
