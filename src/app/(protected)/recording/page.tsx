@@ -19,10 +19,14 @@ import { Search } from 'lucide-react';
 import { CannotRecordDialog } from '@/components/cannot-record-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 export default function RecordingPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const isMobile = useIsMobile();
   const { profile } = useProfile();
   const { searchQuery, setSearchQuery } = useSearch();
   const [propertyForReason, setPropertyForReason] = useState<Property | null>(null);
@@ -94,10 +98,95 @@ export default function RecordingPage() {
       }
   }
 
-  const handleCardClick = (property: Property) => {
+  const handleRowClick = (property: Property) => {
       setPropertyForDetails(property);
       setIsDetailsOpen(true);
   }
+  
+  const renderTable = (propertiesToList: Property[]) => (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Serial No</TableHead>
+              <TableHead>Property</TableHead>
+              <TableHead>Area</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {propertiesToList.map(prop => (
+              <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
+                <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
+                <TableCell className="font-medium">{prop.auto_title}</TableCell>
+                <TableCell>{prop.area}</TableCell>
+                <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
+                                <Eye className="mr-2" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
+                                <Check className="mr-2" /> Mark as Recorded
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
+                                <XCircle className="mr-2" /> Cannot Record
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+
+  const renderCards = (propertiesToList: Property[]) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {propertiesToList.map(prop => (
+            <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleRowClick(prop)}>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <Badge variant="outline">{prop.serial_no}</Badge>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Mark as Recorded
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cannot Record
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                    <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                    <p className="text-sm text-muted-foreground">{prop.area}</p>
+                </CardContent>
+                <CardFooter>
+                     <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleRowClick(prop)}}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                    </Button>
+                </CardFooter>
+            </Card>
+        ))}
+    </div>
+  );
 
   return (
     <>
@@ -120,44 +209,7 @@ export default function RecordingPage() {
       {isLoading ? (
         <div className="text-center py-10 text-muted-foreground">Loading pending recordings...</div>
       ) : filteredProperties.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProperties.map(prop => (
-                <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleCardClick(prop)}>
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                            <Badge variant="outline">{prop.serial_no}</Badge>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                    <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
-                                        <Check className="mr-2 h-4 w-4" />
-                                        Mark as Recorded
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
-                                        <XCircle className="mr-2 h-4 w-4" />
-                                        Cannot Record
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                        <p className="text-sm text-muted-foreground">{prop.area}</p>
-                    </CardContent>
-                    <CardFooter>
-                         <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleCardClick(prop)}}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                        </Button>
-                    </CardFooter>
-                </Card>
-            ))}
-        </div>
+        isMobile ? renderCards(filteredProperties) : renderTable(filteredProperties)
       ) : (
         <div className="text-center py-20 text-muted-foreground bg-card rounded-lg">
             No pending recordings found.
