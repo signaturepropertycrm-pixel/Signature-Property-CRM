@@ -30,6 +30,7 @@ export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)';
 export type ListingType = 'For Sale' | 'For Rent';
+export type EditingStatus = 'In Editing' | 'Complete';
 
 export type UploadedDocument = {
     name: string;
@@ -69,6 +70,7 @@ export type Property = {
   message?: string; // General notes for any property type
   status: PropertyStatus;
   is_recorded: boolean;
+  editing_status?: EditingStatus;
   created_at: string;
   created_by: string; // user id
   agency_id: string;

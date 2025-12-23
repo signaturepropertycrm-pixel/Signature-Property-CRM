@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -39,6 +40,7 @@ import {
   PieChart,
   FileArchive,
   Video,
+  Edit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -57,11 +59,13 @@ import { motion } from 'framer-motion';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
+  { href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
+  { href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
   { 
     href: '/properties', 
     label: 'Properties', 
     icon: <Building2 />, 
-    roles: ['Admin', 'Agent', 'Video Recorder'],
+    roles: ['Admin', 'Agent'],
     subItems: [
         { href: '/properties?status=All (Sale)', label: 'All (Sale)' },
         { href: '/properties?status=Available (Sale)', label: 'Available (Sale)' },
@@ -134,9 +138,11 @@ export function AppSidebar() {
 
   const allMobileNavItems = [
      { id: 'team', href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent', 'Video Recorder'] },
+     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+     { id: 'recording', href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
      { id: 'overview', href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'], isCenter: true },
      { id: 'buyers', href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
+     { id: 'editing', href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
      { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent', 'Video Recorder'], isSheet: true },
   ];
   
@@ -151,7 +157,7 @@ export function AppSidebar() {
 
 
   const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/overview', '/properties', '/buyers', '/team'].includes(item.href) &&
+      !['/overview', '/properties', '/buyers', '/team', '/recording', '/editing'].includes(item.href) &&
       (item.roles.includes(profile.role))
   );
 
@@ -162,10 +168,6 @@ export function AppSidebar() {
       return null;
     }
     
-    if (profile.role === 'Video Recorder' && !['/overview', '/properties'].includes(item.href)) {
-        return null;
-    }
-
     const isActive = !item.subItems && pathname === item.href;
     const isCollapsibleActive = item.subItems && pathname.startsWith(item.href);
     const isUpgradeButton = item.href === '/upgrade';

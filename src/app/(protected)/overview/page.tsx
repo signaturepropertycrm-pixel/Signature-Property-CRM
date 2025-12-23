@@ -2,14 +2,14 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, query, where, Timestamp, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity } from '@/lib/types';
+import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity, EditingStatus } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO, format } from 'date-fns';
@@ -408,39 +408,40 @@ export default function OverviewPage() {
 
     if (profile.role === 'Video Recorder') {
         const assignedProperties = properties || [];
-        const recordedCount = assignedProperties.filter(p => p.is_recorded).length;
-        const pendingCount = assignedProperties.length - recordedCount;
+        const pendingCount = assignedProperties.filter(p => !p.is_recorded).length;
+        const editingCount = assignedProperties.filter(p => p.is_recorded && p.editing_status !== 'Complete').length;
+        const completedCount = assignedProperties.filter(p => p.editing_status === 'Complete').length;
 
         const videoRecorderStats: StatCardProps[] = [
-             {
-                title: "Total Assigned Properties",
-                value: assignedProperties.length,
-                icon: <Building2 className="h-4 w-4" />,
-                color: "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300",
-                isLoading,
-                href: "/properties",
-            },
             {
-                title: "Videos to Record",
+                title: "Pending Recordings",
                 value: pendingCount,
                 icon: <VideoOff className="h-4 w-4" />,
                 color: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300",
                 isLoading,
-                href: "/properties",
+                href: "/recording",
             },
             {
-                title: "Recorded Videos",
-                value: recordedCount,
-                icon: <Video className="h-4 w-4" />,
+                title: "In Editing",
+                value: editingCount,
+                icon: <PlayCircle className="h-4 w-4" />,
+                color: "bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300",
+                isLoading,
+                href: "/editing",
+            },
+            {
+                title: "Editing Complete",
+                value: completedCount,
+                icon: <CheckCheck className="h-4 w-4" />,
                 color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
                 isLoading,
-                href: "/properties?status=Recorded",
-            }
+                href: "/editing",
+            },
         ];
         return (
              <div className="space-y-8">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><Video/> Video Recorder Dashboard</h1>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><Video/> Video Workflow</h1>
                     <p className="text-muted-foreground">Your assigned video recording tasks.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

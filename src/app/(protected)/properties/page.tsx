@@ -83,7 +83,7 @@ import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, addDoc, setDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn, formatPhoneNumber } from '@/lib/utils';
 import { AddSalePropertyForm } from '@/components/add-sale-property-form';
@@ -433,7 +433,7 @@ export default function PropertiesPage() {
   const handleUpdateProperty = async (updatedProperty: Property) => {
     if (!profile.agency_id) return;
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
-    await setDoc(docRef, updatedProperty, { merge: true });
+    await updateDoc(docRef, { ...updatedProperty });
   };
   
   const handleMarkAsAvailableForRent = async (prop: Property) => {
@@ -997,13 +997,9 @@ export default function PropertiesPage() {
                     {(profile.role === 'Admin') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
-                    {(profile.role === 'Admin' || profile.role === 'Video Recorder') && (
-                      prop.is_recorded ? (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</DropdownMenuItem>
-                      ) : (
-                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
-                      )
-                    )}
+                    
+                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Add/Edit Video Links</DropdownMenuItem>
+
                     {(profile.role !== 'Agent') && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
@@ -1105,13 +1101,9 @@ export default function PropertiesPage() {
                           {(profile.role === 'Admin') && (
                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
                           )}
-                          {(profile.role === 'Admin') && (
-                            prop.is_recorded ? (
-                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleUnmarkRecorded(prop); }}><VideoOff />Unmark as Recorded</Button>
-                            ) : (
-                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
-                            )
-                          )}
+                          
+                          <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Add/Edit Video Links</Button>
+
                           {(profile.role !== 'Agent') && (
                             <>
                             <Separator />
@@ -1451,33 +1443,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-

@@ -89,7 +89,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Define restricted paths for each role
   const agentForbiddenPaths = ['/team', '/upgrade'];
-  const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support'];
+  const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support', '/properties'];
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
@@ -147,7 +147,7 @@ function ProtectedLayoutContent({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isSearchable = pathname.startsWith('/properties') || pathname.startsWith('/buyers');
+  const isSearchable = ['/properties', '/buyers', '/recording', '/editing'].some(path => pathname.startsWith(path));
 
 
   // Reset search when navigating away from searchable pages
