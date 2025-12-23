@@ -270,10 +270,12 @@ export function AppHeader({
                   Settings
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => router.push('/support')}>
-                <MessageSquare />
-                Support
-            </DropdownMenuItem>
+            {(profile.role === 'Admin' || profile.role === 'Agent') && (
+                <DropdownMenuItem onClick={() => router.push('/support')}>
+                    <MessageSquare />
+                    Support
+                </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
                 <LogOut />
