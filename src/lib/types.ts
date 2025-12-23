@@ -1,5 +1,3 @@
-
-
 'use client';
 
 export type UserRole = 'Admin' | 'Agent' | 'Video Recorder';
@@ -25,7 +23,7 @@ export type User = {
   planStartDate?: string;
 };
 
-export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | 'Commercial Property' | 'Semi Commercial' | 'Residential Property' | '';
+export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | 'Commercial Property' | 'Semi Commercial' | 'Residential Property' | 'Old House' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)';
