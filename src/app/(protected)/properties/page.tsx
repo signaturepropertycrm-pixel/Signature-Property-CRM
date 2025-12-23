@@ -259,9 +259,20 @@ export default function PropertiesPage() {
     if (!profile.agency_id) return;
     
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
-    await updateDoc(docRef, { assignedTo: userId });
+    
+    const member = activeTeamMembers.find(m => m.id === userId);
+    let updates: Partial<Property> = { assignedTo: userId };
 
-    const memberName = activeTeamMembers.find(m => m.id === userId)?.name;
+    // If assigning to a video recorder, ensure `is_recorded` is set to false
+    // so it appears in their "Pending Recordings" queue.
+    if (member && member.role === 'Video Recorder') {
+      updates.is_recorded = false;
+      updates.editing_status = 'In Editing'; // Reset editing status as well
+    }
+
+    await updateDoc(docRef, updates);
+
+    const memberName = member?.name;
     toast({
         title: userId ? 'Property Assigned' : 'Property Unassigned',
         description: userId 
