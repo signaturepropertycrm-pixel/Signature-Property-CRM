@@ -134,7 +134,7 @@ import {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  title: 'Assigned Buyers',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 value: assignedBuyersCount.toString(),
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  icon: UserCheck,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  color: 'bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-300',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   color: 'bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-300',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  change: 'From Agency',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              }
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      );
@@ -154,7 +154,7 @@ import {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    title: 'Revenue (30d)',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            value: formatCurrency(revenueInLast30Days, currency as any, { notation: 'compact' }),
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    icon: DollarSign,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             color: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    change: getChange(revenueInLast30Days, previousRevenue),
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          },
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 {
@@ -239,69 +239,65 @@ export default function DashboardPage() {
     const firestore = useFirestore();
     const { profile, isLoading: isProfileLoading } = useProfile();
 
-    // Check for loading state and agency_id existence before creating queries
     const canFetchData = !isProfileLoading && profile.agency_id && profile.agency_id.trim() !== '';
 
-    // Agency-wide data
-    const agencyPropertiesQuery = useMemoFirebase(() => canFetchData ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [canFetchData, profile.agency_id, firestore]);
-    const agencyAppointmentsQuery = useMemoFirebase(() => canFetchData ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetchData, profile.agency_id, firestore]);
-    const agencyFollowUpsQuery = useMemoFirebase(() => canFetchData ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetchData, profile.agency_id, firestore]);
-    const agencyBuyersQuery = useMemoFirebase(() => canFetchData ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [canFetchData, profile.agency_id, firestore]);
-    
-    const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
-    const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
-    const { data: agencyFollowUps, isLoading: afLoading } = useCollection<FollowUp>(agencyFollowUpsQuery);
-    const { data: allAgencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
-
-    // Agent-specific data (only their created items)
-    const agentPropertiesQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id)) : null, [profile.role, profile.user_id, firestore, profile.agency_id]);
+    // Data for Agents: Fetch only their own data
+    const agentPropertiesQuery = useMemoFirebase(() => canFetchData && profile.role === 'Agent' ? query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id)) : null, [canFetchData, profile, firestore]);
     const { data: agentProperties, isLoading: agentPLoading } = useCollection<Property>(agentPropertiesQuery);
-
-    const agentBuyersQuery = useMemoFirebase(() => (profile.role === 'Agent' && profile.user_id) ? query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id)) : null, [profile.role, profile.user_id, firestore, profile.agency_id]);
+    
+    const agentBuyersQuery = useMemoFirebase(() => canFetchData && profile.role === 'Agent' ? query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id)) : null, [canFetchData, profile, firestore]);
     const { data: agentBuyers, isLoading: agentBLoading } = useCollection<Buyer>(agentBuyersQuery);
 
-    // KPIs for the entire agency (Admin view)
-    const agencyKpiData = useMemo(() => calculateKpis(agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency), [agencyProperties, allAgencyBuyers, agencyAppointments, agencyFollowUps, currency]);
+    const agentAppointmentsQuery = useMemoFirebase(() => canFetchData && profile.role === 'Agent' ? query(collection(firestore, 'agencies', profile.agency_id, 'appointments'), where('agentName', '==', profile.name)) : null, [canFetchData, profile, firestore]);
+    const { data: agentAppointments, isLoading: agentAptLoading } = useCollection<Appointment>(agentAppointmentsQuery);
+    
+    const agentFollowUpsQuery = useMemoFirebase(() => canFetchData && profile.role === 'Agent' ? query(collection(firestore, 'agencies', profile.agency_id, 'followUps'), where('buyerId', 'in', agentBuyers ? agentBuyers.map(b => b.id) : ['dummy'])) : null, [canFetchData, profile, firestore, agentBuyers]);
+    const { data: agentFollowUps, isLoading: agentFULoading } = useCollection<FollowUp>(agentFollowUpsQuery);
+    
+    // Data for Admins: Fetch all agency data
+    const agencyPropertiesQuery = useMemoFirebase(() => canFetchData && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [canFetchData, profile, firestore]);
+    const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
+    
+    const agencyBuyersQuery = useMemoFirebase(() => canFetchData && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [canFetchData, profile, firestore]);
+    const { data: allAgencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
 
-    const isAgencyDataLoading = !canFetchData || apLoading || abLoading || aaLoading || afLoading;
-    const isAgentDataLoading = !canFetchData || agentPLoading || agentBLoading || aaLoading || afLoading;
+    const agencyAppointmentsQuery = useMemoFirebase(() => canFetchData && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetchData, profile, firestore]);
+    const { data: agencyAppointments, isLoading: aaLoading } = useCollection<Appointment>(agencyAppointmentsQuery);
 
-    // KPIs specific to the logged-in agent
-    const agentKpiData = useMemo(() => {
-        if (profile.role !== 'Agent' || !profile.user_id) return [];
+    const agencyFollowUpsQuery = useMemoFirebase(() => canFetchData && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetchData, profile, firestore]);
+    const { data: agencyFollowUps, isLoading: afLoading } = useCollection<FollowUp>(agencyFollowUpsQuery);
+
+    // Determine which data to use based on role
+    const isAgent = profile.role === 'Agent';
+    const properties = isAgent ? agentProperties : agencyProperties;
+    const buyers = isAgent ? agentBuyers : allAgencyBuyers;
+    const appointments = isAgent ? agentAppointments : agencyAppointments;
+    const followUps = isAgent ? agentFollowUps : agencyFollowUps;
+
+    const isLoading = isAgent 
+        ? agentPLoading || agentBLoading || agentAptLoading || agentFULoading
+        : apLoading || abLoading || aaLoading || afLoading;
         
-        // An agent's properties are only the ones they created personally
-        const allAgentProperties = agentProperties || [];
-        
-        // An agent's buyers are only the ones they created personally
-        const allAgentBuyers = agentBuyers || [];
-        
-        // Filter agency-level appointments and follow-ups for the current agent
-        const agentSpecificAppointments = agencyAppointments?.filter(a => a.agentName === profile.name) || null;
-        const agentSpecificFollowUps = agencyFollowUps?.filter(f => allAgentBuyers.some(b => b.id === f.buyerId)) || null;
-        
-        return calculateKpis(allAgentProperties, allAgentBuyers, agentSpecificAppointments, agentSpecificFollowUps, currency, profile.user_id, agencyProperties, allAgencyBuyers);
-        
-    }, [agentProperties, agentBuyers, agencyAppointments, agencyFollowUps, currency, profile.role, profile.name, profile.user_id, agencyProperties, allAgencyBuyers]);
+    const kpiData = useMemo(() => calculateKpis(
+        properties, 
+        buyers, 
+        appointments, 
+        followUps, 
+        currency, 
+        isAgent ? profile.user_id : undefined,
+        isAgent ? agencyProperties : undefined, // Pass full lists for assigned counts for agent
+        isAgent ? allAgencyBuyers : undefined,
+    ), [properties, buyers, appointments, followUps, currency, isAgent, profile.user_id, agencyProperties, allAgencyBuyers]);
 
     return (
         <div className="flex flex-col gap-8">
-            {profile.role === 'Agent' ? (
-                <div className='space-y-4'>
-                    <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Briefcase /> My Stats</h2>
-                    <KpiGrid kpiData={agentKpiData} isLoading={isAgentDataLoading} />
-                </div>
-            ) : (
-                <div className='space-y-4'>
-                    <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2"><Home /> Agency Stats</h2>
-                    <KpiGrid kpiData={agencyKpiData} isLoading={isAgencyDataLoading} />
-                </div>
-            )}
+            <div className='space-y-4'>
+                <h2 className="text-2xl font-bold tracking-tight font-headline flex items-center gap-2">
+                    {isAgent ? <Briefcase /> : <Home />}
+                    {isAgent ? 'My Stats' : 'Agency Stats'}
+                </h2>
+                <KpiGrid kpiData={kpiData} isLoading={isLoading} />
+            </div>
         </div>
     );
 }
-
-
-    
-
-    

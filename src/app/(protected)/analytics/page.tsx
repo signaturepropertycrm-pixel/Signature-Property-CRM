@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { Property, Buyer } from '@/lib/types';
@@ -21,19 +21,43 @@ export default function AnalyticsPage() {
   const firestore = useFirestore();
 
   const canFetch = !isProfileLoading && profile.agency_id;
+  const isAgent = profile.role === 'Agent';
 
-  const propertiesQuery = useMemoFirebase(() => 
-    canFetch ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, 
-    [canFetch, firestore, profile.agency_id]
-  );
-  const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+  // --- Data Fetching ---
+  const propertiesQuery = useMemoFirebase(() => {
+    if (!canFetch) return null;
+    if (isAgent) {
+        return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id));
+    }
+    return collection(firestore, 'agencies', profile.agency_id, 'properties');
+  }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+  const { data: myProperties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
   
-  const buyersQuery = useMemoFirebase(() => 
-    canFetch ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, 
-    [canFetch, firestore, profile.agency_id]
-  );
-  const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+  const assignedPropertiesQuery = useMemoFirebase(() => {
+    if (!canFetch || !isAgent) return null;
+    return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
+  }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+  const { data: assignedProperties } = useCollection<Property>(assignedPropertiesQuery);
+
+  const buyersQuery = useMemoFirebase(() => {
+    if (!canFetch) return null;
+    if (isAgent) {
+        return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id));
+    }
+    return collection(firestore, 'agencies', profile.agency_id, 'buyers');
+  }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+  const { data: myBuyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
   
+  const assignedBuyersQuery = useMemoFirebase(() => {
+    if (!canFetch || !isAgent) return null;
+    return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('assignedTo', '==', profile.user_id));
+  }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+  const { data: assignedBuyers } = useCollection<Buyer>(assignedBuyersQuery);
+
+  // Agent's data is their own + assigned, Admin's is all.
+  const finalProperties = useMemo(() => isAgent ? [...(myProperties || []), ...(assignedProperties || [])] : myProperties, [isAgent, myProperties, assignedProperties]);
+  const finalBuyers = useMemo(() => isAgent ? [...(myBuyers || []), ...(assignedBuyers || [])] : myBuyers, [isAgent, myBuyers, assignedBuyers]);
+
   const isLoading = isPropertiesLoading || isBuyersLoading;
 
   if (isLoading) {
@@ -53,14 +77,14 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 pt-8">
-          <PerformanceChart properties={properties || []} />
-          <LeadsChart properties={properties || []} buyers={buyers || []} />
+          <PerformanceChart properties={finalProperties || []} />
+          <LeadsChart properties={finalProperties || []} buyers={finalBuyers || []} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <SalesBreakdownChart properties={properties || []} />
-            <BuyerBreakdownChart buyers={buyers || []} properties={properties || []} />
+            <SalesBreakdownChart properties={finalProperties || []} />
+            <BuyerBreakdownChart buyers={finalBuyers || []} properties={finalProperties || []} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
-             <PropertyTypesChart properties={properties || []} />
+             <PropertyTypesChart properties={finalProperties || []} />
           </div>
       </div>
 

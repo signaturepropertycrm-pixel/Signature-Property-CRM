@@ -103,40 +103,62 @@ export default function OverviewPage() {
     const last30DaysStart = subDays(now, 30);
     const isTrialing = !profile.planStartDate && profile.planName === 'Basic' && (profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0);
 
+    const isAgent = profile.role === 'Agent';
 
     // --- Data Fetching ---
     const propertiesQuery = useMemoFirebase(() => {
         if (!canFetch) return null;
-        // Video recorder only sees properties assigned to them
         if (profile.role === 'Video Recorder') {
              return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
         }
-        if (profile.role === 'Agent') {
-            return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id));
+        if (isAgent) {
+             return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id));
         }
         return collection(firestore, 'agencies', profile.agency_id, 'properties');
-    }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id]);
+    }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id, isAgent]);
     const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
     
+    const assignedPropertiesQuery = useMemoFirebase(() => {
+        if (!canFetch || !isAgent) return null;
+        return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
+    }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+    const { data: assignedProperties } = useCollection<Property>(assignedPropertiesQuery);
+
     const buyersQuery = useMemoFirebase(() => {
         if (!canFetch || profile.role === 'Video Recorder') return null;
-        if (profile.role === 'Agent') {
+        if (isAgent) {
             return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id));
         }
         return collection(firestore, 'agencies', profile.agency_id, 'buyers');
-    }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id]);
+    }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id, isAgent]);
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
     
+    const assignedBuyersQuery = useMemoFirebase(() => {
+        if (!canFetch || !isAgent) return null;
+        return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('assignedTo', '==', profile.user_id));
+    }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
+    const { data: assignedBuyers } = useCollection<Buyer>(assignedBuyersQuery);
+    
     const followUpsQuery = useMemoFirebase(() => (canFetch && profile.role !== 'Video Recorder') ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id, profile.role]);
-    const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+    const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
     
     const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
-    const { data: appointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+    const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
     const teamMembersQuery = useMemoFirebase(() => canFetch && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [canFetch, firestore, profile.agency_id, profile.role]);
     const { data: teamMembers, isLoading: isTeamMembersLoading } = useCollection<User>(teamMembersQuery);
 
-    const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading || isTeamMembersLoading;
+    // Agent specific data aggregations
+    const agentAllProperties = useMemo(() => isAgent ? [...(properties || []), ...(assignedProperties || [])] : [], [isAgent, properties, assignedProperties]);
+    const agentAllBuyers = useMemo(() => isAgent ? [...(buyers || []), ...(assignedBuyers || [])] : [], [isAgent, buyers, assignedBuyers]);
+    const agentAppointments = useMemo(() => isAgent ? (allAppointments || []).filter(a => a.agentName === profile.name) : [], [isAgent, allAppointments, profile.name]);
+    
+    // Admin uses all data, Agent uses their aggregated data
+    const finalProperties = isAgent ? agentAllProperties : properties;
+    const finalBuyers = isAgent ? agentAllBuyers : buyers;
+    const finalAppointments = isAgent ? agentAppointments : allAppointments;
+
+    const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading || (isAgent ? false : isTeamMembersLoading);
 
     const filterLast30Days = (item: { created_at?: string; sale_date?: string; rent_out_date?: string, invitedAt?: any; date?: string; status?: string }) => {
         const dateString = item.rent_out_date || item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
@@ -195,7 +217,7 @@ export default function OverviewPage() {
 
     const handleUpdateStatus = async (appointmentId: string, status: AppointmentStatus, notes?: string) => {
       if (!profile.agency_id) return;
-      const appointment = appointments?.find(a => a.id === appointmentId);
+      const appointment = allAppointments?.find(a => a.id === appointmentId);
       if (!appointment) return;
 
       const docRef = doc(firestore, 'agencies', profile.agency_id, 'appointments', appointmentId);
@@ -249,30 +271,30 @@ export default function OverviewPage() {
 
     // --- Memoized Stats ---
     const stats = useMemo(() => {
-        const totalProperties = properties?.filter(p => !p.is_deleted && !p.is_for_rent).length || 0;
-        const totalSaleBuyers = buyers?.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).length || 0;
-        const totalRentBuyers = buyers?.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length || 0;
+        const totalProperties = finalProperties?.filter(p => !p.is_deleted && !p.is_for_rent).length || 0;
+        const totalSaleBuyers = finalBuyers?.filter(b => !b.is_deleted && (!b.listing_type || b.listing_type === 'For Sale')).length || 0;
+        const totalRentBuyers = finalBuyers?.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length || 0;
         
-        const soldInLast30Days = properties?.filter(p => p.status === 'Sold' && p.sale_date && filterLast30Days(p)) || [];
+        const soldInLast30Days = finalProperties?.filter(p => p.status === 'Sold' && p.sale_date && filterLast30Days(p)) || [];
         const revenue30d = soldInLast30Days.reduce((sum, prop) => sum + (prop.total_commission || 0), 0);
         
-        const rentOutInLast30Days = properties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
+        const rentOutInLast30Days = finalProperties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
         const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + (prop.rent_total_commission || 0), 0);
 
 
-        const propertiesForRent = properties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
+        const propertiesForRent = finalProperties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
 
-        const interestedBuyers = buyers?.filter(b => b.status === 'Interested' && !b.is_deleted).length || 0;
-        const followUpLeads = followUps?.length || 0;
+        const interestedBuyers = finalBuyers?.filter(b => b.status === 'Interested' && !b.is_deleted).length || 0;
+        const followUpLeads = followUpsData?.length || 0;
 
-        const appointments30d = appointments?.filter(filterLast30Days).length || 0;
-        const completedAppointments30d = appointments?.filter(a => a.status === 'Completed' && filterLast30Days(a)).length || 0;
-        const cancelledAppointments30d = appointments?.filter(a => a.status === 'Cancelled' && filterLast30Days(a)).length || 0;
-        const upcomingAppointments = appointments?.filter(a => a.status === 'Scheduled' && new Date(a.date) >= now).length || 0;
+        const appointments30d = finalAppointments?.filter(filterLast30Days).length || 0;
+        const completedAppointments30d = finalAppointments?.filter(a => a.status === 'Completed' && filterLast30Days(a)).length || 0;
+        const cancelledAppointments30d = finalAppointments?.filter(a => a.status === 'Cancelled' && filterLast30Days(a)).length || 0;
+        const upcomingAppointments = finalAppointments?.filter(a => a.status === 'Scheduled' && new Date(a.date) >= now).length || 0;
         
-        const newProperties30d = properties?.filter(p => !p.is_for_rent && filterLast30Days(p)).length || 0;
-        const newBuyers30d = buyers?.filter(b => b.listing_type === 'For Sale' && filterLast30Days(b)).length || 0;
-        const newRentBuyers30d = buyers?.filter(b => b.listing_type === 'For Rent' && filterLast30Days(b)).length || 0;
+        const newProperties30d = finalProperties?.filter(p => !p.is_for_rent && filterLast30Days(p)).length || 0;
+        const newBuyers30d = finalBuyers?.filter(b => b.listing_type === 'For Sale' && filterLast30Days(b)).length || 0;
+        const newRentBuyers30d = finalBuyers?.filter(b => b.listing_type === 'For Rent' && filterLast30Days(b)).length || 0;
 
 
         return {
@@ -293,7 +315,7 @@ export default function OverviewPage() {
             newBuyers30d,
             newRentBuyers30d
         };
-    }, [properties, buyers, followUps, appointments, teamMembers, last30DaysStart, now]);
+    }, [finalProperties, finalBuyers, followUpsData, finalAppointments, last30DaysStart, now]);
 
     const statCardsData: StatCardProps[] = [
         {
@@ -362,7 +384,7 @@ export default function OverviewPage() {
         {
             title: "Interested Buyers",
             value: stats.interestedBuyers,
-            change: `+${buyers?.filter(b => b.status === 'Interested' && filterLast30Days(b)).length || 0} new leads this month`,
+            change: `+${finalBuyers?.filter(b => b.status === 'Interested' && filterLast30Days(b)).length || 0} new leads this month`,
             icon: <Star className="h-4 w-4" />,
             color: "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300",
             href: "/buyers?status=Interested",
@@ -476,7 +498,7 @@ export default function OverviewPage() {
             </div>
             
             <UpcomingEvents 
-                appointments={appointments || []} 
+                appointments={finalAppointments || []} 
                 isLoading={isAppointmentsLoading}
                 onAddAppointment={handleAddAppointment}
                 onAddEvent={handleAddEvent}
@@ -530,7 +552,7 @@ export default function OverviewPage() {
              <AllEventsDialog
                 isOpen={isAllEventsOpen}
                 setIsOpen={setIsAllEventsOpen}
-                appointments={appointments || []}
+                appointments={allAppointments || []}
             />
         </div>
     );
