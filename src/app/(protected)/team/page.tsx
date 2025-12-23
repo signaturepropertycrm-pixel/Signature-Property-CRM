@@ -27,6 +27,7 @@ import { Progress } from '@/components/ui/progress';
 const roleConfig: Record<UserRole, { icon: React.ReactNode, color: string }> = {
     Admin: { icon: <Shield className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
     Agent: { icon: <User className="h-4 w-4" />, color: 'bg-green-500/10 text-green-500' },
+    'Video Recorder': { icon: <Camera className="h-4 w-4" />, color: 'bg-orange-500/10 text-orange-500' },
 };
 
 const planLimits = {
@@ -86,9 +87,9 @@ export default function TeamPage() {
 
     const sortedTeamMembers = useMemo(() => {
         if (!teamMembers) return [];
-        const roleOrder: Record<string, number> = { Admin: 1, Agent: 2 };
+        const roleOrder: Record<string, number> = { Admin: 1, Agent: 2, 'Video Recorder': 3 };
         return [...teamMembers].sort((a, b) => {
-            return (roleOrder[a.role] || 3) - (roleOrder[b.role] || 3);
+            return (roleOrder[a.role] || 4) - (roleOrder[b.role] || 4);
         });
     }, [teamMembers]);
 
@@ -277,6 +278,7 @@ export default function TeamPage() {
                     isOpen={isDetailsOpen}
                     setIsOpen={setIsDetailsOpen}
                     member={selectedMember}
+                    properties={properties || []}
                 />
             )}
         </>
