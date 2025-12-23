@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home, LayoutDashboard, GanttChartSquare, ClipboardList, PhoneCall, Workflow, Sparkles, AlertTriangle, X } from 'lucide-react';
+import { ArrowRight, Check, Building, Users, LineChart, Star, Moon, Sun, Home, LayoutDashboard, GanttChartSquare, ClipboardList, PhoneCall, Workflow, Sparkles, AlertTriangle, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import React, { useState, useEffect, useRef } from 'react';
@@ -15,6 +15,8 @@ import { InfiniteScroller } from '@/components/infinite-scroller';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import DotGrid from '@/components/dot-grid';
 import { motion, useAnimation, useInView } from "framer-motion"
+import { useUser } from '@/firebase/auth/use-user';
+
 
 const plans = [
     {
@@ -147,6 +149,7 @@ const FeatureCard = ({ feature, index }: { feature: (typeof coreFeatures)[0], in
 export default function LandingPage() {
   const { setTheme, theme } = useTheme();
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const { user, isUserLoading } = useUser();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -178,14 +181,22 @@ export default function LandingPage() {
                         <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                         <span className="sr-only">Toggle theme</span>
                     </Button>
-                    <>
-                        <Button variant="ghost" asChild>
-                            <Link href="/login">Login</Link>
+                    {isUserLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : user ? (
+                        <Button asChild>
+                            <Link href="/overview">Dashboard</Link>
                         </Button>
-                        <Button asChild className="glowing-btn">
-                            <Link href="/signup">Get Started</Link>
-                        </Button>
-                    </>
+                    ) : (
+                        <>
+                            <Button variant="ghost" asChild>
+                                <Link href="/login">Login</Link>
+                            </Button>
+                            <Button asChild className="glowing-btn">
+                                <Link href="/signup">Get Started</Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
         </header>
