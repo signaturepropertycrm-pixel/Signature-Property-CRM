@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -58,7 +57,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName, PropertyStatus, User } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName, PropertyStatus, User, Activity } from '@/lib/types';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -88,7 +87,6 @@ import { useCurrency } from '@/context/currency-context';
 import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { cn, formatPhoneNumber } from '@/lib/utils';
@@ -101,6 +99,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 
 const ITEMS_PER_PAGE = 50;
 const AGENT_LEAD_LIMIT = 100;
@@ -168,10 +167,10 @@ export default function PropertiesPage() {
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
   );
-  const { data: allProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
+  const { data: allProperties, isLoading: isAgencyLoading } = useGetCollection<Property>(agencyPropertiesQuery);
   
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-  const { data: teamMembers } = useCollection<User>(teamMembersQuery);
+  const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
   
   const [listingType, setListingType] = useState<ListingType>('For Sale');
   const [agentViewTab, setAgentViewTab] = useState<'myLeads' | 'assignedLeads'>('myLeads');
@@ -269,20 +268,33 @@ export default function PropertiesPage() {
     if (!profile.agency_id) return;
     
     const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
-    
     const member = activeTeamMembers.find(m => m.id === userId);
     let updates: Partial<Property> = { assignedTo: userId };
 
-    // If assigning to a video recorder, ensure `is_recorded` is set to false
-    // so it appears in their "Pending Recordings" queue.
     if (member && member.role === 'Video Recorder') {
       updates.is_recorded = false;
-      updates.editing_status = 'In Editing'; // Reset editing status as well
+      updates.editing_status = 'In Editing'; 
     }
 
     await updateDoc(docRef, updates);
-
+    
     const memberName = member?.name;
+
+    // Log the activity
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const newActivity: Omit<Activity, 'id'> = {
+      userName: profile.name,
+      action: userId ? `assigned property to ${memberName}` : `unassigned property`,
+      target: property.auto_title,
+      targetType: 'Property',
+      details: null,
+      timestamp: new Date().toISOString(),
+      agency_id: profile.agency_id,
+      assignedToId: userId,
+      assignedToName: memberName
+    };
+    await addDoc(activityLogRef, newActivity);
+
     toast({
         title: userId ? 'Property Assigned' : 'Property Unassigned',
         description: userId 
@@ -1519,3 +1531,6 @@ export default function PropertiesPage() {
     );
   }
 
+
+
+    

@@ -222,6 +222,8 @@ export type Activity = {
     details: { from: string; to: string } | null;
     timestamp: string;
     agency_id: string;
+    assignedToId?: string | null;
+    assignedToName?: string | null;
 };
 
 export type NotificationType = 'invitation' | 'appointment' | 'followup' | 'activity';
@@ -280,3 +282,5 @@ export type UpgradeRequest = {
     reviewedAt?: any;
     reviewerId?: string;
 };
+
+    

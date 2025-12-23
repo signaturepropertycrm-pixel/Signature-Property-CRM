@@ -137,19 +137,38 @@ export const useNotifications = () => {
         // 4. Process Activities
         if (activitiesData) {
             const activityNotifications: ActivityNotification[] = activitiesData
-                .filter(act => 
+                 .filter(act => 
+                    // Status updates for other users
                     (act.action.includes('updated') && act.details && act.userName !== profile.name) ||
-                    (act.targetType === 'Invitation') // Include invitation acceptance/rejection
+                    // Invitation responses for admins
+                    (act.targetType === 'Invitation' && profile.role === 'Admin') ||
+                    // Assignment notifications for the specific user
+                    (act.action.includes('assigned') && act.assignedToId === user?.uid)
                 )
-                .map(act => ({
-                    id: `act_${act.id}`,
-                    type: 'activity',
-                    title: act.targetType === 'Invitation' ? 'Invitation Response' : `Status Update by ${act.userName}`,
-                    description: act.targetType === 'Invitation' ? act.action : `${act.target} status changed from ${act.details.from} to ${act.details.to}`,
-                    timestamp: new Date(act.timestamp),
-                    isRead: readIds.includes(`act_${act.id}`),
-                    activity: act
-                }));
+                .map(act => {
+                    let title = `Activity by ${act.userName}`;
+                    let description = `${act.target} status changed.`;
+                    if (act.action.includes('assigned')) {
+                        title = `New Lead Assigned`;
+                        description = `${act.userName} assigned ${act.target} to you.`;
+                    } else if (act.targetType === 'Invitation') {
+                         title = `Invitation Response`;
+                         description = act.action;
+                    } else if(act.details) {
+                        title = `Status Update by ${act.userName}`;
+                        description = `${act.target} status changed from ${act.details.from} to ${act.details.to}`;
+                    }
+
+                    return {
+                        id: `act_${act.id}`,
+                        type: 'activity',
+                        title: title,
+                        description: description,
+                        timestamp: new Date(act.timestamp),
+                        isRead: readIds.includes(`act_${act.id}`),
+                        activity: act
+                    };
+                });
             allNotifications.push(...activityNotifications);
         }
 
@@ -165,7 +184,7 @@ export const useNotifications = () => {
     }, [
         invitationsData, appointmentsData, followUpsData, activitiesData,
         isInvitesLoading, isAppointmentsLoading, isFollowUpsLoading, isActivitiesLoading,
-        profile.name, refreshKey
+        profile.name, profile.role, user?.uid, refreshKey
     ]);
 
     const markAsRead = (id: string) => {
@@ -266,3 +285,5 @@ export const useNotifications = () => {
 
     return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh };
 };
+
+    
