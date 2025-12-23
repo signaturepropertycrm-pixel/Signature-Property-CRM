@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw } from 'lucide-react';
+import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Property, EditingStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -15,19 +15,21 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
-import { RecordVideoDialog } from '@/components/record-video-dialog';
 import { useSearch } from '../layout';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-is-mobile';
+import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 
 export default function EditingPage() {
     const { toast } = useToast();
     const firestore = useFirestore();
     const { profile } = useProfile();
     const { searchQuery, setSearchQuery } = useSearch();
-    const [propertyForLinks, setPropertyForLinks] = useState<Property | null>(null);
-    const [isLinksDialogOpen, setIsLinksDialogOpen] = useState(false);
+    const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const isMobile = useIsMobile();
 
     const propertiesQuery = useMemoFirebase(() => 
         profile.agency_id && profile.user_id
@@ -83,12 +85,115 @@ export default function EditingPage() {
             toast({ title: "Error", description: "Could not update property.", variant: "destructive" });
         }
     }
+    
+    const handleRowClick = (property: Property) => {
+        setPropertyForDetails(property);
+        setIsDetailsOpen(true);
+    };
 
 
     const statusConfig: Record<EditingStatus, { color: string, icon: React.ElementType }> = {
         'In Editing': { color: 'bg-yellow-500/80 hover:bg-yellow-500', icon: PlayCircle },
         'Complete': { color: 'bg-green-600/80 hover:bg-green-600', icon: CheckCheck },
     };
+    
+    const renderTable = (propertiesToList: Property[]) => (
+        <Card>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Serial No</TableHead>
+                            <TableHead>Property</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {propertiesToList.map(prop => {
+                            const currentStatus = prop.editing_status || 'In Editing';
+                            const Icon = statusConfig[currentStatus].icon;
+                            return (
+                                <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
+                                    <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
+                                    <TableCell className="font-medium">{prop.auto_title}</TableCell>
+                                    <TableCell>
+                                        <Badge className={cn(statusConfig[currentStatus].color)}>
+                                            <Icon className="mr-1 h-3 w-3" />
+                                            {currentStatus}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye className="mr-2" /> View Details</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'In Editing')}>
+                                                    <PlayCircle className="mr-2" /> Mark as In Editing
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'Complete')}>
+                                                     <CheckCheck className="mr-2" /> Mark as Complete
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleRevertToRecording(prop)}>
+                                                    <RotateCcw className="mr-2" /> Re-send to Recording
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+
+    const renderCards = (propertiesToList: Property[]) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {propertiesToList.map(prop => {
+                 const currentStatus = prop.editing_status || 'In Editing';
+                 const Icon = statusConfig[currentStatus].icon;
+                return (
+                    <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleRowClick(prop)}>
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <Badge variant="outline">{prop.serial_no}</Badge>
+                                <Badge className={cn(statusConfig[currentStatus].color)}>
+                                    <Icon className="mr-1 h-3 w-3" />
+                                    {currentStatus}
+                                </Badge>
+                            </div>
+                            <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
+                        </CardHeader>
+                        <CardFooter className="mt-auto flex justify-end">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye className="mr-2" /> View Details</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'In Editing')}>
+                                        <PlayCircle className="mr-2" /> Mark as In Editing
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'Complete')}>
+                                        <CheckCheck className="mr-2" /> Mark as Complete
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleRevertToRecording(prop)}>
+                                        <RotateCcw className="mr-2" /> Re-send to Recording
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </CardFooter>
+                    </Card>
+                )
+            })}
+        </div>
+    );
 
     return (
         <>
@@ -106,63 +211,21 @@ export default function EditingPage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
-            <Card>
-                <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>Serial No</TableHead>
-                        <TableHead>Property</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {isLoading ? (
-                        <TableRow><TableCell colSpan={4} className="text-center h-24">Loading editing queue...</TableCell></TableRow>
-                    ) : filteredProperties.length > 0 ? (
-                        filteredProperties.map(prop => {
-                            const currentStatus = prop.editing_status || 'In Editing';
-                            const Icon = statusConfig[currentStatus].icon;
-                            return (
-                                <TableRow key={prop.id}>
-                                    <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
-                                    <TableCell className="font-medium">{prop.auto_title}</TableCell>
-                                    <TableCell>
-                                        <Badge className={cn(statusConfig[currentStatus].color)}>
-                                            <Icon className="mr-1 h-3 w-3" />
-                                            {currentStatus}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'In Editing')}>
-                                                    <PlayCircle className="mr-2" /> Mark as In Editing
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'Complete')}>
-                                                     <CheckCheck className="mr-2" /> Mark as Complete
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleRevertToRecording(prop)}>
-                                                    <RotateCcw className="mr-2" /> Re-send to Recording
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })
-                    ) : (
-                        <TableRow><TableCell colSpan={4} className="text-center h-24">No recorded videos in the queue.</TableCell></TableRow>
-                    )}
-                    </TableBody>
-                </Table>
-                </CardContent>
-            </Card>
+            {isLoading ? (
+                <div className="text-center py-10 text-muted-foreground">Loading editing queue...</div>
+            ) : filteredProperties.length > 0 ? (
+                isMobile ? renderCards(filteredProperties) : renderTable(filteredProperties)
+            ) : (
+                <div className="text-center py-20 text-muted-foreground bg-card rounded-lg">No recorded videos in the editing queue.</div>
+            )}
         </div>
+        {propertyForDetails && (
+            <PropertyDetailsDialog
+                property={propertyForDetails}
+                isOpen={isDetailsOpen}
+                setIsOpen={setIsDetailsOpen}
+            />
+        )}
         </>
     );
 }
