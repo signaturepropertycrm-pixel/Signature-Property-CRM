@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, MoreHorizontal, PlayCircle, CheckCheck } from 'lucide-react';
+import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Property, EditingStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -69,15 +69,21 @@ export default function EditingPage() {
         }
     };
     
-    const handleUpdatePropertyLinks = async (updatedProperty: Property) => {
+    const handleRevertToRecording = async (property: Property) => {
         if (!profile.agency_id) return;
-        const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', updatedProperty.id);
-        await updateDoc(propRef, { 
-            video_links: updatedProperty.video_links,
-            editing_status: 'Complete' // Ensure status is set
-        });
-        toast({ title: 'Video Links Saved', description: `Links for ${updatedProperty.auto_title} have been updated.` });
-    };
+        try {
+            const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
+            await updateDoc(propRef, { is_recorded: false, editing_status: 'In Editing' });
+            toast({
+                title: 'Sent back to Recording',
+                description: `${property.serial_no} is now in the recording queue.`,
+            });
+        } catch (error) {
+            console.error("Error reverting to recording:", error);
+            toast({ title: "Error", description: "Could not update property.", variant: "destructive" });
+        }
+    }
+
 
     const statusConfig: Record<EditingStatus, { color: string, icon: React.ElementType }> = {
         'In Editing': { color: 'bg-yellow-500/80 hover:bg-yellow-500', icon: PlayCircle },
@@ -140,6 +146,9 @@ export default function EditingPage() {
                                                 <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'Complete')}>
                                                      <CheckCheck className="mr-2" /> Mark as Complete
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleRevertToRecording(prop)}>
+                                                    <RotateCcw className="mr-2" /> Re-send to Recording
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -154,14 +163,6 @@ export default function EditingPage() {
                 </CardContent>
             </Card>
         </div>
-        {propertyForLinks && (
-            <RecordVideoDialog 
-                property={propertyForLinks}
-                isOpen={isLinksDialogOpen}
-                setIsOpen={setIsLinksDialogOpen}
-                onUpdateProperty={handleUpdatePropertyLinks}
-            />
-        )}
         </>
     );
 }

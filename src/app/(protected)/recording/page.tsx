@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Video, Check, MoreHorizontal } from 'lucide-react';
+import { Video, Check, MoreHorizontal, XCircle } from 'lucide-react';
 import type { Property } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
@@ -17,12 +17,14 @@ import { useProfile } from '@/context/profile-context';
 import { useSearch } from '../layout';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { CannotRecordDialog } from '@/components/cannot-record-dialog';
 
 export default function RecordingPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { profile } = useProfile();
   const { searchQuery, setSearchQuery } = useSearch();
+  const [propertyForReason, setPropertyForReason] = useState<Property | null>(null);
 
   const propertiesQuery = useMemoFirebase(() => 
     profile.agency_id && profile.user_id
@@ -66,7 +68,31 @@ export default function RecordingPage() {
     }
   };
 
+  const handleCannotRecord = (property: Property) => {
+      setPropertyForReason(property);
+  }
+
+  const handleSaveReason = async (property: Property, reason: string) => {
+      if (!profile.agency_id) return;
+      try {
+          const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
+          await updateDoc(propRef, {
+              recording_notes: reason,
+              assignedTo: null // Un-assign the property
+          });
+          toast({
+              title: "Reason Submitted",
+              description: `Reason for ${property.serial_no} has been sent to the admin.`,
+          });
+          setPropertyForReason(null);
+      } catch (error) {
+           console.error("Error saving reason:", error);
+           toast({ title: "Error", description: "Could not save reason.", variant: "destructive" });
+      }
+  }
+
   return (
+    <>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2"><Video /> Pending Recordings</h1>
@@ -103,7 +129,11 @@ export default function RecordingPage() {
                     <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
                     <TableCell className="font-medium">{prop.auto_title}</TableCell>
                     <TableCell>{prop.area}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                       <Button variant="destructive" size="sm" onClick={() => handleCannotRecord(prop)}>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Cannot Record
+                        </Button>
                       <Button onClick={() => handleMarkAsRecorded(prop)}>
                         <Check className="mr-2 h-4 w-4" />
                         Mark as Recorded
@@ -119,5 +149,14 @@ export default function RecordingPage() {
         </CardContent>
       </Card>
     </div>
+    {propertyForReason && (
+        <CannotRecordDialog 
+            isOpen={!!propertyForReason}
+            setIsOpen={() => setPropertyForReason(null)}
+            property={propertyForReason}
+            onSave={handleSaveReason}
+        />
+    )}
+    </>
   );
 }

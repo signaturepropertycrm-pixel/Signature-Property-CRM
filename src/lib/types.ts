@@ -1,3 +1,4 @@
+
 'use client';
 
 export type UserRole = 'Admin' | 'Agent' | 'Video Recorder';
@@ -69,6 +70,7 @@ export type Property = {
   status: PropertyStatus;
   is_recorded: boolean;
   editing_status?: EditingStatus;
+  recording_notes?: string; // New field for video recording feedback
   created_at: string;
   created_by: string; // user id
   agency_id: string;
