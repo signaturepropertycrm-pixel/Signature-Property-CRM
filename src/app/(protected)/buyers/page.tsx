@@ -112,7 +112,9 @@ export default function BuyersPage() {
     const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
     const { data: allProperties } = useCollection<Property>(agencyPropertiesQuery);
 
-    const activeAgents = useMemo(() => teamMembers?.filter(m => m.status === 'Active') || [], [teamMembers]);
+    const assignableAgents = useMemo(() => {
+        return teamMembers?.filter(m => m.status === 'Active' && (m.role === 'Admin' || m.role === 'Agent')) || [];
+    }, [teamMembers]);
     
     const { totalSaleBuyers, totalRentBuyers } = useMemo(() => {
         if (!allBuyers) return { totalSaleBuyers: 0, totalRentBuyers: 0 };
@@ -272,7 +274,7 @@ export default function BuyersPage() {
         const docRef = doc(firestore, 'agencies', profile.agency_id, 'buyers', buyer.id);
         await setDoc(docRef, { assignedTo: newAssignedTo }, { merge: true });
         
-        const agentName = activeAgents.find(a => a.id === newAssignedTo)?.name;
+        const agentName = assignableAgents.find(a => a.id === newAssignedTo)?.name;
     
         toast({
           title: newAssignedTo ? 'Buyer Assigned' : 'Buyer Unassigned',
@@ -800,9 +802,9 @@ export default function BuyersPage() {
                                                     <DropdownMenuSubContent>
                                                         {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                         <DropdownMenuSeparator />
-                                                        {activeAgents.map((agent) => (
+                                                        {assignableAgents.map((agent) => (
                                                             <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
-                                                            {agent.name}
+                                                            {agent.name} ({agent.role})
                                                             </DropdownMenuItem>
                                                         ))}
                                                     </DropdownMenuSubContent>
@@ -880,7 +882,7 @@ export default function BuyersPage() {
                                 <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Phone</p><p className="font-medium">{buyer.phone}</p></div></div>
                             </CardContent>
                             <CardFooter className="flex justify-end">
-                                <Sheet>
+                                 <Sheet>
                                     <SheetTrigger asChild>
                                         <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => { e.stopPropagation(); }}>
                                             <MoreHorizontal className="h-4 w-4" />
@@ -899,14 +901,14 @@ export default function BuyersPage() {
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
                                              <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" className="justify-start" onClick={(e) => e.stopPropagation()}><UserPlus />Assign Agent</Button>
+                                                    <Button variant="outline" className="justify-start w-full" onClick={(e) => e.stopPropagation()}><UserPlus />Assign Agent</Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
                                                     {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                     <DropdownMenuSeparator />
-                                                    {activeAgents.map((agent) => (
+                                                    {assignableAgents.map((agent) => (
                                                         <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
-                                                        {agent.name}
+                                                        {agent.name} ({agent.role})
                                                         </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuContent>
@@ -1284,3 +1286,4 @@ export default function BuyersPage() {
 
 
     
+
