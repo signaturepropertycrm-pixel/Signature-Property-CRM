@@ -2,7 +2,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -30,14 +30,16 @@ import { AllEventsDialog } from '@/components/all-events-dialog';
 interface StatCardProps {
     title: string;
     value: number | string;
-    change: string;
+    change?: string;
     icon: React.ReactNode;
     color: string;
-    href: string;
+    href?: string;
     isLoading: boolean;
 }
 
 const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCardProps) => {
+    const CardContentWrapper = href ? Link : 'div';
+
     if (isLoading) {
         return (
             <Card>
@@ -47,15 +49,15 @@ const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCa
                 </CardHeader>
                 <CardContent>
                     <Skeleton className="h-8 w-12" />
-                    <Skeleton className="h-3 w-20 mt-1" />
+                    {change && <Skeleton className="h-3 w-20 mt-1" />}
                 </CardContent>
             </Card>
         );
     }
 
     return (
-        <Link href={href}>
-            <Card className="hover:shadow-lg hover:-translate-y-1 transition-all">
+        <CardContentWrapper href={href || ''} className={href ? "block hover:shadow-lg hover:-translate-y-1 transition-all rounded-lg" : "block"}>
+            <Card className={href ? "h-full" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{title}</CardTitle>
                     <div className={cn("flex items-center justify-center rounded-full h-8 w-8", color)}>
@@ -64,14 +66,14 @@ const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCa
                 </CardHeader>
                 <CardContent>
                     <div className="text-3xl font-bold">{value}</div>
-                     <p className={cn(
+                     {change && <p className={cn(
                         "text-xs text-muted-foreground",
                         change.startsWith('+') && "text-green-600",
                         change.startsWith('-') && "text-red-600"
-                    )}>{change}</p>
+                    )}>{change}</p>}
                 </CardContent>
             </Card>
-        </Link>
+        </CardContentWrapper>
     );
 };
 
@@ -105,6 +107,10 @@ export default function OverviewPage() {
     // --- Data Fetching ---
     const propertiesQuery = useMemoFirebase(() => {
         if (!canFetch) return null;
+        // Video recorder only sees properties assigned to them
+        if (profile.role === 'Video Recorder') {
+             return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
+        }
         if (profile.role === 'Agent') {
             return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('created_by', '==', profile.user_id));
         }
@@ -113,7 +119,7 @@ export default function OverviewPage() {
     const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
     
     const buyersQuery = useMemoFirebase(() => {
-        if (!canFetch) return null;
+        if (!canFetch || profile.role === 'Video Recorder') return null;
         if (profile.role === 'Agent') {
             return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('created_by', '==', profile.user_id));
         }
@@ -121,7 +127,7 @@ export default function OverviewPage() {
     }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id]);
     const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
     
-    const followUpsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id]);
+    const followUpsQuery = useMemoFirebase(() => (canFetch && profile.role !== 'Video Recorder') ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id, profile.role]);
     const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
     
     const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
@@ -399,6 +405,50 @@ export default function OverviewPage() {
             isLoading
         },
     ];
+
+    if (profile.role === 'Video Recorder') {
+        const assignedProperties = properties || [];
+        const recordedCount = assignedProperties.filter(p => p.is_recorded).length;
+        const pendingCount = assignedProperties.length - recordedCount;
+
+        const videoRecorderStats: StatCardProps[] = [
+             {
+                title: "Total Assigned Properties",
+                value: assignedProperties.length,
+                icon: <Building2 className="h-4 w-4" />,
+                color: "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300",
+                isLoading,
+                href: "/properties",
+            },
+            {
+                title: "Videos to Record",
+                value: pendingCount,
+                icon: <VideoOff className="h-4 w-4" />,
+                color: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300",
+                isLoading,
+                href: "/properties",
+            },
+            {
+                title: "Recorded Videos",
+                value: recordedCount,
+                icon: <Video className="h-4 w-4" />,
+                color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
+                isLoading,
+                href: "/properties?status=Recorded",
+            }
+        ];
+        return (
+             <div className="space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><Video/> Video Recorder Dashboard</h1>
+                    <p className="text-muted-foreground">Your assigned video recording tasks.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {videoRecorderStats.map(card => <StatCard key={card.title} {...card} />)}
+                </div>
+            </div>
+        )
+    }
     
     return (
         <div className="space-y-8">

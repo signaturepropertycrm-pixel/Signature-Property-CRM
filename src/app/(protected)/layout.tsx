@@ -89,11 +89,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Define restricted paths for each role
   const agentForbiddenPaths = ['/team', '/upgrade'];
+  const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support'];
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
 
   if (profile.role === 'Agent' && agentForbiddenPaths.some(path => pathname.startsWith(path))) {
+      isAllowed = false;
+  }
+  
+  if (profile.role === 'Video Recorder' && recorderForbiddenPaths.some(path => pathname.startsWith(path))) {
       isAllowed = false;
   }
 

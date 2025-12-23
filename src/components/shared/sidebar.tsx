@@ -38,6 +38,7 @@ import {
   ShieldCheck,
   PieChart,
   FileArchive,
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -55,12 +56,12 @@ import { useUI } from '@/app/(protected)/layout';
 import { motion } from 'framer-motion';
 
 const mainMenuItems = [
-  { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'] },
+  { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
   { 
     href: '/properties', 
     label: 'Properties', 
     icon: <Building2 />, 
-    roles: ['Admin', 'Agent'],
+    roles: ['Admin', 'Agent', 'Video Recorder'],
     subItems: [
         { href: '/properties?status=All (Sale)', label: 'All (Sale)' },
         { href: '/properties?status=Available (Sale)', label: 'Available (Sale)' },
@@ -133,10 +134,10 @@ export function AppSidebar() {
 
   const allMobileNavItems = [
      { id: 'team', href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
-     { id: 'overview', href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent'], isCenter: true },
+     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent', 'Video Recorder'] },
+     { id: 'overview', href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'], isCenter: true },
      { id: 'buyers', href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
-     { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent'], isSheet: true },
+     { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent', 'Video Recorder'], isSheet: true },
   ];
   
   // Filter items based on role, but use a placeholder for layout stability
@@ -159,6 +160,10 @@ export function AppSidebar() {
     // Role check
     if (!item.roles.includes(profile.role)) {
       return null;
+    }
+    
+    if (profile.role === 'Video Recorder' && !['/overview', '/properties'].includes(item.href)) {
+        return null;
     }
 
     const isActive = !item.subItems && pathname === item.href;
