@@ -1111,74 +1111,62 @@ export default function PropertiesPage() {
                 <div className="flex items-center gap-2"><Wallet className="h-4 w-4 text-muted-foreground" /><div><p className="text-muted-foreground">Demand</p><p className="font-medium">{formatDemand(prop.demand_amount, prop.demand_unit)}</p></div></div>
               </CardContent>
               <CardFooter className="flex justify-end">
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4" onClick={(e) => { e.stopPropagation(); }}>
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </SheetTrigger>
-                        <DropdownMenuContent>
-                            <SheetContent side="bottom" className="w-full">
-                                <SheetHeader className="text-left mb-4">
-                                    <SheetTitle>Actions for {prop.serial_no}</SheetTitle>
-                                </SheetHeader>
-                                <div className="flex flex-col gap-2">
-                                    <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
-                                    <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
-                                    <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
-                                    <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger asChild>
-                                          <Button variant="outline" className="justify-start w-full"><UserPlus /> Assign to</Button>
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuPortal>
-                                          <DropdownMenuSubContent>
-                                            {prop.assignedTo && <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)}>Unassign</DropdownMenuItem>}
-                                            <DropdownMenuSeparator />
-                                            {activeTeamMembers.map((member) => (
-                                              <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
-                                                {member.name} ({member.role})
-                                              </DropdownMenuItem>
-                                            ))}
-                                          </DropdownMenuSubContent>
-                                        </DropdownMenuPortal>
-                                      </DropdownMenuSub>
-                                    {prop.is_for_rent && prop.status === 'Available' && (
-                                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
-                                    )}
-                                    {prop.is_for_rent && prop.status === 'Rent Out' && (
-                                       <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
-                                    )}
-                                    {prop.status === 'Available' && !prop.is_for_rent && (
-                                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
-                                    )}
-                                    {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
-                                        <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
-                                    )}
-                                    {(profile.role === 'Admin') && (
-                                      <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
-                                    )}
-                                    
-                                    <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
+                  <Sheet>
+                      <SheetTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full -mr-4 -mb-4">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                          </Button>
+                      </SheetTrigger>
+                      <SheetContent side="bottom" className="w-full">
+                          <SheetHeader className="text-left mb-4">
+                              <SheetTitle>Actions for {prop.serial_no}</SheetTitle>
+                          </SheetHeader>
+                          <div className="flex flex-col gap-2">
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
+                              <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" className="justify-start w-full"><UserPlus /> Assign to</Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent side="top">
+                                  <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)} disabled={!prop.assignedTo}>Unassign</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  {activeTeamMembers.map((member) => (
+                                    <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                                      {member.name} ({member.role})
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              {prop.is_for_rent && prop.status === 'Available' && (
+                                  <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
+                              )}
+                              {prop.is_for_rent && prop.status === 'Rent Out' && (
+                                 <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
+                              )}
+                              {prop.status === 'Available' && !prop.is_for_rent && (
+                                  <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
+                              )}
+                              {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
+                                  <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
+                              )}
+                              {(profile.role === 'Admin') && (
+                                <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
+                              )}
+                              
+                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
 
-                                    {(profile.role !== 'Agent') && (
-                                      <>
-                                      <Separator />
-                                      <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
-                                      </>
-                                    )}
-                                </div>
-                            </SheetContent>
-                        </DropdownMenuContent>
-                    </Sheet>
-                 </DropdownMenu>
+                              {(profile.role !== 'Agent') && (
+                                <>
+                                <Separator />
+                                <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
+                                </>
+                              )}
+                          </div>
+                      </SheetContent>
+                  </Sheet>
               </CardFooter>
             </Card>
           </motion.div>
