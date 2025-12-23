@@ -59,14 +59,10 @@ export default function EditingPage() {
             const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
             await updateDoc(propRef, { editing_status: status });
             
-            if (status === 'Complete') {
-                setPropertyForLinks(property);
-                setIsLinksDialogOpen(true);
-            } else {
-                 toast({
-                    title: `Status set to "${status}"`,
-                });
-            }
+            toast({
+                title: `Status set to "${status}"`,
+            });
+            
         } catch (error) {
             console.error("Error updating editing status:", error);
             toast({ title: "Error", description: "Could not update status.", variant: "destructive" });
@@ -142,7 +138,7 @@ export default function EditingPage() {
                                                     <PlayCircle className="mr-2" /> Mark as In Editing
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'Complete')}>
-                                                     <CheckCheck className="mr-2" /> Mark as Complete & Add Links
+                                                     <CheckCheck className="mr-2" /> Mark as Complete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
