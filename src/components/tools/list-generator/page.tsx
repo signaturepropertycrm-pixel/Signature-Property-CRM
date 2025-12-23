@@ -1,0 +1,39 @@
+'use client';
+
+import { ListGeneratorTool } from '@/components/list-generator-tool';
+import { useFirestore } from '@/firebase/provider';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { collection } from 'firebase/firestore';
+import { useProfile } from '@/context/profile-context';
+import { useMemoFirebase } from '@/firebase/hooks';
+import type { Property } from '@/lib/types';
+import { useMemo } from 'react';
+
+export default function ListGeneratorPage() {
+  const { profile } = useProfile();
+  const firestore = useFirestore();
+
+  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
+  
+  const { data: agencyProperties, isLoading: isAgencyLoading } = useGetCollection<Property>(agencyPropertiesQuery);
+  const { data: agentProperties, isLoading: isAgentLoading } = useGetCollection<Property>(agentPropertiesQuery);
+
+  const allProperties = useMemo(() => {
+      const combined = [...(agencyProperties || []), ...(agentProperties || [])];
+      const unique = Array.from(new Map(combined.map(p => [p.id, p])).values());
+      return unique;
+  }, [agencyProperties, agentProperties]);
+
+  const isLoading = isAgencyLoading || isAgentLoading;
+
+  return (
+    <div className="space-y-8">
+      {isLoading ? (
+        <div>Loading properties...</div>
+      ) : (
+        <ListGeneratorTool allProperties={allProperties} />
+      )}
+    </div>
+  );
+}

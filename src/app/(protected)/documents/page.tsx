@@ -10,7 +10,7 @@ import { Loader2, Upload, FileText, Download, Trash2, Search, Link as LinkIcon, 
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useStorage } from '@/firebase/provider';
 import { useProfile } from '@/context/profile-context';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, doc, updateDoc, arrayUnion, arrayRemove, writeBatch } from 'firebase/firestore';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Property, UploadedDocument } from '@/lib/types';
@@ -39,7 +39,7 @@ export default function DocumentsPage() {
     const { profile } = useProfile();
 
     const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [firestore, profile.agency_id]);
-    const { data: properties, isLoading: isLoadingProperties } = useCollection<Property>(propertiesQuery);
+    const { data: properties, isLoading: isLoadingProperties } = useGetCollection<Property>(propertiesQuery);
     
     const allDocuments = useMemo(() => {
         if (!properties) return [];
@@ -311,4 +311,3 @@ export default function DocumentsPage() {
         </div>
     );
 }
-

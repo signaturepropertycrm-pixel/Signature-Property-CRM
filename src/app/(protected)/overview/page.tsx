@@ -6,7 +6,7 @@ import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, Ar
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, query, where, Timestamp, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity, EditingStatus } from '@/lib/types';
@@ -116,13 +116,13 @@ export default function OverviewPage() {
         }
         return collection(firestore, 'agencies', profile.agency_id, 'properties');
     }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id, isAgent]);
-    const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+    const { data: properties, isLoading: isPropertiesLoading } = useGetCollection<Property>(propertiesQuery);
     
     const assignedPropertiesQuery = useMemoFirebase(() => {
         if (!canFetch || !isAgent) return null;
         return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
     }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-    const { data: assignedProperties } = useCollection<Property>(assignedPropertiesQuery);
+    const { data: assignedProperties } = useGetCollection<Property>(assignedPropertiesQuery);
 
     const buyersQuery = useMemoFirebase(() => {
         if (!canFetch || profile.role === 'Video Recorder') return null;
@@ -131,22 +131,22 @@ export default function OverviewPage() {
         }
         return collection(firestore, 'agencies', profile.agency_id, 'buyers');
     }, [canFetch, firestore, profile.agency_id, profile.role, profile.user_id, isAgent]);
-    const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+    const { data: buyers, isLoading: isBuyersLoading } = useGetCollection<Buyer>(buyersQuery);
     
     const assignedBuyersQuery = useMemoFirebase(() => {
         if (!canFetch || !isAgent) return null;
         return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('assignedTo', '==', profile.user_id));
     }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-    const { data: assignedBuyers } = useCollection<Buyer>(assignedBuyersQuery);
+    const { data: assignedBuyers } = useGetCollection<Buyer>(assignedBuyersQuery);
     
     const followUpsQuery = useMemoFirebase(() => (canFetch && profile.role !== 'Video Recorder') ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [canFetch, firestore, profile.agency_id, profile.role]);
-    const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+    const { data: followUpsData, isLoading: isFollowUpsLoading } = useGetCollection<FollowUp>(followUpsQuery);
     
     const appointmentsQuery = useMemoFirebase(() => canFetch ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [canFetch, firestore, profile.agency_id]);
-    const { data: allAppointments, isLoading: isAppointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+    const { data: allAppointments, isLoading: isAppointmentsLoading } = useGetCollection<Appointment>(appointmentsQuery);
     
     const teamMembersQuery = useMemoFirebase(() => canFetch && profile.role === 'Admin' ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [canFetch, firestore, profile.agency_id, profile.role]);
-    const { data: teamMembers, isLoading: isTeamMembersLoading } = useCollection<User>(teamMembersQuery);
+    const { data: teamMembers, isLoading: isTeamMembersLoading } = useGetCollection<User>(teamMembersQuery);
 
     // Agent specific data aggregations
     const agentAllProperties = useMemo(() => isAgent ? [...(properties || []), ...(assignedProperties || [])] : [], [isAgent, properties, assignedProperties]);

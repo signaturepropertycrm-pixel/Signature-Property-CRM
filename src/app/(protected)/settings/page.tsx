@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -36,7 +35,7 @@ import { Download, Upload, Server, Eye, EyeOff, AlertTriangle, Loader2, Link as 
 import { ResetAccountDialog } from '@/components/reset-account-dialog';
 import { useFirestore, useAuth, useStorage } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, getDocs, writeBatch, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadString, getDownloadURL, uploadBytes } from 'firebase/storage';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -105,19 +104,19 @@ export default function SettingsPage() {
   });
 
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: agencyProperties } = useCollection(agencyPropertiesQuery);
+  const { data: agencyProperties } = useGetCollection(agencyPropertiesQuery);
 
   const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: agencyBuyers } = useCollection(agencyBuyersQuery);
+  const { data: agencyBuyers } = useGetCollection(agencyBuyersQuery);
 
   const agencyAppointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
-  const { data: agencyAppointments } = useCollection(agencyAppointmentsQuery);
+  const { data: agencyAppointments } = useGetCollection(agencyAppointmentsQuery);
 
   const agencyFollowUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  const { data: agencyFollowUps } = useCollection(agencyFollowUpsQuery);
+  const { data: agencyFollowUps } = useGetCollection(agencyFollowUpsQuery);
 
   const agencyTeamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-  const { data: agencyTeamMembers } = useCollection(agencyTeamMembersQuery);
+  const { data: agencyTeamMembers } = useGetCollection(agencyTeamMembersQuery);
 
   useEffect(() => {
     setMounted(true);

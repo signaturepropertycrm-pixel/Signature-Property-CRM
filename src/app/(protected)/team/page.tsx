@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,7 +13,7 @@ import type { User as TeamMember, UserRole, Property, Buyer, PlanName } from '@/
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
@@ -49,13 +48,13 @@ export default function TeamPage() {
     const firestore = useFirestore();
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-    const { data: teamMembers, isLoading: isMembersLoading } = useCollection<TeamMember>(teamMembersQuery);
+    const { data: teamMembers, isLoading: isMembersLoading } = useGetCollection<TeamMember>(teamMembersQuery);
 
     const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-    const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+    const { data: properties, isLoading: isPropertiesLoading } = useGetCollection<Property>(propertiesQuery);
     
     const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+    const { data: buyers, isLoading: isBuyersLoading } = useGetCollection<Buyer>(buyersQuery);
 
     const currentPlan = (profile?.planName as PlanName) || 'Basic';
     const limit = planLimits[currentPlan]?.team || 0;

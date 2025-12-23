@@ -25,7 +25,7 @@ import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
@@ -103,16 +103,16 @@ export default function BuyersPage() {
 
 
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const { data: allBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(agencyBuyersQuery);
+    const { data: allBuyers, isLoading: isAgencyLoading } = useGetCollection<Buyer>(agencyBuyersQuery);
 
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-    const { data: teamMembers } = useCollection<User>(teamMembersQuery);
+    const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
 
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-    const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+    const { data: followUps, isLoading: isFollowUpsLoading } = useGetCollection<FollowUp>(followUpsQuery);
 
     const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-    const { data: allProperties } = useCollection<Property>(agencyPropertiesQuery);
+    const { data: allProperties } = useGetCollection<Property>(agencyPropertiesQuery);
 
     const assignableAgents = useMemo(() => {
         return teamMembers?.filter(m => m.status === 'Active' && (m.role === 'Admin' || m.role === 'Agent')) || [];
@@ -809,7 +809,7 @@ export default function BuyersPage() {
                                             <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                                              <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger><UserPlus />Assign Agent</DropdownMenuSubTrigger>
+                                                <DropdownMenuSubTrigger><UserPlus />Assign to</DropdownMenuSubTrigger>
                                                 <DropdownMenuPortal>
                                                     <DropdownMenuSubContent>
                                                         {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
@@ -1298,3 +1298,4 @@ export default function BuyersPage() {
 
 
     
+

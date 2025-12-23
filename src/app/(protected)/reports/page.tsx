@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Property, Buyer } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -41,13 +41,13 @@ export default function ReportsPage() {
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
   );
-  const { data: properties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
+  const { data: properties, isLoading: isPropertiesLoading } = useGetCollection<Property>(propertiesQuery);
   
   const buyersQuery = useMemoFirebase(
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null),
     [profile.agency_id, firestore]
   );
-  const { data: buyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+  const { data: buyers, isLoading: isBuyersLoading } = useGetCollection<Buyer>(buyersQuery);
 
 
   const handleUpdateProperty = async (updatedProperty: Property) => {

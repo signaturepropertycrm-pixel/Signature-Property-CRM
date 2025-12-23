@@ -12,7 +12,7 @@ import { Trash2, RotateCcw } from 'lucide-react';
 import type { Property, Buyer, ListingType } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, doc, setDoc, deleteDoc, writeBatch, getDocs, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
@@ -25,10 +25,10 @@ export default function TrashPage() {
   const { profile } = useProfile();
 
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: agencyProperties, isLoading: apLoading } = useCollection<Property>(agencyPropertiesQuery);
+  const { data: agencyProperties, isLoading: apLoading } = useGetCollection<Property>(agencyPropertiesQuery);
   
   const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: agencyBuyers, isLoading: abLoading } = useCollection<Buyer>(agencyBuyersQuery);
+  const { data: agencyBuyers, isLoading: abLoading } = useGetCollection<Buyer>(agencyBuyersQuery);
   
   const isLoading = apLoading || abLoading;
 

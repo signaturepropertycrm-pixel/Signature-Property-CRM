@@ -11,7 +11,7 @@ import { BuyerDetailsDialog } from '@/components/buyer-details-dialog';
 import { SetAppointmentDialog } from '@/components/set-appointment-dialog';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { useFirestore } from '@/firebase/provider';
-import { useCollection } from '@/firebase/firestore/use-collection';
+import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
@@ -26,10 +26,10 @@ export default function FollowUpsPage() {
   const { profile } = useProfile();
 
   const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-  const { data: followUpsData, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
+  const { data: followUpsData, isLoading: isFollowUpsLoading } = useGetCollection<FollowUp>(followUpsQuery);
   
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: buyersData, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
+  const { data: buyersData, isLoading: isBuyersLoading } = useGetCollection<Buyer>(buyersQuery);
   
   const [selectedBuyer, setSelectedBuyer] = useState<Buyer | null>(null);
   const [buyerForFollowUp, setBuyerForFollowUp] = useState<Buyer | null>(null);
@@ -249,8 +249,6 @@ export default function FollowUpsPage() {
           buyer={selectedBuyer}
           isOpen={isDetailsOpen}
           setIsOpen={setIsDetailsOpen}
-          activeAgents={[]}
-          onAssign={() => {}}
         />
       )}
       {appointmentDetails && (
@@ -273,5 +271,3 @@ export default function FollowUpsPage() {
     </>
   );
 }
-
-    
