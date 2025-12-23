@@ -42,8 +42,20 @@ export function NotificationActivityDialog({
   
   const handleGoToPage = () => {
     setIsOpen(false);
-    const path = activity.targetType === 'Buyer' ? '/buyers' : '/properties';
+    let path = '/';
+    if (activity.action.includes('assigned')) {
+        path = '/recording';
+    } else {
+        path = activity.targetType === 'Buyer' ? '/buyers' : '/properties';
+    }
     router.push(path);
+  }
+
+  const getButtonText = () => {
+    if (activity.action.includes('assigned')) {
+        return "Go to Recording";
+    }
+    return `Go to ${activity.targetType}s`;
   }
 
   return (
@@ -77,7 +89,7 @@ export function NotificationActivityDialog({
             )}
         </div>
         <DialogFooter className="sm:justify-between">
-            <Button variant="outline" onClick={handleGoToPage}>Go to {activity.targetType}s</Button>
+            <Button variant="outline" onClick={handleGoToPage}>{getButtonText()}</Button>
             <Button onClick={() => setIsOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
