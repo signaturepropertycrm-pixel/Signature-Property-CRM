@@ -401,8 +401,9 @@ export default function BuyersPage() {
         if (!allBuyers) return [];
         let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        if (profile.role === 'Agent' && user?.uid && activeAgencyTab) {
-             baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid && b.agency_id === activeAgencyTab);
+        if (profile.role === 'Agent' && user?.uid) {
+            // Agent sees ONLY their assigned buyers for the active agency
+            baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid && b.agency_id === activeAgencyTab);
         } else if (profile.role === 'Admin') {
             // Admin sees all buyers of their agency
              baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
@@ -829,7 +830,7 @@ export default function BuyersPage() {
                                         {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
                                         <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                         <DropdownMenuSub>
+                                         {profile.role !== 'Agent' && (<DropdownMenuSub>
                                             <DropdownMenuSubTrigger><UserPlus />Assign to</DropdownMenuSubTrigger>
                                             <DropdownMenuPortal>
                                                 <DropdownMenuSubContent>
@@ -842,7 +843,7 @@ export default function BuyersPage() {
                                                     ))}
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
-                                        </DropdownMenuSub>
+                                        </DropdownMenuSub>)}
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
                                             <DropdownMenuPortal>
@@ -931,7 +932,7 @@ export default function BuyersPage() {
                                             {(profile.role !== 'Agent') && (<Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</Button>)}
                                             <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</Button>
                                             <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</Button>
-                                             <DropdownMenu>
+                                             {profile.role !== 'Agent' && (<DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="outline" className="justify-start w-full"><UserPlus />Assign Agent</Button>
                                                 </DropdownMenuTrigger>
@@ -944,7 +945,7 @@ export default function BuyersPage() {
                                                         </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            </DropdownMenu>)}
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="outline" className="justify-start"><Bookmark />Change Status</Button>
@@ -1347,4 +1348,5 @@ export default function BuyersPage() {
     
 
     
+
 
