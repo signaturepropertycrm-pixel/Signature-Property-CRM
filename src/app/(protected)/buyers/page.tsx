@@ -1,3 +1,4 @@
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -251,7 +252,11 @@ export default function BuyersPage() {
     };
 
     const handleDetailsClick = (buyer: Buyer) => {
-        if (isMobile) return;
+        if (isMobile) {
+            setSelectedBuyerForDetails({ ...buyer });
+            setIsDetailsOpen(true);
+            return;
+        }
         setSelectedBuyerForDetails({ ...buyer });
         setIsDetailsOpen(true);
     };
@@ -751,6 +756,32 @@ export default function BuyersPage() {
             setSelectedBuyers([]);
         }
     };
+    
+    const renderPagination = () => (
+      <div className="flex items-center justify-end space-x-2 py-4">
+          <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+          </span>
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+          >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+          </Button>
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+          >
+              Next
+              <ChevronRight className="h-4 w-4" />
+          </Button>
+      </div>
+    );
 
     const renderTable = (buyers: Buyer[]) => {
         if (isAgencyLoading) {
