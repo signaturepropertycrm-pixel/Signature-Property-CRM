@@ -2,19 +2,19 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useGetCollection } from '@/firebase/firestore/use-get-collection';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { collection, query, where, Timestamp, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity, EditingStatus } from '@/lib/types';
+import type { Property, Buyer, Appointment, FollowUp, User, PriceUnit, AppointmentContactType, AppointmentStatus, Activity, EditingStatus, ListingType } from '@/lib/types';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { subDays, isWithinInterval, parseISO, format } from 'date-fns';
 import { useCurrency } from '@/context/currency-context';
-import { formatCurrency, formatUnit } from '@/lib/formatters';
+import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/formatters';
 import { PerformanceChart } from '@/components/performance-chart';
 import { LeadsChart } from '@/components/leads-chart';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,9 @@ import { useToast } from '@/hooks/use-toast';
 import { AddEventDialog, type EventDetails } from '@/components/add-event-dialog';
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { AllEventsDialog } from '@/components/all-events-dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUser } from '@/firebase/auth/use-user';
 
 
 interface StatCardProps {
@@ -76,6 +79,113 @@ const StatCard = ({ title, value, change, icon, color, href, isLoading }: StatCa
         </CardContentWrapper>
     );
 };
+
+const QuickAdd = () => {
+    const [leadType, setLeadType] = useState<"Property" | "Buyer">("Property");
+    const [listingType, setListingType] = useState<ListingType>("For Sale");
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+    const { profile } = useProfile();
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+    const { data: allProperties } = useGetCollection<Property>(propertiesQuery);
+    
+    const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+    const { data: allBuyers } = useGetCollection<Buyer>(buyersQuery);
+
+
+    const handleSave = async () => {
+        if (!phoneNumber) {
+            toast({ title: "Phone number required", variant: "destructive" });
+            return;
+        }
+        setIsLoading(true);
+
+        try {
+            if (leadType === 'Property') {
+                const totalSale = allProperties?.filter(p => p.listing_type === 'For Sale').length || 0;
+                const totalRent = allProperties?.filter(p => p.listing_type === 'For Rent').length || 0;
+                const newProperty: Omit<Property, 'id'> = {
+                    serial_no: listingType === 'For Sale' ? `P-${totalSale + 1}` : `RP-${totalRent + 1}`,
+                    auto_title: `Pending Lead: ${phoneNumber}`,
+                    owner_number: formatPhoneNumberForWhatsApp(phoneNumber),
+                    city: '', area: '', address: '',
+                    property_type: 'House',
+                    size_value: 0, size_unit: 'Marla',
+                    demand_amount: 0, demand_unit: 'Lacs',
+                    status: 'Pending',
+                    created_at: new Date().toISOString(),
+                    created_by: user!.uid,
+                    agency_id: profile.agency_id,
+                    listing_type: listingType,
+                    is_for_rent: listingType === 'For Rent',
+                    is_recorded: false,
+                    country_code: '+92',
+                };
+                await addDoc(collection(firestore, 'agencies', profile.agency_id, 'properties'), newProperty);
+            } else { // Buyer
+                const totalSale = allBuyers?.filter(b => (!b.listing_type || b.listing_type === 'For Sale')).length || 0;
+                const totalRent = allBuyers?.filter(b => b.listing_type === 'For Rent').length || 0;
+                const newBuyer: Omit<Buyer, 'id'> = {
+                    serial_no: listingType === 'For Sale' ? `B-${totalSale + 1}` : `RB-${totalRent + 1}`,
+                    name: `Pending Lead: ${phoneNumber}`,
+                    phone: formatPhoneNumberForWhatsApp(phoneNumber),
+                    country_code: '+92',
+                    status: 'Pending',
+                    listing_type: listingType,
+                    created_at: new Date().toISOString(),
+                    created_by: user!.uid,
+                    agency_id: profile.agency_id,
+                };
+                await addDoc(collection(firestore, 'agencies', profile.agency_id, 'buyers'), newBuyer);
+            }
+            toast({ title: 'Quick Lead Saved!', description: `Details for ${phoneNumber} can be completed later.` });
+            setPhoneNumber('');
+        } catch (error) {
+            console.error("Quick add failed:", error);
+            toast({ title: "Failed to save lead", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Quick Add Lead</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-2">
+                <Select value={leadType} onValueChange={(v) => setLeadType(v as any)}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Property">Property</SelectItem>
+                        <SelectItem value="Buyer">Buyer</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={listingType} onValueChange={(v) => setListingType(v as any)}>
+                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="For Sale">For Sale</SelectItem>
+                        <SelectItem value="For Rent">For Rent</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Input
+                    placeholder="Enter phone number..."
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    type="tel"
+                />
+                 <Button onClick={handleSave} disabled={isLoading} className="w-full sm:w-auto">
+                    {isLoading ? <Loader2 className="animate-spin" /> : "Save Lead"}
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 
 export default function OverviewPage() {
@@ -475,6 +585,8 @@ export default function OverviewPage() {
     
     return (
         <div className="space-y-8">
+            <QuickAdd />
+
             <div>
                 <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><TrendingUp/> Statistics</h1>
                 <p className="text-muted-foreground">A quick overview of your performance and key metrics in the last 30 days.</p>

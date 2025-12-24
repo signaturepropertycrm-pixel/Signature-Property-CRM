@@ -27,7 +27,7 @@ export type User = {
 export type PropertyType = 'House' | 'Flat' | 'Farm House' | 'Penthouse' | 'Plot' | 'Residential Plot' | 'Commercial Plot' | 'Agricultural Land' | 'Industrial Land' | 'Office' | 'Shop' | 'Warehouse' | 'Factory' | 'Building' | 'Commercial Property' | 'Semi Commercial' | 'Residential Property' | 'Old House' | '';
 export type SizeUnit = 'Marla' | 'SqFt' | 'Kanal' | 'Acre' | 'Maraba';
 export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
-export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)';
+export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)' | 'Pending';
 export type ListingType = 'For Sale' | 'For Rent';
 export type EditingStatus = 'In Editing' | 'Complete';
 
@@ -137,7 +137,8 @@ export type BuyerStatus =
   | 'Follow Up'
   | 'Visited Property'
   | 'Deal Closed'
-  | 'Deal Lost';
+  | 'Deal Lost'
+  | 'Pending';
 
 
 export type Buyer = {
@@ -282,5 +283,3 @@ export type UpgradeRequest = {
     reviewedAt?: any;
     reviewerId?: string;
 };
-
-    
