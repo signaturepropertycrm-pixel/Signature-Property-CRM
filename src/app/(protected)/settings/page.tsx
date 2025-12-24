@@ -232,13 +232,15 @@ export default function SettingsPage() {
     try {
         const batch = writeBatch(firestore);
 
-        // Common updates for all roles in their `teamMembers` document
+        // Common updates for all roles
         if (profile.agency_id) {
             const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
             batch.update(teamMemberRef, { name: localProfile.name, phone: fullPhoneNumber });
         }
 
-        // Specific updates based on role
+        const userDocRef = doc(firestore, 'users', user.uid);
+        batch.update(userDocRef, { name: localProfile.name });
+
         if (isUserAdmin && profile.agency_id) {
             const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
             batch.update(agencyDocRef, { 
@@ -246,9 +248,6 @@ export default function SettingsPage() {
                 name: localProfile.name, 
                 phone: fullPhoneNumber 
             });
-             const userDocRef = doc(firestore, 'users', user.uid);
-             batch.update(userDocRef, { name: localProfile.name });
-
         } else if (profile.role === 'Agent') {
             const agentDocRef = doc(firestore, 'agents', user.uid);
             batch.update(agentDocRef, { name: localProfile.name, phone: fullPhoneNumber });
@@ -257,6 +256,7 @@ export default function SettingsPage() {
         await batch.commit();
 
         setProfile({
+            ...profile,
             name: localProfile.name,
             agencyName: localProfile.agencyName,
             phone: fullPhoneNumber
