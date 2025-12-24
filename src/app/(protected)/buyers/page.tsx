@@ -401,7 +401,7 @@ export default function BuyersPage() {
         if (!allBuyers) return [];
         let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        if (profile.role === 'Agent' && user?.uid) {
+        if (profile.role === 'Agent' && user?.uid && activeAgencyTab) {
              baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid && b.agency_id === activeAgencyTab);
         } else if (profile.role === 'Admin') {
             // Admin sees all buyers of their agency
@@ -1347,3 +1347,4 @@ export default function BuyersPage() {
     
 
     
+
