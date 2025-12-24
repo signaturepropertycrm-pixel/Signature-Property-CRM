@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -68,6 +67,7 @@ const mainMenuItems = [
     roles: ['Admin', 'Agent'],
     subItems: [
         { href: '/properties?status=All (Sale)', label: 'All (Sale)' },
+        { href: '/properties?status=Pending', label: 'Pending' },
         { href: '/properties?status=Available (Sale)', label: 'Available (Sale)' },
         { href: '/properties?status=Sold', label: 'Sold' },
         { href: '/properties?status=All (Rent)', label: 'All (Rent)' },

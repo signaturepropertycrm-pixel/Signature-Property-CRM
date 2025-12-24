@@ -132,6 +132,7 @@ interface Filters {
 
 const propertyStatuses = [
     { value: 'All (Sale)', label: 'All (Sale)' },
+    { value: 'Pending', label: 'Pending' },
     { value: 'Available (Sale)', label: 'Available (Sale)' },
     { value: 'Sold', label: 'Sold' },
     { value: 'Sold (External)', label: 'Sold (External)' },
@@ -364,6 +365,9 @@ export default function PropertiesPage() {
     switch (currentStatusFilter) {
         case 'All (Sale)':
             baseProperties = baseProperties.filter(p => !p.is_for_rent);
+            break;
+        case 'Pending':
+            baseProperties = baseProperties.filter(p => p.status === 'Pending');
             break;
         case 'Available (Sale)':
             baseProperties = baseProperties.filter(p => p.status === 'Available' && !p.is_for_rent);
