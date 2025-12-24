@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -11,7 +10,7 @@ import { CurrencyProvider } from '@/context/currency-context';
 import { ProfileProvider, useProfile } from '@/context/profile-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { useUser } from '@/firebase/auth/use-user';
-import { Loader2, MailWarning, Send } from 'lucide-react';
+import { Loader2, MailWarning, Send, AlertTriangle } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { AppLoader } from '@/components/ui/loader';
@@ -88,8 +87,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Define restricted paths for each role
-  const agentForbiddenPaths = ['/team', '/upgrade'];
-  const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support', '/properties'];
+  const agentForbiddenPaths = ['/team', '/upgrade', '/documents', '/analytics', '/reports'];
+  const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support', '/properties', '/documents'];
 
   let isAllowed = true;
   let message = "This page is not accessible with your current role.";
@@ -106,9 +105,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!isAllowed) {
       return (
          <div className="flex h-screen w-full items-center justify-center p-4">
-            <Card className="max-w-md text-center">
+            <Card className="max-w-md text-center border-destructive">
                 <CardHeader>
-                    <CardTitle>Access Denied</CardTitle>
+                    <CardTitle className="flex items-center justify-center gap-2 text-destructive"><AlertTriangle/>Access Denied</CardTitle>
                     <CardDescription>
                         {message}
                     </CardDescription>
@@ -201,3 +200,5 @@ export default function ProtectedLayout({
     </FirebaseClientProvider>
   )
 }
+
+    

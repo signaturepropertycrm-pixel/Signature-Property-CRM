@@ -87,9 +87,9 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin', 'Agent'] },
-  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin', 'Agent'] },
-  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin', 'Agent'] },
+  { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
+  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
+  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
   { 
     href: '/tools', 
     label: 'Tools', 
@@ -103,7 +103,7 @@ const mainMenuItems = [
   },
   { href: '/follow-ups', label: 'Follow Ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
-  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin'] },
   { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
 
@@ -447,3 +447,5 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
+
+    

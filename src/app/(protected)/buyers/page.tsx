@@ -42,7 +42,7 @@ import { Progress } from '@/components/ui/progress';
 
 const ITEMS_PER_PAGE = 50;
 
-const AGENT_LEAD_LIMIT = 100;
+const AGENT_LEAD_LIMIT = Infinity; // Limit removed for agents
 
 const planLimits = {
     Basic: { properties: 500, buyers: 500, team: 3 },
@@ -1042,6 +1042,8 @@ export default function BuyersPage() {
                                     </AlertDialogContent>
                                 </AlertDialog>
                             )}
+                            {profile.role !== 'Agent' && (
+                            <>
                             <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="rounded-full">
@@ -1153,9 +1155,12 @@ export default function BuyersPage() {
                             <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                             <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
                             <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                            </>
+                            )}
                         </div>
                     </div>
                     
+                    {profile.role !== 'Agent' && (
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex justify-between items-center mb-2">
@@ -1165,6 +1170,8 @@ export default function BuyersPage() {
                             <Progress value={progress} />
                         </CardContent>
                     </Card>
+                    )}
+
 
                     {profile.role === 'Agent' && (
                         <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
@@ -1228,6 +1235,7 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
+            {profile.role !== 'Agent' && (
             <div className={cn("fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -1239,6 +1247,7 @@ export default function BuyersPage() {
                     <TooltipContent side="left">Add Buyer</TooltipContent>
                 </Tooltip>
             </div>
+            )}
 
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
@@ -1317,6 +1326,8 @@ export default function BuyersPage() {
     
 
 
+
+    
 
     
 
