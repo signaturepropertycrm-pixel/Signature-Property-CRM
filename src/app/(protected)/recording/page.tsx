@@ -24,10 +24,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 
 
-const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string, label: string, icon: React.FC<any> }> = {
-    'Unpaid': { color: 'bg-orange-500', label: 'Unpaid', icon: Circle },
-    'Paid Online': { color: 'bg-green-500', label: 'Paid Online', icon: CheckCircleIcon },
-    'Pending Cash': { color: 'bg-purple-500', label: 'Pending Cash', icon: Clock },
+const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string; label: string; icon: React.FC<any>, borderColor: string; }> = {
+    'Unpaid': { color: 'bg-orange-500', label: 'Unpaid', icon: Circle, borderColor: 'border-orange-500/50' },
+    'Paid Online': { color: 'bg-green-500', label: 'Paid Online', icon: CheckCircleIcon, borderColor: 'border-green-500/50' },
+    'Pending Cash': { color: 'bg-purple-500', label: 'Pending Cash', icon: Clock, borderColor: 'border-purple-500/50' },
 };
 
 
@@ -129,12 +129,13 @@ export default function RecordingPage() {
                 const paymentStatus = prop.recording_payment_status || 'Unpaid';
                 const statusInfo = paymentStatusConfig[paymentStatus];
                 return (
-                    <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
+                    <TableRow 
+                        key={prop.id} 
+                        onClick={() => handleRowClick(prop)} 
+                        className={cn("cursor-pointer border-l-4", statusInfo.borderColor)}
+                    >
                         <TableCell>
-                            <div className="flex items-center gap-2">
-                                <span className={cn("h-3 w-3 rounded-full", statusInfo.color)} />
-                                <Badge variant="outline">{prop.serial_no}</Badge>
-                            </div>
+                            <Badge variant="outline">{prop.serial_no}</Badge>
                         </TableCell>
                         <TableCell className="font-medium">{prop.auto_title}</TableCell>
                         <TableCell>{prop.area}</TableCell>
@@ -177,11 +178,17 @@ export default function RecordingPage() {
             const paymentStatus = prop.recording_payment_status || 'Unpaid';
             const statusInfo = paymentStatusConfig[paymentStatus];
             return (
-                <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleRowClick(prop)}>
+                <Card 
+                    key={prop.id} 
+                    className={cn(
+                        "flex flex-col hover:shadow-lg transition-shadow cursor-pointer border-l-4",
+                        statusInfo.borderColor
+                    )} 
+                    onClick={() => handleRowClick(prop)}
+                >
                     <CardHeader>
                         <div className="flex justify-between items-start">
                              <div className="flex items-center gap-2">
-                                <span className={cn("h-3 w-3 rounded-full", statusInfo.color)} />
                                 <Badge variant="outline">{prop.serial_no}</Badge>
                             </div>
                              <DropdownMenu>
