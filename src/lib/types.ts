@@ -30,6 +30,7 @@ export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)' | 'Pending';
 export type ListingType = 'For Sale' | 'For Rent';
 export type EditingStatus = 'In Editing' | 'Complete';
+export type RecordingPaymentStatus = 'Unpaid' | 'Paid Online' | 'Paid Cash';
 
 export type UploadedDocument = {
     name: string;
@@ -122,6 +123,11 @@ export type Property = {
   
   // Document Management
   uploaded_documents?: UploadedDocument[];
+  
+  // Recording Payment
+  recording_payment_status?: RecordingPaymentStatus;
+  recording_payment_amount?: number;
+  recording_payment_date?: string;
 };
 
 export type RecommendedProperty = Property & {
