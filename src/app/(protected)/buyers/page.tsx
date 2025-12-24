@@ -25,7 +25,7 @@ import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
 import { useGetCollection } from '@/firebase/firestore/use-get-collection';
-import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc, writeBatch, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,8 +41,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 
 const ITEMS_PER_PAGE = 50;
-
-const AGENT_LEAD_LIMIT = Infinity; // Limit removed for agents
 
 const planLimits = {
     Basic: { properties: 500, buyers: 500, team: 3 },
@@ -96,13 +94,17 @@ export default function BuyersPage() {
     const statusFilterFromURL = searchParams.get('status') as BuyerStatus | 'All' | null;
     const listingTypeFilterFromURL = searchParams.get('type') as ListingType | null;
 
-    const activeTab = listingTypeFilterFromURL || 'For Sale';
     const firestore = useFirestore();
     const importInputRef = useRef<HTMLInputElement>(null);
-
-    const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-    const { data: allBuyers, isLoading: isAgencyLoading } = useGetCollection<Buyer>(agencyBuyersQuery);
-
+    
+    // For Admins, fetch all buyers from their agency.
+    // For Agents, this will be filtered later.
+    const buyersQuery = useMemoFirebase(() => profile.agency_id ? 
+        query(collection(firestore, 'agencies', profile.agency_id, 'buyers'))
+        : null
+    , [profile.agency_id, firestore]);
+    const { data: allBuyers, isLoading: isAgencyLoading } = useGetCollection<Buyer>(buyersQuery);
+    
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
     const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
 
@@ -111,6 +113,17 @@ export default function BuyersPage() {
 
     const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
     const { data: allProperties } = useGetCollection<Property>(agencyPropertiesQuery);
+    
+    const agencyIdFromUrl = searchParams.get('agency') || (profile.role === 'Admin' ? profile.agency_id : profile.agencies?.[0]?.agency_id);
+    const activeTab = listingTypeFilterFromURL || 'For Sale';
+    const [activeAgencyTab, setActiveAgencyTab] = useState(agencyIdFromUrl);
+
+    useEffect(() => {
+        if (!activeAgencyTab && profile.agencies && profile.agencies.length > 0) {
+            setActiveAgencyTab(profile.agencies[0].agency_id);
+        }
+    }, [profile.agencies, activeAgencyTab]);
+
 
     const assignableAgents = useMemo(() => {
         return teamMembers?.filter(m => m.status === 'Active' && (m.role === 'Admin' || m.role === 'Agent')) || [];
@@ -154,10 +167,10 @@ export default function BuyersPage() {
         return allBuyers.filter(b => b.created_by === user.uid && !b.is_deleted).length;
     }, [allBuyers, user]);
 
-    const limit = isAgent ? AGENT_LEAD_LIMIT : agencyLimit;
+    const limit = 0; // Limit is now per-agency for agents, not global
     const currentCount = isAgent ? myLeadsCount : (allBuyers?.filter(b => !b.is_deleted).length || 0);
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
-    const isLimitReached = currentCount >= limit;
+    const isLimitReached = false; // Limit logic needs to be per-agency
 
 
     const buyerFollowUp = useMemo(() => {
@@ -389,7 +402,10 @@ export default function BuyersPage() {
         let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
         if (profile.role === 'Agent' && user?.uid) {
-            baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid);
+             baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid && b.agency_id === activeAgencyTab);
+        } else if (profile.role === 'Admin') {
+            // Admin sees all buyers of their agency
+             baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
         }
         
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
@@ -425,7 +441,7 @@ export default function BuyersPage() {
             const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
             return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
         });
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder, user?.uid]);
+    }, [searchQuery, filters, allBuyers, profile.role, user?.uid, activeTab, activeStatusFilter, sortOrder, activeAgencyTab, profile.agency_id]);
 
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
@@ -438,7 +454,7 @@ export default function BuyersPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedBuyers([]);
-    }, [searchQuery, filters, activeTab, activeStatusFilter]);
+    }, [searchQuery, filters, activeTab, activeStatusFilter, activeAgencyTab]);
 
 
     const handleTabChange = (value: string) => {
@@ -1153,17 +1169,30 @@ export default function BuyersPage() {
                         </div>
                     </div>
                     
-                    {profile.role !== 'Agent' && (
+                    {profile.role === 'Admin' && (
                     <Card>
                         <CardContent className="p-4">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-muted-foreground">{isAgent ? "My Buyer Leads Usage" : "Buyer Leads Usage"}</span>
+                                <span className="text-sm font-medium text-muted-foreground">Buyer Leads Usage</span>
                                 <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
                             </div>
                             <Progress value={progress} />
                         </CardContent>
                     </Card>
                     )}
+                    
+                    {isAgent && profile.agencies && profile.agencies.length > 1 && (
+                        <Tabs value={activeAgencyTab} onValueChange={setActiveAgencyTab}>
+                            <TabsList>
+                                {profile.agencies.map(agency => (
+                                    <TabsTrigger key={agency.agency_id} value={agency.agency_id}>
+                                        {agency.agency_name}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    )}
+
 
                     <div className="flex items-center justify-between gap-4">
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
