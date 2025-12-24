@@ -113,10 +113,10 @@ const planLimits = {
     Premium: { properties: Infinity, buyers: Infinity, team: Infinity },
 };
 
-const paymentStatusConfig: Record<RecordingPaymentStatus, { dotColor: string; label: string }> = {
-    'Unpaid': { dotColor: 'bg-orange-500', label: 'Unpaid Recording' },
-    'Paid Online': { dotColor: 'bg-green-500', label: 'Paid Recording' },
-    'Pending Cash': { dotColor: 'bg-purple-500', label: 'Pending Cash' },
+const paymentStatusConfig: Record<RecordingPaymentStatus, { icon: React.FC<any>; color: string; label: string }> = {
+    'Unpaid': { icon: Circle, color: 'text-orange-500', label: 'Unpaid Recording' },
+    'Paid Online': { icon: CheckCircle, color: 'text-green-500', label: 'Paid Recording' },
+    'Pending Cash': { icon: Clock, color: 'text-purple-500', label: 'Pending Cash' },
 };
 
 
@@ -1065,6 +1065,7 @@ export default function PropertiesPage() {
           {properties.map((prop, index) => {
              const paymentStatus = prop.recording_payment_status;
              const paymentConfig = paymentStatus ? paymentStatusConfig[paymentStatus] : null;
+             const Icon = paymentConfig?.icon;
 
             return (
             <motion.tr 
@@ -1131,10 +1132,10 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex flex-col gap-1 items-start">
                     <div className="flex items-center gap-2">
-                        {paymentConfig && (
+                        {paymentConfig && Icon && (
                             <Tooltip>
                                 <TooltipTrigger>
-                                     <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
+                                     <Icon className={cn("h-4 w-4", paymentConfig.color)}/>
                                 </TooltipTrigger>
                                 <TooltipContent><p>{paymentConfig.label}</p></TooltipContent>
                             </Tooltip>
@@ -1219,6 +1220,7 @@ export default function PropertiesPage() {
         {properties.map((prop, index) => {
             const paymentStatus = prop.recording_payment_status;
             const paymentConfig = paymentStatus ? paymentStatusConfig[paymentStatus] : null;
+            const Icon = paymentConfig?.icon;
 
             return (
           <motion.div
@@ -1262,10 +1264,10 @@ export default function PropertiesPage() {
                       </div>
                       <div className="flex flex-col gap-1 items-end">
                         <div className="flex items-center gap-2">
-                             {paymentConfig && (
+                             {paymentConfig && Icon && (
                                 <Tooltip>
                                     <TooltipTrigger>
-                                        <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
+                                         <Icon className={cn("h-4 w-4", paymentConfig.color)}/>
                                     </TooltipTrigger>
                                     <TooltipContent><p>{paymentConfig.label}</p></TooltipContent>
                                 </Tooltip>
@@ -1714,3 +1716,5 @@ export default function PropertiesPage() {
       </>
     );
   }
+
+    
