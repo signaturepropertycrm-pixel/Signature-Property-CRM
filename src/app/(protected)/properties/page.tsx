@@ -43,6 +43,7 @@ import {
   Link as LinkIcon,
   FileArchive,
   UserPlus,
+  Circle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -57,7 +58,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { AddPropertyDialog } from '@/components/add-property-dialog';
 import { Input } from '@/components/ui/input';
-import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName, PropertyStatus, User, Activity } from '@/lib/types';
+import type { Property, PropertyType, SizeUnit, PriceUnit, AppointmentContactType, Appointment, ListingType, PlanName, PropertyStatus, User, Activity, RecordingPaymentStatus } from '@/lib/types';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { MarkAsSoldDialog } from '@/components/mark-as-sold-dialog';
@@ -109,6 +110,12 @@ const planLimits = {
     Basic: { properties: 500, buyers: 500, team: 3 },
     Standard: { properties: 2500, buyers: 2500, team: 10 },
     Premium: { properties: Infinity, buyers: Infinity, team: Infinity },
+};
+
+const paymentStatusConfig: Record<RecordingPaymentStatus, { dotColor: string; label: string }> = {
+    'Unpaid': { dotColor: 'bg-orange-500', label: 'Unpaid Recording' },
+    'Paid Online': { dotColor: 'bg-green-500', label: 'Paid Recording' },
+    'Pending Cash': { dotColor: 'bg-purple-500', label: 'Pending Cash' },
 };
 
 
@@ -224,6 +231,7 @@ export default function PropertiesPage() {
   const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
+  const [listingType, setListingType] = useState<ListingType>('For Sale');
 
   const isAgent = profile.role === 'Agent';
   const currentPlan = (profile?.planName as PlanName) || 'Basic';
@@ -1053,7 +1061,11 @@ export default function PropertiesPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {properties.map((prop, index) => (
+          {properties.map((prop, index) => {
+             const paymentStatus = prop.recording_payment_status;
+             const paymentConfig = paymentStatus ? paymentStatusConfig[paymentStatus] : null;
+
+            return (
             <motion.tr 
               key={prop.id} 
               className="hover:bg-accent/50 transition-colors cursor-pointer"
@@ -1117,9 +1129,21 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>{formatDemand(prop.demand_amount, prop.demand_unit)}</TableCell>
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex flex-col gap-1 items-start">
-                    <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground'}>
-                    {prop.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                         {paymentConfig && (
+                            <Tooltip>
+                                <TooltipTrigger>
+                                     <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{paymentConfig.label}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
+                        <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground'}>
+                            {prop.status}
+                        </Badge>
+                    </div>
                 </div>
               </TableCell>
               <TableCell className="text-right">
@@ -1179,7 +1203,7 @@ export default function PropertiesPage() {
                 </DropdownMenu>
               </TableCell>
             </motion.tr>
-          ))}
+          )})}
         </TableBody>
       </Table>
     );
@@ -1193,7 +1217,11 @@ export default function PropertiesPage() {
     
     return (
       <div className="space-y-4">
-        {properties.map((prop, index) => (
+        {properties.map((prop, index) => {
+            const paymentStatus = prop.recording_payment_status;
+            const paymentConfig = paymentStatus ? paymentStatusConfig[paymentStatus] : null;
+
+            return (
           <motion.div
             key={prop.id}
             initial={{ opacity: 0, y: 20 }}
@@ -1234,9 +1262,21 @@ export default function PropertiesPage() {
                           </div>
                       </div>
                       <div className="flex flex-col gap-1 items-end">
-                          <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground')}>
-                              {prop.status}
-                          </Badge>
+                        <div className="flex items-center gap-2">
+                             {paymentConfig && (
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{paymentConfig.label}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            )}
+                            <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground')}>
+                                {prop.status}
+                            </Badge>
+                        </div>
                       </div>
                   </div>
               </CardHeader>
@@ -1309,7 +1349,7 @@ export default function PropertiesPage() {
               </CardFooter>
             </Card>
           </motion.div>
-        ))}
+        )})}
       </div>
     );
   };
@@ -1609,7 +1649,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           allProperties={allProperties || []}
           onSave={handleSaveProperty}
-          listingType={isAddPropertyOpen ? (propertyToEdit ? (propertyToEdit.is_for_rent ? 'For Rent' : 'For Sale') : (searchParams.get('status')?.includes('Rent') ? 'For Rent' : 'For Sale')) : 'For Sale'}
+          listingType={listingType}
           limitReached={isLimitReached}
         />
   
@@ -1677,9 +1717,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
-
-    
-
-
