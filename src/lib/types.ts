@@ -30,7 +30,7 @@ export type PriceUnit = 'Thousand' | 'Lacs' | 'Crore';
 export type PropertyStatus = 'Available' | 'Sold' | 'Rent Out' | 'Sold (External)' | 'Pending';
 export type ListingType = 'For Sale' | 'For Rent';
 export type EditingStatus = 'In Editing' | 'Complete';
-export type RecordingPaymentStatus = 'Unpaid' | 'Paid Online' | 'Paid Cash';
+export type RecordingPaymentStatus = 'Unpaid' | 'Paid Online' | 'Pending Cash';
 
 export type UploadedDocument = {
     name: string;

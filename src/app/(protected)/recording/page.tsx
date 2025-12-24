@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Video, Check, MoreHorizontal, XCircle, Eye } from 'lucide-react';
+import { Video, Check, MoreHorizontal, XCircle, Eye, Circle, Clock, CheckCircle as CheckCircleIcon } from 'lucide-react';
 import type { Property, RecordingPaymentStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
@@ -24,10 +24,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 
 
-const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string, label: string }> = {
-    'Unpaid': { color: 'bg-orange-500', label: 'Unpaid' },
-    'Paid Online': { color: 'bg-green-500', label: 'Paid Online' },
-    'Paid Cash': { color: 'bg-purple-500', label: 'Paid Cash' },
+const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string, label: string, icon: React.FC<any> }> = {
+    'Unpaid': { color: 'bg-orange-500', label: 'Unpaid', icon: Circle },
+    'Paid Online': { color: 'bg-green-500', label: 'Paid Online', icon: CheckCircleIcon },
+    'Pending Cash': { color: 'bg-purple-500', label: 'Pending Cash', icon: Clock },
 };
 
 
@@ -139,7 +139,10 @@ export default function RecordingPage() {
                         <TableCell className="font-medium">{prop.auto_title}</TableCell>
                         <TableCell>{prop.area}</TableCell>
                         <TableCell>
-                             <Badge className={cn(statusInfo.color, 'text-white')}>{statusInfo.label}</Badge>
+                             <Badge className={cn(statusInfo.color, 'text-white flex items-center gap-1.5')}>
+                                <statusInfo.icon className="h-3 w-3" />
+                                {statusInfo.label}
+                             </Badge>
                         </TableCell>
                         <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                             <DropdownMenu>
@@ -203,7 +206,10 @@ export default function RecordingPage() {
                     </CardHeader>
                     <CardContent className="flex-1">
                         <p className="text-sm text-muted-foreground">{prop.area}</p>
-                         <Badge className={cn("mt-2 text-white", statusInfo.color)}>{statusInfo.label}</Badge>
+                         <Badge className={cn("mt-2 text-white flex items-center gap-1.5", statusInfo.color)}>
+                            <statusInfo.icon className="h-3 w-3" />
+                            {statusInfo.label}
+                        </Badge>
                     </CardContent>
                     <CardFooter>
                          <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleRowClick(prop)}}>

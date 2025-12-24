@@ -19,7 +19,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import { Property, RecordingPaymentStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Circle, CheckCircle, Clock } from 'lucide-react';
 
 interface SetRecordingPaymentDialogProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ interface SetRecordingPaymentDialogProps {
 }
 
 const formSchema = z.object({
-  status: z.enum(['Unpaid', 'Paid Online', 'Paid Cash']).default('Unpaid'),
+  status: z.enum(['Unpaid', 'Paid Online', 'Pending Cash']).default('Unpaid'),
   amount: z.coerce.number().min(0).optional(),
 });
 
@@ -62,7 +62,7 @@ export function SetRecordingPaymentDialog({
     setIsLoading(true);
     const paymentDetails = {
         recording_payment_status: data.status as RecordingPaymentStatus,
-        recording_payment_amount: data.status !== 'Unpaid' ? data.amount : 0,
+        recording_payment_amount: data.status === 'Paid Online' ? data.amount : 0,
         recording_payment_date: data.status !== 'Unpaid' ? new Date().toISOString() : null,
     };
     try {
@@ -96,16 +96,16 @@ export function SetRecordingPaymentDialog({
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="Unpaid">Unpaid</SelectItem>
-                      <SelectItem value="Paid Online">Paid Online</SelectItem>
-                      <SelectItem value="Paid Cash">Paid Cash</SelectItem>
+                      <SelectItem value="Unpaid"><div className="flex items-center gap-2"><Circle className="h-4 w-4 text-orange-500" /> Unpaid</div></SelectItem>
+                      <SelectItem value="Paid Online"><div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Paid Online</div></SelectItem>
+                      <SelectItem value="Pending Cash"><div className="flex items-center gap-2"><Clock className="h-4 w-4 text-purple-500" /> Pending Cash</div></SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {watchedStatus !== 'Unpaid' && (
+            {watchedStatus === 'Paid Online' && (
               <FormField
                 control={form.control}
                 name="amount"
