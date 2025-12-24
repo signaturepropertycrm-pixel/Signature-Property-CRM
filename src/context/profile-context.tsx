@@ -100,7 +100,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             phone = agentProfile.phone || phone;
-        } else if ((role === 'Admin' || role === 'Editor') && agencyProfile) {
+        } else if ((role === 'Admin' || role === 'Video Recorder') && agencyProfile) {
             name = agencyProfile.name || name;
             phone = agencyProfile.phone || phone;
         }

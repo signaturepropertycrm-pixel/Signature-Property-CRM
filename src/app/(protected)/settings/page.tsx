@@ -215,12 +215,8 @@ export default function SettingsPage() {
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
-    let fullPhoneNumber = localProfile.phone || '';
-    if (localProfile.phone && !localProfile.phone.startsWith('+')) {
-      fullPhoneNumber = `${countryCode}${localProfile.phone.replace(/\\D/g, '')}`;
-    }
 
+    const fullPhoneNumber = localProfile.phone ? `${countryCode}${localProfile.phone.replace(/\\D/g, '')}` : '';
 
     if (
         localProfile.name === profile.name &&
@@ -231,49 +227,39 @@ export default function SettingsPage() {
         return;
     }
 
-    const formattedProfile = {
-        ...localProfile,
-        phone: fullPhoneNumber,
-    };
-
     const isUserAdmin = profile.role === 'Admin';
-    
+
     try {
         const batch = writeBatch(firestore);
-        
-        // Admin updates the agency doc
+
+        // Common updates for all roles in their `teamMembers` document
+        if (profile.agency_id) {
+            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
+            batch.update(teamMemberRef, { name: localProfile.name, phone: fullPhoneNumber });
+        }
+
+        // Specific updates based on role
         if (isUserAdmin && profile.agency_id) {
             const agencyDocRef = doc(firestore, 'agencies', profile.agency_id);
             batch.update(agencyDocRef, { 
-                agencyName: formattedProfile.agencyName, 
-                name: formattedProfile.name, 
-                phone: formattedProfile.phone 
+                agencyName: localProfile.agencyName, 
+                name: localProfile.name, 
+                phone: fullPhoneNumber 
             });
-        }
+             const userDocRef = doc(firestore, 'users', user.uid);
+             batch.update(userDocRef, { name: localProfile.name });
 
-        // Every user (admin or agent) updates their teamMember doc
-        if (profile.agency_id) {
-            const teamMemberRef = doc(firestore, 'agencies', profile.agency_id, 'teamMembers', user.uid);
-            batch.update(teamMemberRef, { name: formattedProfile.name, phone: formattedProfile.phone });
-        }
-        
-        // Agent also updates their root agent doc
-        if (profile.role === 'Agent') {
+        } else if (profile.role === 'Agent') {
             const agentDocRef = doc(firestore, 'agents', user.uid);
-            batch.update(agentDocRef, { name: formattedProfile.name, phone: formattedProfile.phone });
+            batch.update(agentDocRef, { name: localProfile.name, phone: fullPhoneNumber });
         }
 
         await batch.commit();
-        
-        // This is an additional update for display name in some parts of the app that might use `users` collection directly.
-        if (auth.currentUser && formattedProfile.name !== profile.name) {
-          await updateDoc(doc(firestore, 'users', user.uid), {name: formattedProfile.name});
-        }
 
         setProfile({
-            name: formattedProfile.name,
-            agencyName: formattedProfile.agencyName,
-            phone: formattedProfile.phone
+            name: localProfile.name,
+            agencyName: localProfile.agencyName,
+            phone: fullPhoneNumber
         });
 
         toast({
@@ -281,7 +267,7 @@ export default function SettingsPage() {
           description: 'Your profile information has been saved successfully.',
         });
     } catch(error) {
-         toast({ title: 'Error updating profile', description: 'Could not save changes.', variant: 'destructive'});
+         toast({ title: 'Error updating Profile', description: 'Could not Save Changes.', variant: 'destructive'});
          console.error("Profile save error:", error);
     }
   };
