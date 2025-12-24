@@ -59,6 +59,7 @@ const statusVariant = {
     'Visited Property': 'secondary',
     'Deal Closed': 'default',
     'Deal Lost': 'destructive',
+    'Pending': 'default'
 } as const;
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
@@ -141,7 +142,7 @@ export default function BuyersPage() {
     const [isRecommenderOpen, setIsRecommenderOpen] = useState(false);
     const [appointmentDetails, setAppointmentDetails] = useState<{ contactType: AppointmentContactType; contactName: string; contactSerialNo?: string; message: string; } | null>(null);
     const [filters, setFilters] = useState<Filters>({ status: 'All', area: '', minBudget: '', maxBudget: '', budgetUnit: 'All', propertyType: 'All', minSize: '', maxSize: '', sizeUnit: 'All', serialNoPrefix: 'All', serialNo: '' });
-    const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>('All');
+    const [activeStatusFilter, setActiveStatusFilter] = useState<BuyerStatus | 'All'>(statusFilterFromURL || 'All');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBuyerForDetails, setSelectedBuyerForDetails] = useState<Buyer | null>(null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -166,6 +167,14 @@ export default function BuyersPage() {
         if (!buyerForFollowUp || !followUps) return null;
         return followUps.find(fu => fu.buyerId === buyerForFollowUp.id);
     }, [buyerForFollowUp, followUps]);
+
+    useEffect(() => {
+        if (statusFilterFromURL) {
+            setActiveStatusFilter(statusFilterFromURL);
+        } else {
+            setActiveStatusFilter('All');
+        }
+    }, [statusFilterFromURL]);
 
     useEffect(() => {
         if (!isAddBuyerOpen) setBuyerToEdit(null);
@@ -984,7 +993,13 @@ export default function BuyersPage() {
     );
   
     const renderContent = (buyers: Buyer[]) => {
-        const content = isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
+        const content = isMobile ? renderCards(buyers) : (
+            <Card>
+                <CardContent className="p-0">
+                    {renderTable(buyers)}
+                </CardContent>
+            </Card>
+        );
         return (
             <div>
                 {content}
@@ -1302,6 +1317,8 @@ export default function BuyersPage() {
     
 
 
+
+    
 
     
 
