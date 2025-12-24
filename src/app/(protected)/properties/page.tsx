@@ -931,8 +931,12 @@ export default function PropertiesPage() {
   };
 
   const renderTable = (properties: Property[]) => {
-    if (isAgencyLoading) return <p className="p-4 text-center">Loading properties...</p>;
-    if (properties.length === 0) return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
+    if (isAgencyLoading) {
+      return <p className="p-4 text-center">Loading properties...</p>;
+    }
+    if (properties.length === 0) {
+      return <div className="text-center py-10 text-muted-foreground">No properties found for the current filters.</div>;
+    }
     
     const hasVideoLinks = (prop: Property) => prop.is_recorded && prop.video_links && Object.values(prop.video_links).some(link => !!link);
 
@@ -1049,7 +1053,7 @@ export default function PropertiesPage() {
                           {prop.assignedTo && <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)}>Unassign</DropdownMenuItem>}
                           <DropdownMenuSeparator />
                           {activeTeamMembers.map((member) => (
-                            <DropdownMenuItem key={member.id} onSelect={()={()> handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                            <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
                               {member.name} ({member.role})
                             </DropdownMenuItem>
                           ))}
@@ -1172,7 +1176,7 @@ export default function PropertiesPage() {
                                   <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)} disabled={!prop.assignedTo}>Unassign</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   {activeTeamMembers.map((member) => (
-                                    <DropdownMenuItem key={member.id} onSelect={()={()> handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                                    <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
                                       {member.name} ({member.role})
                                     </DropdownMenuItem>
                                   ))}
@@ -1425,7 +1429,7 @@ export default function PropertiesPage() {
                     </Popover>
                     <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                     <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                    <Button variant="outline" className="rounded-full" onClick={()={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                    <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
               </div>
             </div>
             
@@ -1465,8 +1469,8 @@ export default function PropertiesPage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-40 p-2 mb-2">
                     <div className="flex flex-col gap-2">
-                        <Button variant="ghost" onClick={()={() => { handleOpenAddDialog('For Sale'); setIsAddMenuOpen(false); }}>For Sale</Button>
-                        <Button variant="ghost" onClick={()={() => { handleOpenAddDialog('For Rent'); setIsAddMenuOpen(false); }}>For Rent</Button>
+                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Sale'); setIsAddMenuOpen(false); }}>For Sale</Button>
+                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Rent'); setIsAddMenuOpen(false); }}>For Rent</Button>
                     </div>
                 </PopoverContent>
             </Popover>
@@ -1510,7 +1514,7 @@ export default function PropertiesPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={()={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
                 <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Properties</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1526,7 +1530,7 @@ export default function PropertiesPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={()={() => handleImportClick('For Sale')}>Import Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Properties</AlertDialogAction>
                 <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Properties</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1535,5 +1539,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
