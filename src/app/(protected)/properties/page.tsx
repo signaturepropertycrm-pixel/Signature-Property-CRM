@@ -173,7 +173,15 @@ export default function PropertiesPage() {
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
   const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
   
-  const [listingType, setListingType] = useState<ListingType>('For Sale');
+  const [activeAgencyTab, setActiveAgencyTab] = useState(profile.agencies?.[0]?.agency_id);
+
+  useEffect(() => {
+    if (isMobile && profile.role === 'Agent' && !activeAgencyTab && profile.agencies && profile.agencies.length > 0) {
+      setActiveAgencyTab(profile.agencies[0].agency_id);
+    }
+  }, [profile.agencies, activeAgencyTab, isMobile, profile.role]);
+
+
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -302,14 +310,61 @@ export default function PropertiesPage() {
             : `${property.serial_no} has been unassigned.`
     });
   };
+  
+  const handleBulkAssign = async (agentId: string) => {
+    if (selectedProperties.length === 0 || !agentId || !profile.agency_id) return;
+
+    const agent = activeTeamMembers.find(m => m.id === agentId);
+    if (!agent) {
+        toast({ title: 'Agent not found', variant: 'destructive' });
+        return;
+    }
+
+    const batch = writeBatch(firestore);
+    let updates: Partial<Property> = { assignedTo: agentId };
+
+    if (agent.role === 'Video Recorder') {
+      updates.is_recorded = false;
+      updates.editing_status = 'In Editing';
+    }
+
+    selectedProperties.forEach(propId => {
+        const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', propId);
+        batch.update(docRef, updates);
+    });
+
+    await batch.commit();
+
+    // Log the bulk activity
+    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+    const newActivity: Omit<Activity, 'id'> = {
+      userName: profile.name,
+      action: `assigned ${selectedProperties.length} properties to ${agent.name}`,
+      target: `Multiple Properties`,
+      targetType: 'Property',
+      details: null,
+      timestamp: new Date().toISOString(),
+      agency_id: profile.agency_id,
+      assignedToId: agentId,
+      assignedToName: agent.name,
+    };
+    await addDoc(activityLogRef, newActivity);
+
+    toast({
+        title: 'Properties Assigned',
+        description: `${selectedProperties.length} properties have been assigned to ${agent.name}.`
+    });
+
+    setSelectedProperties([]);
+  };
 
   const filteredProperties = useMemo(() => {
     if (!allProperties) return [];
     
     let baseProperties = allProperties.filter(p => !p.is_deleted);
     
-    if (profile.role === 'Agent' && user?.uid) {
-        baseProperties = baseProperties.filter(p => p.assignedTo === user.uid);
+    if (profile.role === 'Agent' && user?.uid && activeAgencyTab) {
+        baseProperties = baseProperties.filter(p => p.assignedTo === user.uid && p.agency_id === activeAgencyTab);
     }
 
     // 1. Primary Filter: Search Query
@@ -397,7 +452,7 @@ export default function PropertiesPage() {
         return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder, activeAgencyTab]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -409,7 +464,7 @@ export default function PropertiesPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedProperties([]);
-    }, [searchQuery, filters, statusFilterFromURL]);
+    }, [searchQuery, filters, statusFilterFromURL, activeAgencyTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -1294,6 +1349,22 @@ export default function PropertiesPage() {
                     </div>
                   )}
                   {selectedProperties.length > 0 && profile.role !== 'Agent' && (
+                       <div className="flex items-center gap-2">
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="rounded-full">
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Assign to Agent
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                {activeTeamMembers.map((member) => (
+                                    <DropdownMenuItem key={member.id} onSelect={() => handleBulkAssign(member.id)}>
+                                        {member.name} ({member.role})
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="destructive" className="rounded-full">
@@ -1314,6 +1385,7 @@ export default function PropertiesPage() {
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
+                       </div>
                     )}
                     {profile.role !== 'Agent' && (
                     <>
@@ -1450,6 +1522,18 @@ export default function PropertiesPage() {
             </Card>
             )}
 
+            {isAgent && profile.agencies && profile.agencies.length > 1 ? (
+                <Tabs value={activeAgencyTab} onValueChange={setActiveAgencyTab}>
+                    <TabsList>
+                        {profile.agencies.map(agency => (
+                            <TabsTrigger key={agency.agency_id} value={agency.agency_id}>
+                                {agency.agency_name}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
+            ) : null}
+
             <div className="mt-4">
               {renderContent(paginatedProperties)}
             </div>
@@ -1482,7 +1566,7 @@ export default function PropertiesPage() {
           propertyToEdit={propertyToEdit}
           allProperties={allProperties || []}
           onSave={handleSaveProperty}
-          listingType={listingType}
+          listingType={isAddPropertyOpen ? (propertyToEdit ? (propertyToEdit.is_for_rent ? 'For Rent' : 'For Sale') : (searchParams.get('status')?.includes('Rent') ? 'For Rent' : 'For Sale')) : 'For Sale'}
           limitReached={isLimitReached}
         />
   
