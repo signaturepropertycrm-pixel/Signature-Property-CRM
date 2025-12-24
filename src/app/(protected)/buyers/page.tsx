@@ -1,5 +1,4 @@
 
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -59,12 +58,13 @@ const statusVariant = {
     'Follow Up': 'default',
     'Visited Property': 'secondary',
     'Deal Closed': 'default',
+    'Deal Lost': 'destructive',
 } as const;
 
 function formatSize(minAmount?: number, minUnit?: SizeUnit, maxAmount?: number, maxUnit?: SizeUnit) {
     if (!minAmount || !minUnit) return 'N/A';
     if (!maxAmount || !maxUnit || (minAmount === maxAmount && minUnit === maxUnit)) return `${minAmount} ${minUnit}`;
-    return `${minAmount} - ${maxAmount} ${maxUnit}`;
+    return `${minAmount} - ${maxAmount} ${minUnit}`;
 }
 
 interface Filters {
@@ -153,11 +153,11 @@ export default function BuyersPage() {
     
     const myLeadsCount = useMemo(() => {
         if (!allBuyers || !user) return 0;
-        return allBuyers.filter(b => b.created_by === user.uid).length;
+        return allBuyers.filter(b => b.created_by === user.uid && !b.is_deleted).length;
     }, [allBuyers, user]);
 
     const limit = isAgent ? AGENT_LEAD_LIMIT : agencyLimit;
-    const currentCount = isAgent ? myLeadsCount : (allBuyers?.length || 0);
+    const currentCount = isAgent ? myLeadsCount : (allBuyers?.filter(b => !b.is_deleted).length || 0);
     const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
     const isLimitReached = currentCount >= limit;
 
@@ -365,7 +365,7 @@ export default function BuyersPage() {
             if (!profile.agency_id) return;
             const collectionRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
             const { id, ...restOfData } = buyerData;
-            const newDocRef = await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id });
+            const newDocRef = await addDoc(collectionRef, { ...restOfData, agency_id: profile.agency_id, created_by: user?.uid });
             await logActivity('added a new buyer', buyerData.name, 'Buyer');
             toast({ title: 'Buyer Added' });
         }
@@ -686,7 +686,7 @@ export default function BuyersPage() {
                 listing_type: listingTypeToImport,
                 notes: notes || '',
                 created_at: new Date().toISOString(),
-                created_by: profile.user_id,
+                created_by: user.uid,
                 agency_id: profile.agency_id,
             };
             batch.set(doc(collection(firestore, 'agencies', profile.agency_id, 'buyers')), newBuyer);
@@ -718,21 +718,25 @@ export default function BuyersPage() {
     };
 
     const renderTable = (buyers: Buyer[]) => {
-        if (isAgencyLoading) return <p className="p-4 text-center">Loading buyers...</p>;
-        if (buyers.length === 0) return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
+        if (isAgencyLoading) {
+            return <p className="p-4 text-center">Loading buyers...</p>;
+        }
+        if (buyers.length === 0) {
+            return <div className="text-center py-10 text-muted-foreground">No buyers found for the current filters.</div>;
+        }
         
         return (
             <Table>
                 <TableHeader>
                     <TableRow>
-                         <TableHead className="w-10">
+                        <TableHead className="w-10">
                             <Checkbox
                                 checked={paginatedBuyers.length > 0 && selectedBuyers.length === paginatedBuyers.length}
                                 onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                             />
                         </TableHead>
                         <TableHead>
-                             <Button variant="ghost" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
+                            <Button variant="ghost" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}>
                                 Name
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                             </Button>
@@ -744,101 +748,99 @@ export default function BuyersPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {buyers.map(buyer => {
-                        return (
-                            <TableRow key={buyer.id}>
-                               <TableCell onClick={(e) => e.stopPropagation()}>
-                                    <Checkbox
-                                        checked={selectedBuyers.includes(buyer.id)}
-                                        onCheckedChange={(checked) => {
-                                            setSelectedBuyers(prev =>
-                                                checked ? [...prev, buyer.id] : prev.filter(id => id !== buyer.id)
-                                            );
-                                        }}
-                                    />
-                                </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
-                                    <div className="font-bold font-headline text-base flex items-center gap-2">
-                                        {buyer.name}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-                                        <Badge
-                                            variant="default"
-                                            className={cn(
-                                            'font-mono',
-                                            buyer.serial_no.startsWith('RB')
-                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
-                                                : 'bg-primary/20 text-primary hover:bg-primary/30'
-                                            )}
-                                        >
-                                            {buyer.serial_no}
-                                        </Badge>
-                                        <span>{buyer.phone}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
-                                    <div className="flex flex-col text-sm">
-                                        <span>{buyer.area_preference}</span>
-                                        <span className="text-muted-foreground">{buyer.property_type_preference}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
-                                    <div className="flex flex-col text-sm">
-                                        <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
-                                        <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}>{buyer.status}</Badge>
-                                        {buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                                <span className="sr-only">Toggle menu</span>
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="glass-card">
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecommendProperties(buyer); }}><Sparkles />Recommend Properties</DropdownMenuItem>
-                                            {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
-                                            <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
-                                             <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger><UserPlus />Assign to</DropdownMenuSubTrigger>
-                                                <DropdownMenuPortal>
-                                                    <DropdownMenuSubContent>
-                                                        {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
-                                                        <DropdownMenuSeparator />
-                                                        {assignableAgents.map((agent) => (
-                                                            <DropdownMenuItem key={agent.id} onSelect={()={()> handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
-                                                            {agent.name} ({agent.role})
-                                                            </DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuSubContent>
-                                                </DropdownMenuPortal>
-                                            </DropdownMenuSub>
-                                            <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
-                                                <DropdownMenuPortal>
-                                                    <DropdownMenuSubContent>
-                                                        {buyerStatuses.map((status) => (
-                                                            <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>
-                                                        ))}
-                                                    </DropdownMenuSubContent>
-                                                </DropdownMenuPortal>
-                                            </DropdownMenuSub>
-                                            {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
+                    {buyers.map(buyer => (
+                        <TableRow key={buyer.id}>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                    checked={selectedBuyers.includes(buyer.id)}
+                                    onCheckedChange={(checked) => {
+                                        setSelectedBuyers(prev =>
+                                            checked ? [...prev, buyer.id] : prev.filter(id => id !== buyer.id)
+                                        );
+                                    }}
+                                />
+                            </TableCell>
+                            <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                                <div className="font-bold font-headline text-base flex items-center gap-2">
+                                    {buyer.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                                    <Badge
+                                        variant="default"
+                                        className={cn(
+                                        'font-mono',
+                                        buyer.serial_no.startsWith('RB')
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 hover:bg-emerald-100/80'
+                                            : 'bg-primary/20 text-primary hover:bg-primary/30'
+                                        )}
+                                    >
+                                        {buyer.serial_no}
+                                    </Badge>
+                                    <span>{buyer.phone}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                                <div className="flex flex-col text-sm">
+                                    <span>{buyer.area_preference}</span>
+                                    <span className="text-muted-foreground">{buyer.property_type_preference}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                                <div className="flex flex-col text-sm">
+                                    <span>{formatBudget(buyer.budget_min_amount, buyer.budget_min_unit, buyer.budget_max_amount, buyer.budget_max_unit)}</span>
+                                    <span className="text-muted-foreground">{formatSize(buyer.size_min_value, buyer.size_min_unit, buyer.size_max_value, buyer.size_max_unit)}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell onClick={() => handleDetailsClick(buyer)} className="cursor-pointer">
+                                <div className="flex items-center gap-2">
+                                    <Badge variant={statusVariant[buyer.status as keyof typeof statusVariant]} className={buyer.status === 'Interested' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : buyer.status === 'New' ? 'bg-green-600 hover:bg-green-700 text-white' : buyer.status === 'Not Interested' ? 'bg-red-600 hover:bg-red-700 text-white' : buyer.status === 'Deal Closed' ? 'bg-slate-800 hover:bg-slate-900 text-white' : ''}>{buyer.status}</Badge>
+                                    {buyer.is_investor && (<Badge className="bg-blue-600 hover:bg-blue-700 text-white">Investor</Badge>)}
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost" className="rounded-full" onClick={(e) => e.stopPropagation()}>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="glass-card">
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDetailsClick(buyer); }}><Eye />View Details</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecommendProperties(buyer); }}><Sparkles />Recommend Properties</DropdownMenuItem>
+                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(buyer); }}><Edit />Edit Details</DropdownMenuItem>)}
+                                        <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, buyer)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(buyer); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
+                                         <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger><UserPlus />Assign to</DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
+                                                    <DropdownMenuSeparator />
+                                                    {assignableAgents.map((agent) => (
+                                                        <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                        {agent.name} ({agent.role})
+                                                        </DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger><Bookmark />Change Status</DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    {buyerStatuses.map((status) => (
+                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>
+                                                    ))}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
+                                        {(profile.role !== 'Agent') && (<DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(buyer); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>)}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
                 </TableBody>
             </Table>
         );
@@ -919,7 +921,7 @@ export default function BuyersPage() {
                                                     {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                     <DropdownMenuSeparator />
                                                     {assignableAgents.map((agent) => (
-                                                        <DropdownMenuItem key={agent.id} onSelect={()={()> handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                        <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
                                                         {agent.name} ({agent.role})
                                                         </DropdownMenuItem>
                                                     ))}
@@ -980,7 +982,7 @@ export default function BuyersPage() {
             </Button>
         </div>
     );
-
+  
     const renderContent = (buyers: Buyer[]) => {
         const content = isMobile ? renderCards(buyers) : <Card><CardContent className="p-0">{renderTable(buyers)}</CardContent></Card>;
         return (
@@ -1135,7 +1137,7 @@ export default function BuyersPage() {
                             </Popover>
                             <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                             <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                            <Button variant="outline" className="rounded-full" onClick={()={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                            <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                         </div>
                     </div>
                     
@@ -1255,8 +1257,8 @@ export default function BuyersPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={()={() => handleExport('For Sale')}>Export Sale Buyers</AlertDialogAction>
-                    <AlertDialogAction onClick={()={() => handleExport('For Rent')}>Export Rent Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Buyers</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1300,5 +1302,9 @@ export default function BuyersPage() {
     
 
 
+
+    
+
+    
 
     
