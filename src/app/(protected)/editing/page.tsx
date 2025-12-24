@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw, Eye } from 'lucide-react';
+import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw, Eye, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import type { Property, EditingStatus } from '@/lib/types';
+import type { Property, EditingStatus, RecordingPaymentStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -21,6 +21,7 @@ import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
+import { ConfirmCashPaymentDialog } from '@/components/confirm-cash-payment-dialog';
 
 export default function EditingPage() {
     const { toast } = useToast();
@@ -28,7 +29,9 @@ export default function EditingPage() {
     const { profile } = useProfile();
     const { searchQuery, setSearchQuery } = useSearch();
     const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+    const [propertyForPayment, setPropertyForPayment] = useState<Property | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const isMobile = useIsMobile();
 
     const propertiesQuery = useMemoFirebase(() => 
@@ -70,6 +73,32 @@ export default function EditingPage() {
             toast({ title: "Error", description: "Could not update status.", variant: "destructive" });
         }
     };
+
+    const handleCashPaymentConfirm = (property: Property) => {
+        setPropertyForPayment(property);
+        setIsPaymentOpen(true);
+    };
+
+    const handleSaveCashPayment = async (property: Property, amount: number) => {
+        if (!profile.agency_id) return;
+        try {
+            const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
+            await updateDoc(propRef, {
+                recording_payment_status: 'Paid Online', // Marking as paid
+                recording_payment_amount: amount,
+                recording_payment_date: new Date().toISOString(),
+            });
+            toast({
+                title: 'Payment Confirmed',
+                description: `Cash payment of ${amount} for ${property.serial_no} has been recorded.`,
+            });
+        } catch (error) {
+            toast({ title: 'Error', description: 'Could not save payment.', variant: 'destructive' });
+        } finally {
+            setIsPaymentOpen(false);
+            setPropertyForPayment(null);
+        }
+    }
     
     const handleRevertToRecording = async (property: Property) => {
         if (!profile.agency_id) return;
@@ -130,6 +159,11 @@ export default function EditingPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
                                                 <DropdownMenuItem onSelect={() => handleRowClick(prop)}><Eye className="mr-2" /> View Details</DropdownMenuItem>
+                                                {prop.recording_payment_status === 'Pending Cash' && (
+                                                    <DropdownMenuItem onSelect={() => handleCashPaymentConfirm(prop)}>
+                                                        <DollarSign className="mr-2" /> Confirm Cash Payment
+                                                    </DropdownMenuItem>
+                                                )}
                                                 <DropdownMenuItem onSelect={() => handleStatusUpdate(prop, 'In Editing')}>
                                                     <PlayCircle className="mr-2" /> Mark as In Editing
                                                 </DropdownMenuItem>
@@ -168,6 +202,13 @@ export default function EditingPage() {
                             </div>
                             <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
                         </CardHeader>
+                         <CardContent className="flex-1">
+                            {prop.recording_payment_status === 'Pending Cash' && (
+                                <Button size="sm" className="w-full mt-2" onClick={(e) => { e.stopPropagation(); handleCashPaymentConfirm(prop); }}>
+                                    <DollarSign className="mr-2" /> Confirm Cash Payment
+                                </Button>
+                            )}
+                        </CardContent>
                         <CardFooter className="mt-auto flex justify-end">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -224,6 +265,14 @@ export default function EditingPage() {
                 property={propertyForDetails}
                 isOpen={isDetailsOpen}
                 setIsOpen={setIsDetailsOpen}
+            />
+        )}
+        {propertyForPayment && (
+            <ConfirmCashPaymentDialog
+                isOpen={isPaymentOpen}
+                setIsOpen={setIsPaymentOpen}
+                property={propertyForPayment}
+                onConfirm={handleSaveCashPayment}
             />
         )}
         </>
