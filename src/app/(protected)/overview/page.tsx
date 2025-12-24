@@ -270,8 +270,8 @@ export default function OverviewPage() {
 
     const isLoading = isProfileLoading || isPropertiesLoading || isBuyersLoading || isFollowUpsLoading || isAppointmentsLoading || (isAgent ? false : isTeamMembersLoading);
 
-    const filterLast30Days = (item: { created_at?: string; sale_date?: string; rent_out_date?: string, invitedAt?: any; date?: string; status?: string }) => {
-        const dateString = item.rent_out_date || item.sale_date || item.created_at || item.date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
+    const filterLast30Days = (item: { created_at?: string; sale_date?: string; rent_out_date?: string, invitedAt?: any; date?: string; status?: string; recording_payment_date?: string }) => {
+        const dateString = item.rent_out_date || item.sale_date || item.created_at || item.date || item.recording_payment_date || (item.invitedAt instanceof Timestamp ? item.invitedAt.toDate().toISOString() : item.invitedAt);
         if (!dateString) return false;
         return isWithinInterval(parseISO(dateString), { start: last30DaysStart, end: now });
     };
@@ -391,6 +391,9 @@ export default function OverviewPage() {
         const rentOutInLast30Days = finalProperties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
         const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + (prop.rent_total_commission || 0), 0);
 
+        const paidVideos30d = finalProperties?.filter(p => p.recording_payment_status !== 'Unpaid' && p.recording_payment_date && filterLast30Days(p)) || [];
+        const recordingRevenue30d = paidVideos30d.reduce((sum, prop) => sum + (prop.recording_payment_amount || 0), 0);
+
 
         const propertiesForRent = finalProperties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
 
@@ -413,6 +416,8 @@ export default function OverviewPage() {
             totalRentBuyers,
             revenue30d,
             rentRevenue30d,
+            paidVideos30dCount: paidVideos30d.length,
+            recordingRevenue30d,
             propertiesForRent,
             interestedBuyers,
             followUpLeads,
@@ -483,13 +488,20 @@ export default function OverviewPage() {
             isLoading
         },
         {
-            title: "Properties Sold (30d)",
-            value: stats.soldInLast30DaysCount,
-            change: "Closed deals this month",
-            icon: <CheckCircle className="h-4 w-4" />,
-            color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
-            href: "/reports",
-            isLoading,
+            title: "Paid Videos (30d)",
+            value: stats.paidVideos30dCount,
+            change: "Completed video payments",
+            icon: <Video className="h-4 w-4" />,
+            color: "bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300",
+            isLoading
+        },
+        {
+            title: "Recording Revenue (30d)",
+            value: formatCurrency(stats.recordingRevenue30d, currency, { notation: 'compact' }),
+            change: "From video services",
+            icon: <DollarSign className="h-4 w-4" />,
+            color: "bg-fuchsia-100 dark:bg-fuchsia-900 text-fuchsia-600 dark:text-fuchsia-300",
+            isLoading
         },
         {
             title: "Interested Buyers",
@@ -507,15 +519,6 @@ export default function OverviewPage() {
             icon: <PhoneForwarded className="h-4 w-4" />,
             color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
             href: "/follow-ups",
-            isLoading
-        },
-        {
-            title: "Appointments (30d)",
-            value: stats.appointments30d,
-            change: `${stats.upcomingAppointments} upcoming`,
-            icon: <CalendarDays className="h-4 w-4" />,
-            color: "bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300",
-            href: "/appointments",
             isLoading
         },
          {
@@ -669,3 +672,4 @@ export default function OverviewPage() {
         </div>
     );
 }
+

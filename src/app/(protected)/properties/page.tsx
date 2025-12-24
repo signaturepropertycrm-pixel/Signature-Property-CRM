@@ -100,6 +100,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
 import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { SetRecordingPaymentDialog } from '@/components/set-recording-payment-dialog';
 
 const ITEMS_PER_PAGE = 50;
 const AGENT_LEAD_LIMIT = Infinity; // Limit removed for agents
@@ -194,6 +195,9 @@ export default function PropertiesPage() {
   const [isRecordVideoOpen, setIsRecordVideoOpen] = useState(false);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [assignmentDetails, setAssignmentDetails] = useState<{ property: Property, agentId: string, agentName: string } | null>(null);
+
   const [appointmentDetails, setAppointmentDetails] = useState<{
     contactType: AppointmentContactType;
     contactName: string;
@@ -272,44 +276,75 @@ export default function PropertiesPage() {
     setIsFilterPopoverOpen(false);
   };
   
-   const handleAssignUser = async (property: Property, userId: string | null) => {
-    if (!profile.agency_id) return;
-    
-    const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
-    const member = activeTeamMembers.find(m => m.id === userId);
-    let updates: Partial<Property> = { assignedTo: userId };
+    const handleAssignUser = async (property: Property, agentId: string | null) => {
+        if (!profile.agency_id) return;
 
-    if (member && member.role === 'Video Recorder') {
-      updates.is_recorded = false;
-      updates.editing_status = 'In Editing'; 
-    }
+        const member = activeTeamMembers.find(m => m.id === agentId);
+        if (!member) {
+            // Unassigning
+            await updateDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', property.id), { assignedTo: null });
+            toast({ title: 'Property Unassigned' });
+            return;
+        }
 
-    await updateDoc(docRef, updates);
-    
-    const memberName = member?.name;
-
-    // Log the activity
-    const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
-    const newActivity: Omit<Activity, 'id'> = {
-      userName: profile.name,
-      action: userId ? `assigned property to ${memberName}` : `unassigned property`,
-      target: property.auto_title,
-      targetType: 'Property',
-      details: null,
-      timestamp: new Date().toISOString(),
-      agency_id: profile.agency_id,
-      assignedToId: userId,
-      assignedToName: memberName || null,
+        if (member.role === 'Video Recorder') {
+            setAssignmentDetails({ property, agentId: member.id, agentName: member.name });
+            setIsPaymentDialogOpen(true);
+        } else {
+            // Direct assignment for Agent/Admin
+            await assignToAgent(property, member.id, member.name);
+        }
     };
-    await addDoc(activityLogRef, newActivity);
 
-    toast({
-        title: userId ? 'Property Assigned' : 'Property Unassigned',
-        description: userId 
-            ? `${property.serial_no} assigned to ${memberName}.`
-            : `${property.serial_no} has been unassigned.`
-    });
-  };
+    const assignToAgent = async (property: Property, agentId: string, agentName: string) => {
+        if (!profile.agency_id) return;
+        await updateDoc(doc(firestore, 'agencies', profile.agency_id, 'properties', property.id), { assignedTo: agentId });
+        // Log activity
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity: Omit<Activity, 'id'> = {
+            userName: profile.name,
+            action: `assigned property to ${agentName}`,
+            target: property.auto_title,
+            targetType: 'Property',
+            details: null,
+            timestamp: new Date().toISOString(),
+            agency_id: profile.agency_id,
+        };
+        await addDoc(activityLogRef, newActivity);
+        toast({ title: 'Property Assigned', description: `${property.serial_no} assigned to ${agentName}.` });
+    };
+
+    const handleConfirmPaymentAndAssign = async (property: Property, agentId: string, paymentDetails: any) => {
+        if (!profile.agency_id) return;
+        const agent = activeTeamMembers.find(m => m.id === agentId);
+        if (!agent) return;
+
+        const batch = writeBatch(firestore);
+        
+        const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', property.id);
+        batch.update(propRef, { 
+            assignedTo: agentId,
+            is_recorded: false,
+            editing_status: 'In Editing',
+            ...paymentDetails
+        });
+
+        const activityLogRef = collection(firestore, 'agencies', profile.agency_id, 'activityLogs');
+        const newActivity: Omit<Activity, 'id'> = {
+            userName: profile.name,
+            action: `assigned property for recording to ${agent.name}`,
+            target: property.auto_title,
+            targetType: 'Property',
+            details: { from: 'Available', to: 'Pending Recording' },
+            timestamp: new Date().toISOString(),
+            agency_id: profile.agency_id,
+        };
+        batch.set(doc(activityLogRef), newActivity);
+        
+        await batch.commit();
+        toast({ title: 'Property Assigned for Recording', description: `${property.serial_no} assigned to ${agent.name}.` });
+    };
+
   
   const handleBulkAssign = async (agentId: string) => {
     if (selectedProperties.length === 0 || !agentId || !profile.agency_id) return;
@@ -1596,6 +1631,17 @@ export default function PropertiesPage() {
           </>
         )}
         
+        {assignmentDetails && (
+            <SetRecordingPaymentDialog
+                isOpen={isPaymentDialogOpen}
+                setIsOpen={setIsPaymentDialogOpen}
+                property={assignmentDetails.property}
+                agentId={assignmentDetails.agentId}
+                agentName={assignmentDetails.agentName}
+                onConfirm={handleConfirmPaymentAndAssign}
+            />
+        )}
+        
         <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -1635,4 +1681,5 @@ export default function PropertiesPage() {
     
 
     
+
 

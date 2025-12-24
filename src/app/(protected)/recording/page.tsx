@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Video, Check, MoreHorizontal, XCircle, Eye } from 'lucide-react';
-import type { Property } from '@/lib/types';
+import type { Property, RecordingPaymentStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -21,6 +21,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+
+
+const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string, label: string }> = {
+    'Unpaid': { color: 'bg-orange-500', label: 'Unpaid' },
+    'Paid Online': { color: 'bg-green-500', label: 'Paid Online' },
+    'Paid Cash': { color: 'bg-purple-500', label: 'Paid Cash' },
+};
 
 
 export default function RecordingPage() {
@@ -112,35 +120,48 @@ export default function RecordingPage() {
               <TableHead>Serial No</TableHead>
               <TableHead>Property</TableHead>
               <TableHead>Area</TableHead>
+              <TableHead>Payment Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {propertiesToList.map(prop => (
-              <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
-                <TableCell><Badge variant="outline">{prop.serial_no}</Badge></TableCell>
-                <TableCell className="font-medium">{prop.auto_title}</TableCell>
-                <TableCell>{prop.area}</TableCell>
-                <TableCell className="text-right" onClick={e => e.stopPropagation()}>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
-                                <Eye className="mr-2" /> View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
-                                <Check className="mr-2" /> Mark as Recorded
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
-                                <XCircle className="mr-2" /> Cannot Record
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {propertiesToList.map(prop => {
+                const paymentStatus = prop.recording_payment_status || 'Unpaid';
+                const statusInfo = paymentStatusConfig[paymentStatus];
+                return (
+                    <TableRow key={prop.id} onClick={() => handleRowClick(prop)} className="cursor-pointer">
+                        <TableCell>
+                            <div className="flex items-center gap-2">
+                                <span className={cn("h-3 w-3 rounded-full", statusInfo.color)} />
+                                <Badge variant="outline">{prop.serial_no}</Badge>
+                            </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{prop.auto_title}</TableCell>
+                        <TableCell>{prop.area}</TableCell>
+                        <TableCell>
+                             <Badge className={cn(statusInfo.color, 'text-white')}>{statusInfo.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreHorizontal /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleRowClick(prop)}>
+                                        <Eye className="mr-2" /> View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
+                                        <Check className="mr-2" /> Mark as Recorded
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
+                                        <XCircle className="mr-2" /> Cannot Record
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                )
+            })}
           </TableBody>
         </Table>
       </CardContent>
@@ -149,42 +170,50 @@ export default function RecordingPage() {
 
   const renderCards = (propertiesToList: Property[]) => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {propertiesToList.map(prop => (
-            <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleRowClick(prop)}>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <Badge variant="outline">{prop.serial_no}</Badge>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
-                                    <Check className="mr-2 h-4 w-4" />
-                                    Mark as Recorded
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Cannot Record
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                    <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                    <p className="text-sm text-muted-foreground">{prop.area}</p>
-                </CardContent>
-                <CardFooter>
-                     <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleRowClick(prop)}}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                    </Button>
-                </CardFooter>
-            </Card>
-        ))}
+        {propertiesToList.map(prop => {
+            const paymentStatus = prop.recording_payment_status || 'Unpaid';
+            const statusInfo = paymentStatusConfig[paymentStatus];
+            return (
+                <Card key={prop.id} className="flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleRowClick(prop)}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                             <div className="flex items-center gap-2">
+                                <span className={cn("h-3 w-3 rounded-full", statusInfo.color)} />
+                                <Badge variant="outline">{prop.serial_no}</Badge>
+                            </div>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2" onClick={(e) => e.stopPropagation()}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenuItem onSelect={() => handleMarkAsRecorded(prop)}>
+                                        <Check className="mr-2 h-4 w-4" />
+                                        Mark as Recorded
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleCannotRecord(prop)} className="text-destructive focus:bg-destructive/10">
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Cannot Record
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <CardTitle className="pt-2 font-bold font-headline text-base">{prop.auto_title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                        <p className="text-sm text-muted-foreground">{prop.area}</p>
+                         <Badge className={cn("mt-2 text-white", statusInfo.color)}>{statusInfo.label}</Badge>
+                    </CardContent>
+                    <CardFooter>
+                         <Button variant="outline" className="w-full" onClick={(e) => {e.stopPropagation(); handleRowClick(prop)}}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                        </Button>
+                    </CardFooter>
+                </Card>
+            )
+        })}
     </div>
   );
 
