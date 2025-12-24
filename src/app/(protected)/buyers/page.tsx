@@ -100,9 +100,6 @@ export default function BuyersPage() {
     const firestore = useFirestore();
     const importInputRef = useRef<HTMLInputElement>(null);
 
-    const [agentViewTab, setAgentViewTab] = useState<'myLeads' | 'assignedLeads'>('myLeads');
-
-
     const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
     const { data: allBuyers, isLoading: isAgencyLoading } = useGetCollection<Buyer>(agencyBuyersQuery);
 
@@ -392,11 +389,7 @@ export default function BuyersPage() {
         let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
         if (profile.role === 'Agent' && user?.uid) {
-            if (agentViewTab === 'myLeads') {
-                baseBuyers = baseBuyers.filter(b => b.created_by === user.uid);
-            } else { // assignedLeads
-                baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid);
-            }
+            baseBuyers = baseBuyers.filter(b => b.assignedTo === user.uid);
         }
         
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
@@ -432,7 +425,7 @@ export default function BuyersPage() {
             const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
             return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
         });
-    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder, agentViewTab, user?.uid]);
+    }, [searchQuery, filters, allBuyers, profile.role, profile.user_id, activeTab, activeStatusFilter, sortOrder, user?.uid]);
 
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
@@ -445,7 +438,7 @@ export default function BuyersPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedBuyers([]);
-    }, [searchQuery, filters, activeTab, activeStatusFilter, agentViewTab]);
+    }, [searchQuery, filters, activeTab, activeStatusFilter]);
 
 
     const handleTabChange = (value: string) => {
@@ -1016,7 +1009,7 @@ export default function BuyersPage() {
                         <div className='hidden md:block'>
                             <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
                             <p className="text-muted-foreground">
-                                Manage your buyer leads for sale and rent.
+                                {profile.role === 'Agent' ? 'View your assigned buyer leads.' : 'Manage your buyer leads for sale and rent.'}
                             </p>
                         </div>
                         <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
@@ -1171,17 +1164,6 @@ export default function BuyersPage() {
                         </CardContent>
                     </Card>
                     )}
-
-
-                    {profile.role === 'Agent' && (
-                        <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
-                            <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value="myLeads">My Buyers</TabsTrigger>
-                                <TabsTrigger value="assignedLeads">Assigned Buyers</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                    )}
-
 
                     <div className="flex items-center justify-between gap-4">
                         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">

@@ -174,7 +174,6 @@ export default function PropertiesPage() {
   const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
   
   const [listingType, setListingType] = useState<ListingType>('For Sale');
-  const [agentViewTab, setAgentViewTab] = useState<'myLeads' | 'assignedLeads'>('myLeads');
   
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -310,11 +309,7 @@ export default function PropertiesPage() {
     let baseProperties = allProperties.filter(p => !p.is_deleted);
     
     if (profile.role === 'Agent' && user?.uid) {
-        if (agentViewTab === 'myLeads') {
-            baseProperties = baseProperties.filter(p => p.created_by === user.uid);
-        } else { // assignedLeads
-            baseProperties = baseProperties.filter(p => p.assignedTo === user.uid);
-        }
+        baseProperties = baseProperties.filter(p => p.assignedTo === user.uid);
     }
 
     // 1. Primary Filter: Search Query
@@ -402,7 +397,7 @@ export default function PropertiesPage() {
         return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder, agentViewTab]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -414,7 +409,7 @@ export default function PropertiesPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedProperties([]);
-    }, [searchQuery, filters, statusFilterFromURL, agentViewTab]);
+    }, [searchQuery, filters, statusFilterFromURL]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -1264,7 +1259,9 @@ export default function PropertiesPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="hidden md:block">
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
-                <p className="text-muted-foreground">Manage your agency and personal properties.</p>
+                <p className="text-muted-foreground">
+                    {profile.role === 'Agent' ? 'View your assigned properties.' : 'Manage your agency and personal properties.'}
+                </p>
               </div>
               <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
                   {isMobile && (
@@ -1451,15 +1448,6 @@ export default function PropertiesPage() {
                     <Progress value={progress} />
                 </CardContent>
             </Card>
-            )}
-
-            {profile.role === 'Agent' && (
-                <Tabs value={agentViewTab} onValueChange={(value) => setAgentViewTab(value as any)} className="w-full">
-                    <TabsList className='grid w-full grid-cols-2'>
-                        <TabsTrigger value="myLeads">My Properties</TabsTrigger>
-                        <TabsTrigger value="assignedLeads">Assigned Properties</TabsTrigger>
-                    </TabsList>
-                </Tabs>
             )}
 
             <div className="mt-4">
