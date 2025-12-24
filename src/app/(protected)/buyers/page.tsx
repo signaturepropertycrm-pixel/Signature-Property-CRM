@@ -652,9 +652,9 @@ export default function BuyersPage() {
                 const [maxValStr, maxUnitStr] = parts.length > 1 ? (parts[1]?.split(' ').filter(Boolean) || []) : [];
             
                 return {
-                    minVal: minValStr ? parseFloat(minValStr) : null,
+                    minVal: parseFloat(minValStr) || null,
                     minUnit: (minUnitStr as SizeUnit | PriceUnit) || null,
-                    maxVal: maxValStr ? parseFloat(maxValStr) : null,
+                    maxVal: parseFloat(maxValStr) || null,
                     maxUnit: (maxUnitStr as SizeUnit | PriceUnit) || (minUnitStr as SizeUnit | PriceUnit) || null,
                 };
             };
@@ -815,7 +815,7 @@ export default function BuyersPage() {
                                                         {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                         <DropdownMenuSeparator />
                                                         {assignableAgents.map((agent) => (
-                                                            <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                            <DropdownMenuItem key={agent.id} onSelect={()={()> handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
                                                             {agent.name} ({agent.role})
                                                             </DropdownMenuItem>
                                                         ))}
@@ -919,7 +919,7 @@ export default function BuyersPage() {
                                                     {buyer.assignedTo && <DropdownMenuItem onSelect={() => handleAssignAgent(buyer, null)}>Unassign</DropdownMenuItem>}
                                                     <DropdownMenuSeparator />
                                                     {assignableAgents.map((agent) => (
-                                                        <DropdownMenuItem key={agent.id} onSelect={() => handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
+                                                        <DropdownMenuItem key={agent.id} onSelect={()={()> handleAssignAgent(buyer, agent.id)} disabled={buyer.assignedTo === agent.id}>
                                                         {agent.name} ({agent.role})
                                                         </DropdownMenuItem>
                                                     ))}
@@ -931,7 +931,7 @@ export default function BuyersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent side="top">
                                                     {buyerStatuses.map((status) => (
-                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status);}} disabled={buyer.status === status}>
+                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>
                                                             {status}
                                                         </DropdownMenuItem>
                                                     ))}
@@ -1135,7 +1135,7 @@ export default function BuyersPage() {
                             </Popover>
                             <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                             <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                            <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                            <Button variant="outline" className="rounded-full" onClick={()={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
                         </div>
                     </div>
                     
@@ -1255,8 +1255,8 @@ export default function BuyersPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Buyers</AlertDialogAction>
-                    <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={()={() => handleExport('For Sale')}>Export Sale Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={()={() => handleExport('For Rent')}>Export Rent Buyers</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1299,3 +1299,6 @@ export default function BuyersPage() {
 
     
 
+
+
+    

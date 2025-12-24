@@ -799,8 +799,8 @@ export default function PropertiesPage() {
             }
             newPropertiesCount++;
 
-            const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
-            const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : [];
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : ['', ''];
+            const [demand_amount_str, demand_unit_str] = demand ? demand.split(' ') : ['', ''];
             
             const parseOptionalNumber = (val: string | undefined): number | null => {
                 if (!val || val.trim() === '') return null;
@@ -829,9 +829,9 @@ export default function PropertiesPage() {
                 area: area || '',
                 address: address || '', 
                 city: city || 'Lahore',
-                size_value: size_value_str ? parseFloat(size_value_str) : 0,
+                size_value: parseFloat(size_value_str) || 0,
                 size_unit: (size_unit_str as SizeUnit) || 'Marla',
-                demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
+                demand_amount: parseFloat(demand_amount_str) || 0,
                 demand_unit: demand_unit_str?.endsWith('Cr') ? 'Crore' : 'Lacs',
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
@@ -869,8 +869,8 @@ export default function PropertiesPage() {
             }
             newPropertiesCount++;
 
-            const [size_value_str, size_unit_str] = size ? size.split(' ') : [];
-            const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : [];
+            const [size_value_str, size_unit_str] = size ? size.split(' ') : ['', ''];
+            const [demand_amount_str, demand_unit_str] = rent ? rent.split(' ') : ['', ''];
 
             newProperty = {
                 serial_no: `RP-${totalRentProperties + newPropertiesCount}`,
@@ -879,9 +879,9 @@ export default function PropertiesPage() {
                 area: area || '',
                 address: address || '', 
                 city: city || 'Lahore',
-                size_value: size_value_str ? parseFloat(size_value_str) : 0,
+                size_value: parseFloat(size_value_str) || 0,
                 size_unit: (size_unit_str as SizeUnit) || 'Marla',
-                demand_amount: demand_amount_str ? parseFloat(demand_amount_str) : 0,
+                demand_amount: parseFloat(demand_amount_str) || 0,
                 demand_unit: 'Thousand',
                 status: 'Available',
                 owner_number: formatPhoneNumber(number, '+92'),
@@ -1049,7 +1049,7 @@ export default function PropertiesPage() {
                           {prop.assignedTo && <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)}>Unassign</DropdownMenuItem>}
                           <DropdownMenuSeparator />
                           {activeTeamMembers.map((member) => (
-                            <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                            <DropdownMenuItem key={member.id} onSelect={()={()> handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
                               {member.name} ({member.role})
                             </DropdownMenuItem>
                           ))}
@@ -1172,7 +1172,7 @@ export default function PropertiesPage() {
                                   <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)} disabled={!prop.assignedTo}>Unassign</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   {activeTeamMembers.map((member) => (
-                                    <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                                    <DropdownMenuItem key={member.id} onSelect={()={()> handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
                                       {member.name} ({member.role})
                                     </DropdownMenuItem>
                                   ))}
@@ -1425,7 +1425,7 @@ export default function PropertiesPage() {
                     </Popover>
                     <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
                     <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                    <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                    <Button variant="outline" className="rounded-full" onClick={()={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
               </div>
             </div>
             
@@ -1465,8 +1465,8 @@ export default function PropertiesPage() {
                 </PopoverTrigger>
                 <PopoverContent className="w-40 p-2 mb-2">
                     <div className="flex flex-col gap-2">
-                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Sale'); setIsAddMenuOpen(false); }}>For Sale</Button>
-                        <Button variant="ghost" onClick={() => { handleOpenAddDialog('For Rent'); setIsAddMenuOpen(false); }}>For Rent</Button>
+                        <Button variant="ghost" onClick={()={() => { handleOpenAddDialog('For Sale'); setIsAddMenuOpen(false); }}>For Sale</Button>
+                        <Button variant="ghost" onClick={()={() => { handleOpenAddDialog('For Rent'); setIsAddMenuOpen(false); }}>For Rent</Button>
                     </div>
                 </PopoverContent>
             </Popover>
@@ -1510,7 +1510,7 @@ export default function PropertiesPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={()={() => handleExport('For Sale')}>Export Sale Properties</AlertDialogAction>
                 <AlertDialogAction onClick={() => handleExport('For Rent')}>Export Rent Properties</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1526,7 +1526,7 @@ export default function PropertiesPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Properties</AlertDialogAction>
+                <AlertDialogAction onClick={()={() => handleImportClick('For Sale')}>Import Sale Properties</AlertDialogAction>
                 <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Properties</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
@@ -1535,7 +1535,5 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-
 
     
