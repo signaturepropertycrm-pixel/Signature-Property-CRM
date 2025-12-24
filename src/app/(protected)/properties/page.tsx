@@ -44,6 +44,7 @@ import {
   FileArchive,
   UserPlus,
   Circle,
+  Clock,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -1130,14 +1131,12 @@ export default function PropertiesPage() {
               <TableCell onClick={() => handleRowClick(prop)}>
                 <div className="flex flex-col gap-1 items-start">
                     <div className="flex items-center gap-2">
-                         {paymentConfig && (
+                        {paymentConfig && (
                             <Tooltip>
                                 <TooltipTrigger>
                                      <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>{paymentConfig.label}</p>
-                                </TooltipContent>
+                                <TooltipContent><p>{paymentConfig.label}</p></TooltipContent>
                             </Tooltip>
                         )}
                         <Badge className={prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground'}>
@@ -1268,9 +1267,7 @@ export default function PropertiesPage() {
                                     <TooltipTrigger>
                                         <Circle className={cn("h-3 w-3", paymentConfig.dotColor)} fill={paymentConfig.dotColor}/>
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{paymentConfig.label}</p>
-                                    </TooltipContent>
+                                    <TooltipContent><p>{paymentConfig.label}</p></TooltipContent>
                                 </Tooltip>
                             )}
                             <Badge className={cn("flex-shrink-0", prop.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 text-white' : prop.status === 'Rent Out' ? 'bg-blue-600 hover:bg-blue-700 text-white' : prop.status === 'Sold (External)' ? 'bg-slate-500 hover:bg-slate-600 text-white' : 'bg-primary text-primary-foreground')}>
