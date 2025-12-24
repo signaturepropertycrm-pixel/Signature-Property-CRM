@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { Check, ArrowRight, Star, Info } from 'lucide-react';
+import { Check, ArrowRight, Star, Info, Users, Briefcase } from 'lucide-react';
 import { useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useProfile } from '@/context/profile-context';
@@ -13,60 +13,50 @@ import { format } from 'date-fns';
 import { PaymentDialog } from '@/components/payment-dialog';
 import type { Plan } from '@/components/payment-dialog';
 
-
-const plans: Plan[] = [
+const agentPlans: Plan[] = [
     {
-        name: 'Basic',
-        price: { monthly: 5000, yearly: 50000 },
-        description: 'Ideal for small agencies getting started and managing a focused portfolio.',
+        name: 'Free',
+        price: { monthly: 0, yearly: 0 },
+        description: 'Perfect for getting started and working with a single agency.',
         features: [
-            'Up to 500 Properties',
-            'Up to 500 Buyers',
-            'Up to 3 Team Members',
-            'Core CRM Features',
-            'Reports & Analytics',
-            'Follow-ups & Appointments',
-            'Standard Support',
+            'Connect with 1 Agency',
+            'Manage Assigned Properties',
+            'Manage Assigned Buyers',
+            'Use Core CRM Tools',
         ],
-        cta: 'Choose Basic',
+        cta: 'Current Plan',
         isPopular: false,
     },
     {
         name: 'Standard',
-        price: { monthly: 15000, yearly: 150000 },
-        description: 'For growing agencies that need more power and collaboration.',
+        price: { monthly: 2000, yearly: 20000 },
+        description: 'For professional agents expanding their network.',
         features: [
-            'Up to 2,500 Properties',
-            'Up to 2,500 Buyers',
-            'Up to 10 Team Members',
-            'All Basic Features',
-            'Access to All Tools',
-            'View All Activities',
-            'Priority Support',
+            'Connect with up to 2 Agencies',
+            'All Free Features',
+            'Priority Lead Notifications',
+            'Basic Personal Analytics',
         ],
-        cta: 'Choose Standard',
+        cta: 'Upgrade to Standard',
         isPopular: true,
     },
     {
-        name: 'Premium',
-        price: { custom: true },
-        description: 'For large teams requiring advanced features and unlimited scale.',
+        name: 'Pro',
+        price: { monthly: 5000, yearly: 50000 },
+        description: 'For top-tier agents managing multiple agency partnerships.',
         features: [
-            'Unlimited Properties',
-            'Unlimited Buyers',
-            'Unlimited Team Members',
+            'Connect with up to 4 Agencies',
             'All Standard Features',
-            'Custom Integrations',
-            'Dedicated Account Manager',
-            '24/7 Premium Support',
+            'Advanced Tools & Integrations',
+            'Dedicated Support',
         ],
-        cta: 'Contact Sales',
+        cta: 'Upgrade to Pro',
         isPopular: false,
     }
 ];
 
 
-export default function UpgradePage() {
+export default function AgentUpgradePage() {
     const [isYearly, setIsYearly] = useState(false);
     const { profile } = useProfile();
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -77,34 +67,25 @@ export default function UpgradePage() {
         setIsPaymentDialogOpen(true);
     }
     
-    const currentPlanName = profile.planName || 'Basic'; 
-    const isTrialing = !profile.planStartDate && (profile.daysLeftInTrial !== undefined && profile.daysLeftInTrial > 0);
+    // For agents, we can assume they are on the "Free" plan by default.
+    // This logic can be expanded if agent plans are stored in the profile.
+    const currentPlanName = 'Free'; 
 
   return (
     <>
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight font-headline">Find the Right Plan for Your Agency</h1>
+        <h1 className="text-4xl font-bold tracking-tight font-headline">Upgrade Your Agent Account</h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          From solo agents to large-scale enterprises, we have a plan that fits your needs. Scale as you grow.
+          Expand your network by connecting with multiple agencies and unlock powerful features.
         </p>
       </div>
       
        <Alert className="max-w-2xl mx-auto bg-primary/10 border-primary/30">
-          <Info className="h-4 w-4" />
-          <AlertTitle className="font-bold">30-Day Free Trial</AlertTitle>
+          <Briefcase className="h-4 w-4" />
+          <AlertTitle className="font-bold">How It Works</AlertTitle>
           <AlertDescription>
-            {isTrialing ? (
-                <span>
-                    Your free trial of the <strong>Basic</strong> plan ends in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial === 1 ? 'day' : 'days'}</strong> (on {format(new Date(profile.trialEndDate!), 'PPP')}).
-                </span>
-            ) : profile.planStartDate ? (
-                 <span>
-                    Your <strong>{profile.planName}</strong> plan is active. It will renew in <strong>{profile.daysLeftInTrial} {profile.daysLeftInTrial === 1 ? 'day' : 'days'}</strong>.
-                </span>
-            ) : (
-                'All new agency accounts automatically start on a 30-day free trial of our Basic plan.'
-            )}
+              Upgrading your account allows you to accept invitations from multiple agencies simultaneously, increasing your lead flow and opportunities.
           </AlertDescription>
         </Alert>
 
@@ -120,29 +101,17 @@ export default function UpgradePage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 items-start max-w-7xl mx-auto">
-        {plans.map((plan) => {
+        {agentPlans.map((plan) => {
           const isCurrentPlan = plan.name === currentPlanName;
-          const planIndex = plans.findIndex(p => p.name === plan.name);
-          const currentPlanIndex = plans.findIndex(p => p.name === currentPlanName);
-          const isDisabled = isCurrentPlan && !isTrialing;
+          const isDisabled = isCurrentPlan;
 
           let buttonText: React.ReactNode = plan.cta;
-          if (isDisabled) {
+           if (isDisabled) {
               buttonText = 'Current Plan';
-          } else if (isCurrentPlan && isTrialing) {
-              buttonText = 'Activate Plan';
-          } else if (planIndex > currentPlanIndex) {
-              buttonText = 'Upgrade';
-          } else if (!plan.price.custom) {
-              buttonText = 'Downgrade';
           }
-
 
           return (
             <Card key={plan.name} className={cn("flex flex-col h-full relative", plan.isPopular && "border-primary border-2 shadow-primary/20", isCurrentPlan && "ring-2 ring-primary")}>
-              {isCurrentPlan && !isTrialing && (
-                  <div className="absolute -top-3 right-4 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full shadow-lg">Current Plan</div>
-              )}
               {plan.isPopular && (
                    <div className="bg-primary text-primary-foreground text-xs font-bold uppercase tracking-wider text-center py-1 rounded-t-lg -mt-px flex items-center justify-center gap-2">
                       <Star className="h-4 w-4" />
@@ -154,7 +123,7 @@ export default function UpgradePage() {
                   <div className="text-4xl font-extrabold my-4">
                       {plan.price.custom ? (
                           'Custom'
-                      ) : (
+                      ) : plan.price.monthly === 0 ? 'Free' : (
                          isYearly ? (
                           <div className="flex items-center justify-center gap-2">
                              <span>RS {plan.price.yearly.toLocaleString()}</span>
@@ -162,7 +131,7 @@ export default function UpgradePage() {
                           </div>
                          ) : `RS ${plan.price.monthly.toLocaleString()}`
                       )}
-                      {!plan.price.custom && (
+                      {!plan.price.custom && plan.price.monthly > 0 && (
                            <span className="text-sm font-normal text-muted-foreground">/{isYearly ? 'year' : 'month'}</span>
                       )}
                   </div>

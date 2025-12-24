@@ -87,7 +87,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   // Define restricted paths for each role
-  const agentForbiddenPaths = ['/team', '/upgrade', '/documents', '/analytics', '/reports'];
+  const agentForbiddenPaths = ['/team', '/documents', '/analytics', '/reports'];
   const recorderForbiddenPaths = ['/team', '/upgrade', '/buyers', '/analytics', '/reports', '/tools', '/follow-ups', '/appointments', '/activities', '/trash', '/settings', '/support', '/properties', '/documents'];
 
   let isAllowed = true;
@@ -200,5 +200,3 @@ export default function ProtectedLayout({
     </FirebaseClientProvider>
   )
 }
-
-    

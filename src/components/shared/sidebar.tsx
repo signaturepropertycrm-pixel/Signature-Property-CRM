@@ -83,7 +83,8 @@ const mainMenuItems = [
     roles: ['Admin', 'Agent'],
     subItems: [
         { href: '/buyers', label: 'All Buyers'},
-        ...buyerStatuses.map(status => ({ href: `/buyers?status=${encodeURIComponent(status)}`, label: status }))
+        { href: '/buyers?status=Pending', label: 'Pending' },
+        ...buyerStatuses.filter(s => s !== 'Pending').map(status => ({ href: `/buyers?status=${encodeURIComponent(status)}`, label: status }))
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
@@ -111,7 +112,7 @@ const mainMenuItems = [
 const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
-  { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin'] },
+  { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin', 'Agent'] },
 ];
 
 
@@ -259,7 +260,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 isActive={isActive}
                 className={cn("rounded-full transition-all duration-200",
-                   isUpgradeButton ? "glowing-btn" : "hover:bg-primary/10 hover:scale-105"
+                   (isUpgradeButton && profile.role !== 'Agent') ? "glowing-btn" : "hover:bg-primary/10 hover:scale-105"
                 )}
               >
                 {item.icon}
@@ -447,5 +448,3 @@ export function AppSidebar() {
     </TooltipProvider>
   );
 }
-
-    
