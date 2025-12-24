@@ -1100,20 +1100,22 @@ export default function PropertiesPage() {
                     <DropdownMenuItem onSelect={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</DropdownMenuItem>
                     <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</DropdownMenuItem>
                     
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger><UserPlus /> Assign to</DropdownMenuSubTrigger>
-                      <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                          {prop.assignedTo && <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)}>Unassign</DropdownMenuItem>}
-                          <DropdownMenuSeparator />
-                          {activeTeamMembers.map((member) => (
-                            <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
-                              {member.name} ({member.role})
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuPortal>
-                    </DropdownMenuSub>
+                    {profile.role !== 'Agent' && (
+                        <DropdownMenuSub>
+                        <DropdownMenuSubTrigger><UserPlus /> Assign to</DropdownMenuSubTrigger>
+                        <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                            {prop.assignedTo && <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)}>Unassign</DropdownMenuItem>}
+                            <DropdownMenuSeparator />
+                            {activeTeamMembers.map((member) => (
+                                <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                                {member.name} ({member.role})
+                                </DropdownMenuItem>
+                            ))}
+                            </DropdownMenuSubContent>
+                        </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                    )}
 
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
@@ -1124,16 +1126,18 @@ export default function PropertiesPage() {
                     {prop.status === 'Available' && !prop.is_for_rent && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</DropdownMenuItem>
                     )}
-                    {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
+                    {(prop.status === 'Sold' || prop.status === 'Sold (External)') && profile.role !== 'Agent' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</DropdownMenuItem>
                     )}
-                    {(profile.role === 'Admin') && (
+                    {profile.role !== 'Agent' && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</DropdownMenuItem>
                     )}
                     
-                    <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
+                    {profile.role !== 'Agent' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</DropdownMenuItem>
+                    )}
 
-                    {(profile.role !== 'Agent') && (
+                    {profile.role !== 'Agent' && (
                       <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleDelete(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive"><Trash2 />Delete</DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -1222,39 +1226,43 @@ export default function PropertiesPage() {
                               <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRowClick(prop); }}><Eye />View Details</Button>
                               <Button variant="outline" className="justify-start" onClick={(e) => handleWhatsAppChat(e, prop)}><MessageSquare /> Chat on WhatsApp</Button>
                               <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleSetAppointment(prop); }}><CalendarPlus />Set Appointment</Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" className="justify-start w-full"><UserPlus /> Assign to</Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent side="top">
-                                  <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)} disabled={!prop.assignedTo}>Unassign</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  {activeTeamMembers.map((member) => (
-                                    <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
-                                      {member.name} ({member.role})
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              {profile.role !== 'Agent' && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="justify-start w-full"><UserPlus /> Assign to</Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent side="top">
+                                    <DropdownMenuItem onSelect={() => handleAssignUser(prop, null)} disabled={!prop.assignedTo}>Unassign</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {activeTeamMembers.map((member) => (
+                                        <DropdownMenuItem key={member.id} onSelect={() => handleAssignUser(prop, member.id)} disabled={prop.assignedTo === member.id}>
+                                        {member.name} ({member.role})
+                                        </DropdownMenuItem>
+                                    ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                               {prop.is_for_rent && prop.status === 'Available' && (
                                   <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
                               )}
-                              {prop.is_for_rent && prop.status === 'Rent Out' && (
+                              {prop.is_for_rent && prop.status === 'Rent Out' && profile.role !== 'Agent' && (
                                  <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsAvailableForRent(prop); }}><RotateCcw />Mark as Available</Button>
                               )}
                               {prop.status === 'Available' && !prop.is_for_rent && (
                                   <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsSold(prop); }}><CheckCircle />Mark as Sold</Button>
                               )}
-                              {(prop.status === 'Sold' || prop.status === 'Sold (External)') && (
+                              {(prop.status === 'Sold' || prop.status === 'Sold (External)') && profile.role !== 'Agent' && (
                                   <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsUnsold(prop); }}><RotateCcw />Mark as Unsold</Button>
                               )}
-                              {(profile.role === 'Admin') && (
+                              {profile.role !== 'Agent' && (
                                 <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleEdit(prop); }}><Edit />Edit Details</Button>
                               )}
                               
-                              <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
+                              {profile.role !== 'Agent' && (
+                                <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRecordVideo(prop); }}><Video />Mark as Recorded</Button>
+                              )}
 
-                              {(profile.role !== 'Agent') && (
+                              {profile.role !== 'Agent' && (
                                 <>
                                 <Separator />
                                 <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleDelete(prop); }}><Trash2 />Delete</Button>
@@ -1627,3 +1635,4 @@ export default function PropertiesPage() {
     
 
     
+
