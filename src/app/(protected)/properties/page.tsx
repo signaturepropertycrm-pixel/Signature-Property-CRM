@@ -205,6 +205,8 @@ export default function PropertiesPage() {
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [assignmentDetails, setAssignmentDetails] = useState<{ property: Property, agentId: string, agentName: string } | null>(null);
+  const [activePaymentTab, setActivePaymentTab] = useState<string>('all');
+
 
   const [appointmentDetails, setAppointmentDetails] = useState<{
     contactType: AppointmentContactType;
@@ -453,7 +455,7 @@ export default function PropertiesPage() {
     }
 
 
-    // 3. Final Filter: URL Status Param
+    // 3. Final Filter: URL Status Param & Payment Tab
     const currentStatusFilter = statusFilterFromURL || 'All (Sale)';
 
     switch (currentStatusFilter) {
@@ -489,14 +491,25 @@ export default function PropertiesPage() {
              break;
     }
     
-    // 4. Sorting
+    // 4. Payment Status Tab Filter
+    if (activePaymentTab !== 'all') {
+        baseProperties = baseProperties.filter(prop => {
+            const status = prop.recording_payment_status || 'Unpaid';
+            if (activePaymentTab === 'Paid') {
+                return status === 'Paid Online' || status === 'Pending Cash';
+            }
+            return status === activePaymentTab;
+        });
+    }
+
+    // 5. Sorting
     return baseProperties.sort((a, b) => {
         const aNum = parseInt(a.serial_no.split('-')[1] || '0', 10);
         const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
         return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
     });
 
-  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder, activeAgencyTab]);
+  }, [searchQuery, filters, allProperties, statusFilterFromURL, profile.role, user?.uid, sortOrder, activeAgencyTab, activePaymentTab]);
 
   const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
 
@@ -508,7 +521,7 @@ export default function PropertiesPage() {
     useEffect(() => {
         setCurrentPage(1);
         setSelectedProperties([]);
-    }, [searchQuery, filters, statusFilterFromURL, activeAgencyTab]);
+    }, [searchQuery, filters, statusFilterFromURL, activeAgencyTab, activePaymentTab]);
 
 
   const handleRowClick = (prop: Property) => {
@@ -1615,6 +1628,16 @@ export default function PropertiesPage() {
                     </TabsList>
                 </Tabs>
             ) : null}
+
+            <Tabs defaultValue="all" value={activePaymentTab} onValueChange={setActivePaymentTab}>
+                <TabsList className="grid grid-cols-4 w-full max-w-lg">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="Unpaid">Unpaid</TabsTrigger>
+                    <TabsTrigger value="Pending Cash">Pending Cash</TabsTrigger>
+                    <TabsTrigger value="Paid">Paid</TabsTrigger>
+                </TabsList>
+            </Tabs>
+
 
             <div className="mt-4">
               {renderContent(paginatedProperties)}
