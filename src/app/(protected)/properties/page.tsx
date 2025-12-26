@@ -495,7 +495,7 @@ export default function PropertiesPage() {
             baseProperties = baseProperties.filter(p => p.status === 'Rent Out');
             break;
         case 'Recorded':
-            baseProperties = baseProperties.filter(p => p.is_recorded);
+            baseProperties = baseProperties.filter(p => p.is_recorded || p.recording_payment_status === 'Paid Online');
             break;
         default:
              baseProperties = baseProperties.filter(p => !p.is_for_rent);
