@@ -17,6 +17,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { useUser } from '@/firebase/auth/use-user';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -98,29 +99,36 @@ export function AiAssistant() {
   return (
     <>
       {/* Floating Animated Button */}
-      <AnimatePresence>
-        <motion.div
-          className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-50"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Button 
-            onClick={() => setIsOpen(true)}
-            className="rounded-full w-16 h-16 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-2xl border-2 border-white/30 flex flex-col items-center justify-center gap-0 p-0"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            >
-              <Sparkles className="h-6 w-6 text-white" />
-            </motion.div>
-            <span className="text-[9px] font-bold text-white mt-[-2px]">AI</span>
-          </Button>
-        </motion.div>
-      </AnimatePresence>
+       <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                     <motion.div
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        <Button 
+                          onClick={() => setIsOpen(true)}
+                          size="icon"
+                          className="rounded-full w-14 h-14 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-2xl border-2 border-white/30 flex flex-col items-center justify-center gap-0 p-0"
+                        >
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Sparkles className="h-6 w-6 text-white" />
+                          </motion.div>
+                           <span className="text-[9px] font-bold text-white mt-[-2px]">AI</span>
+                        </Button>
+                      </motion.div>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                    <p>AI Quick Add</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
 
       {/* AI Dialog Box */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

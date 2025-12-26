@@ -39,7 +39,6 @@ import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-// 👇 NEW IMPORT ADDED HERE
 import { AiAssistant } from '@/components/ai-assistant'; 
 
 const ITEMS_PER_PAGE = 50;
@@ -1268,22 +1267,24 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            {profile.role !== 'Agent' && (
-            <div className={cn("fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                            <PlusCircle className="h-6 w-6" />
-                            <span className="sr-only">Add Buyer</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">Add Buyer</TooltipContent>
-                </Tooltip>
+            <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity">
+                {profile.role !== 'Agent' && (
+                    <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                                    <PlusCircle className="h-6 w-6" />
+                                    <span className="sr-only">Add Buyer</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">Add Buyer</TooltipContent>
+                        </Tooltip>
+                    </div>
+                )}
+                <div className="absolute bottom-16 right-0 md:bottom-16">
+                     <AiAssistant /> 
+                </div>
             </div>
-            )}
-
-            {/* 👇 ADDED AI ASSISTANT BUTTON HERE */}
-            <AiAssistant /> 
 
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
@@ -1341,3 +1342,4 @@ export default function BuyersPage() {
         </>
     );
 }
+
