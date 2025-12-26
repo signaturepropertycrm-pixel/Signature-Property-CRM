@@ -1,3 +1,4 @@
+
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,8 @@ import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+// 👇 NEW IMPORT ADDED HERE
+import { AiAssistant } from '@/components/ai-assistant'; 
 
 const ITEMS_PER_PAGE = 50;
 
@@ -865,7 +868,9 @@ export default function BuyersPage() {
                                             <DropdownMenuPortal>
                                                 <DropdownMenuSubContent>
                                                     {buyerStatuses.map((status) => (
-                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>{status}</DropdownMenuItem>
+                                                        <DropdownMenuItem key={status} onSelect={(e) => { e.stopPropagation(); handleStatusChange(buyer, status); }} disabled={buyer.status === status}>
+                                                            {status}
+                                                        </DropdownMenuItem>
                                                     ))}
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
@@ -991,6 +996,32 @@ export default function BuyersPage() {
             </div>
         );
     };
+
+    const renderPagination = () => (
+      <div className="flex items-center justify-end space-x-2 py-4">
+          <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+          </span>
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+          >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+          </Button>
+          <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+          >
+              Next
+              <ChevronRight className="h-4 w-4" />
+          </Button>
+      </div>
+    );
 
     const renderContent = (buyers: Buyer[]) => {
         const content = isMobile ? renderCards(buyers) : (
@@ -1250,6 +1281,9 @@ export default function BuyersPage() {
                 </Tooltip>
             </div>
             )}
+
+            {/* 👇 ADDED AI ASSISTANT BUTTON HERE */}
+            <AiAssistant /> 
 
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
