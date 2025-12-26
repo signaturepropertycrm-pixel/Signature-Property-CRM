@@ -496,7 +496,10 @@ export default function PropertiesPage() {
         baseProperties = baseProperties.filter(prop => {
             const status = prop.recording_payment_status || 'Unpaid';
             if (activePaymentTab === 'Paid') {
-                return status === 'Paid Online' || status === 'Pending Cash';
+                return status === 'Paid Online';
+            }
+             if (activePaymentTab === 'Pending') {
+                return status === 'Pending Cash';
             }
             return status === activePaymentTab;
         });
@@ -1633,7 +1636,7 @@ export default function PropertiesPage() {
                 <TabsList className="grid grid-cols-4 w-full max-w-lg">
                     <TabsTrigger value="all">All</TabsTrigger>
                     <TabsTrigger value="Unpaid">Unpaid</TabsTrigger>
-                    <TabsTrigger value="Pending Cash">Pending Cash</TabsTrigger>
+                    <TabsTrigger value="Pending">Pending</TabsTrigger>
                     <TabsTrigger value="Paid">Paid</TabsTrigger>
                 </TabsList>
             </Tabs>
