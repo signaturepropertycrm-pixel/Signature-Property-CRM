@@ -391,7 +391,7 @@ export default function OverviewPage() {
         const rentOutInLast30Days = finalProperties?.filter(p => p.status === 'Rent Out' && p.rent_out_date && filterLast30Days(p)) || [];
         const rentRevenue30d = rentOutInLast30Days.reduce((sum, prop) => sum + (prop.rent_total_commission || 0), 0);
 
-        const paidVideos30d = finalProperties?.filter(p => p.recording_payment_status !== 'Unpaid' && p.recording_payment_date && filterLast30Days(p)) || [];
+        const paidVideos30d = finalProperties?.filter(p => p.recording_payment_status === 'Paid Online' && p.recording_payment_date && filterLast30Days(p)) || [];
         const recordingRevenue30d = paidVideos30d.reduce((sum, prop) => sum + (prop.recording_payment_amount || 0), 0);
 
 
@@ -672,4 +672,3 @@ export default function OverviewPage() {
         </div>
     );
 }
-

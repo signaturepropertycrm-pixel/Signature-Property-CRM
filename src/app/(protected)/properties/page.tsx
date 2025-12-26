@@ -404,6 +404,17 @@ export default function PropertiesPage() {
     setSelectedProperties([]);
   };
 
+  const handleRevertPayment = async (prop: Property) => {
+      if (!profile.agency_id) return;
+      const docRef = doc(firestore, 'agencies', profile.agency_id, 'properties', prop.id);
+      await updateDoc(docRef, {
+          recording_payment_status: 'Unpaid',
+          recording_payment_amount: null,
+          recording_payment_date: null,
+      });
+      toast({ title: 'Payment Reverted', description: `${prop.serial_no} is now marked as Unpaid.` });
+  };
+
   const filteredProperties = useMemo(() => {
     if (!allProperties) return [];
     
@@ -501,7 +512,7 @@ export default function PropertiesPage() {
              if (activePaymentTab === 'Pending') {
                 return status === 'Pending Cash';
             }
-            return status === activePaymentTab;
+            return status === 'Unpaid' && activePaymentTab === 'Unpaid';
         });
     }
 
@@ -1192,6 +1203,9 @@ export default function PropertiesPage() {
                         </DropdownMenuSub>
                     )}
 
+                    {prop.recording_payment_status === 'Paid Online' && profile.role !== 'Agent' && (
+                        <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleRevertPayment(prop); }} className="text-destructive focus:text-destructive-foreground focus:bg-destructive/10"><RotateCcw />Revert to Unpaid</DropdownMenuItem>
+                    )}
                     {prop.is_for_rent && prop.status === 'Available' && (
                         <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</DropdownMenuItem>
                     )}
@@ -1332,6 +1346,9 @@ export default function PropertiesPage() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                               )}
+                                {prop.recording_payment_status === 'Paid Online' && profile.role !== 'Agent' && (
+                                    <Button variant="destructive" className="justify-start" onClick={(e) => { e.stopPropagation(); handleRevertPayment(prop); }}><RotateCcw />Revert to Unpaid</Button>
+                                )}
                               {prop.is_for_rent && prop.status === 'Available' && (
                                   <Button variant="outline" className="justify-start" onClick={(e) => { e.stopPropagation(); handleMarkAsRentOut(prop); }}><ArchiveRestore />Mark as Rent Out</Button>
                               )}
@@ -1742,5 +1759,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
