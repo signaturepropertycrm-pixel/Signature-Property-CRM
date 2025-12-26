@@ -394,7 +394,6 @@ export default function OverviewPage() {
         const paidVideos30d = finalProperties?.filter(p => p.recording_payment_status === 'Paid Online' && p.recording_payment_date && filterLast30Days(p)) || [];
         const recordingRevenue30d = paidVideos30d.reduce((sum, prop) => sum + (prop.recording_payment_amount || 0), 0);
 
-
         const propertiesForRent = finalProperties?.filter(p => p.status === 'Available' && p.is_for_rent).length || 0;
 
         const interestedBuyers = finalBuyers?.filter(b => b.status === 'Interested' && !b.is_deleted).length || 0;
@@ -408,7 +407,6 @@ export default function OverviewPage() {
         const newProperties30d = finalProperties?.filter(p => !p.is_for_rent && filterLast30Days(p)).length || 0;
         const newBuyers30d = finalBuyers?.filter(b => b.listing_type === 'For Sale' && filterLast30Days(b)).length || 0;
         const newRentBuyers30d = finalBuyers?.filter(b => b.listing_type === 'For Rent' && filterLast30Days(b)).length || 0;
-
 
         return {
             totalProperties,
@@ -426,6 +424,7 @@ export default function OverviewPage() {
             cancelledAppointments30d,
             upcomingAppointments,
             soldInLast30DaysCount: soldInLast30Days.length,
+            rentOutInLast30DaysCount: rentOutInLast30Days.length,
             newProperties30d,
             newBuyers30d,
             newRentBuyers30d
@@ -470,12 +469,30 @@ export default function OverviewPage() {
             isLoading
         },
         {
+            title: "Properties Sold (30d)",
+            value: stats.soldInLast30DaysCount,
+            change: `Total sales in last 30 days`,
+            icon: <CheckCircle className="h-4 w-4" />,
+            color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
+            href: "/reports",
+            isLoading
+        },
+        {
             title: "Sale Revenue (30d)",
             value: formatCurrency(stats.revenue30d, currency, { notation: 'compact' }),
             change: `From ${stats.soldInLast30DaysCount} sales`,
             icon: <DollarSign className="h-4 w-4" />,
             color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
             href: "/reports",
+            isLoading
+        },
+        {
+            title: 'Rent Outs (30d)',
+            value: stats.rentOutInLast30DaysCount,
+            change: 'Total rentals in last 30 days',
+            icon: <CheckCircle className="h-4 w-4" />,
+            color: 'bg-lime-100 dark:bg-lime-900 text-lime-600 dark:text-lime-300',
+            href: '/reports',
             isLoading
         },
         {
@@ -519,6 +536,15 @@ export default function OverviewPage() {
             icon: <PhoneForwarded className="h-4 w-4" />,
             color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
             href: "/follow-ups",
+            isLoading
+        },
+        {
+            title: 'Appointments (30d)',
+            value: stats.appointments30d,
+            change: `${stats.upcomingAppointments} upcoming`,
+            icon: <CalendarDays className="h-4 w-4" />,
+            color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
+            href: '/appointments',
             isLoading
         },
          {
