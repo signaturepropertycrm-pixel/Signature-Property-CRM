@@ -40,7 +40,7 @@ export function AiAssistant() {
       setResult(data);
       toast({ title: "Analysis Complete", description: `Detected: ${data.type}` });
     } else {
-      toast({ title: "AI Error", description: "Kuch samajh nahi aya. Dobara try karen.", variant: "destructive" });
+      toast({ title: "AI Error", description: "AI could not understand the request. Please try again.", variant: "destructive" });
     }
     setLoading(false);
   };
@@ -141,14 +141,14 @@ export function AiAssistant() {
                </span>
             </DialogTitle>
             <DialogDescription>
-              Koi bhi WhatsApp message, SMS, ya details yahan paste karen. AI khud data nikal lega.
+              Paste any WhatsApp message, SMS, or details here. The AI will automatically extract the data.
             </DialogDescription>
           </DialogHeader>
 
           {!result ? (
             <div className="space-y-4 py-4">
               <Textarea 
-                placeholder="Paste here... e.g.: 'Aslam o alikum, I need 10 marla plot in DHA Phase 7, range 3 crore.'"
+                placeholder="e.g.: 'Aslam o alikum, I need 10 marla plot in DHA Phase 7, range 3 crore.'"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 className="min-h-[150px] text-base p-4 border-2 focus-visible:ring-purple-500"
@@ -156,11 +156,11 @@ export function AiAssistant() {
               <Button onClick={handleAnalyze} disabled={loading || !inputText} className="w-full h-12 text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transition-all shadow-lg">
                 {loading ? (
                     <>
-                        <Loader2 className="animate-spin mr-2" /> Soch raha hon...
+                        <Loader2 className="animate-spin mr-2" /> Thinking...
                     </>
                 ) : (
                     <>
-                        <Sparkles className="mr-2 h-5 w-5" /> Analyze Magic
+                        <Sparkles className="mr-2 h-5 w-5" /> Analyze with AI
                     </>
                 )}
               </Button>
