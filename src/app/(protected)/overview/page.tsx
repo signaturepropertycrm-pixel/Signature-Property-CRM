@@ -2,7 +2,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle, Loader2 } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle, Loader2, Circle, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -573,6 +573,10 @@ export default function OverviewPage() {
         const editingCount = assignedProperties.filter(p => p.is_recorded && p.editing_status === 'In Editing').length;
         const completedCount = assignedProperties.filter(p => p.is_recorded && p.editing_status === 'Complete' && p.recording_payment_status !== 'Unpaid').length;
 
+        const unpaidCount = assignedProperties.filter(p => (p.recording_payment_status || 'Unpaid') === 'Unpaid').length;
+        const paidOnlineCount = assignedProperties.filter(p => p.recording_payment_status === 'Paid Online').length;
+        const pendingCashCount = assignedProperties.filter(p => p.recording_payment_status === 'Pending Cash').length;
+
         const videoRecorderStats: StatCardProps[] = [
             {
                 title: "Pending Recordings",
@@ -598,12 +602,36 @@ export default function OverviewPage() {
                 isLoading,
                 href: "/editing",
             },
+            {
+                title: "Total Unpaid",
+                value: unpaidCount,
+                icon: <Circle className="h-4 w-4" />,
+                color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
+                isLoading,
+                href: "/recording?tab=Unpaid",
+            },
+            {
+                title: "Paid Online",
+                value: paidOnlineCount,
+                icon: <CheckCircle className="h-4 w-4" />,
+                color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
+                isLoading,
+                href: "/recording?tab=Paid Online",
+            },
+            {
+                title: "Pending Cash",
+                value: pendingCashCount,
+                icon: <Clock className="h-4 w-4" />,
+                color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
+                isLoading,
+                href: "/recording?tab=Pending Cash",
+            },
         ];
         return (
              <div className="space-y-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-3"><Video/> Video Workflow</h1>
-                    <p className="text-muted-foreground">Your assigned video recording tasks.</p>
+                    <p className="text-muted-foreground">Welcome, {profile.name}. Here are your assigned video recording tasks.</p>
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {videoRecorderStats.map(card => <StatCard key={card.title} {...card} />)}
@@ -698,3 +726,4 @@ export default function OverviewPage() {
         </div>
     );
 }
+
