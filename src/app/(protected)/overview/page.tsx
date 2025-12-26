@@ -570,8 +570,8 @@ export default function OverviewPage() {
     if (profile.role === 'Video Recorder') {
         const assignedProperties = properties || [];
         const pendingCount = assignedProperties.filter(p => !p.is_recorded).length;
-        const editingCount = assignedProperties.filter(p => p.is_recorded && p.editing_status !== 'Complete').length;
-        const completedCount = assignedProperties.filter(p => p.editing_status === 'Complete').length;
+        const editingCount = assignedProperties.filter(p => p.is_recorded && p.editing_status === 'In Editing').length;
+        const completedCount = assignedProperties.filter(p => p.is_recorded && p.editing_status === 'Complete' && p.recording_payment_status !== 'Unpaid').length;
 
         const videoRecorderStats: StatCardProps[] = [
             {

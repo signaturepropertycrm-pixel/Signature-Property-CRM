@@ -143,7 +143,9 @@ export const useNotifications = () => {
                     // Invitation responses for admins
                     (act.targetType === 'Invitation' && profile.role === 'Admin') ||
                     // Assignment notifications for the specific user
-                    (act.action.includes('assigned') && act.assignedToId === user?.uid)
+                    (act.action.includes('assigned') && act.assignedToId === user?.uid) ||
+                    // Payment reversal notification
+                    (act.action.includes('reverted payment to Unpaid') && act.assignedToId === user?.uid)
                 )
                 .map(act => {
                     let title = `Activity by ${act.userName}`;
@@ -154,6 +156,9 @@ export const useNotifications = () => {
                     } else if (act.targetType === 'Invitation') {
                          title = `Invitation Response`;
                          description = act.action;
+                    } else if (act.action.includes('reverted payment')) {
+                        title = 'Payment Reverted';
+                        description = `${act.userName} marked ${act.target} as Unpaid.`;
                     } else if(act.details) {
                         title = `Status Update by ${act.userName}`;
                         description = `${act.target} status changed from ${act.details.from} to ${act.details.to}`;
@@ -271,7 +276,7 @@ export const useNotifications = () => {
         batch.set(activityLogRef, {
             userName: profile.name,
             userAvatar: profile.avatar || '',
-            action: `${profile.name} rejected the invitation to join.`,
+            action: `${profile.name} rejected the invitation.`,
             target: invitationData.fromAgencyName,
             targetType: 'Invitation',
             details: null,
@@ -285,5 +290,3 @@ export const useNotifications = () => {
 
     return { notifications, isLoading, acceptInvitation, rejectInvitation, markAsRead, markAllAsRead, deleteNotification, forceRefresh };
 };
-
-    
