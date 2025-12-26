@@ -22,6 +22,7 @@ import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const paymentStatusConfig: Record<RecordingPaymentStatus, { color: string; label: string; icon: React.FC<any>, borderColor: string; }> = {
@@ -40,6 +41,7 @@ export default function RecordingPage() {
   const [propertyForReason, setPropertyForReason] = useState<Property | null>(null);
   const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('all');
 
   const propertiesQuery = useMemoFirebase(() => 
     profile.agency_id && profile.user_id
@@ -55,15 +57,21 @@ export default function RecordingPage() {
 
   const filteredProperties = useMemo(() => {
     if (!properties) return [];
-    if (!searchQuery) return properties;
+
+    let filteredByTab = properties;
+    if (activeTab !== 'all') {
+        filteredByTab = properties.filter(prop => (prop.recording_payment_status || 'Unpaid') === activeTab);
+    }
+    
+    if (!searchQuery) return filteredByTab;
 
     const lowercasedQuery = searchQuery.toLowerCase();
-    return properties.filter(prop => 
+    return filteredByTab.filter(prop => 
         prop.serial_no.toLowerCase().includes(lowercasedQuery) ||
         prop.auto_title.toLowerCase().includes(lowercasedQuery) ||
         prop.address.toLowerCase().includes(lowercasedQuery)
     );
-  }, [properties, searchQuery]);
+  }, [properties, searchQuery, activeTab]);
 
   const handleMarkAsRecorded = async (property: Property) => {
     if (!profile.agency_id) return;
@@ -229,6 +237,20 @@ export default function RecordingPage() {
         })}
     </div>
   );
+  
+  const renderContent = (properties: Property[]) => {
+      if (isLoading) {
+        return <div className="text-center py-10 text-muted-foreground">Loading pending recordings...</div>
+      }
+      if (properties.length === 0) {
+        return (
+          <div className="text-center py-20 text-muted-foreground bg-card rounded-lg">
+            No pending recordings found for this category.
+          </div>
+        )
+      }
+      return isMobile ? renderCards(properties) : renderTable(properties);
+  }
 
   return (
     <>
@@ -238,25 +260,38 @@ export default function RecordingPage() {
         <p className="text-muted-foreground">Properties assigned to you for video recording.</p>
       </div>
 
-      <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by SN, Title, or Address..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-      </div>
-      
-      {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Loading pending recordings...</div>
-      ) : filteredProperties.length > 0 ? (
-        isMobile ? renderCards(filteredProperties) : renderTable(filteredProperties)
-      ) : (
-        <div className="text-center py-20 text-muted-foreground bg-card rounded-lg">
-            No pending recordings found.
-        </div>
-      )}
+       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex justify-between items-center gap-4">
+              <TabsList className="grid grid-cols-4 w-full max-w-lg">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="Unpaid">Unpaid</TabsTrigger>
+                <TabsTrigger value="Pending Cash">Pending Cash</TabsTrigger>
+                <TabsTrigger value="Paid Online">Paid</TabsTrigger>
+              </TabsList>
+              <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search by SN, Title, or Address..."
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+              </div>
+          </div>
+
+          <TabsContent value="all" className="mt-6">
+            {renderContent(filteredProperties)}
+          </TabsContent>
+          <TabsContent value="Unpaid" className="mt-6">
+            {renderContent(filteredProperties)}
+          </TabsContent>
+          <TabsContent value="Pending Cash" className="mt-6">
+            {renderContent(filteredProperties)}
+          </TabsContent>
+          <TabsContent value="Paid Online" className="mt-6">
+            {renderContent(filteredProperties)}
+          </TabsContent>
+      </Tabs>
     </div>
     {propertyForReason && (
         <CannotRecordDialog 
