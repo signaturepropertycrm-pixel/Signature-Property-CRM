@@ -59,10 +59,7 @@ export function RecordVideoDialog({
     },
   });
 
-  const { watch, reset } = form;
-  const formValues = watch();
-
-  const canSave = Object.values(formValues).some(link => link && link.length > 0);
+  const { reset } = form;
 
   useEffect(() => {
     reset({
@@ -196,7 +193,7 @@ export function RecordVideoDialog({
                 >
                     Cancel
                 </Button>
-                <Button type="submit" disabled={!canSave}>Save</Button>
+                <Button type="submit">Save</Button>
                </div>
             </div>
           </form>

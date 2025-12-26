@@ -1,5 +1,3 @@
-
-
 'use client';
 import { AddBuyerDialog } from '@/components/add-buyer-dialog';
 import { Button } from '@/components/ui/button';
@@ -115,7 +113,7 @@ export default function BuyersPage() {
         }
 
         // 3. Agar ADMIN hai, to saaray buyers mangwao
-        return query(baseRef, where('is_deleted', '==', false)); 
+        return query(baseRef); 
         
     }, [profile.agency_id, profile.role, user?.uid, firestore]);
     
@@ -417,22 +415,17 @@ export default function BuyersPage() {
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
 
-        let baseBuyers: Buyer[] = [...allBuyers];
+        // 1. Base Data (Query se already filtered aa raha hai for Agents)
+        let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        if (profile.role === 'Admin' && activeAgencyTab) {
-            baseBuyers = baseBuyers.filter(b => b.agency_id === activeAgencyTab);
-        } else if (profile.role === 'Agent' && user?.uid) {
-            baseBuyers = allBuyers.filter(b => {
-                if (activeTab === 'myLeads') {
-                    return b.created_by === user.uid;
-                }
-                return b.assignedTo === user.uid && b.agency_id === activeAgencyTab;
-            });
+        // 2. Sirf Admin ke liye agency check (Agent ka data query khud filter kar rahi hai)
+        if (profile.role === 'Admin') {
+             baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
         }
         
         // --- BAAQI FILTERS (Sale/Rent, Status, Search etc) ---
         
-        let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === listingTypeFilterFromURL);
+        let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
         if (activeStatusFilter && activeStatusFilter !== 'All') {
             filtered = filtered.filter(b => b.status === activeStatusFilter);
@@ -465,7 +458,7 @@ export default function BuyersPage() {
             const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
             return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
         });
-    }, [searchQuery, filters, allBuyers, profile.role, activeTab, activeStatusFilter, sortOrder, activeAgencyTab, user?.uid, listingTypeFilterFromURL]);
+    }, [searchQuery, filters, allBuyers, profile.role, activeTab, activeStatusFilter, sortOrder, profile.agency_id]);
 
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
@@ -758,32 +751,6 @@ export default function BuyersPage() {
             setSelectedBuyers([]);
         }
     };
-    
-    const renderPagination = () => (
-      <div className="flex items-center justify-end space-x-2 py-4">
-          <span className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
-          </span>
-          <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-          >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-          </Button>
-          <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-          >
-              Next
-              <ChevronRight className="h-4 w-4" />
-          </Button>
-      </div>
-    );
 
     const renderTable = (buyers: Buyer[]) => {
         if (isAgencyLoading) {
