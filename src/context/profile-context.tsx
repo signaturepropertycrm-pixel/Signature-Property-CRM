@@ -100,10 +100,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (role === 'Agent' && agentProfile) {
             name = agentProfile.name || name;
             phone = agentProfile.phone || phone;
-        } else if ((role === 'Admin' || role === 'Video Recorder') && agencyProfile) {
+        } else if (role === 'Admin' && agencyProfile) {
             name = agencyProfile.name || name;
             phone = agencyProfile.phone || phone;
+        } else if (role === 'Video Recorder' && teamMemberProfile) {
+             name = teamMemberProfile.name || name;
+             phone = teamMemberProfile.phone || phone;
         }
+
 
         let trialEndDate: string | undefined;
         let daysLeftInTrial: number | undefined;
