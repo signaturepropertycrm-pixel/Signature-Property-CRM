@@ -1,3 +1,4 @@
+
 // File: src/lib/gemini.ts
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -29,12 +30,12 @@ export async function analyzeRealEstateText(text: string) {
       **Rules for Extraction:**
       1.  If a field is not present in the text, its value in the JSON should be \`null\`.
       2.  Convert textual numbers to digits (e.g., '1 crore' becomes 10000000, '5 marla' becomes 5).
-      3.  **Budget Rule:** If only one budget amount is mentioned (e.g., "demand is 1 Cr"), set both \`budget_min_amount\` and \`budget_max_amount\` to that same value.
+      3.  **Budget Rule:** If only one budget amount is mentioned (e.g., "demand is 1 Cr"), set both \`budget_min_amount\` and \`budget_max_amount\` to that same value, and do the same for units.
       4.  The \`type\` field MUST be either "Buyer" or "Property".
 
       ---
       **Scenario 1: If it is a BUYER (Demand):**
-      Use this JSON structure.
+      Use this JSON structure. If a field isn't mentioned, use \`null\`.
       {
         "type": "Buyer",
         "data": {
@@ -44,8 +45,8 @@ export async function analyzeRealEstateText(text: string) {
           "budget_min_unit": "Crore",
           "budget_max_amount": 10000000,
           "budget_max_unit": "Crore",
-          "area_preference": "Extract location/society name, can be multiple comma-separated",
-          "property_type_preference": "House, Plot, Flat, Shop, etc.",
+          "area_preference": "Extract location/society name, can be multiple comma-separated, else null",
+          "property_type_preference": "House, Plot, Flat, Shop, etc, else null",
           "size_min_value": 5,
           "size_min_unit": "Marla",
           "size_max_value": 5,
@@ -55,14 +56,14 @@ export async function analyzeRealEstateText(text: string) {
       }
 
       **Scenario 2: If it is a PROPERTY (Listing):**
-      Use this JSON structure.
+      Use this JSON structure. If a field isn't mentioned, use \`null\`.
       {
         "type": "Property",
         "data": {
           "auto_title": "Create a short title e.g. '5 Marla House in DHA'",
           "demand_amount": 5000000,
           "demand_unit": "Lacs",
-          "area": "Extract location/society",
+          "area": "Extract location/society, else null",
           "size_value": 5,
           "size_unit": "Marla",
           "property_type": "House",
