@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Property, UploadedDocument } from '@/lib/types';
-import { Copy, Share2, Check, Video, FileArchive } from 'lucide-react';
+import { Copy, Share2, Check, Video, FileArchive, Wallet, PlugZap } from 'lucide-react';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Separator } from './ui/separator';
@@ -27,7 +27,13 @@ interface SharePropertyDialogProps {
 
 type VideoLinkPlatform = 'tiktok' | 'youtube' | 'instagram' | 'facebook' | 'other';
 
-const generateShareableText = (property: Property, selectedLinks: Record<VideoLinkPlatform, boolean> = {}, includeDocs: boolean = false) => {
+const generateShareableText = (
+    property: Property,
+    selectedLinks: Record<VideoLinkPlatform, boolean> = {},
+    includeDocs: boolean = false,
+    includeFinancials: boolean = false,
+    includeUtilities: boolean = false,
+) => {
     if (!property) return { forCustomer: '', forAgent: '' };
 
     const formatLink = (platform: string, link: string) => {
@@ -55,7 +61,8 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         size: `Size/Marla: ${property.size_value} ${property.size_unit}`,
         storey: property.storey ? `Floor: ${property.storey}` : null,
         roadSize: property.road_size_ft ? `Road Size: ${property.road_size_ft}ft` : null,
-        front: property.front_ft ? `Front/Length: ${property.front_ft}ft` : null,
+        front: property.front_ft ? `Front: ${property.front_ft}ft` : null,
+        length: property.length_ft ? `Length: ${property.length_ft}ft` : null,
         demand: `Demand: ${property.demand_amount} ${property.demand_unit}`,
         address: `Full Address: ${property.address}`,
         ownerNumber: `Owner Number: ${property.owner_number}`,
@@ -71,6 +78,10 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         property.meters?.water && '*- Water*'
     ].filter(Boolean).join('\n') || 'No utilities listed.';
 
+    const customerFinancialsSection = includeFinancials ? `\n*Financials:*\n${details.potentialRent}` : '';
+    const agentFinancialsSection = `\n*Financials:*\n${details.potentialRent}`; // Always show for agent
+    const utilitiesSection = includeUtilities ? `\n*Utilities:*\n${utilities}` : '';
+
     const baseCustomerParts = [
         '*PROPERTY DETAILS 🏡*',
         details.serialNo,
@@ -80,11 +91,10 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         details.storey,
         details.roadSize,
         details.front,
+        details.length,
         details.demand,
-        '\n*Financials:*',
-        details.potentialRent,
-        '\n*Utilities:*',
-        utilities,
+        customerFinancialsSection,
+        utilitiesSection,
         '\n*Documents:*',
         details.documents,
     ];
@@ -102,12 +112,11 @@ const generateShareableText = (property: Property, selectedLinks: Record<VideoLi
         details.storey,
         details.roadSize,
         details.front,
+        details.length,
         details.demand,
         details.ownerNumber,
-        '\n*Financials:*',
-        details.potentialRent,
-        '\n*Utilities:*',
-        utilities,
+        agentFinancialsSection,
+        `\n*Utilities:*\n${utilities}`,
         '\n*Documents:*',
         details.documents,
     ];
@@ -130,6 +139,9 @@ export function SharePropertyDialog({
   const [agentText, setAgentText] = useState('');
   const [loading, setLoading] = useState(false);
   const [includeDocs, setIncludeDocs] = useState(true);
+  const [includeFinancials, setIncludeFinancials] = useState(true);
+  const [includeUtilities, setIncludeUtilities] = useState(true);
+
   const [selectedLinks, setSelectedLinks] = useState<Record<VideoLinkPlatform, boolean>>({
       tiktok: false, youtube: false, instagram: false, facebook: false, other: false
   });
@@ -142,7 +154,6 @@ export function SharePropertyDialog({
   useEffect(() => {
     if (isOpen && property) {
         setLoading(true);
-        // Pre-select all available links by default
         const initialSelected: Record<VideoLinkPlatform, boolean> = {
              tiktok: !!property.video_links?.tiktok,
              youtube: !!property.video_links?.youtube,
@@ -151,20 +162,20 @@ export function SharePropertyDialog({
              other: !!property.video_links?.other
         };
         setSelectedLinks(initialSelected);
-        const { forCustomer, forAgent } = generateShareableText(property, initialSelected, includeDocs);
+        const { forCustomer, forAgent } = generateShareableText(property, initialSelected, includeDocs, includeFinancials, includeUtilities);
         setCustomerText(forCustomer);
         setAgentText(forAgent);
         setLoading(false);
     }
-  }, [isOpen, property, includeDocs]);
+  }, [isOpen, property, includeDocs, includeFinancials, includeUtilities]);
 
   useEffect(() => {
     if (isOpen && property) {
-       const { forCustomer, forAgent } = generateShareableText(property, selectedLinks, includeDocs);
+       const { forCustomer, forAgent } = generateShareableText(property, selectedLinks, includeDocs, includeFinancials, includeUtilities);
        setCustomerText(forCustomer);
        setAgentText(forAgent);
     }
-  }, [selectedLinks, isOpen, property, includeDocs]);
+  }, [selectedLinks, isOpen, property, includeDocs, includeFinancials, includeUtilities]);
 
   const handleLinkSelectionChange = (platform: VideoLinkPlatform) => {
       setSelectedLinks(prev => ({ ...prev, [platform]: !prev[platform] }));
@@ -197,10 +208,28 @@ export function SharePropertyDialog({
           </DialogTitle>
         </DialogHeader>
 
-          {(availableLinks.length > 0 || (property.uploaded_documents && property.uploaded_documents.length > 0)) && <Separator />}
-
+          <div className="space-y-4">
+              <p className="text-sm font-semibold">Include Sections:</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                 <div className="flex items-center space-x-2">
+                      <Checkbox id="include-financials" checked={includeFinancials} onCheckedChange={(checked) => setIncludeFinancials(checked as boolean)} />
+                      <Label htmlFor="include-financials" className="font-normal flex items-center gap-2 cursor-pointer"><Wallet/> Financials</Label>
+                  </div>
+                   <div className="flex items-center space-x-2">
+                      <Checkbox id="include-utilities" checked={includeUtilities} onCheckedChange={(checked) => setIncludeUtilities(checked as boolean)} />
+                      <Label htmlFor="include-utilities" className="font-normal flex items-center gap-2 cursor-pointer"><PlugZap/> Utilities</Label>
+                  </div>
+                 {property.uploaded_documents && property.uploaded_documents.length > 0 && (
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="include-docs" checked={includeDocs} onCheckedChange={(checked) => setIncludeDocs(checked as boolean)} />
+                        <Label htmlFor="include-docs" className="font-normal flex items-center gap-2 cursor-pointer"><FileArchive/> Document Links</Label>
+                    </div>
+                )}
+              </div>
+          </div>
+          
           {availableLinks.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-4 border-t">
                 <Label className="font-semibold flex items-center gap-2"><Video /> Include Video Links</Label>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {availableLinks.map(platform => (
@@ -219,16 +248,8 @@ export function SharePropertyDialog({
               </div>
           )}
 
-          {property.uploaded_documents && property.uploaded_documents.length > 0 && (
-             <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="include-docs" checked={includeDocs} onCheckedChange={(checked) => setIncludeDocs(checked as boolean)} />
-                    <Label htmlFor="include-docs" className="font-semibold flex items-center gap-2 cursor-pointer"><FileArchive/> Include Document Links</Label>
-                </div>
-             </div>
-          )}
 
-          <Tabs defaultValue="customer">
+          <Tabs defaultValue="customer" className="pt-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="customer">For Customer</TabsTrigger>
               <TabsTrigger value="agent">For Agent</TabsTrigger>
