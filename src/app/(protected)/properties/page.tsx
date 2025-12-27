@@ -163,7 +163,7 @@ export default function PropertiesPage() {
   const searchParams = useSearchParams();
   const { user } = useUser();
   const { profile } = useProfile();
-  const { searchQuery } } from '../layout';
+  const { searchQuery } = useSearch();
   const { isMoreMenuOpen } = useUI();
   const { toast } = useToast();
   const { currency } = useCurrency();
@@ -1759,5 +1759,3 @@ export default function PropertiesPage() {
       </>
     );
   }
-
-    
