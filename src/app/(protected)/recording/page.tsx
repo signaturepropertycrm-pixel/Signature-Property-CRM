@@ -268,15 +268,6 @@ export default function RecordingPage() {
                 <TabsTrigger value="Pending Cash">Pending Cash</TabsTrigger>
                 <TabsTrigger value="Paid Online">Paid</TabsTrigger>
               </TabsList>
-              <div className="relative w-full max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search by SN, Title, or Address..."
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-              </div>
           </div>
 
           <TabsContent value="all" className="mt-6">
