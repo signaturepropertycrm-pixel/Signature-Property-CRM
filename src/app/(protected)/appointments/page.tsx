@@ -230,6 +230,15 @@ function AppointmentsPageContent() {
     const url = `${pathname}?tab=${value}`;
     router.push(url);
   };
+  
+  const formatTime = (time24: string) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours));
+    date.setMinutes(parseInt(minutes));
+    return format(date, 'p'); // 'p' is for localized time, e.g., 5:00 PM
+  };
 
 
   const renderAppointmentCard = (appt: Appointment) => {
@@ -262,7 +271,7 @@ function AppointmentsPageContent() {
                 <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                 <span>{new Date(appt.date).toLocaleDateString()}</span>
                 <Clock className="ml-4 mr-2 h-4 w-4 text-muted-foreground" />
-                <span>{appt.time}</span>
+                <span>{formatTime(appt.time)}</span>
             </div>
             <div className="flex items-center text-sm pt-2 border-t border-dashed">
                 <User className="mr-2 h-4 w-4 text-muted-foreground" />
