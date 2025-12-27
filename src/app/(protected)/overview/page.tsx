@@ -180,7 +180,7 @@ const QuickAdd = () => {
                 <div className="flex gap-2 flex-1">
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="w-[120px] justify-between">
+                            <Button variant="outline" role="combobox" className="w-1/3 justify-between">
                                 {countryCode}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -213,7 +213,7 @@ const QuickAdd = () => {
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         type="tel"
-                        className="flex-1"
+                        className="w-2/3 flex-1"
                     />
                 </div>
                  <Button onClick={handleSave} disabled={isLoading} className="w-full sm:w-auto">
@@ -764,3 +764,4 @@ export default function OverviewPage() {
         </div>
     );
 }
+
