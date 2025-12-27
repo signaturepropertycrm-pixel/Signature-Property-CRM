@@ -1267,9 +1267,12 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className="fixed bottom-40 right-4 md:bottom-24 md:right-8 z-50 transition-opacity">
-                {profile.role !== 'Agent' && (
+            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+                <div className="relative flex flex-col items-center gap-4">
                     <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
+                        <AiAssistant /> 
+                    </div>
+                    {profile.role !== 'Agent' && (
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
@@ -1279,10 +1282,7 @@ export default function BuyersPage() {
                             </TooltipTrigger>
                             <TooltipContent side="left">Add Buyer</TooltipContent>
                         </Tooltip>
-                    </div>
-                )}
-                <div className="absolute bottom-16 right-0 md:bottom-16">
-                     <AiAssistant /> 
+                    )}
                 </div>
             </div>
 
