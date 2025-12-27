@@ -2,7 +2,7 @@
 'use client';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle, Loader2, Circle, Clock } from 'lucide-react';
+import { Building2, Users, UserPlus, DollarSign, Home, UserCheck, ArrowRight, ArrowUpRight, TrendingUp, Star, PhoneForwarded, CalendarDays, CheckCheck, XCircle, CheckCircle, Briefcase, Gem, Info, CalendarClock, CalendarPlus as AddToCalendarIcon, Video, VideoOff, Edit, PlayCircle, Loader2, Circle, Clock, ChevronsUpDown, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
@@ -28,6 +28,9 @@ import { AllEventsDialog } from '@/components/all-events-dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUser } from '@/firebase/auth/use-user';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import { countryCodes } from '@/lib/data';
 
 
 interface StatCardProps {
@@ -84,6 +87,7 @@ const QuickAdd = () => {
     const [leadType, setLeadType] = useState<"Property" | "Buyer">("Property");
     const [listingType, setListingType] = useState<ListingType>("For Sale");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [countryCode, setCountryCode] = useState("+92");
     const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const { profile } = useProfile();
@@ -111,7 +115,7 @@ const QuickAdd = () => {
                 const newProperty: Omit<Property, 'id'> = {
                     serial_no: listingType === 'For Sale' ? `P-${totalSale + 1}` : `RP-${totalRent + 1}`,
                     auto_title: `Pending Lead: ${phoneNumber}`,
-                    owner_number: formatPhoneNumberForWhatsApp(phoneNumber),
+                    owner_number: formatPhoneNumberForWhatsApp(phoneNumber, countryCode),
                     city: '', area: '', address: '',
                     property_type: 'House',
                     size_value: 0, size_unit: 'Marla',
@@ -123,7 +127,7 @@ const QuickAdd = () => {
                     listing_type: listingType,
                     is_for_rent: listingType === 'For Rent',
                     is_recorded: false,
-                    country_code: '+92',
+                    country_code: countryCode,
                 };
                 await addDoc(collection(firestore, 'agencies', profile.agency_id, 'properties'), newProperty);
             } else { // Buyer
@@ -132,8 +136,8 @@ const QuickAdd = () => {
                 const newBuyer: Omit<Buyer, 'id'> = {
                     serial_no: listingType === 'For Sale' ? `B-${totalSale + 1}` : `RB-${totalRent + 1}`,
                     name: `Pending Lead: ${phoneNumber}`,
-                    phone: formatPhoneNumberForWhatsApp(phoneNumber),
-                    country_code: '+92',
+                    phone: formatPhoneNumberForWhatsApp(phoneNumber, countryCode),
+                    country_code: countryCode,
                     status: 'Pending',
                     listing_type: listingType,
                     created_at: new Date().toISOString(),
@@ -144,6 +148,7 @@ const QuickAdd = () => {
             }
             toast({ title: 'Quick Lead Saved!', description: `Details for ${phoneNumber} can be completed later.` });
             setPhoneNumber('');
+            setCountryCode('+92');
         } catch (error) {
             console.error("Quick add failed:", error);
             toast({ title: "Failed to save lead", variant: "destructive" });
@@ -172,12 +177,45 @@ const QuickAdd = () => {
                         <SelectItem value="For Rent">For Rent</SelectItem>
                     </SelectContent>
                 </Select>
-                <Input
-                    placeholder="Enter phone number..."
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    type="tel"
-                />
+                <div className="flex gap-2 flex-1">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="w-[120px] justify-between">
+                                {countryCode}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Command>
+                                <CommandInput placeholder="Search code..." />
+                                <CommandList>
+                                    <CommandEmpty>No country found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {countryCodes.map((c) => (
+                                            <CommandItem
+                                                key={c.code}
+                                                value={c.dial_code}
+                                                onSelect={(currentValue) => {
+                                                    setCountryCode(currentValue);
+                                                }}
+                                            >
+                                                <Check className={cn("mr-2 h-4 w-4", countryCode === c.dial_code ? "opacity-100" : "opacity-0")} />
+                                                {c.dial_code} ({c.name})
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    <Input
+                        placeholder="Enter phone number..."
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        type="tel"
+                        className="flex-1"
+                    />
+                </div>
                  <Button onClick={handleSave} disabled={isLoading} className="w-full sm:w-auto">
                     {isLoading ? <Loader2 className="animate-spin" /> : "Save Lead"}
                 </Button>
