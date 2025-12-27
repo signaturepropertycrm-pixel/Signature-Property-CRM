@@ -183,10 +183,10 @@ export default function BuyersPage() {
         return allBuyers.filter(b => b.created_by === user.uid && !b.is_deleted).length;
     }, [allBuyers, user]);
 
-    const limit = 0; // Limit is now per-agency for agents, not global
+    const limit = isAgent ? Infinity : agencyLimit;
     const currentCount = isAgent ? myLeadsCount : (allBuyers?.filter(b => !b.is_deleted).length || 0);
-    const progress = limit === Infinity ? 100 : (currentCount / limit) * 100;
-    const isLimitReached = false; // Limit logic needs to be per-agency
+    const progress = limit === Infinity ? 0 : (currentCount / limit) * 100;
+    const isLimitReached = !isAgent && currentCount >= limit;
 
 
     const buyerFollowUp = useMemo(() => {
@@ -1267,7 +1267,7 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity">
+            <div className="fixed bottom-40 right-4 md:bottom-24 md:right-8 z-50 transition-opacity">
                 {profile.role !== 'Agent' && (
                     <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                         <Tooltip>
