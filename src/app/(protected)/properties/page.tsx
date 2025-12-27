@@ -163,7 +163,7 @@ export default function PropertiesPage() {
   const searchParams = useSearchParams();
   const { user } = useUser();
   const { profile } = useProfile();
-  const { searchQuery } = useSearch();
+  const { searchQuery } } from '../layout';
   const { isMoreMenuOpen } = useUI();
   const { toast } = useToast();
   const { currency } = useCurrency();
@@ -861,7 +861,7 @@ export default function PropertiesPage() {
         for (let i = 0; i < row.length; i++) {
           const char = row[i];
           if (char === '"') {
-            if (i + 1 < row.length && row[i + 1] === '"') {
+            if (i + 1 < row.length && row[i+1] === '"') {
               currentField += '"';
               i++;
             } else {
@@ -1759,3 +1759,5 @@ export default function PropertiesPage() {
       </>
     );
   }
+
+    

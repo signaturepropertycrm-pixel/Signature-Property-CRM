@@ -88,7 +88,7 @@ export default function BuyersPage() {
     const { user } = useUser();
     const { profile } = useProfile();
     const searchParams = useSearchParams();
-    const { searchQuery } = useSearch();
+    const { searchQuery } } from '../layout';
     const { isMoreMenuOpen } = useUI();
     const { toast } = useToast();
     const { currency } = useCurrency();
@@ -413,19 +413,14 @@ export default function BuyersPage() {
         window.open(`https://wa.me/${phoneNumber}`, '_blank');
     };
 
-    // --- UPDATED FILTER LOGIC (CLEANED) ---
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
 
-        // 1. Base Data (Query se already filtered aa raha hai for Agents)
         let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
         
-        // 2. Sirf Admin ke liye agency check (Agent ka data query khud filter kar rahi hai)
         if (profile.role === 'Admin') {
              baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
         }
-        
-        // --- BAAQI FILTERS (Sale/Rent, Status, Search etc) ---
         
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
@@ -1341,3 +1336,5 @@ export default function BuyersPage() {
     );
 }
 
+
+    
