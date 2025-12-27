@@ -88,7 +88,7 @@ export default function BuyersPage() {
     const { user } = useUser();
     const { profile } = useProfile();
     const searchParams = useSearchParams();
-    const { searchQuery } } from '../layout';
+    const { searchQuery } = useSearch();
     const { isMoreMenuOpen } = useUI();
     const { toast } = useToast();
     const { currency } = useCurrency();
@@ -1262,22 +1262,23 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-50 flex flex-col items-center gap-4">
-                <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-                    <AiAssistant /> 
-                </div>
-                {profile.role !== 'Agent' && (
+            <div className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-50 transition-opacity">
+                <AiAssistant /> 
+            </div>
+
+            {profile.role !== 'Agent' && (
+                <div className={cn("fixed bottom-40 md:bottom-24 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                             <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
                                 <PlusCircle className="h-6 w-6" />
                                 <span className="sr-only">Add Buyer</span>
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent side="left">Add Buyer</TooltipContent>
                     </Tooltip>
-                )}
-            </div>
+                </div>
+            )}
 
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
@@ -1336,5 +1337,3 @@ export default function BuyersPage() {
     );
 }
 
-
-    
