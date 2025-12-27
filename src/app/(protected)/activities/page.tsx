@@ -19,7 +19,7 @@ import React, { useMemo } from 'react';
 import { Activity } from '@/lib/types';
 import { useFirestore } from '@/firebase/provider';
 import { useUser } from '@/firebase/auth/use-user';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, orderBy, getDocs, writeBatch } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -64,7 +64,7 @@ export default function ActivitiesPage() {
     );
   }, [firestore, profile.agency_id]);
 
-  const { data: activities, isLoading } = useGetCollection<Activity>(activitiesQuery);
+  const { data: activities, isLoading } = useCollection<Activity>(activitiesQuery);
   
   const sortedActivities = activities; // Already sorted by query
 

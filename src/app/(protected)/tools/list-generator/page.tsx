@@ -1,8 +1,9 @@
+
 'use client';
 
 import { ListGeneratorTool } from '@/components/list-generator-tool';
 import { useFirestore } from '@/firebase/provider';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -16,8 +17,8 @@ export default function ListGeneratorPage() {
   const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
   const agentPropertiesQuery = useMemoFirebase(() => profile.user_id ? collection(firestore, 'agents', profile.user_id, 'properties') : null, [profile.user_id, firestore]);
   
-  const { data: agencyProperties, isLoading: isAgencyLoading } = useGetCollection<Property>(agencyPropertiesQuery);
-  const { data: agentProperties, isLoading: isAgentLoading } = useGetCollection<Property>(agentPropertiesQuery);
+  const { data: agencyProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
+  const { data: agentProperties, isLoading: isAgentLoading } = useCollection<Property>(agentPropertiesQuery);
 
   const allProperties = useMemo(() => {
       const combined = [...(agencyProperties || []), ...(agentProperties || [])];

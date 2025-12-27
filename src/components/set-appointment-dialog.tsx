@@ -29,7 +29,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from './ui/textarea';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 
@@ -71,13 +71,13 @@ export function SetAppointmentDialog({
   const firestore = useFirestore();
 
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-  const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
+  const { data: teamMembers } = useCollection<User>(teamMembersQuery);
 
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: buyers } = useGetCollection<Buyer>(buyersQuery);
+  const { data: buyers } = useCollection<Buyer>(buyersQuery);
   
   const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: properties } = useGetCollection<Property>(propertiesQuery);
+  const { data: properties } = useCollection<Property>(propertiesQuery);
 
   const assignableMembers = useMemo(() => {
     if (!teamMembers) return [];

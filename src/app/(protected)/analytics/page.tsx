@@ -4,7 +4,7 @@
 
 import { useMemo } from 'react';
 import { useFirestore } from '@/firebase/provider';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -32,13 +32,13 @@ export default function AnalyticsPage() {
     }
     return collection(firestore, 'agencies', profile.agency_id, 'properties');
   }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-  const { data: myProperties, isLoading: isPropertiesLoading } = useGetCollection<Property>(propertiesQuery);
+  const { data: myProperties, isLoading: isPropertiesLoading } = useCollection<Property>(propertiesQuery);
   
   const assignedPropertiesQuery = useMemoFirebase(() => {
     if (!canFetch || !isAgent) return null;
     return query(collection(firestore, 'agencies', profile.agency_id, 'properties'), where('assignedTo', '==', profile.user_id));
   }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-  const { data: assignedProperties } = useGetCollection<Property>(assignedPropertiesQuery);
+  const { data: assignedProperties } = useCollection<Property>(assignedPropertiesQuery);
 
   const buyersQuery = useMemoFirebase(() => {
     if (!canFetch) return null;
@@ -47,13 +47,13 @@ export default function AnalyticsPage() {
     }
     return collection(firestore, 'agencies', profile.agency_id, 'buyers');
   }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-  const { data: myBuyers, isLoading: isBuyersLoading } = useGetCollection<Buyer>(buyersQuery);
+  const { data: myBuyers, isLoading: isBuyersLoading } = useCollection<Buyer>(buyersQuery);
   
   const assignedBuyersQuery = useMemoFirebase(() => {
     if (!canFetch || !isAgent) return null;
     return query(collection(firestore, 'agencies', profile.agency_id, 'buyers'), where('assignedTo', '==', profile.user_id));
   }, [canFetch, firestore, profile.agency_id, isAgent, profile.user_id]);
-  const { data: assignedBuyers } = useGetCollection<Buyer>(assignedBuyersQuery);
+  const { data: assignedBuyers } = useCollection<Buyer>(assignedBuyersQuery);
 
   // Agent's data is their own + assigned, Admin's is all.
   const finalProperties = useMemo(() => isAgent ? [...(myProperties || []), ...(assignedProperties || [])] : myProperties, [isAgent, myProperties, assignedProperties]);

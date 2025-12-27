@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { UpdateAppointmentStatusDialog } from '@/components/update-appointment-status-dialog';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useFirestore } from '@/firebase/provider';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useMemoFirebase } from '@/firebase/hooks';
@@ -38,13 +38,13 @@ function AppointmentsPageContent() {
   const isMobile = useIsMobile();
 
   const appointmentsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'appointments') : null, [profile.agency_id, firestore]);
-  const { data: appointmentsData, isLoading } = useGetCollection<Appointment>(appointmentsQuery);
+  const { data: appointmentsData, isLoading } = useCollection<Appointment>(appointmentsQuery);
 
   const buyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
-  const { data: buyersData } = useGetCollection<Buyer>(buyersQuery);
+  const { data: buyersData } = useCollection<Buyer>(buyersQuery);
 
   const propertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-  const { data: propertiesData } = useGetCollection<Property>(propertiesQuery);
+  const { data: propertiesData } = useCollection<Property>(propertiesQuery);
 
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);

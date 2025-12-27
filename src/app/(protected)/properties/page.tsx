@@ -101,7 +101,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { motion } from 'framer-motion';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { SetRecordingPaymentDialog } from '@/components/set-recording-payment-dialog';
 
 const ITEMS_PER_PAGE = 50;
@@ -177,10 +177,10 @@ export default function PropertiesPage() {
     () => (profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null),
     [profile.agency_id, firestore]
   );
-  const { data: allProperties, isLoading: isAgencyLoading } = useGetCollection<Property>(agencyPropertiesQuery);
+  const { data: allProperties, isLoading: isAgencyLoading } = useCollection<Property>(agencyPropertiesQuery);
   
   const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-  const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
+  const { data: teamMembers } = useCollection<User>(teamMembersQuery);
   
   const [activeAgencyTab, setActiveAgencyTab] = useState(profile.agencies?.[0]?.agency_id);
 

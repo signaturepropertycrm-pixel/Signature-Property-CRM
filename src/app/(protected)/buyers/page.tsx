@@ -24,7 +24,7 @@ import { formatCurrency, formatUnit, formatPhoneNumberForWhatsApp } from '@/lib/
 import { useCurrency } from '@/context/currency-context';
 import { useProfile } from '@/context/profile-context';
 import { useFirestore } from '@/firebase/provider';
-import { useGetCollection } from '@/firebase/firestore/use-get-collection';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, addDoc, setDoc, doc, deleteDoc, serverTimestamp, updateDoc, writeBatch, query, where } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { AddFollowUpDialog } from '@/components/add-follow-up-dialog';
@@ -119,16 +119,16 @@ export default function BuyersPage() {
         
     }, [profile.agency_id, profile.role, user?.uid, firestore]);
     
-    const { data: allBuyers, isLoading: isAgencyLoading } = useGetCollection<Buyer>(buyersQuery);
+    const { data: allBuyers, isLoading: isAgencyLoading } = useCollection<Buyer>(buyersQuery);
     
     const teamMembersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'teamMembers') : null, [profile.agency_id, firestore]);
-    const { data: teamMembers } = useGetCollection<User>(teamMembersQuery);
+    const { data: teamMembers } = useCollection<User>(teamMembersQuery);
 
     const followUpsQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'followUps') : null, [profile.agency_id, firestore]);
-    const { data: followUps, isLoading: isFollowUpsLoading } = useGetCollection<FollowUp>(followUpsQuery);
+    const { data: followUps, isLoading: isFollowUpsLoading } = useCollection<FollowUp>(followUpsQuery);
 
     const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
-    const { data: allProperties } = useGetCollection<Property>(agencyPropertiesQuery);
+    const { data: allProperties } = useCollection<Property>(agencyPropertiesQuery);
     
     const agencyIdFromUrl = searchParams.get('agency') || (profile.role === 'Admin' ? profile.agency_id : profile.agencies?.[0]?.agency_id);
     const activeTab = listingTypeFilterFromURL || 'For Sale';
@@ -1267,23 +1267,21 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
-                <div className="relative flex flex-col items-center gap-4">
-                    <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-                        <AiAssistant /> 
-                    </div>
-                    {profile.role !== 'Agent' && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                                    <PlusCircle className="h-6 w-6" />
-                                    <span className="sr-only">Add Buyer</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">Add Buyer</TooltipContent>
-                        </Tooltip>
-                    )}
+            <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-50 flex flex-col items-center gap-4">
+                <div className={cn("transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
+                    <AiAssistant /> 
                 </div>
+                {profile.role !== 'Agent' && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                                <PlusCircle className="h-6 w-6" />
+                                <span className="sr-only">Add Buyer</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">Add Buyer</TooltipContent>
+                    </Tooltip>
+                )}
             </div>
 
             <AddBuyerDialog
