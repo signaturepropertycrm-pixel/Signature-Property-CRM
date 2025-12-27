@@ -164,14 +164,14 @@ const QuickAdd = () => {
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-2">
                 <Select value={leadType} onValueChange={(v) => setLeadType(v as any)}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-[150px]"><SelectValue/></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="Property">Property</SelectItem>
                         <SelectItem value="Buyer">Buyer</SelectItem>
                     </SelectContent>
                 </Select>
                 <Select value={listingType} onValueChange={(v) => setListingType(v as any)}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectTrigger className="w-full sm:w-[150px]"><SelectValue/></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="For Sale">For Sale</SelectItem>
                         <SelectItem value="For Rent">For Rent</SelectItem>
