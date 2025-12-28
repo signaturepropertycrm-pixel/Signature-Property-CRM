@@ -13,7 +13,7 @@ import type { InboxMessage } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Mail, AlertTriangle, Banknote, Check, Trash2, RotateCcw } from 'lucide-react';
+import { Mail, AlertTriangle, Banknote, Check, Trash2, RotateCcw, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -142,7 +142,10 @@ export default function InboxPage() {
     
     const handleGoToProperty = () => {
         if (selectedMessage?.propertySerial) {
-            router.push(`/properties?status=All (Sale)&search=${selectedMessage.propertySerial}`);
+            const searchParams = new URLSearchParams({
+                search: selectedMessage.propertySerial
+            });
+            router.push(`/properties?${searchParams.toString()}`);
         }
         setIsDialogOpen(false);
     };
@@ -249,4 +252,3 @@ export default function InboxPage() {
         </>
     );
 }
-
