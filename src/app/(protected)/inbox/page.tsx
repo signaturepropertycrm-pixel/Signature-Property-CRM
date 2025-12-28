@@ -9,7 +9,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
-import type { InboxMessage } from '@/lib/types';
+import type { InboxMessage, Property } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { PropertyDetailsDialog } from '@/components/property-details-dialog';
 
 
 const MessageItem = ({ message, onMessageClick, isDemo = false }: { message: InboxMessage, onMessageClick: (message: InboxMessage) => void, isDemo?: boolean }) => {
@@ -64,6 +65,9 @@ export default function InboxPage() {
 
     const [selectedMessage, setSelectedMessage] = useState<InboxMessage | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [propertyForDetails, setPropertyForDetails] = useState<Property | null>(null);
+    const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+
 
     const inboxQuery = useMemoFirebase(
         () => profile.agency_id 
@@ -72,6 +76,13 @@ export default function InboxPage() {
         [profile.agency_id, firestore]
     );
     const { data: messages, isLoading } = useCollection<InboxMessage>(inboxQuery);
+    
+    const propertiesQuery = useMemoFirebase(
+        () => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null,
+        [profile.agency_id, firestore]
+    );
+    const { data: properties } = useCollection<Property>(propertiesQuery);
+
     
     const unreadCannotRecord = useMemo(() => messages?.filter(m => m.type === 'cannot_record' && !m.isRead).length || 0, [messages]);
     const unreadPayments = useMemo(() => messages?.filter(m => m.type === 'payment_confirmation' && !m.isRead).length || 0, [messages]);
@@ -143,14 +154,19 @@ export default function InboxPage() {
         }
     };
     
-    const handleGoToProperty = () => {
-        if (selectedMessage?.propertySerial) {
-            const searchParams = new URLSearchParams({
-                search: selectedMessage.propertySerial
-            });
-            router.push(`/properties?${searchParams.toString()}`);
+    const handleViewProperty = () => {
+        if (!selectedMessage?.propertyId || !properties) {
+            toast({ title: "Property not found", variant: "destructive" });
+            return;
         }
-        setIsDialogOpen(false);
+        const property = properties.find(p => p.id === selectedMessage.propertyId);
+        if (property) {
+            setPropertyForDetails(property);
+            setIsDetailsDialogOpen(true);
+            setIsDialogOpen(false); // Close the message dialog
+        } else {
+            toast({ title: "Property data not available", variant: "destructive" });
+        }
     };
 
 
@@ -222,7 +238,7 @@ export default function InboxPage() {
                         </div>
                         <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2">
                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={handleGoToProperty}>
+                                <Button variant="outline" size="sm" onClick={handleViewProperty}>
                                     <Eye className="h-4 w-4 sm:mr-2" />
                                     <span className="hidden sm:inline">View Property</span>
                                 </Button>
@@ -257,6 +273,13 @@ export default function InboxPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+            )}
+             {propertyForDetails && (
+                <PropertyDetailsDialog
+                    property={propertyForDetails}
+                    isOpen={isDetailsDialogOpen}
+                    setIsOpen={setIsDetailsDialogOpen}
+                />
             )}
         </>
     );
