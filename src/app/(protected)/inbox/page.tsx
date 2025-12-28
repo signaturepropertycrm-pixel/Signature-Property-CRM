@@ -13,7 +13,7 @@ import type { InboxMessage, Property } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Mail, AlertTriangle, Banknote, Check, Trash2, RotateCcw, Eye } from 'lucide-react';
+import { Mail, AlertTriangle, Banknote, Check, Trash2, RotateCcw, Eye, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -236,40 +236,41 @@ export default function InboxPage() {
                             <p><span className="font-semibold">Message:</span> {selectedMessage.message}</p>
                             <p className="text-xs text-muted-foreground pt-2 border-t">{formatDistanceToNow(new Date(selectedMessage.createdAt), { addSuffix: true })}</p>
                         </div>
-                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2">
-                             <div className="flex gap-2">
+                        <DialogFooter className="flex-col sm:flex-row sm:justify-end gap-2">
+                            <div className="flex w-full sm:w-auto justify-end gap-2">
                                 <Button variant="outline" size="sm" onClick={handleViewProperty}>
                                     <Eye className="h-4 w-4 sm:mr-2" />
                                     <span className="hidden sm:inline">View Property</span>
                                 </Button>
                                 {selectedMessage.type === 'cannot_record' && (
                                      <Button variant="outline" size="sm" onClick={handleReassign}>
-                                        <RotateCcw className="h-4 w-4 sm:mr-2"/>
-                                        <span className="hidden sm:inline">Re-assign</span>
+                                        <RotateCcw className="h-4 w-4 mr-2"/>
+                                        <span>Re-assign</span>
                                      </Button>
                                 )}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive" size="sm">
+                                            <Trash2 className="h-4 w-4 sm:mr-2"/>
+                                            <span className="hidden sm:inline">Delete</span>
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will permanently delete this notification.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDelete}>Confirm</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                <Button variant="secondary" onClick={() => setIsDialogOpen(false)} size="sm">
+                                    <X className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Close</span>
+                                </Button>
                             </div>
-                           <div className="flex gap-2">
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="sm">
-                                        <Trash2 className="h-4 w-4 sm:mr-2"/>
-                                        <span className="hidden sm:inline">Delete</span>
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This will permanently delete this notification.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDelete}>Confirm</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                             </AlertDialog>
-                             <Button onClick={() => setIsDialogOpen(false)} size="sm">Close</Button>
-                           </div>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -284,4 +285,3 @@ export default function InboxPage() {
         </>
     );
 }
-
