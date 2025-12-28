@@ -115,7 +115,7 @@ export default function BuyersPage() {
         }
 
         // 3. Agar ADMIN hai, to saaray buyers mangwao
-        return query(baseRef); 
+        return query(baseRef, where('is_deleted', '!=', true)); 
         
     }, [profile.agency_id, profile.role, user?.uid, firestore]);
     
@@ -416,7 +416,7 @@ export default function BuyersPage() {
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
 
-        let baseBuyers: Buyer[] = [...allBuyers].filter(b => !b.is_deleted);
+        let baseBuyers: Buyer[] = [...allBuyers];
         
         if (profile.role === 'Admin') {
              baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
@@ -425,7 +425,13 @@ export default function BuyersPage() {
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
 
         if (activeStatusFilter && activeStatusFilter !== 'All') {
-            filtered = filtered.filter(b => b.status === activeStatusFilter);
+            if (activeStatusFilter === 'Pending') {
+                filtered = filtered.filter(b => b.status === 'Pending');
+            } else {
+                filtered = filtered.filter(b => b.status === activeStatusFilter && b.status !== 'Pending');
+            }
+        } else {
+            filtered = filtered.filter(b => b.status !== 'Pending');
         }
         
         if (searchQuery) {
@@ -1262,7 +1268,7 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-50 transition-opacity">
+            <div className={cn("fixed bottom-24 md:bottom-8 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                 <AiAssistant /> 
             </div>
 
