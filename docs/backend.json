@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Property": {
@@ -479,6 +480,60 @@
         "userId",
         "createdAt"
       ]
+    },
+    "InboxMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Inbox Message",
+      "type": "object",
+      "description": "Represents an internal message or notification for the agency admin.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of message (e.g., 'cannot_record', 'payment_confirmation')."
+        },
+        "fromUserId": {
+          "type": "string",
+          "description": "ID of the user who sent the message."
+        },
+        "fromUserName": {
+          "type": "string",
+          "description": "Name of the user who sent the message."
+        },
+        "message": {
+          "type": "string",
+          "description": "The content of the message or reason."
+        },
+        "propertyId": {
+          "type": "string",
+          "description": "ID of the related property (if any)."
+        },
+        "propertySerial": {
+          "type": "string",
+          "description": "Serial number of the related property (if any)."
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether the admin has read the message."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the message was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "fromUserId",
+        "fromUserName",
+        "message",
+        "isRead",
+        "createdAt"
+      ]
     }
   },
   "auth": {
@@ -586,6 +641,26 @@
           ]
         }
       },
+       {
+        "path": "/agencies/{agencyId}/inboxMessages/{messageId}",
+        "definition": {
+          "entityName": "InboxMessage",
+          "schema": {
+            "$ref": "#/backend/entities/InboxMessage"
+          },
+          "description": "Stores internal notifications and messages for the agency admin.",
+          "params": [
+            {
+              "name": "agencyId",
+              "description": "The unique identifier of the agency."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier of the message."
+            }
+          ]
+        }
+      },
       {
         "path": "/transactions/{transactionId}",
         "definition": {
@@ -638,4 +713,3 @@
     "reasoning": "The Firestore data structure is designed to support a real estate CRM application focusing on properties, buyers, team management, and related functionalities. The design prioritizes security, scalability, and ease of debugging, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). \n\nAuthorization Independence is achieved through denormalization. For example, the `properties` subcollection under `/users/{userId}` includes the `members` map which defines the roles of different users. This eliminates the need for `get()` calls in security rules to check parent document properties, enabling atomic operations.\n\nStructural Segregation is applied by using dedicated collections for different data types, each with homogeneous security requirements. For example, properties created by different users are segregated under their respective user document, enhancing security and simplifying rules.\n\nAccess Modeling uses hierarchical paths for user-owned data. Properties, Buyers, FollowUps, and Appointments are stored under each user's document, establishing clear ownership and simplifying security rules. Membership Maps (`members` field) are utilized for collaborative data access, allowing multiple users to have specific roles (e.g., Admin, Agent, Viewer) within a property or buyer record. Global roles are managed through the `/roles_admin/{uid}` collection, where the existence of a document indicates admin privileges.\n\nQAPs (Rules are not Filters) are supported by structural segregation and the membership model. List operations can be secured based on the path and the `members` map, ensuring that only authorized users can access the data without filtering based on document content.\n\nExplicit State Modeling is encouraged by using a dedicated `status` field in entities like `Property` and `Buyer`, rather than relying on multiple booleans or timestamps to infer the state. This makes the data model more predictable and easier to reason about.\n\nRadical Consistency is maintained through strict naming conventions for fields (e.g., always using `ownerId` for ownership) and descriptive wildcards (e.g., `{propertyId}` instead of `{id}`)."
   }
 }
-    

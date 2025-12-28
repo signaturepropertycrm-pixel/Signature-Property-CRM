@@ -40,6 +40,7 @@ import {
   FileArchive,
   Video,
   Edit,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -58,6 +59,7 @@ import { motion } from 'framer-motion';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
+  { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin'] },
   { href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
   { href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
   { 

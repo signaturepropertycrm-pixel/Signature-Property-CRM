@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Video, Check, MoreHorizontal, XCircle, Eye, Circle, Clock, CheckCircle as CheckCircleIcon } from 'lucide-react';
-import type { Property, RecordingPaymentStatus } from '@/lib/types';
+import type { Property, RecordingPaymentStatus, InboxMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, addDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { useSearch } from '../layout';
@@ -103,6 +103,21 @@ export default function RecordingPage() {
               recording_notes: reason,
               assignedTo: null // Un-assign the property
           });
+
+          // Create an inbox message for the admin
+          const inboxMessage: Omit<InboxMessage, 'id'> = {
+              type: 'cannot_record',
+              fromUserId: profile.user_id,
+              fromUserName: profile.name,
+              message: reason,
+              propertyId: property.id,
+              propertySerial: property.serial_no,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              agency_id: profile.agency_id,
+          };
+          await addDoc(collection(firestore, 'agencies', profile.agency_id, 'inboxMessages'), inboxMessage);
+
           toast({
               title: "Reason Submitted",
               description: `Reason for ${property.serial_no} has been sent to the admin.`,

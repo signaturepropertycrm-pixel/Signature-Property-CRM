@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, MoreHorizontal, PlayCircle, CheckCheck, RotateCcw, Eye, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import type { Property, EditingStatus, RecordingPaymentStatus } from '@/lib/types';
+import type { Property, EditingStatus, RecordingPaymentStatus, InboxMessage } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, doc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, where, addDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
 import { useProfile } from '@/context/profile-context';
 import { useSearch } from '../layout';
@@ -88,9 +88,24 @@ export default function EditingPage() {
                 recording_payment_amount: amount,
                 recording_payment_date: new Date().toISOString(),
             });
+
+            // Create an inbox message for the admin
+            const inboxMessage: Omit<InboxMessage, 'id'> = {
+                type: 'payment_confirmation',
+                fromUserId: profile.user_id,
+                fromUserName: profile.name,
+                message: `Cash payment of PKR ${amount.toLocaleString()} received for property ${property.serial_no}.`,
+                propertyId: property.id,
+                propertySerial: property.serial_no,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+                agency_id: profile.agency_id,
+            };
+            await addDoc(collection(firestore, 'agencies', profile.agency_id, 'inboxMessages'), inboxMessage);
+
             toast({
                 title: 'Payment Confirmed',
-                description: `Cash payment of ${amount} for ${property.serial_no} has been recorded.`,
+                description: `Cash payment of ${amount} for ${property.serial_no} has been recorded. Admin has been notified.`,
             });
         } catch (error) {
             toast({ title: 'Error', description: 'Could not save payment.', variant: 'destructive' });

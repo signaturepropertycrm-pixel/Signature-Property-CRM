@@ -289,3 +289,18 @@ export type UpgradeRequest = {
     reviewedAt?: any;
     reviewerId?: string;
 };
+
+export type InboxMessageType = 'cannot_record' | 'payment_confirmation' | 'direct_message';
+
+export interface InboxMessage {
+    id: string;
+    type: InboxMessageType;
+    fromUserId: string;
+    fromUserName: string;
+    message: string;
+    propertyId?: string;
+    propertySerial?: string;
+    isRead: boolean;
+    createdAt: string;
+    agency_id: string;
+};

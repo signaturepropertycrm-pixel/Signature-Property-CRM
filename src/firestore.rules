@@ -23,6 +23,12 @@ service cloud.firestore {
     match /agencies/{agencyId}/{subcollection}/{documentId} {
       allow read, write: if isAgencyMember(agencyId);
     }
+    
+    // Admin can read/write to inbox messages, members can create.
+    match /agencies/{agencyId}/inboxMessages/{messageId} {
+      allow read, update: if request.auth.uid == resource.data.agency_id; // Admin is owner
+      allow create: if isAgencyMember(agencyId);
+    }
 
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
