@@ -59,7 +59,6 @@ import { motion } from 'framer-motion';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
-  { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin'] },
   { href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
   { href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
   { 
@@ -90,6 +89,7 @@ const mainMenuItems = [
     ]
   },
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin'] },
   { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
   { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
   { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
