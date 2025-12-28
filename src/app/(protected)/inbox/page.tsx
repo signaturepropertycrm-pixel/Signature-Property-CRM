@@ -6,33 +6,22 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useProfile } from '@/context/profile-context';
 import { useMemoFirebase } from '@/firebase/hooks';
 import type { InboxMessage } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Mail, AlertTriangle, Banknote, Check } from 'lucide-react';
+import { Mail, AlertTriangle, Banknote, Check, Trash2, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-const MessageItem = ({ message, isDemo = false }: { message: InboxMessage, isDemo?: boolean }) => {
-    const router = useRouter();
-    const firestore = useFirestore();
-    const { profile } = useProfile();
-    
-    const handleGoToProperty = () => {
-        if (isDemo) return;
-        router.push(`/properties?status=All (Sale)&search=${message.propertySerial}`);
-    }
 
-    const handleMarkAsRead = async () => {
-        if (isDemo || !message.isRead && profile.agency_id) {
-            const messageRef = doc(firestore, 'agencies', profile.agency_id, 'inboxMessages', message.id);
-            await updateDoc(messageRef, { isRead: true });
-        }
-    }
+const MessageItem = ({ message, onMessageClick, isDemo = false }: { message: InboxMessage, onMessageClick: (message: InboxMessage) => void, isDemo?: boolean }) => {
 
     const getIcon = () => {
         switch(message.type) {
@@ -46,7 +35,10 @@ const MessageItem = ({ message, isDemo = false }: { message: InboxMessage, isDem
     }
 
     return (
-        <div className={cn("flex items-start gap-4 p-4 border-b transition-colors", !message.isRead && "bg-primary/5", isDemo && "opacity-50 pointer-events-none")}>
+        <div 
+            className={cn("flex items-start gap-4 p-4 border-b transition-colors cursor-pointer hover:bg-accent/50", !message.isRead && "bg-primary/5", isDemo && "opacity-50 pointer-events-none")}
+            onClick={() => !isDemo && onMessageClick(message)}
+        >
             <div className="flex-shrink-0 pt-1">
                 {getIcon()}
             </div>
@@ -58,14 +50,6 @@ const MessageItem = ({ message, isDemo = false }: { message: InboxMessage, isDem
                     </div>
                      <p className="text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</p>
                 </div>
-                <div className="flex justify-end items-center mt-2 gap-2">
-                     <Button variant="link" size="sm" className="h-auto p-0" onClick={handleGoToProperty}>View Property</Button>
-                     {!message.isRead && (
-                         <Button variant="outline" size="sm" className="h-auto px-2 py-1" onClick={handleMarkAsRead}>
-                            <Check className="mr-1 h-3 w-3" /> Mark as Read
-                         </Button>
-                     )}
-                </div>
             </div>
         </div>
     );
@@ -75,6 +59,11 @@ const MessageItem = ({ message, isDemo = false }: { message: InboxMessage, isDem
 export default function InboxPage() {
     const { profile } = useProfile();
     const firestore = useFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const [selectedMessage, setSelectedMessage] = useState<InboxMessage | null>(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const inboxQuery = useMemoFirebase(
         () => profile.agency_id 
@@ -113,57 +102,151 @@ export default function InboxPage() {
         agency_id: profile.agency_id,
     };
 
+    const handleMessageClick = async (message: InboxMessage) => {
+        setSelectedMessage(message);
+        setIsDialogOpen(true);
+        if (!message.isRead && profile.agency_id) {
+            const messageRef = doc(firestore, 'agencies', profile.agency_id, 'inboxMessages', message.id);
+            await updateDoc(messageRef, { isRead: true });
+        }
+    }
+    
+    const handleReassign = async () => {
+        if (!selectedMessage || !selectedMessage.propertyId || !selectedMessage.fromUserId || !profile.agency_id) return;
+        
+        try {
+            const propRef = doc(firestore, 'agencies', profile.agency_id, 'properties', selectedMessage.propertyId);
+            await updateDoc(propRef, { assignedTo: selectedMessage.fromUserId });
+            
+            const msgRef = doc(firestore, 'agencies', profile.agency_id, 'inboxMessages', selectedMessage.id);
+            await deleteDoc(msgRef);
+
+            toast({ title: "Property Re-assigned", description: `${selectedMessage.propertySerial} has been re-assigned for recording.`});
+            setIsDialogOpen(false);
+        } catch (error) {
+            toast({ title: "Error", description: "Could not re-assign property.", variant: "destructive" });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedMessage || !profile.agency_id) return;
+        try {
+            const msgRef = doc(firestore, 'agencies', profile.agency_id, 'inboxMessages', selectedMessage.id);
+            await deleteDoc(msgRef);
+            toast({ title: "Notification Deleted", variant: "destructive"});
+            setIsDialogOpen(false);
+        } catch (error) {
+             toast({ title: "Error", description: "Could not delete notification.", variant: "destructive" });
+        }
+    };
+    
+    const handleGoToProperty = () => {
+        if (selectedMessage?.propertySerial) {
+            router.push(`/properties?status=All (Sale)&search=${selectedMessage.propertySerial}`);
+        }
+        setIsDialogOpen(false);
+    };
+
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
-                    <Mail/> Inbox
-                </h1>
-                <p className="text-muted-foreground">
-                    Internal notifications and messages from your team.
-                </p>
-            </div>
+        <>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline flex items-center gap-2">
+                        <Mail/> Inbox
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Internal notifications and messages from your team.
+                    </p>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Team Notifications</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Tabs defaultValue="cannot_record">
-                        <TabsList className="px-6 border-b w-full justify-start rounded-none">
-                            <TabsTrigger value="cannot_record">Cannot Record ({cannotRecordMessages.filter(m => !m.isRead).length})</TabsTrigger>
-                            <TabsTrigger value="payments">Payments ({paymentMessages.filter(m => !m.isRead).length})</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="cannot_record">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Team Notifications</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Tabs defaultValue="cannot_record">
+                            <TabsList className="px-6 border-b w-full justify-start rounded-none">
+                                <TabsTrigger value="cannot_record">Cannot Record ({cannotRecordMessages.filter(m => !m.isRead).length})</TabsTrigger>
+                                <TabsTrigger value="payments">Payments ({paymentMessages.filter(m => !m.isRead).length})</TabsTrigger>
+                            </TabsList>
+                            
+                            <TabsContent value="cannot_record">
+                                {isLoading ? <p className="p-6 text-muted-foreground">Loading messages...</p> : 
+                                cannotRecordMessages.length > 0 ? (
+                                    cannotRecordMessages.map(msg => <MessageItem key={msg.id} message={msg} onMessageClick={handleMessageClick} />)
+                                ) : (
+                                    <div>
+                                        <MessageItem message={demoCannotRecordMessage} onMessageClick={() => {}} isDemo={true} />
+                                        <p className="p-10 text-center text-muted-foreground">No "Cannot Record" notifications found.</p>
+                                    </div>
+                                )
+                                }
+                            </TabsContent>
+                            
+                            <TabsContent value="payments">
                             {isLoading ? <p className="p-6 text-muted-foreground">Loading messages...</p> : 
-                             cannotRecordMessages.length > 0 ? (
-                                cannotRecordMessages.map(msg => <MessageItem key={msg.id} message={msg} />)
-                             ) : (
-                                <div>
-                                    <MessageItem message={demoCannotRecordMessage} isDemo={true} />
-                                    <p className="p-4 text-center text-sm text-muted-foreground">No "Cannot Record" notifications found.</p>
-                                </div>
-                             )
-                            }
-                        </TabsContent>
-                        
-                        <TabsContent value="payments">
-                           {isLoading ? <p className="p-6 text-muted-foreground">Loading messages...</p> : 
-                             paymentMessages.length > 0 ? (
-                                paymentMessages.map(msg => <MessageItem key={msg.id} message={msg} />)
-                             ) : (
-                                 <div>
-                                    <MessageItem message={demoPaymentMessage} isDemo={true} />
-                                    <p className="p-4 text-center text-sm text-muted-foreground">No payment confirmation notifications found.</p>
-                                </div>
-                             )
-                            }
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </div>
+                                paymentMessages.length > 0 ? (
+                                    paymentMessages.map(msg => <MessageItem key={msg.id} message={msg} onMessageClick={handleMessageClick}/>)
+                                ) : (
+                                    <div>
+                                        <MessageItem message={demoPaymentMessage} onMessageClick={() => {}} isDemo={true} />
+                                        <p className="p-10 text-center text-muted-foreground">No payment confirmation notifications found.</p>
+                                    </div>
+                                )
+                                }
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            </div>
+            
+            {selectedMessage && (
+                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{selectedMessage.type === 'cannot_record' ? 'Cannot Record Report' : 'Payment Confirmation'}</DialogTitle>
+                            <DialogDescription>
+                                From: {selectedMessage.fromUserName}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                             <div className="flex items-center gap-2">
+                                <span className="font-semibold">Property:</span>
+                                <Button variant="link" size="sm" className="h-auto p-0" onClick={handleGoToProperty}>{selectedMessage.propertySerial}</Button>
+                            </div>
+                            <p><span className="font-semibold">Message:</span> {selectedMessage.message}</p>
+                            <p className="text-xs text-muted-foreground pt-2 border-t">{formatDistanceToNow(new Date(selectedMessage.createdAt), { addSuffix: true })}</p>
+                        </div>
+                        <DialogFooter className="justify-between">
+                            <div>
+                                {selectedMessage.type === 'cannot_record' && (
+                                     <Button variant="outline" onClick={handleReassign}><RotateCcw className="mr-2"/> Re-assign</Button>
+                                )}
+                            </div>
+                           <div className="flex gap-2">
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive"><Trash2 className="mr-2"/> Delete</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>This will permanently delete this notification.</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete}>Confirm</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                             </AlertDialog>
+                             <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
+                           </div>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+        </>
     );
 }
+

@@ -298,8 +298,8 @@ export interface InboxMessage {
     fromUserId: string;
     fromUserName: string;
     message: string;
-    propertyId?: string;
-    propertySerial?: string;
+    propertyId: string;
+    propertySerial: string;
     isRead: boolean;
     createdAt: string;
     agency_id: string;

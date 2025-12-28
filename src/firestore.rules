@@ -26,7 +26,7 @@ service cloud.firestore {
     
     // Admin can read/write to inbox messages, members can create.
     match /agencies/{agencyId}/inboxMessages/{messageId} {
-      allow read, update: if request.auth.uid == resource.data.agency_id; // Admin is owner
+      allow read, update, delete: if request.auth.uid == resource.data.agency_id; // Admin is owner
       allow create: if isAgencyMember(agencyId);
     }
 
