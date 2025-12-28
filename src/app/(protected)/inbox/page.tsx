@@ -73,6 +73,9 @@ export default function InboxPage() {
     );
     const { data: messages, isLoading } = useCollection<InboxMessage>(inboxQuery);
     
+    const unreadCannotRecord = useMemo(() => messages?.filter(m => m.type === 'cannot_record' && !m.isRead).length || 0, [messages]);
+    const unreadPayments = useMemo(() => messages?.filter(m => m.type === 'payment_confirmation' && !m.isRead).length || 0, [messages]);
+    
     const cannotRecordMessages = useMemo(() => messages?.filter(m => m.type === 'cannot_record') || [], [messages]);
     const paymentMessages = useMemo(() => messages?.filter(m => m.type === 'payment_confirmation') || [], [messages]);
 
@@ -170,8 +173,8 @@ export default function InboxPage() {
                     <CardContent className="p-0">
                         <Tabs defaultValue="cannot_record">
                             <TabsList className="px-6 border-b w-full justify-start rounded-none">
-                                <TabsTrigger value="cannot_record">Cannot Record ({cannotRecordMessages.filter(m => !m.isRead).length})</TabsTrigger>
-                                <TabsTrigger value="payments">Payments ({paymentMessages.filter(m => !m.isRead).length})</TabsTrigger>
+                                <TabsTrigger value="cannot_record">Cannot Record ({unreadCannotRecord})</TabsTrigger>
+                                <TabsTrigger value="payments">Payments ({unreadPayments})</TabsTrigger>
                             </TabsList>
                             
                             <TabsContent value="cannot_record">
@@ -214,23 +217,29 @@ export default function InboxPage() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
-                             <div className="flex items-center gap-2">
-                                <span className="font-semibold">Property:</span>
-                                <Button variant="link" size="sm" className="h-auto p-0" onClick={handleGoToProperty}>{selectedMessage.propertySerial}</Button>
-                            </div>
                             <p><span className="font-semibold">Message:</span> {selectedMessage.message}</p>
                             <p className="text-xs text-muted-foreground pt-2 border-t">{formatDistanceToNow(new Date(selectedMessage.createdAt), { addSuffix: true })}</p>
                         </div>
-                        <DialogFooter className="justify-between">
-                            <div>
+                        <DialogFooter className="flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2">
+                             <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleGoToProperty}>
+                                    <Eye className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">View Property</span>
+                                </Button>
                                 {selectedMessage.type === 'cannot_record' && (
-                                     <Button variant="outline" onClick={handleReassign}><RotateCcw className="mr-2"/> Re-assign</Button>
+                                     <Button variant="outline" size="sm" onClick={handleReassign}>
+                                        <RotateCcw className="h-4 w-4 sm:mr-2"/>
+                                        <span className="hidden sm:inline">Re-assign</span>
+                                     </Button>
                                 )}
                             </div>
                            <div className="flex gap-2">
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive"><Trash2 className="mr-2"/> Delete</Button>
+                                    <Button variant="destructive" size="sm">
+                                        <Trash2 className="h-4 w-4 sm:mr-2"/>
+                                        <span className="hidden sm:inline">Delete</span>
+                                    </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
@@ -243,7 +252,7 @@ export default function InboxPage() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                              </AlertDialog>
-                             <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
+                             <Button onClick={() => setIsDialogOpen(false)} size="sm">Close</Button>
                            </div>
                         </DialogFooter>
                     </DialogContent>
@@ -252,3 +261,4 @@ export default function InboxPage() {
         </>
     );
 }
+
