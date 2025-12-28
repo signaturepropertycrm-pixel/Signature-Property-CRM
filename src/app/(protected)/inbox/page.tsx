@@ -17,17 +17,18 @@ import { Mail, AlertTriangle, Banknote, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const MessageItem = ({ message }: { message: InboxMessage }) => {
+const MessageItem = ({ message, isDemo = false }: { message: InboxMessage, isDemo?: boolean }) => {
     const router = useRouter();
     const firestore = useFirestore();
     const { profile } = useProfile();
     
     const handleGoToProperty = () => {
+        if (isDemo) return;
         router.push(`/properties?status=All (Sale)&search=${message.propertySerial}`);
     }
 
     const handleMarkAsRead = async () => {
-        if (!message.isRead && profile.agency_id) {
+        if (isDemo || !message.isRead && profile.agency_id) {
             const messageRef = doc(firestore, 'agencies', profile.agency_id, 'inboxMessages', message.id);
             await updateDoc(messageRef, { isRead: true });
         }
@@ -45,7 +46,7 @@ const MessageItem = ({ message }: { message: InboxMessage }) => {
     }
 
     return (
-        <div className={cn("flex items-start gap-4 p-4 border-b transition-colors", !message.isRead && "bg-primary/5")}>
+        <div className={cn("flex items-start gap-4 p-4 border-b transition-colors", !message.isRead && "bg-primary/5", isDemo && "opacity-50 pointer-events-none")}>
             <div className="flex-shrink-0 pt-1">
                 {getIcon()}
             </div>
@@ -86,6 +87,33 @@ export default function InboxPage() {
     const cannotRecordMessages = useMemo(() => messages?.filter(m => m.type === 'cannot_record') || [], [messages]);
     const paymentMessages = useMemo(() => messages?.filter(m => m.type === 'payment_confirmation') || [], [messages]);
 
+    const demoCannotRecordMessage: InboxMessage = {
+        id: 'demo-cr-1',
+        type: 'cannot_record',
+        fromUserId: 'demo-user',
+        fromUserName: 'Zeeshan (Demo)',
+        message: 'Owner was not available at the location for video recording.',
+        propertyId: 'demo-prop-1',
+        propertySerial: 'P-123',
+        isRead: true,
+        createdAt: new Date().toISOString(),
+        agency_id: profile.agency_id,
+    };
+
+    const demoPaymentMessage: InboxMessage = {
+        id: 'demo-pm-1',
+        type: 'payment_confirmation',
+        fromUserId: 'demo-user',
+        fromUserName: 'Zeeshan (Demo)',
+        message: 'Cash payment of PKR 500 received for property P-124.',
+        propertyId: 'demo-prop-2',
+        propertySerial: 'P-124',
+        isRead: true,
+        createdAt: new Date().toISOString(),
+        agency_id: profile.agency_id,
+    };
+
+
     return (
         <div className="space-y-6">
             <div>
@@ -113,7 +141,10 @@ export default function InboxPage() {
                              cannotRecordMessages.length > 0 ? (
                                 cannotRecordMessages.map(msg => <MessageItem key={msg.id} message={msg} />)
                              ) : (
-                                <p className="p-10 text-center text-muted-foreground">No "Cannot Record" notifications found.</p>
+                                <div>
+                                    <MessageItem message={demoCannotRecordMessage} isDemo={true} />
+                                    <p className="p-4 text-center text-sm text-muted-foreground">No "Cannot Record" notifications found.</p>
+                                </div>
                              )
                             }
                         </TabsContent>
@@ -123,7 +154,10 @@ export default function InboxPage() {
                              paymentMessages.length > 0 ? (
                                 paymentMessages.map(msg => <MessageItem key={msg.id} message={msg} />)
                              ) : (
-                                <p className="p-10 text-center text-muted-foreground">No payment confirmation notifications found.</p>
+                                 <div>
+                                    <MessageItem message={demoPaymentMessage} isDemo={true} />
+                                    <p className="p-4 text-center text-sm text-muted-foreground">No payment confirmation notifications found.</p>
+                                </div>
                              )
                             }
                         </TabsContent>
