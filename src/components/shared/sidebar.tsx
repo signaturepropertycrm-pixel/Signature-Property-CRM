@@ -305,7 +305,7 @@ export function AppSidebar() {
                 <div className="flex items-center gap-2">
                     <ArrowUpCircle className="text-primary size-8" />
                     <span className="font-bold text-xl font-headline text-foreground">
-                        Acme Inc.
+                        S.P CRM
                     </span>
                 </div>
             </Link>
