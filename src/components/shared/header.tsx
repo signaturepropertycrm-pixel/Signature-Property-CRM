@@ -142,7 +142,7 @@ export function AppHeader({
 
   return (
     <>
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-transparent backdrop-blur-md px-4 sm:px-6">
+    <header className="sticky top-12 z-30 flex h-16 items-center gap-4 border-b bg-transparent backdrop-blur-md px-4 sm:px-6">
       
       {isMobile === false && (
         <div className="flex-1">

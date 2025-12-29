@@ -45,7 +45,7 @@ import {
   ArrowUpCircle,
   Workflow,
   LogOut,
-  Database
+  Building
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -68,7 +68,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 import { useUI } from '@/app/(protected)/layout';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { AddPropertyDialog } from '../add-property-dialog';
@@ -113,7 +113,6 @@ const videoMenuItems = [
 const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Get Help', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
 
 const allMobileMenuItems = [
@@ -122,7 +121,8 @@ const allMobileMenuItems = [
     ...growthMenuItems,
     ...managementMenuItems,
     ...videoMenuItems,
-    ...bottomMenuItems
+    ...bottomMenuItems,
+    { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
 
 
@@ -134,6 +134,8 @@ export function AppSidebar() {
   const auth = useAuth();
   const router = useRouter();
   const firestore = useFirestore();
+  const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
+
 
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
   const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
@@ -241,66 +243,45 @@ export function AppSidebar() {
     }
     // New Mobile Nav for Admin/Agent
     const mobileNavItems = [
-        { href: '/team', label: 'Team', icon: <UserCog /> },
-        { href: '/properties', label: 'Properties', icon: <Building2 /> },
-        { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, isCenter: true },
-        { href: '/buyers', label: 'Buyers', icon: <Users /> },
-        { href: '#', label: 'More', icon: <MoreHorizontal />, isSheet: true },
+        { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+        { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+        { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, isCenter: true, roles: ['Admin', 'Agent'] },
+        { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
+        { href: '#', label: 'More', icon: <MoreHorizontal />, isSheet: true, roles: ['Admin', 'Agent'] },
     ];
     return (
-        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-transparent backdrop-blur-md">
-            <div className="grid h-full grid-cols-5 relative">
-                {mobileNavItems.map(item => {
-                    const isActive = !item.isSheet && pathname.startsWith(item.href);
-                    if (item.isCenter) {
-                        return (
-                             <div key={item.href} className="relative flex items-center justify-center">
-                                <Link href={item.href}>
-                                <div className={cn(
-                                    'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
-                                    'bg-gradient-to-br from-primary to-blue-500',
-                                    isActive && 'ring-4 ring-primary/30'
-                                )}>
-                                    {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+        <>
+            <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-transparent backdrop-blur-md">
+                <div className="grid h-full grid-cols-5 relative">
+                    {mobileNavItems.map(item => {
+                        if (!item.roles.includes(profile.role)) return null;
+
+                        const isActive = !item.isSheet && pathname.startsWith(item.href);
+                        
+                        if (item.isCenter) {
+                            return (
+                                <div key={item.href} className="relative flex items-center justify-center">
+                                    <Link href={item.href}>
+                                        <div className={cn(
+                                            'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
+                                            'bg-gradient-to-br from-primary to-blue-500',
+                                            isActive && 'ring-4 ring-primary/30'
+                                        )}>
+                                            {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                                        </div>
+                                    </Link>
                                 </div>
-                                </Link>
-                            </div>
-                        )
-                    }
-                    if (item.isSheet) {
+                            )
+                        }
+                        if (item.isSheet) {
+                             return (
+                                <button key={item.label} onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)} className="flex flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground">
+                                    {isMoreMenuOpen ? <X className="h-5 w-5 text-primary" /> : <MoreHorizontal className="h-5 w-5" />}
+                                    <span>{item.label}</span>
+                                </button>
+                            )
+                        }
                         return (
-                            <Sheet key={item.label}>
-                                <SheetTrigger asChild>
-                                    <button className="flex flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground">
-                                        {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
-                                        <span>{item.label}</span>
-                                    </button>
-                                </SheetTrigger>
-                                <SheetContent side="bottom" className="h-[80%] rounded-t-2xl">
-                                    <SheetHeader>
-                                        <SheetTitle>More Options</SheetTitle>
-                                    </SheetHeader>
-                                    <div className="grid grid-cols-3 gap-4 py-4">
-                                        {allMobileMenuItems
-                                            .filter(i => !mobileNavItems.map(n => n.href).includes(i.href) && i.roles.includes(profile.role))
-                                            .map(i => (
-                                            <Link key={i.href} href={i.href} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/50 hover:bg-accent">
-                                                {React.cloneElement(i.icon, { className: 'h-6 w-6 text-primary' })}
-                                                <span className="text-xs text-center">{i.label}</span>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                    <Separator />
-                                     <Button variant="ghost" onClick={handleLogout} className="w-full justify-start mt-4">
-                                        <LogOut className="mr-2 h-4 w-4" />
-                                        Logout
-                                    </Button>
-                                </SheetContent>
-                            </Sheet>
-                        )
-                    }
-                    if (!item.roles || item.roles.includes(profile.role)) {
-                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
@@ -313,11 +294,52 @@ export function AppSidebar() {
                                 <span>{item.label}</span>
                             </Link>
                         )
-                    }
-                    return null;
-                })}
+                    })}
+                </div>
             </div>
-        </div>
+            
+            <AnimatePresence>
+            {isMoreMenuOpen && (
+                <>
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setIsMoreMenuOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/60"
+                />
+                <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3">
+                    {allMobileMenuItems
+                        .filter(i => !mobileNavItems.some(navItem => navItem.href === i.href) && i.roles.includes(profile.role))
+                        .map((item, index) => (
+                        <motion.div
+                            key={item.href}
+                            initial={{ opacity: 0, y: 50, scale: 0.5 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.5 }}
+                            transition={{
+                                type: 'spring',
+                                stiffness: 260,
+                                damping: 20,
+                                delay: index * 0.05,
+                            }}
+                            className="flex items-center gap-3"
+                        >
+                            <span className="bg-card text-card-foreground px-3 py-1.5 rounded-lg text-sm font-semibold shadow-lg">
+                                {item.label}
+                            </span>
+                            <Link href={item.href} onClick={() => setIsMoreMenuOpen(false)}>
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md">
+                                    {React.cloneElement(item.icon, { className: 'h-6 w-6' })}
+                                </div>
+                            </Link>
+                        </motion.div>
+                    ))}
+                </div>
+                </>
+            )}
+            </AnimatePresence>
+        </>
     )
   }
 
@@ -392,7 +414,7 @@ export function AppSidebar() {
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
+                     <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
                         S.P CRM
                     </span>
                 </div>
@@ -463,7 +485,19 @@ export function AppSidebar() {
 
         <SidebarFooter>
           <SidebarMenu>
-            {bottomMenuItems.map(renderMenuItem)}
+             {profile.role === 'Admin' && <SidebarMenuItem>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Link href="/upgrade">
+                          <SidebarMenuButton className="bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary justify-center">
+                              <Gem />
+                              <span className="flex-1 truncate">Upgrade Plan</span>
+                          </SidebarMenuButton>
+                      </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" align="center">Upgrade Plan</TooltipContent>
+              </Tooltip>
+            </SidebarMenuItem>}
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>

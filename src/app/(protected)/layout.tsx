@@ -119,25 +119,32 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-    {!user.emailVerified && (
-        <div className="sticky top-0 z-50 w-full bg-amber-500 text-amber-900 shadow-md">
-            <div className="container mx-auto flex items-center justify-center p-2 text-sm font-semibold gap-4">
-                <MailWarning className="h-5 w-5" />
-                <span>Please verify your email address to unlock all features.</span>
-                 <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-auto px-2 py-1 text-amber-900 hover:bg-amber-400 hover:text-amber-900"
-                    onClick={handleResendVerification}
-                    disabled={isResending}
-                >
-                    {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2"/>}
-                    Resend Email
-                </Button>
+    <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-primary to-blue-500 text-primary-foreground p-2 text-center shadow-lg z-50">
+        <h1 className="text-lg font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-100 to-white">
+            Signature Property CRM
+        </h1>
+    </div>
+    <div className="pt-12"> {/* Add padding to the top of the content to offset the banner */}
+        {!user.emailVerified && (
+            <div className="sticky top-12 z-40 w-full bg-amber-500 text-amber-900 shadow-md">
+                <div className="container mx-auto flex items-center justify-center p-2 text-sm font-semibold gap-4">
+                    <MailWarning className="h-5 w-5" />
+                    <span>Please verify your email address to unlock all features.</span>
+                    <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-auto px-2 py-1 text-amber-900 hover:bg-amber-400 hover:text-amber-900"
+                        onClick={handleResendVerification}
+                        disabled={isResending}
+                    >
+                        {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-2"/>}
+                        Resend Email
+                    </Button>
+                </div>
             </div>
-        </div>
-    )}
-    {children}
+        )}
+        {children}
+    </div>
     </>
   );
 }
