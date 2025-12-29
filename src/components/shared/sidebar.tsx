@@ -85,7 +85,6 @@ import { Separator } from '../ui/separator';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
-  { href: '/lifecycle', label: 'Lifecycle', icon: <Workflow />, roles: ['Admin', 'Agent'] },
   { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent']},
   { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent']},
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
@@ -255,21 +254,6 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="flex-1 p-3">
-             <Popover>
-                <PopoverTrigger asChild>
-                    <SidebarMenuButton variant="default" className="w-full justify-start text-base bg-primary rounded-lg px-4 py-2.5">
-                        <Plus />
-                        Quick Create
-                    </SidebarMenuButton>
-                </PopoverTrigger>
-                 <PopoverContent side="right" align="start" className="p-1 w-48">
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Sale')}>Property for Sale</Button>
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Rent')}>Property for Rent</Button>
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Sale')}>Buyer for Sale</Button>
-                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Rent')}>Buyer for Rent</Button>
-                </PopoverContent>
-            </Popover>
-
           <SidebarMenu className="mt-4">
             {mainMenuItems.map(renderMenuItem)}
              {profile.role === 'Video Recorder' && videoMenuItems.map(renderMenuItem)}
