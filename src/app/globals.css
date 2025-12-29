@@ -34,7 +34,7 @@
   }
 
   .dark {
-    --background: 224 39% 10%;
+    --background: 0 0% 9%;
     --foreground: 210 40% 98%;
     --card: 224 30% 15% / 0.8;
     --card-foreground: 210 40% 98%;
@@ -76,7 +76,7 @@
   }
 
   .dark body {
-    background-image: linear-gradient(120deg, hsl(220, 25%, 10%), hsl(221, 25%, 15%));
+    background-image: linear-gradient(120deg, hsl(var(--background)), hsl(var(--background)));
   }
 }
 
