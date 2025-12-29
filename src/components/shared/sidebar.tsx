@@ -98,6 +98,7 @@ const productivityMenuItems = [
 const growthMenuItems = [
     { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
     { href: '/reports', label: 'Reports', icon: <ClipboardList />, roles: ['Admin'] },
+    { href: '/tools', label: 'Tools', icon: <Rocket />, roles: ['Admin', 'Agent'] },
 ];
 
 const managementMenuItems = [
@@ -112,7 +113,7 @@ const videoMenuItems = [
 
 const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
-  { href: '/support', label: 'Get Help', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
+  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
 ];
 
 const allMobileMenuItems = [
@@ -243,7 +244,7 @@ export function AppSidebar() {
     }
     // New Mobile Nav for Admin/Agent
     const mobileNavItems = [
-        { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+        { href: '/tools', label: 'Tools', icon: <Rocket />, roles: ['Admin', 'Agent'] },
         { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
         { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, isCenter: true, roles: ['Admin', 'Agent'] },
         { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
@@ -310,7 +311,12 @@ export function AppSidebar() {
                 />
                 <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3">
                     {allMobileMenuItems
-                        .filter(i => !mobileNavItems.some(navItem => navItem.href === i.href) && i.roles.includes(profile.role))
+                        .filter(i => 
+                            !mobileNavItems.some(navItem => navItem.href === i.href) && 
+                            i.roles.includes(profile.role) &&
+                            i.href !== '/settings' && 
+                            i.href !== '/support'
+                        )
                         .map((item, index) => (
                         <motion.div
                             key={item.href}
@@ -414,7 +420,7 @@ export function AppSidebar() {
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                    
+                    <Building />
                     <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
                         S.P CRM
                     </span>
@@ -467,15 +473,6 @@ export function AppSidebar() {
           <SidebarMenu className="mt-4">
             <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
             {growthMenuItems.map(renderMenuItem)}
-            <CollapsibleMenuItem
-                label="Tools"
-                icon={<Rocket />}
-                parentPath="/tools"
-                roles={['Admin', 'Agent']}
-            >
-                <CollapsibleSubItem href="/tools/list-generator" label="List Generator" />
-                <CollapsibleSubItem href="/tools/find-by-budget" label="Find By Budget" />
-            </CollapsibleMenuItem>
           </SidebarMenu>
 
           <SidebarMenu className="mt-4">
@@ -486,6 +483,7 @@ export function AppSidebar() {
 
         <SidebarFooter>
           <SidebarMenu>
+             {bottomMenuItems.map(renderMenuItem)}
              {profile.role === 'Admin' && <SidebarMenuItem>
               <Tooltip>
                   <TooltipTrigger asChild>
