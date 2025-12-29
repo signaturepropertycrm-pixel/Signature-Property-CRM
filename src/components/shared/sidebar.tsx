@@ -420,7 +420,7 @@ export function AppSidebar() {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col dark bg-slate-900 text-white border-r-0"
+        className="hidden md:flex flex-col"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start">
