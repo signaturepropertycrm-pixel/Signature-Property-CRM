@@ -41,6 +41,8 @@ import {
   Video,
   Edit,
   Mail,
+  Plus,
+  ArrowUpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -56,65 +58,45 @@ import { buyerStatuses } from '@/lib/data';
 import { useProfile } from '@/context/profile-context';
 import { useUI } from '@/app/(protected)/layout';
 import { motion } from 'framer-motion';
+import { useAuth, useFirestore } from '@/firebase/provider';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { AddPropertyDialog } from '../add-property-dialog';
+import { AddBuyerDialog } from '../add-buyer-dialog';
+import { collection } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/hooks';
+import type { Property, Buyer, ListingType } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Button } from '../ui/button';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+
 
 const mainMenuItems = [
-  { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
-  { href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
-  { href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
+  { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
   { 
     href: '/properties', 
-    label: 'Properties', 
+    label: 'Projects', 
     icon: <Building2 />, 
     roles: ['Admin', 'Agent'],
-    subItems: [
-        { href: '/properties?status=All (Sale)', label: 'All (Sale)' },
-        { href: '/properties?status=Pending', label: 'Pending' },
-        { href: '/properties?status=Available (Sale)', label: 'Available (Sale)' },
-        { href: '/properties?status=Sold', label: 'Sold' },
-        { href: '/properties?status=All (Rent)', label: 'All (Rent)' },
-        { href: '/properties?status=Available (Rent)', label: 'Available (Rent)' },
-        { href: '/properties?status=Rent Out', label: 'Rent Out' },
-        { href: '/properties?status=Recorded', label: 'Recorded' },
-    ]
   },
-  { 
-    href: '/buyers', 
-    label: 'Buyers', 
-    icon: <Users />, 
-    roles: ['Admin', 'Agent'],
-    subItems: [
-        { href: '/buyers', label: 'All Buyers'},
-        { href: '/buyers?status=Pending', label: 'Pending' },
-        ...buyerStatuses.filter(s => s !== 'Pending').map(status => ({ href: `/buyers?status=${encodeURIComponent(status)}`, label: status }))
-    ]
-  },
-  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-  { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin'] },
-  { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
-  { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
-  { href: '/reports', label: 'Reports', icon: <LineChart />, roles: ['Admin'] },
-  { 
-    href: '/tools', 
-    label: 'Tools', 
-    icon: <ClipboardList />, 
-    roles: ['Admin', 'Agent'],
-    subItems: [
-        { href: '/tools/list-generator', label: 'List Generator' },
-        { href: '/tools/find-by-budget', label: 'Find By Budget' },
-        { href: '/tools/post-generator', label: 'Post Generator' },
-    ]
-  },
-  { href: '/follow-ups', label: 'Follow Ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent'] },
-  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent'] },
-  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin'] },
-  { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
+  { href: '/team', label: 'Team', icon: <Users />, roles: ['Admin'] },
+];
+
+const secondaryMenuItems = [
+    { href: '/analytics', label: 'Analytics', icon: <LineChart />, roles: ['Admin'] },
+];
+
+const documentMenuItems = [
+    { href: '/documents', label: 'Data Library', icon: <FileArchive />, roles: ['Admin'] },
+    { href: '/reports', label: 'Reports', icon: <ClipboardList />, roles: ['Admin'] },
+    { href: '/tools/find-by-budget', label: 'Word Assistant', icon: <Rocket />, roles: ['Admin'] },
 ];
 
 
 const bottomMenuItems = [
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
-  { href: '/support', label: 'Support', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
-  { href: '/upgrade', label: 'Upgrade', icon: <Gem />, roles: ['Admin', 'Agent'] },
+  { href: '/support', label: 'Get Help', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
 ];
 
 
@@ -134,29 +116,36 @@ export function AppSidebar() {
     });
     return initialState;
   });
-
-  const toggleCollapsible = (href: string) => {
-      setOpenCollapsibles(prev => ({...prev, [href]: !prev[href]}));
-  }
-
-  const allMobileNavItems = [
-     { id: 'team', href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
-     { id: 'properties', href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
-     { id: 'recording', href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
-     { id: 'overview', href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'], isCenter: true },
-     { id: 'buyers', href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
-     { id: 'editing', href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
-     { id: 'more', href: '/more', label: 'More', icon: <MoreHorizontal />, roles: ['Admin', 'Agent', 'Video Recorder'], isSheet: true },
-  ];
   
-  const mobileNavItems = allMobileNavItems.filter(item => 
-      item.roles.includes(profile.role)
-  );
+  const auth = useAuth();
+  const router = useRouter();
+  const firestore = useFirestore();
 
-  const moreSheetItems = mainMenuItems.concat(bottomMenuItems).filter(item => 
-      !['/overview', '/properties', '/buyers', '/team', '/recording', '/editing'].includes(item.href) &&
-      (item.roles.includes(profile.role))
-  );
+  const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
+  const [isAddBuyerOpen, setIsAddBuyerOpen] = useState(false);
+  const [propertyListingType, setPropertyListingType] = useState<ListingType>('For Sale');
+  
+  const agencyPropertiesQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'properties') : null, [profile.agency_id, firestore]);
+  const { data: allProperties } = useCollection<Property>(agencyPropertiesQuery);
+  const agencyBuyersQuery = useMemoFirebase(() => profile.agency_id ? collection(firestore, 'agencies', profile.agency_id, 'buyers') : null, [profile.agency_id, firestore]);
+  const { data: allBuyers } = useCollection<Buyer>(agencyBuyersQuery);
+
+  const handleLogout = async () => {
+    if (auth) {
+        await signOut(auth);
+    }
+    localStorage.removeItem('app-profile');
+    router.push('/');
+  };
+
+  const handleOpenAddDialog = (type: 'Property' | 'Buyer', listingType: ListingType) => {
+    if (type === 'Property') {
+        setPropertyListingType(listingType);
+        setIsAddPropertyOpen(true);
+    } else {
+        setIsAddBuyerOpen(true);
+    }
+  }
 
   const renderMenuItem = (item: any) => {
     
@@ -165,94 +154,7 @@ export function AppSidebar() {
       return null;
     }
     
-    const isActive = !item.subItems && pathname === item.href;
-    const isCollapsibleActive = item.subItems && pathname.startsWith(item.href);
-    const isUpgradeButton = item.href === '/upgrade';
-
-    if (item.subItems) {
-        return (
-            <Collapsible key={item.href} open={openCollapsibles[item.href] || false} onOpenChange={() => toggleCollapsible(item.href)}>
-                <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                            isActive={isCollapsibleActive}
-                            className="rounded-full justify-between transition-all duration-200 hover:bg-primary/10 hover:scale-105"
-                        >
-                            <div className="flex items-center gap-3">
-                                {item.icon}
-                                <span className="flex-1 truncate">{item.label}</span>
-                            </div>
-                            <ChevronDown className={cn("h-4 w-4 transition-transform", (openCollapsibles[item.href] || false) && "rotate-180")} />
-                        </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                </SidebarMenuItem>
-                <CollapsibleContent>
-                    <SidebarMenu className="pl-6 transition-all duration-300">
-                        {item.subItems.map((subItem: any) => {
-                            const currentUrlParams = new URLSearchParams(Array.from(searchParams.entries()));
-                            const subItemUrlParams = new URLSearchParams(subItem.href.split('?')[1] || '');
-
-                            const isRootPathMatch = subItem.href.split('?')[0] === pathname;
-                            
-                             let isSubItemActive = false;
-
-                            if (isRootPathMatch) {
-                                const subItemStatus = subItemUrlParams.get('status');
-                                const currentStatus = currentUrlParams.get('status');
-                                const subItemType = subItemUrlParams.get('type');
-                                const currentType = currentUrlParams.get('type');
-
-                                // Check for a specific filter match first
-                                if (subItemStatus !== null) {
-                                    isSubItemActive = subItemStatus === currentStatus;
-                                } else if (subItemType !== null) {
-                                    isSubItemActive = subItemType === currentType;
-                                } 
-                                // If no specific filter match, check if this is the base link for the current path
-                                else if (!currentStatus && !currentType) {
-                                     // Special handling for /properties to default to 'All (Sale)'
-                                    if (pathname === '/properties' && subItem.href === '/properties?status=All (Sale)') {
-                                        isSubItemActive = true;
-                                    } 
-                                    // For other base links like /buyers
-                                    else if (pathname === subItem.href) {
-                                        isSubItemActive = true;
-                                    }
-                                }
-                            }
-                            
-                            // A separate check for the main '/properties' link without status
-                            if (pathname === '/properties' && !currentUrlParams.has('status') && subItem.href === '/properties?status=All (Sale)') {
-                                isSubItemActive = true;
-                            }
-
-
-                            return (
-                                <SidebarMenuItem key={subItem.href} className="relative">
-                                     <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Link href={subItem.href}>
-                                            <SidebarMenuButton
-                                                variant="ghost"
-                                                size="sm"
-                                                isActive={isSubItemActive}
-                                                className="rounded-full w-full justify-start transition-all duration-200 hover:bg-primary/10"
-                                            >
-                                                <span className="truncate">{subItem.label}</span>
-                                            </SidebarMenuButton>
-                                            </Link>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" align="center">{subItem.label}</TooltipContent>
-                                    </Tooltip>
-                                    {isSubItemActive && <div className="absolute left-[-1.5rem] top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
-                                </SidebarMenuItem>
-                            )
-                        })}
-                    </SidebarMenu>
-                </CollapsibleContent>
-            </Collapsible>
-        )
-    }
+    const isActive = pathname === item.href;
 
     return (
       <SidebarMenuItem key={item.href} className="relative">
@@ -261,9 +163,7 @@ export function AppSidebar() {
             <Link href={item.href}>
               <SidebarMenuButton
                 isActive={isActive}
-                className={cn("rounded-full transition-all duration-200",
-                   (isUpgradeButton && profile.role !== 'Agent') ? "glowing-btn" : "hover:bg-primary/10 hover:scale-105"
-                )}
+                className={cn("transition-all duration-200")}
               >
                 {item.icon}
                 <span className="flex-1 truncate">{item.label}</span>
@@ -272,7 +172,6 @@ export function AppSidebar() {
           </TooltipTrigger>
           <TooltipContent side="right" align="center">{item.label}</TooltipContent>
         </Tooltip>
-        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary rounded-r-full" />}
       </SidebarMenuItem>
     );
   };
@@ -326,118 +225,52 @@ export function AppSidebar() {
         </div>
       )
     }
-    return (
-      <TooltipProvider>
-        {isMoreMenuOpen && (
-          <div
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-            onClick={() => setIsMoreMenuOpen(false)}
-            style={{ animation: 'fadeIn 0.3s ease-out' }}
-          />
-        )}
-      <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
-        <div className="grid h-full grid-cols-5 relative">
-          {mobileNavItems.map((item) => {
-            if ('placeholder' in item) {
-                return <div key={item.id} />;
-            }
-            
-            const isActive = pathname.startsWith(item.href!);
-            
-            if (item.isSheet) {
-                return (
-                     <div key={item.href} className="relative flex flex-col items-center justify-center">
-                        {isMoreMenuOpen && (
-                            <div className="absolute bottom-full right-4 mb-4 flex flex-col items-end gap-3 z-50">
-                               {moreSheetItems.map((sheetItem, index) => {
-                                  const finalLabel = sheetItem.label;
-
-                                  return (
-                                    <Link key={sheetItem.href} href={sheetItem.href} onClick={() => setIsMoreMenuOpen(false)}>
-                                        <motion.div 
-                                            className="flex items-center gap-3"
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                                        >
-                                            <span className="font-semibold text-slate-800 dark:text-white shadow-lg">{finalLabel}</span>
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-500 text-white shadow-lg transition-all duration-300 hover:scale-110">
-                                                {React.cloneElement(sheetItem.icon, { className: 'h-6 w-6' })}
-                                            </div>
-                                        </motion.div>
-                                    </Link>
-                                  )
-                               })}
-                            </div>
-                        )}
-                        <button 
-                            onClick={() => setIsMoreMenuOpen(prev => !prev)}
-                            className={cn('flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-primary z-50')}
-                        >
-                            {isMoreMenuOpen ? <X className="h-5 w-5" /> : React.cloneElement(item.icon!, { className: 'h-5 w-5' })}
-                            <span>{item.label}</span>
-                        </button>
-                    </div>
-                )
-            }
-            if (item.isCenter) {
-                return (
-                    <div key={item.href} className="relative flex items-center justify-center">
-                        <Link href={item.href!}>
-                             <div className={cn(
-                                'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
-                                'bg-gradient-to-br from-primary to-blue-500',
-                                isActive && 'ring-4 ring-primary/30'
-                             )}>
-                                {React.cloneElement(item.icon!, { className: 'h-7 w-7' })}
-                            </div>
-                        </Link>
-                    </div>
-                )
-            }
-            return (
-                <Link
-                    key={item.href}
-                    href={item.href!}
-                    className={cn(
-                        'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
-                        isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
-                    )}
-                >
-                    {React.cloneElement(item.icon!, { className: 'h-5 w-5' })}
-                    <span>{item.label}</span>
-                </Link>
-            )
-          })}
-        </div>
-      </div>
-      </TooltipProvider>
-    );
   }
 
   return (
+    <>
     <TooltipProvider>
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col"
+        className="hidden md:flex flex-col dark bg-slate-900 text-white"
       >
         <SidebarHeader>
-          <SidebarMenuButton asChild size="lg" className="justify-start">
+          <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                    <Home className="text-primary size-8" />
-                    <span className="font-bold text-lg font-headline text-primary">
-                        Signature Property CRM
+                    <ArrowUpCircle className="text-primary size-8" />
+                    <span className="font-bold text-xl font-headline text-white">
+                        Acme Inc.
                     </span>
                 </div>
             </Link>
           </SidebarMenuButton>
         </SidebarHeader>
 
-        <SidebarContent className="flex-1">
-          <SidebarMenu>
+        <SidebarContent className="flex-1 p-3">
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="default" className="w-full justify-start text-base bg-blue-600 hover:bg-blue-700">
+                        <Plus />
+                        Quick Create
+                    </Button>
+                </PopoverTrigger>
+                 <PopoverContent side="right" align="start" className="p-1 w-48">
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Sale')}>Property for Sale</Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Rent')}>Property for Rent</Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Sale')}>Buyer for Sale</Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Rent')}>Buyer for Rent</Button>
+                </PopoverContent>
+            </Popover>
+
+          <SidebarMenu className="mt-4">
             {mainMenuItems.map(renderMenuItem)}
+          </SidebarMenu>
+          
+          <SidebarMenu className="mt-4">
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Documents</h3>
+            {documentMenuItems.map(renderMenuItem)}
           </SidebarMenu>
         </SidebarContent>
 
@@ -445,8 +278,63 @@ export function AppSidebar() {
           <SidebarMenu>
             {bottomMenuItems.map(renderMenuItem)}
           </SidebarMenu>
+          <Separator className="my-2 bg-slate-700" />
+           <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center justify-between w-full h-auto p-2">
+                    <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src={profile.avatar} alt={profile.name} />
+                            <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="text-left group-data-[state=expanded]:inline hidden">
+                            <p className="font-semibold text-sm">{profile.name}</p>
+                            <p className="text-xs text-muted-foreground">{profile.email}</p>
+                        </div>
+                    </div>
+                    <MoreHorizontal className="group-data-[state=expanded]:inline hidden" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="right" className="w-56 mb-2">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/support')}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <span>Support</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
     </TooltipProvider>
+
+     <AddPropertyDialog
+        isOpen={isAddPropertyOpen}
+        setIsOpen={setIsAddPropertyOpen}
+        propertyToEdit={null}
+        allProperties={allProperties || []}
+        onSave={() => {}}
+        listingType={propertyListingType}
+        limitReached={false}
+      />
+      
+      <AddBuyerDialog
+        isOpen={isAddBuyerOpen}
+        setIsOpen={setIsAddBuyerOpen}
+        totalSaleBuyers={allBuyers?.filter(b => b.listing_type === 'For Sale').length || 0}
+        totalRentBuyers={allBuyers?.filter(b => b.listing_type === 'For Rent').length || 0}
+        onSave={() => {}}
+        limitReached={false}
+      />
+    </>
   );
 }
