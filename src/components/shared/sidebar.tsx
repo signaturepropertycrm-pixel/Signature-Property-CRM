@@ -423,12 +423,12 @@ export function AppSidebar() {
         className="hidden md:flex flex-col dark bg-slate-900 text-white border-r-0"
       >
         <SidebarHeader>
-          <SidebarMenuButton asChild size="lg" className="justify-start my-2">
+          <SidebarMenuButton asChild size="lg" className="justify-start">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
                     <Home className="text-primary size-8" />
-                    <span className="font-bold text-xl font-headline text-primary">
-                        S.P CRM
+                    <span className="font-bold text-lg font-headline text-primary">
+                        Signature Property CRM
                     </span>
                 </div>
             </Link>
