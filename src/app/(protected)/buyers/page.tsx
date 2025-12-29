@@ -423,15 +423,10 @@ export default function BuyersPage() {
         }
         
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
-
+        
+        // Corrected Status Filtering Logic
         if (activeStatusFilter && activeStatusFilter !== 'All') {
-            if (activeStatusFilter === 'Pending') {
-                filtered = filtered.filter(b => b.status === 'Pending');
-            } else {
-                filtered = filtered.filter(b => b.status === activeStatusFilter && b.status !== 'Pending');
-            }
-        } else {
-            filtered = filtered.filter(b => b.status !== 'Pending');
+            filtered = filtered.filter(b => b.status === activeStatusFilter);
         }
         
         if (searchQuery) {
@@ -779,8 +774,8 @@ export default function BuyersPage() {
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                             </Button>
                         </TableHead>
-                        <TableHead>Area & Type</TableHead>
-                        <TableHead>Budget & Size</TableHead>
+                        <TableHead>Area &amp; Type</TableHead>
+                        <TableHead>Budget &amp; Size</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -1343,3 +1338,5 @@ export default function BuyersPage() {
     );
 }
 
+
+    

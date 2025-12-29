@@ -122,6 +122,7 @@ const allMobileMenuItems = [
     ...growthMenuItems,
     ...managementMenuItems,
     ...videoMenuItems,
+    { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin', 'Agent'] },
     ...bottomMenuItems,
     { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
@@ -313,9 +314,7 @@ export function AppSidebar() {
                     {allMobileMenuItems
                         .filter(i => 
                             !mobileNavItems.some(navItem => navItem.href === i.href) && 
-                            i.roles.includes(profile.role) &&
-                            i.href !== '/settings' && 
-                            i.href !== '/support'
+                            i.roles.includes(profile.role)
                         )
                         .map((item, index) => (
                         <motion.div
@@ -420,8 +419,8 @@ export function AppSidebar() {
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                    <Building />
-                    <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
+                    
+                    <span className="font-bold text-xl font-headline text-foreground">
                         S.P CRM
                     </span>
                 </div>
@@ -462,6 +461,7 @@ export function AppSidebar() {
               {buyerStatuses.map(status => (
                   <CollapsibleSubItem key={status} href={`/buyers?status=${encodeURIComponent(status)}`} label={status} />
               ))}
+              <CollapsibleSubItem key="all" href="/buyers?status=All" label="All" />
             </CollapsibleMenuItem>
           </SidebarMenu>
 
@@ -482,8 +482,8 @@ export function AppSidebar() {
         </SidebarContent>
 
         <SidebarFooter>
-          <SidebarMenu>
-             {bottomMenuItems.map(renderMenuItem)}
+           <SidebarMenu>
+            {bottomMenuItems.map(renderMenuItem)}
              {profile.role === 'Admin' && <SidebarMenuItem>
               <Tooltip>
                   <TooltipTrigger asChild>
@@ -523,3 +523,5 @@ export function AppSidebar() {
     </>
   );
 }
+
+    
