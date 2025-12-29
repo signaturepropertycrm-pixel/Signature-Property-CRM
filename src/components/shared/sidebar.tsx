@@ -44,7 +44,16 @@ import {
   Plus,
   ArrowUpCircle,
   Workflow,
+  LogOut,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -237,7 +246,7 @@ export function AppSidebar() {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col bg-card"
+        className="hidden md:flex flex-col bg-card dark bg-slate-900 text-white"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
@@ -255,16 +264,16 @@ export function AppSidebar() {
         <SidebarContent className="flex-1 p-3">
              <Popover>
                 <PopoverTrigger asChild>
-                    <SidebarMenuButton variant="default" className="w-full justify-start text-base">
+                    <SidebarMenuButton variant="default" className="w-full justify-start text-base bg-primary rounded-lg px-4 py-2.5">
                         <Plus />
                         Quick Create
                     </SidebarMenuButton>
                 </PopoverTrigger>
                  <PopoverContent side="right" align="start" className="p-1 w-48">
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Sale')}>Property for Sale</Button>
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Rent')}>Property for Rent</Button>
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Sale')}>Buyer for Sale</Button>
-                    <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Rent')}>Buyer for Rent</Button>
+                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Sale')}>Property for Sale</Button>
+                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Rent')}>Property for Rent</Button>
+                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Sale')}>Buyer for Sale</Button>
+                            <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Buyer', 'For Rent')}>Buyer for Rent</Button>
                 </PopoverContent>
             </Popover>
 
@@ -334,11 +343,13 @@ export function AppSidebar() {
       <AddBuyerDialog
         isOpen={isAddBuyerOpen}
         setIsOpen={setIsAddBuyerOpen}
-        totalSaleBuyers={allBuyers?.filter(b => b.listing_type === 'For Sale').length || 0}
-        totalRentBuyers={allBuyers?.filter(b => b.listing_type === 'For Rent').length || 0}
+        totalSaleBuyers={allBuyers?.filter(b => !b.is_deleted && b.listing_type !== 'For Rent').length || 0}
+        totalRentBuyers={allBuyers?.filter(b => !b.is_deleted && b.listing_type === 'For Rent').length || 0}
         onSave={() => {}}
         limitReached={false}
       />
     </>
   );
 }
+
+    
