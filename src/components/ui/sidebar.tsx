@@ -368,13 +368,13 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg p-2 text-left text-sm font-medium outline-none ring-primary/50 transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent/80 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:shadow-primary/30 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:h-12 group-data-[state=collapsed]:w-12 group-data-[state=collapsed]:p-0 [&>svg]:size-5 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg px-4 py-2.5 text-left text-sm font-medium outline-none ring-primary/50 transition-all duration-200 ease-in-out hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 active:bg-accent/80 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:shadow-primary/30 group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:h-12 group-data-[state=collapsed]:w-12 group-data-[state=collapsed]:p-0 [&>svg]:size-5 [&>svg]:shrink-0",
   {
     variants: {
       size: {
-        default: "h-10",
-        sm: "h-9 text-xs",
-        lg: "h-12",
+        default: "",
+        sm: "text-xs",
+        lg: "",
       },
     },
     defaultVariants: {
@@ -419,7 +419,6 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(
           sidebarMenuButtonVariants({ size }),
-          "transition-all duration-200 hover:scale-105",
           className
         )}
         {...props}
