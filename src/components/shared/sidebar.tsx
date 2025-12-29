@@ -85,8 +85,7 @@ import { Separator } from '../ui/separator';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
-  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent']},
-  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent']},
+  // Properties and Buyers are now handled by collapsible menus
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent']},
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent']},
@@ -101,7 +100,6 @@ const secondaryMenuItems = [
 
 const documentMenuItems = [
     { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
-    { href: '/tools', label: 'Tools', icon: <Rocket />, roles: ['Admin', 'Agent'] },
     { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
 
@@ -188,9 +186,9 @@ export function AppSidebar() {
   if (isMobile) {
     if (profile.role === 'Video Recorder') {
       const recorderNavItems = [
-        { href: '/recording', label: 'Recording', icon: <Video />, roles: [] },
+        { href: '/recording', label: 'Recording', icon: <Video />, roles: [], isCenter: false },
         { href: '/overview', label: 'Overview', icon: <LayoutDashboard />, roles: [], isCenter: true },
-        { href: '/editing', label: 'Editing', icon: <Edit />, roles: [] },
+        { href: '/editing', label: 'Editing', icon: <Edit />, roles: [], isCenter: false },
       ];
       return (
         <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
@@ -232,13 +230,63 @@ export function AppSidebar() {
     }
   }
 
+  const CollapsibleMenuItem = ({
+    label,
+    icon,
+    children,
+    parentPath,
+    roles
+  }: {
+    label: string;
+    icon: React.ReactNode;
+    children: React.ReactNode;
+    parentPath: string;
+    roles: UserRole[];
+  }) => {
+    if (!roles.includes(profile.role)) return null;
+
+    const isActive = pathname.startsWith(parentPath);
+    return (
+      <Collapsible open={isActive} className="w-full">
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton isActive={isActive} className="justify-between">
+            <div className="flex items-center gap-3">
+              {icon}
+              <span className="flex-1 truncate">{label}</span>
+            </div>
+            <ChevronDown className="size-4 shrink-0 transition-transform duration-200 data-[state=open]:rotate-180" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenu className="pl-6 pt-2">
+            {children}
+          </SidebarMenu>
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
+
+  const CollapsibleSubItem = ({ href, label }: { href: string; label: string }) => {
+    const isActive = usePathname() + useSearchParams().toString() === href;
+    return (
+      <SidebarMenuItem>
+        <Link href={href}>
+          <SidebarMenuButton size="sm" isActive={isActive}>
+            {label}
+          </SidebarMenuButton>
+        </Link>
+      </SidebarMenuItem>
+    );
+  };
+
+
   return (
     <>
     <TooltipProvider>
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col bg-card dark:bg-slate-900 text-white"
+        className="hidden md:flex flex-col bg-card dark:bg-neutral-900 text-white"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
@@ -254,18 +302,38 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarContent className="flex-1 p-3">
-          <SidebarMenu className="mt-4">
+          <SidebarMenu>
             {mainMenuItems.map(renderMenuItem)}
              {profile.role === 'Video Recorder' && videoMenuItems.map(renderMenuItem)}
           </SidebarMenu>
           
-          <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Analytics</h3>
+           <SidebarMenu className="mt-4">
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Productivity</h3>
+             <CollapsibleMenuItem
+              label="Leads"
+              icon={<Database />}
+              parentPath="/properties"
+              roles={['Admin', 'Agent']}
+            >
+              <CollapsibleSubItem href="/properties?status=All%20(Sale)" label="Sale Properties" />
+              <CollapsibleSubItem href="/properties?status=All%20(Rent)" label="Rent Properties" />
+              <CollapsibleSubItem href="/buyers?type=For+Sale" label="Sale Buyers" />
+              <CollapsibleSubItem href="/buyers?type=For+Rent" label="Rent Buyers" />
+            </CollapsibleMenuItem>
             {secondaryMenuItems.map(renderMenuItem)}
           </SidebarMenu>
           
           <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Productivity</h3>
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Management</h3>
+            <CollapsibleMenuItem
+                label="Tools"
+                icon={<Rocket />}
+                parentPath="/tools"
+                roles={['Admin', 'Agent']}
+            >
+                <CollapsibleSubItem href="/tools/list-generator" label="List Generator" />
+                <CollapsibleSubItem href="/tools/find-by-budget" label="Find By Budget" />
+            </CollapsibleMenuItem>
             {documentMenuItems.map(renderMenuItem)}
           </SidebarMenu>
         </SidebarContent>
