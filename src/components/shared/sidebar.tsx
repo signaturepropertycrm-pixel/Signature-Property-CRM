@@ -202,7 +202,7 @@ export function AppSidebar() {
         { href: '/editing', label: 'Editing', icon: <Edit />, roles: [], isCenter: false },
       ];
       return (
-        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-transparent backdrop-blur-md">
           <div className="grid h-full grid-cols-3 relative">
             {recorderNavItems.map(item => {
               const isActive = pathname.startsWith(item.href);
@@ -248,7 +248,7 @@ export function AppSidebar() {
         { href: '#', label: 'More', icon: <MoreHorizontal />, isSheet: true },
     ];
     return (
-        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-transparent backdrop-blur-md">
             <div className="grid h-full grid-cols-5 relative">
                 {mobileNavItems.map(item => {
                     const isActive = !item.isSheet && pathname.startsWith(item.href);
@@ -393,7 +393,7 @@ export function AppSidebar() {
             <Link href="/overview">
                 <div className="flex items-center gap-2">
                     <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
-                        Signature Property CRM
+                        S.P CRM
                     </span>
                 </div>
             </Link>
@@ -408,7 +408,7 @@ export function AppSidebar() {
           
            <SidebarMenu className="mt-4">
             <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Leads</h3>
-             <CollapsibleMenuItem label="Properties" icon={<Building2 />} parentPath="/properties" roles={['Admin', 'Agent']}>
+            <CollapsibleMenuItem label="Properties" icon={<Building2 />} parentPath="/properties" roles={['Admin', 'Agent']}>
                 <p className="text-xs font-semibold text-muted-foreground px-4 py-2">Sale Properties</p>
                 <CollapsibleSubItem href="/properties?status=All%20(Sale)" label="All (Sale)" />
                 <CollapsibleSubItem href="/properties?status=Pending" label="Pending" />
