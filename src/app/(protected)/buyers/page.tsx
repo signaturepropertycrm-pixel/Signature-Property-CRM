@@ -114,8 +114,8 @@ export default function BuyersPage() {
             );
         }
 
-        // 3. Agar ADMIN hai, to saaray buyers mangwao
-        return query(baseRef, where('is_deleted', '!=', true)); 
+        // 3. Agar ADMIN hai, to saaray buyers mangwao jo delete nahi hue
+        return query(baseRef, where('is_deleted', '==', false)); 
         
     }, [profile.agency_id, profile.role, user?.uid, firestore]);
     
