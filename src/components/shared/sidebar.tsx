@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -246,10 +246,15 @@ export function AppSidebar() {
     roles: UserRole[];
   }) => {
     if (!roles.includes(profile.role)) return null;
-
     const isActive = pathname.startsWith(parentPath);
+    const [isOpen, setIsOpen] = useState(isActive);
+
+    useEffect(() => {
+        setIsOpen(isActive);
+    }, [isActive]);
+
     return (
-      <Collapsible open={isActive} className="w-full">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
         <CollapsibleTrigger asChild>
           <SidebarMenuButton isActive={isActive} className="justify-between">
             <div className="flex items-center gap-3">
@@ -270,9 +275,8 @@ export function AppSidebar() {
 
   const CollapsibleSubItem = ({ href, label }: { href: string; label: string }) => {
     const searchParams = useSearchParams();
-    // Reconstruct the full path with query parameters for an exact match
-    const fullPath = `${pathname}?${searchParams.toString()}`;
-    const isActive = fullPath === href || pathname === href.split('?')[0] && !searchParams.toString();
+    const currentParams = new URLSearchParams(Array.from(searchParams.entries()));
+    const isActive = pathname === href.split('?')[0] && currentParams.toString() === (href.split('?')[1] || '');
     
     return (
       <SidebarMenuItem>
