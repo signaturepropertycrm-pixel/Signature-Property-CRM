@@ -75,7 +75,7 @@ import { AddPropertyDialog } from '../add-property-dialog';
 import { AddBuyerDialog } from '../add-buyer-dialog';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/hooks';
-import type { Property, Buyer, ListingType } from '@/lib/types';
+import type { Property, Buyer, ListingType, UserRole } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { signOut } from 'firebase/auth';
@@ -85,20 +85,22 @@ import { Separator } from '../ui/separator';
 
 const mainMenuItems = [
   { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
-  // Properties and Buyers are now handled by collapsible menus
   { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+];
+
+const productivityMenuItems = [
   { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent']},
   { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent']},
+  { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
+  { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin']},
 ];
 
-const secondaryMenuItems = [
+const growthMenuItems = [
     { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
     { href: '/reports', label: 'Reports', icon: <ClipboardList />, roles: ['Admin'] },
-    { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
-    { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin']},
 ];
 
-const documentMenuItems = [
+const managementMenuItems = [
     { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
     { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
@@ -267,7 +269,11 @@ export function AppSidebar() {
   };
 
   const CollapsibleSubItem = ({ href, label }: { href: string; label: string }) => {
-    const isActive = usePathname() + useSearchParams().toString() === href;
+    const searchParams = useSearchParams();
+    // Reconstruct the full path with query parameters for an exact match
+    const fullPath = `${pathname}?${searchParams.toString()}`;
+    const isActive = fullPath === href || pathname === href.split('?')[0] && !searchParams.toString();
+    
     return (
       <SidebarMenuItem>
         <Link href={href}>
@@ -308,23 +314,35 @@ export function AppSidebar() {
           </SidebarMenu>
           
            <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Productivity</h3>
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Leads</h3>
              <CollapsibleMenuItem
-              label="Leads"
-              icon={<Database />}
+              label="Properties"
+              icon={<Building2 />}
               parentPath="/properties"
               roles={['Admin', 'Agent']}
             >
-              <CollapsibleSubItem href="/properties?status=All%20(Sale)" label="Sale Properties" />
-              <CollapsibleSubItem href="/properties?status=All%20(Rent)" label="Rent Properties" />
-              <CollapsibleSubItem href="/buyers?type=For+Sale" label="Sale Buyers" />
-              <CollapsibleSubItem href="/buyers?type=For+Rent" label="Rent Buyers" />
+              <CollapsibleSubItem href="/properties?status=All%20(Sale)" label="For Sale" />
+              <CollapsibleSubItem href="/properties?status=All%20(Rent)" label="For Rent" />
             </CollapsibleMenuItem>
-            {secondaryMenuItems.map(renderMenuItem)}
+             <CollapsibleMenuItem
+              label="Buyers"
+              icon={<Users />}
+              parentPath="/buyers"
+              roles={['Admin', 'Agent']}
+            >
+              <CollapsibleSubItem href="/buyers?type=For+Sale" label="For Sale" />
+              <CollapsibleSubItem href="/buyers?type=For+Rent" label="For Rent" />
+            </CollapsibleMenuItem>
+          </SidebarMenu>
+
+          <SidebarMenu className="mt-4">
+             <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Productivity</h3>
+             {productivityMenuItems.map(renderMenuItem)}
           </SidebarMenu>
           
           <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Management</h3>
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
+            {growthMenuItems.map(renderMenuItem)}
             <CollapsibleMenuItem
                 label="Tools"
                 icon={<Rocket />}
@@ -334,7 +352,11 @@ export function AppSidebar() {
                 <CollapsibleSubItem href="/tools/list-generator" label="List Generator" />
                 <CollapsibleSubItem href="/tools/find-by-budget" label="Find By Budget" />
             </CollapsibleMenuItem>
-            {documentMenuItems.map(renderMenuItem)}
+          </SidebarMenu>
+
+          <SidebarMenu className="mt-4">
+             <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Management</h3>
+            {managementMenuItems.map(renderMenuItem)}
           </SidebarMenu>
         </SidebarContent>
 
