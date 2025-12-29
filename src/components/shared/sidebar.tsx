@@ -43,6 +43,7 @@ import {
   Mail,
   Plus,
   ArrowUpCircle,
+  Workflow,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -70,10 +71,13 @@ import { Button } from '../ui/button';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Separator } from '../ui/separator';
 
 
 const mainMenuItems = [
   { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
+  { href: '/lifecycle', label: 'Lifecycle', icon: <Workflow />, roles: ['Admin', 'Agent'] },
+  { href: '/analytics', label: 'Analytics', icon: <LineChart />, roles: ['Admin'] },
   { 
     href: '/properties', 
     label: 'Projects', 
@@ -110,7 +114,7 @@ export function AppSidebar() {
   const [openCollapsibles, setOpenCollapsibles] = useState(() => {
     const initialState: { [key: string]: boolean } = {};
     mainMenuItems.forEach(item => {
-        if (item.subItems) {
+        if ('subItems' in item) {
             initialState[item.href] = pathname.startsWith(item.href);
         }
     });
@@ -233,14 +237,14 @@ export function AppSidebar() {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col dark bg-slate-900 text-white"
+        className="hidden md:flex flex-col bg-card"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
                     <ArrowUpCircle className="text-primary size-8" />
-                    <span className="font-bold text-xl font-headline text-white">
+                    <span className="font-bold text-xl font-headline text-foreground">
                         Acme Inc.
                     </span>
                 </div>
@@ -251,10 +255,10 @@ export function AppSidebar() {
         <SidebarContent className="flex-1 p-3">
              <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant="default" className="w-full justify-start text-base bg-blue-600 hover:bg-blue-700">
+                    <SidebarMenuButton variant="default" className="w-full justify-start text-base">
                         <Plus />
                         Quick Create
-                    </Button>
+                    </SidebarMenuButton>
                 </PopoverTrigger>
                  <PopoverContent side="right" align="start" className="p-1 w-48">
                     <Button variant="ghost" className="w-full justify-start" onClick={() => handleOpenAddDialog('Property', 'For Sale')}>Property for Sale</Button>
