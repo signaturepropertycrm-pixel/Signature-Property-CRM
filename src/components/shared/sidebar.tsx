@@ -116,6 +116,15 @@ const bottomMenuItems = [
   { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
 
+const allMobileMenuItems = [
+    ...mainMenuItems,
+    ...productivityMenuItems,
+    ...growthMenuItems,
+    ...managementMenuItems,
+    ...videoMenuItems,
+    ...bottomMenuItems
+];
+
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -230,6 +239,86 @@ export function AppSidebar() {
         </div>
       )
     }
+    // New Mobile Nav for Admin/Agent
+    const mobileNavItems = [
+        { href: '/team', label: 'Team', icon: <UserCog /> },
+        { href: '/properties', label: 'Properties', icon: <Building2 /> },
+        { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, isCenter: true },
+        { href: '/buyers', label: 'Buyers', icon: <Users /> },
+        { href: '#', label: 'More', icon: <MoreHorizontal />, isSheet: true },
+    ];
+    return (
+        <div className="fixed bottom-0 left-0 z-50 w-full h-20 border-t bg-card/80 backdrop-blur-md">
+            <div className="grid h-full grid-cols-5 relative">
+                {mobileNavItems.map(item => {
+                    const isActive = !item.isSheet && pathname.startsWith(item.href);
+                    if (item.isCenter) {
+                        return (
+                             <div key={item.href} className="relative flex items-center justify-center">
+                                <Link href={item.href}>
+                                <div className={cn(
+                                    'absolute -top-6 flex h-16 w-16 items-center justify-center rounded-full text-white shadow-lg transition-all duration-300 left-1/2 -translate-x-1/2',
+                                    'bg-gradient-to-br from-primary to-blue-500',
+                                    isActive && 'ring-4 ring-primary/30'
+                                )}>
+                                    {React.cloneElement(item.icon, { className: 'h-7 w-7' })}
+                                </div>
+                                </Link>
+                            </div>
+                        )
+                    }
+                    if (item.isSheet) {
+                        return (
+                            <Sheet key={item.label}>
+                                <SheetTrigger asChild>
+                                    <button className="flex flex-col items-center justify-center gap-1 text-xs font-medium text-muted-foreground">
+                                        {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                                        <span>{item.label}</span>
+                                    </button>
+                                </SheetTrigger>
+                                <SheetContent side="bottom" className="h-[80%] rounded-t-2xl">
+                                    <SheetHeader>
+                                        <SheetTitle>More Options</SheetTitle>
+                                    </SheetHeader>
+                                    <div className="grid grid-cols-3 gap-4 py-4">
+                                        {allMobileMenuItems
+                                            .filter(i => !mobileNavItems.map(n => n.href).includes(i.href) && i.roles.includes(profile.role))
+                                            .map(i => (
+                                            <Link key={i.href} href={i.href} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/50 hover:bg-accent">
+                                                {React.cloneElement(i.icon, { className: 'h-6 w-6 text-primary' })}
+                                                <span className="text-xs text-center">{i.label}</span>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                    <Separator />
+                                     <Button variant="ghost" onClick={handleLogout} className="w-full justify-start mt-4">
+                                        <LogOut className="mr-2 h-4 w-4" />
+                                        Logout
+                                    </Button>
+                                </SheetContent>
+                            </Sheet>
+                        )
+                    }
+                    if (!item.roles || item.roles.includes(profile.role)) {
+                         return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    'flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors',
+                                    isActive ? 'text-primary' : 'text-muted-foreground hover:text-primary'
+                                )}
+                            >
+                                {React.cloneElement(item.icon, { className: 'h-5 w-5' })}
+                                <span>{item.label}</span>
+                            </Link>
+                        )
+                    }
+                    return null;
+                })}
+            </div>
+        </div>
+    )
   }
 
   const CollapsibleMenuItem = ({
@@ -303,9 +392,8 @@ export function AppSidebar() {
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                    <ArrowUpCircle className="text-primary size-8" />
-                    <span className="font-bold text-xl font-headline text-foreground">
-                        S.P CRM
+                    <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
+                        Signature Property CRM
                     </span>
                 </div>
             </Link>
@@ -334,12 +422,13 @@ export function AppSidebar() {
                 <CollapsibleSubItem href="/properties?status=Available%20(Rent)" label="Available" />
                 <CollapsibleSubItem href="/properties?status=Rent%20Out" label="Rent Out" />
             </CollapsibleMenuItem>
-             <CollapsibleMenuItem
+            <CollapsibleMenuItem
               label="Buyers"
               icon={<Users />}
               parentPath="/buyers"
               roles={['Admin', 'Agent']}
             >
+              <Separator className="my-2" />
               <p className="text-xs font-semibold text-muted-foreground px-4 py-2">Filter by Status</p>
               {buyerStatuses.map(status => (
                   <CollapsibleSubItem key={status} href={`/buyers?status=${encodeURIComponent(status)}`} label={status} />
