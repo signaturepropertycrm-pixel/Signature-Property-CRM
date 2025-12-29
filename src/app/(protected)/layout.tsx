@@ -119,14 +119,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-    <div className="fixed top-0 left-0 w-full bg-gradient-to-r from-primary to-blue-500 text-primary-foreground p-2 text-center shadow-lg z-50">
-        <h1 className="text-lg font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-100 to-white">
-            Signature Property CRM
-        </h1>
-    </div>
-    <div className="pt-12"> {/* Add padding to the top of the content to offset the banner */}
         {!user.emailVerified && (
-            <div className="sticky top-12 z-40 w-full bg-amber-500 text-amber-900 shadow-md">
+            <div className="sticky top-0 z-40 w-full bg-amber-500 text-amber-900 shadow-md">
                 <div className="container mx-auto flex items-center justify-center p-2 text-sm font-semibold gap-4">
                     <MailWarning className="h-5 w-5" />
                     <span>Please verify your email address to unlock all features.</span>
@@ -144,7 +138,6 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
         )}
         {children}
-    </div>
     </>
   );
 }
