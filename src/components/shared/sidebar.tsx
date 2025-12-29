@@ -297,7 +297,7 @@ export function AppSidebar() {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col bg-card dark:bg-neutral-900 text-white"
+        className="hidden md:flex flex-col bg-card dark:bg-neutral-900"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
@@ -342,6 +342,11 @@ export function AppSidebar() {
             >
               <CollapsibleSubItem href="/buyers?type=For+Sale" label="For Sale" />
               <CollapsibleSubItem href="/buyers?type=For+Rent" label="For Rent" />
+              <Separator className="my-2" />
+               <p className="text-xs font-semibold text-muted-foreground px-4 py-2">Filter by Status</p>
+              {buyerStatuses.map(status => (
+                  <CollapsibleSubItem key={status} href={`/buyers?status=${encodeURIComponent(status)}`} label={status} />
+              ))}
             </CollapsibleMenuItem>
           </SidebarMenu>
 
@@ -374,7 +379,7 @@ export function AppSidebar() {
           <SidebarMenu>
             {bottomMenuItems.map(renderMenuItem)}
           </SidebarMenu>
-          <Separator className="my-2 bg-slate-700" />
+          <Separator className="my-2" />
            <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center justify-between w-full h-auto p-2">
