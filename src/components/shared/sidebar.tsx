@@ -45,6 +45,7 @@ import {
   ArrowUpCircle,
   Workflow,
   LogOut,
+  Database
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -82,32 +83,36 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 
-
 const mainMenuItems = [
   { href: '/overview', label: 'Dashboard', icon: <LayoutDashboard />, roles: ['Admin', 'Agent', 'Video Recorder'] },
   { href: '/lifecycle', label: 'Lifecycle', icon: <Workflow />, roles: ['Admin', 'Agent'] },
-  { href: '/analytics', label: 'Analytics', icon: <LineChart />, roles: ['Admin'] },
-  { 
-    href: '/properties', 
-    label: 'Projects', 
-    icon: <Building2 />, 
-    roles: ['Admin', 'Agent'],
-  },
-  { href: '/team', label: 'Team', icon: <Users />, roles: ['Admin'] },
+  { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent']},
+  { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent']},
+  { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin'] },
+  { href: '/appointments', label: 'Appointments', icon: <Calendar />, roles: ['Admin', 'Agent']},
+  { href: '/follow-ups', label: 'Follow-ups', icon: <PhoneForwarded />, roles: ['Admin', 'Agent']},
 ];
 
 const secondaryMenuItems = [
-    { href: '/analytics', label: 'Analytics', icon: <LineChart />, roles: ['Admin'] },
+    { href: '/analytics', label: 'Analytics', icon: <PieChart />, roles: ['Admin'] },
+    { href: '/reports', label: 'Reports', icon: <ClipboardList />, roles: ['Admin'] },
+    { href: '/activities', label: 'Activities', icon: <History />, roles: ['Admin', 'Agent'] },
+    { href: '/inbox', label: 'Inbox', icon: <Mail />, roles: ['Admin']},
 ];
 
 const documentMenuItems = [
-    { href: '/documents', label: 'Data Library', icon: <FileArchive />, roles: ['Admin'] },
-    { href: '/reports', label: 'Reports', icon: <ClipboardList />, roles: ['Admin'] },
-    { href: '/tools/find-by-budget', label: 'Word Assistant', icon: <Rocket />, roles: ['Admin'] },
+    { href: '/documents', label: 'Documents', icon: <FileArchive />, roles: ['Admin'] },
+    { href: '/tools', label: 'Tools', icon: <Rocket />, roles: ['Admin', 'Agent'] },
+    { href: '/trash', label: 'Trash', icon: <Trash2 />, roles: ['Admin', 'Agent'] },
 ];
 
+const videoMenuItems = [
+    { href: '/recording', label: 'Recording', icon: <Video />, roles: ['Video Recorder'] },
+    { href: '/editing', label: 'Editing', icon: <Edit />, roles: ['Video Recorder'] },
+];
 
 const bottomMenuItems = [
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Get Help', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
 ];
@@ -115,20 +120,8 @@ const bottomMenuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const { profile } = useProfile();
-  const { isMoreMenuOpen, setIsMoreMenuOpen } = useUI();
-  
-  const [openCollapsibles, setOpenCollapsibles] = useState(() => {
-    const initialState: { [key: string]: boolean } = {};
-    mainMenuItems.forEach(item => {
-        if ('subItems' in item) {
-            initialState[item.href] = pathname.startsWith(item.href);
-        }
-    });
-    return initialState;
-  });
   
   const auth = useAuth();
   const router = useRouter();
@@ -246,7 +239,7 @@ export function AppSidebar() {
       <Sidebar
         variant="sidebar"
         collapsible="icon"
-        className="hidden md:flex flex-col bg-card dark bg-slate-900 text-white"
+        className="hidden md:flex flex-col bg-card dark:bg-slate-900 text-white"
       >
         <SidebarHeader>
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
@@ -279,10 +272,16 @@ export function AppSidebar() {
 
           <SidebarMenu className="mt-4">
             {mainMenuItems.map(renderMenuItem)}
+             {profile.role === 'Video Recorder' && videoMenuItems.map(renderMenuItem)}
           </SidebarMenu>
           
           <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Documents</h3>
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Analytics</h3>
+            {secondaryMenuItems.map(renderMenuItem)}
+          </SidebarMenu>
+          
+          <SidebarMenu className="mt-4">
+            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Productivity</h3>
             {documentMenuItems.map(renderMenuItem)}
           </SidebarMenu>
         </SidebarContent>
@@ -351,5 +350,3 @@ export function AppSidebar() {
     </>
   );
 }
-
-    
