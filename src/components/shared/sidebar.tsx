@@ -111,9 +111,9 @@ const videoMenuItems = [
 ];
 
 const bottomMenuItems = [
-  { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
   { href: '/settings', label: 'Settings', icon: <Settings />, roles: ['Admin', 'Agent'] },
   { href: '/support', label: 'Get Help', icon: <MessageSquare />, roles: ['Admin', 'Agent'] },
+  { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
 
 
@@ -376,41 +376,6 @@ export function AppSidebar() {
           <SidebarMenu>
             {bottomMenuItems.map(renderMenuItem)}
           </SidebarMenu>
-          <Separator className="my-2" />
-           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center justify-between w-full h-auto p-2">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src={profile.avatar} alt={profile.name} />
-                            <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className="text-left group-data-[state=expanded]:inline hidden">
-                            <p className="font-semibold text-sm">{profile.name}</p>
-                            <p className="text-xs text-muted-foreground">{profile.email}</p>
-                        </div>
-                    </div>
-                    <MoreHorizontal className="group-data-[state=expanded]:inline hidden" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="right" className="w-56 mb-2">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/support')}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    <span>Support</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
     </TooltipProvider>
