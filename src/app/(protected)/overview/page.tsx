@@ -475,7 +475,7 @@ export default function OverviewPage() {
             value: stats.totalProperties,
             change: `+${stats.newProperties30d} in last 30 days`,
             icon: <Home className="h-4 w-4" />,
-            color: "bg-sky-100 dark:bg-sky-900 text-sky-600 dark:text-sky-300",
+            color: "bg-sky-100 dark:bg-neutral-800 text-sky-600 dark:text-sky-300",
             href: "/properties?status=All (Sale)",
             isLoading
         },
@@ -484,7 +484,7 @@ export default function OverviewPage() {
             value: stats.totalSaleBuyers,
             change: `+${stats.newBuyers30d} in last 30 days`,
             icon: <Users className="h-4 w-4" />,
-            color: "bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300",
+            color: "bg-indigo-100 dark:bg-neutral-800 text-indigo-600 dark:text-indigo-300",
             href: "/buyers?type=For+Sale",
             isLoading
         },
@@ -493,7 +493,7 @@ export default function OverviewPage() {
             value: stats.propertiesForRent,
             change: "Currently available",
             icon: <Building2 className="h-4 w-4" />,
-            color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
+            color: "bg-orange-100 dark:bg-neutral-800 text-orange-600 dark:text-orange-300",
             href: "/properties?status=Available (Rent)",
             isLoading
         },
@@ -502,7 +502,7 @@ export default function OverviewPage() {
             value: stats.totalRentBuyers,
             change: `+${stats.newRentBuyers30d} new in 30 days`,
             icon: <Briefcase className="h-4 w-4" />,
-            color: "bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-300",
+            color: "bg-teal-100 dark:bg-neutral-800 text-teal-600 dark:text-teal-300",
             href: "/buyers?type=For+Rent",
             isLoading
         },
@@ -511,7 +511,7 @@ export default function OverviewPage() {
             value: stats.soldInLast30DaysCount,
             change: `Total sales in last 30 days`,
             icon: <CheckCircle className="h-4 w-4" />,
-            color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
+            color: "bg-emerald-100 dark:bg-neutral-800 text-emerald-600 dark:text-emerald-300",
             href: "/reports",
             isLoading
         },
@@ -520,7 +520,7 @@ export default function OverviewPage() {
             value: formatCurrency(stats.revenue30d, currency, { notation: 'compact' }),
             change: `From ${stats.soldInLast30DaysCount} sales`,
             icon: <DollarSign className="h-4 w-4" />,
-            color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
+            color: "bg-emerald-100 dark:bg-neutral-800 text-emerald-600 dark:text-emerald-300",
             href: "/reports",
             isLoading
         },
@@ -529,7 +529,7 @@ export default function OverviewPage() {
             value: stats.rentOutInLast30DaysCount,
             change: 'Total rentals in last 30 days',
             icon: <CheckCircle className="h-4 w-4" />,
-            color: 'bg-lime-100 dark:bg-lime-900 text-lime-600 dark:text-lime-300',
+            color: 'bg-lime-100 dark:bg-neutral-800 text-lime-600 dark:text-lime-300',
             href: '/reports',
             isLoading
         },
@@ -538,7 +538,7 @@ export default function OverviewPage() {
             value: formatCurrency(stats.rentRevenue30d, currency, { notation: 'compact' }),
             change: "From new rentals",
             icon: <DollarSign className="h-4 w-4" />,
-            color: "bg-lime-100 dark:bg-lime-900 text-lime-600 dark:text-lime-300",
+            color: "bg-lime-100 dark:bg-neutral-800 text-lime-600 dark:text-lime-300",
             href: "/reports",
             isLoading
         },
@@ -547,7 +547,7 @@ export default function OverviewPage() {
             value: stats.paidVideos30dCount,
             change: "Completed video payments",
             icon: <Video className="h-4 w-4" />,
-            color: "bg-rose-100 dark:bg-rose-900 text-rose-600 dark:text-rose-300",
+            color: "bg-rose-100 dark:bg-neutral-800 text-rose-600 dark:text-rose-300",
             isLoading
         },
         {
@@ -555,7 +555,7 @@ export default function OverviewPage() {
             value: formatCurrency(stats.recordingRevenue30d, currency, { notation: 'compact' }),
             change: "From video services",
             icon: <DollarSign className="h-4 w-4" />,
-            color: "bg-fuchsia-100 dark:bg-fuchsia-900 text-fuchsia-600 dark:text-fuchsia-300",
+            color: "bg-fuchsia-100 dark:bg-neutral-800 text-fuchsia-600 dark:text-fuchsia-300",
             isLoading
         },
         {
@@ -563,7 +563,7 @@ export default function OverviewPage() {
             value: stats.interestedBuyers,
             change: `+${finalBuyers?.filter(b => b.status === 'Interested' && filterLast30Days(b)).length || 0} new leads this month`,
             icon: <Star className="h-4 w-4" />,
-            color: "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300",
+            color: "bg-amber-100 dark:bg-neutral-800 text-amber-600 dark:text-amber-300",
             href: "/buyers?status=Interested",
             isLoading
         },
@@ -572,7 +572,7 @@ export default function OverviewPage() {
             value: stats.followUpLeads,
             change: "Leads requiring action",
             icon: <PhoneForwarded className="h-4 w-4" />,
-            color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
+            color: "bg-purple-100 dark:bg-neutral-800 text-purple-600 dark:text-purple-300",
             href: "/follow-ups",
             isLoading
         },
@@ -581,7 +581,7 @@ export default function OverviewPage() {
             value: stats.appointments30d,
             change: `${stats.upcomingAppointments} upcoming`,
             icon: <CalendarDays className="h-4 w-4" />,
-            color: 'bg-cyan-100 dark:bg-cyan-900 text-cyan-600 dark:text-cyan-300',
+            color: 'bg-cyan-100 dark:bg-neutral-800 text-cyan-600 dark:text-cyan-300',
             href: '/appointments',
             isLoading
         },
@@ -590,7 +590,7 @@ export default function OverviewPage() {
             value: stats.completedAppointments30d,
             change: "Completed appointments",
             icon: <CheckCheck className="h-4 w-4" />,
-            color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
+            color: "bg-green-100 dark:bg-neutral-800 text-green-600 dark:text-green-300",
             href: "/appointments",
             isLoading
         },
@@ -599,7 +599,7 @@ export default function OverviewPage() {
             value: stats.cancelledAppointments30d,
             change: "Cancelled appointments",
             icon: <XCircle className="h-4 w-4" />,
-            color: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300",
+            color: "bg-red-100 dark:bg-neutral-800 text-red-600 dark:text-red-300",
             href: "/appointments",
             isLoading
         },
@@ -620,7 +620,7 @@ export default function OverviewPage() {
                 title: "Pending Recordings",
                 value: pendingCount,
                 icon: <VideoOff className="h-4 w-4" />,
-                color: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300",
+                color: "bg-red-100 dark:bg-neutral-800 text-red-600 dark:text-red-300",
                 isLoading,
                 href: "/recording",
             },
@@ -628,7 +628,7 @@ export default function OverviewPage() {
                 title: "In Editing",
                 value: editingCount,
                 icon: <PlayCircle className="h-4 w-4" />,
-                color: "bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-300",
+                color: "bg-yellow-100 dark:bg-neutral-800 text-yellow-600 dark:text-yellow-300",
                 isLoading,
                 href: "/editing",
             },
@@ -636,7 +636,7 @@ export default function OverviewPage() {
                 title: "Editing Complete",
                 value: completedCount,
                 icon: <CheckCheck className="h-4 w-4" />,
-                color: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300",
+                color: "bg-green-100 dark:bg-neutral-800 text-green-600 dark:text-green-300",
                 isLoading,
                 href: "/editing",
             },
@@ -644,7 +644,7 @@ export default function OverviewPage() {
                 title: "Total Unpaid",
                 value: unpaidCount,
                 icon: <Circle className="h-4 w-4" />,
-                color: "bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300",
+                color: "bg-orange-100 dark:bg-neutral-800 text-orange-600 dark:text-orange-300",
                 isLoading,
                 href: "/recording?tab=Unpaid",
             },
@@ -652,7 +652,7 @@ export default function OverviewPage() {
                 title: "Paid Online",
                 value: paidOnlineCount,
                 icon: <CheckCircle className="h-4 w-4" />,
-                color: "bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300",
+                color: "bg-emerald-100 dark:bg-neutral-800 text-emerald-600 dark:text-emerald-300",
                 isLoading,
                 href: "/recording?tab=Paid Online",
             },
@@ -660,7 +660,7 @@ export default function OverviewPage() {
                 title: "Pending Cash",
                 value: pendingCashCount,
                 icon: <Clock className="h-4 w-4" />,
-                color: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300",
+                color: "bg-purple-100 dark:bg-neutral-800 text-purple-600 dark:text-purple-300",
                 isLoading,
                 href: "/recording?tab=Pending Cash",
             },
@@ -764,4 +764,3 @@ export default function OverviewPage() {
         </div>
     );
 }
-
