@@ -314,13 +314,13 @@ export function AppSidebar() {
                         .map((item, index) => (
                         <motion.div
                             key={item.href}
-                            initial={{ opacity: 0, y: 50, scale: 0.5 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 50, scale: 0.5 }}
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
                             transition={{
-                                type: 'spring',
-                                stiffness: 260,
-                                damping: 20,
+                                type: 'tween',
+                                ease: 'easeOut',
+                                duration: 0.3,
                                 delay: index * 0.05,
                             }}
                             className="flex items-center gap-3"
@@ -414,7 +414,8 @@ export function AppSidebar() {
           <SidebarMenuButton asChild size="lg" className="justify-start my-2">
             <Link href="/overview">
                 <div className="flex items-center gap-2">
-                     <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
+                    
+                    <span className="font-bold text-lg font-headline text-foreground whitespace-nowrap">
                         S.P CRM
                     </span>
                 </div>
