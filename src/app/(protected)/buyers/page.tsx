@@ -405,47 +405,58 @@ export default function BuyersPage() {
 
     const filteredBuyers = useMemo(() => {
         if (!allBuyers) return [];
-
-        let baseBuyers: Buyer[] = [...allBuyers];
-        
-        if (profile.role === 'Admin') {
-             baseBuyers = baseBuyers.filter(b => b.agency_id === profile.agency_id);
-        }
-        
-        let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
-        
+        let buyers = allBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
+    
         if (activeStatusFilter !== 'All') {
-            filtered = filtered.filter(b => b.status === activeStatusFilter);
+            buyers = buyers.filter(b => b.status === activeStatusFilter);
         }
-        
+    
         if (searchQuery) {
             const lowercasedQuery = searchQuery.toLowerCase();
             const numericQuery = searchQuery.replace(/\D/g, '');
-            filtered = filtered.filter(buyer =>
+            buyers = buyers.filter(buyer =>
                 buyer.name.toLowerCase().includes(lowercasedQuery) ||
                 (buyer.area_preference && buyer.area_preference.toLowerCase().includes(lowercasedQuery)) ||
                 buyer.serial_no.toLowerCase().includes(lowercasedQuery) ||
                 (buyer.phone && buyer.phone.replace(/\D/g, '').includes(numericQuery))
             );
         }
-        
-        if (filters.area) filtered = filtered.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
-        if (filters.minBudget) filtered = filtered.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
-        if (filters.maxBudget) filtered = filtered.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
-        if (filters.propertyType !== 'All') filtered = filtered.filter(p => p.property_type_preference === filters.propertyType);
-        if (filters.minSize) filtered = filtered.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
-        if (filters.maxSize) filtered = filtered.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
+    
+        if (filters.area) {
+            buyers = buyers.filter(b => b.area_preference && b.area_preference.toLowerCase().includes(filters.area.toLowerCase()));
+        }
+    
+        if (filters.minBudget) {
+            buyers = buyers.filter(b => b.budget_min_amount && b.budget_min_amount >= Number(filters.minBudget) && (filters.budgetUnit === 'All' || b.budget_min_unit === filters.budgetUnit));
+        }
+    
+        if (filters.maxBudget) {
+            buyers = buyers.filter(b => b.budget_max_amount && b.budget_max_amount <= Number(filters.maxBudget) && (filters.budgetUnit === 'All' || b.budget_max_unit === filters.budgetUnit));
+        }
+    
+        if (filters.propertyType !== 'All') {
+            buyers = buyers.filter(p => p.property_type_preference === filters.propertyType);
+        }
+    
+        if (filters.minSize) {
+            buyers = buyers.filter(p => p.size_min_value && p.size_min_value >= Number(filters.minSize) && (filters.sizeUnit === 'All' || p.size_min_unit === filters.sizeUnit));
+        }
+    
+        if (filters.maxSize) {
+            buyers = buyers.filter(p => p.size_max_value && p.size_max_value <= Number(filters.maxSize) && (filters.sizeUnit === 'All' || p.size_max_unit === filters.sizeUnit));
+        }
+    
         if (filters.serialNo && filters.serialNoPrefix !== 'All') {
             const fullSerialNo = `${filters.serialNoPrefix}-${filters.serialNo}`;
-            filtered = filtered.filter(p => p.serial_no === fullSerialNo);
+            buyers = buyers.filter(p => p.serial_no === fullSerialNo);
         }
-
-        return filtered.sort((a, b) => {
+    
+        return buyers.sort((a, b) => {
             const aNum = parseInt(a.serial_no.split('-')[1] || '0', 10);
             const bNum = parseInt(b.serial_no.split('-')[1] || '0', 10);
             return sortOrder === 'asc' ? aNum - bNum : bNum - aNum;
         });
-    }, [searchQuery, filters, allBuyers, profile.role, activeTab, activeStatusFilter, sortOrder, profile.agency_id]);
+    }, [allBuyers, activeTab, activeStatusFilter, searchQuery, filters, sortOrder]);
 
 
     const totalPages = Math.ceil(filteredBuyers.length / ITEMS_PER_PAGE);
@@ -601,7 +612,7 @@ export default function BuyersPage() {
                 const result: string[] = [];
                 let currentField = '';
                 let inQuotes = false;
-                for (let i = 0; i < row.length; i++) {
+                for (let i = 0; < row.length; i++) {
                     const char = row[i];
                     if (char === '"') {
                         if (i + 1 < row.length && row[i+1] === '"') {
@@ -737,6 +748,11 @@ export default function BuyersPage() {
         } else {
             setSelectedBuyers([]);
         }
+    };
+    
+    const handleRecommendProperties = (buyer: Buyer) => {
+        setBuyerForRecommendation(buyer);
+        setIsRecommenderOpen(true);
     };
 
     const renderTable = (buyers: Buyer[]) => {
@@ -1024,234 +1040,231 @@ export default function BuyersPage() {
     };
 
     return (
-        <>
-            <TooltipProvider>
-                <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className='hidden md:block'>
-                            <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
-                            <p className="text-muted-foreground">
-                                {profile.role === 'Agent' ? 'View your assigned buyer leads.' : 'Manage your buyer leads for sale and rent.'}
-                            </p>
-                        </div>
-                        <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
-                            {selectedBuyers.length > 0 && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" className="rounded-full">
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete ({selectedBuyers.length})
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This will move {selectedBuyers.length} buyers to the trash. You can restore them later.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            )}
-                            {profile.role !== 'Agent' && (
-                            <>
-                            <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button variant="outline" className="rounded-full">
-                                        <Filter className="mr-2 h-4 w-4" />Filters
+        <TooltipProvider>
+            <div className="space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className='hidden md:block'>
+                        <h1 className="text-3xl font-bold tracking-tight font-headline">Buyers</h1>
+                        <p className="text-muted-foreground">
+                            {profile.role === 'Agent' ? 'View your assigned buyer leads.' : 'Manage your buyer leads for sale and rent.'}
+                        </p>
+                    </div>
+                    <div className="flex w-full md:w-auto items-center gap-2 flex-wrap">
+                        {selectedBuyers.length > 0 && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" className="rounded-full">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete ({selectedBuyers.length})
                                     </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-80">
-                                    <div className="grid gap-4">
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium leading-none">Advanced Filters</h4>
-                                            <p className="text-sm text-muted-foreground">Refine your buyer search.</p>
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label>Serial No</Label>
-                                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                                    <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'B' | 'RB') => handleFilterChange('serialNoPrefix', value)}>
-                                                        <SelectTrigger className="h-8">
-                                                            <SelectValue placeholder="Prefix" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="All">All</SelectItem>
-                                                            <SelectItem value="B">B</SelectItem>
-                                                            <SelectItem value="RB">RB</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label htmlFor="area">Area</Label>
-                                                <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
-                                            </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label htmlFor="propertyType">Type</Label>
-                                                <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
-                                                    <SelectTrigger className="col-span-2 h-8">
-                                                        <SelectValue placeholder="Property Type" />
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will move {selectedBuyers.length} buyers to the trash. You can restore them later.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleBulkDelete}>Confirm</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+                        {profile.role !== 'Agent' && (
+                        <>
+                        <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" className="rounded-full">
+                                    <Filter className="mr-2 h-4 w-4" />Filters
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                                <div className="grid gap-4">
+                                    <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Advanced Filters</h4>
+                                        <p className="text-sm text-muted-foreground">Refine your buyer search.</p>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label>Serial No</Label>
+                                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                                                <Select value={filters.serialNoPrefix} onValueChange={(value: 'All' | 'B' | 'RB') => handleFilterChange('serialNoPrefix', value)}>
+                                                    <SelectTrigger className="h-8">
+                                                        <SelectValue placeholder="Prefix" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="All">All</SelectItem>
-                                                        <SelectItem value="House">House</SelectItem>
-                                                        <SelectItem value="Plot">Plot</SelectItem>
-                                                        <SelectItem value="Flat">Flat</SelectItem>
-                                                        <SelectItem value="Shop">Shop</SelectItem>
-                                                        <SelectItem value="Commercial">Commercial</SelectItem>
-                                                        <SelectItem value="Agricultural">Agricultural</SelectItem>
-                                                        <SelectItem value="Other">Other</SelectItem>
+                                                        <SelectItem value="B">B</SelectItem>
+                                                        <SelectItem value="RB">RB</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Input id="serialNo" placeholder="e.g. 1" type="number" value={filters.serialNo} onChange={e => handleFilterChange('serialNo', e.target.value)} className="h-8" />
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label htmlFor="area">Area</Label>
+                                            <Input id="area" value={filters.area} onChange={e => handleFilterChange('area', e.target.value)} className="col-span-2 h-8" />
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label htmlFor="propertyType">Type</Label>
+                                            <Select value={filters.propertyType} onValueChange={(value: PropertyType | 'All') => handleFilterChange('propertyType', value)}>
+                                                <SelectTrigger className="col-span-2 h-8">
+                                                    <SelectValue placeholder="Property Type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="All">All</SelectItem>
+                                                    <SelectItem value="House">House</SelectItem>
+                                                    <SelectItem value="Plot">Plot</SelectItem>
+                                                    <SelectItem value="Flat">Flat</SelectItem>
+                                                    <SelectItem value="Shop">Shop</SelectItem>
+                                                    <SelectItem value="Commercial">Commercial</SelectItem>
+                                                    <SelectItem value="Agricultural">Agricultural</SelectItem>
+                                                    <SelectItem value="Other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label>Budget</Label>
+                                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                                                <Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" />
+                                                <Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label></Label>
+                                            <div className="col-span-2">
+                                                <Select value={filters.budgetUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('budgetUnit', value)}>
+                                                    <SelectTrigger className="h-8">
+                                                        <SelectValue placeholder="Unit" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="All">All Units</SelectItem>
+                                                        <SelectItem value="Thousand">Thousand</SelectItem>
+                                                        <SelectItem value="Lacs">Lacs</SelectItem>
+                                                        <SelectItem value="Crore">Crore</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label>Budget</Label>
-                                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                                    <Input id="minBudget" placeholder="Min" type="number" value={filters.minBudget} onChange={e => handleFilterChange('minBudget', e.target.value)} className="h-8" />
-                                                    <Input id="maxBudget" placeholder="Max" type="number" value={filters.maxBudget} onChange={e => handleFilterChange('maxBudget', e.target.value)} className="h-8" />
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label></Label>
-                                                <div className="col-span-2">
-                                                    <Select value={filters.budgetUnit} onValueChange={(value: PriceUnit | 'All') => handleFilterChange('budgetUnit', value)}>
-                                                        <SelectTrigger className="h-8">
-                                                            <SelectValue placeholder="Unit" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="All">All Units</SelectItem>
-                                                            <SelectItem value="Thousand">Thousand</SelectItem>
-                                                            <SelectItem value="Lacs">Lacs</SelectItem>
-                                                            <SelectItem value="Crore">Crore</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label>Size</Label>
-                                                <div className="col-span-2 grid grid-cols-2 gap-2">
-                                                    <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
-                                                    <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 items-center gap-4">
-                                                <Label></Label>
-                                                <div className="col-span-2">
-                                                    <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
-                                                        <SelectTrigger className="h-8">
-                                                            <SelectValue placeholder="Unit" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="All">All Units</SelectItem>
-                                                            <SelectItem value="Marla">Marla</SelectItem>
-                                                            <SelectItem value="SqFt">SqFt</SelectItem>
-                                                            <SelectItem value="Kanal">Kanal</SelectItem>
-                                                            <SelectItem value="Acre">Acre</SelectItem>
-                                                            <SelectItem value="Maraba">Maraba</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label>Size</Label>
+                                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                                                <Input id="minSize" placeholder="Min" type="number" value={filters.minSize} onChange={e => handleFilterChange('minSize', e.target.value)} className="h-8" />
+                                                <Input id="maxSize" placeholder="Max" type="number" value={filters.maxSize} onChange={e => handleFilterChange('maxSize', e.target.value)} className="h-8" />
                                             </div>
                                         </div>
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" onClick={clearFilters}>Clear</Button>
-                                            <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                            <Label></Label>
+                                            <div className="col-span-2">
+                                                <Select value={filters.sizeUnit} onValueChange={(value: SizeUnit | 'All') => handleFilterChange('sizeUnit', value)}>
+                                                    <SelectTrigger className="h-8">
+                                                        <SelectValue placeholder="Unit" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="All">All Units</SelectItem>
+                                                        <SelectItem value="Marla">Marla</SelectItem>
+                                                        <SelectItem value="SqFt">SqFt</SelectItem>
+                                                        <SelectItem value="Kanal">Kanal</SelectItem>
+                                                        <SelectItem value="Acre">Acre</SelectItem>
+                                                        <SelectItem value="Maraba">Maraba</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </div>
-                                </PopoverContent>
-                            </Popover>
-                            <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
-                            <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
-                            <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
-                            </>
-                            )}
-                        </div>
-                    </div>
-                    
-                    {profile.role === 'Admin' && (
-                    <Card>
-                        <CardContent className="p-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-muted-foreground">Buyer Leads Usage</span>
-                                <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
-                            </div>
-                            <Progress value={progress} />
-                        </CardContent>
-                    </Card>
-                    )}
-                    
-                    {isAgent && profile.agencies && profile.agencies.length > 1 && (
-                        <Tabs value={activeAgencyTab} onValueChange={setActiveAgencyTab}>
-                            <TabsList>
-                                {profile.agencies.map(agency => (
-                                    <TabsTrigger key={agency.agency_id} value={agency.agency_id}>
-                                        {agency.agency_name}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
-                    )}
-
-
-                    <div className="flex items-center justify-between gap-4">
-                        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                            <TabsList className='grid w-full grid-cols-2'>
-                                <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
-                                <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        {isMobile && (
-                             <div className="flex items-center gap-2">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                            <Button variant="outline" className="ml-auto">
-                                                {activeStatusFilter}
-                                                <ChevronDown className="ml-2 h-4 w-4" />
-                                            </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                            <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
-                                            {buyerStatuses.map(status => (
-                                                <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
-                                                    {status}
-                                                </DropdownMenuItem>
-                                            ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                            id="select-all-mobile"
-                                            checked={paginatedBuyers.length > 0 && selectedBuyers.length === paginatedBuyers.length}
-                                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                                    />
-                                    <label
-                                            htmlFor="select-all-mobile"
-                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                    >
-                                            Select All
-                                    </label>
+                                    <div className="flex justify-end gap-2">
+                                        <Button variant="ghost" onClick={clearFilters}>Clear</Button>
+                                        <Button onClick={() => setIsFilterPopoverOpen(false)}>Apply</Button>
+                                    </div>
                                 </div>
-                             </div>
+                            </PopoverContent>
+                        </Popover>
+                        <Button variant="outline" className="rounded-full" onClick={() => setIsImportDialogOpen(true)}><Upload className="mr-2 h-4 w-4" />Import</Button>
+                        <input type="file" ref={importInputRef} className="hidden" accept=".csv" onChange={handleImport} />
+                        <Button variant="outline" className="rounded-full" onClick={() => setIsExportDialogOpen(true)}><Download className="mr-2 h-4 w-4" />Export</Button>
+                        </>
                         )}
                     </div>
-                    <Tabs value={activeTab} onValueChange={handleTabChange}>
-                        <TabsContent value="For Sale" className="mt-4">
-                            {renderContent(paginatedBuyers)}
-                        </TabsContent>
-                        <TabsContent value="For Rent" className="mt-4">
-                            {renderContent(paginatedBuyers)}
-                        </TabsContent>
-                    </Tabs>
                 </div>
-            </TooltipProvider>
+                
+                {profile.role === 'Admin' && (
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">Buyer Leads Usage</span>
+                            <span className="text-sm font-bold">{currentCount} / {limit === Infinity ? 'Unlimited' : limit}</span>
+                        </div>
+                        <Progress value={progress} />
+                    </CardContent>
+                </Card>
+                )}
+                
+                {isAgent && profile.agencies && profile.agencies.length > 1 && (
+                    <Tabs value={activeAgencyTab} onValueChange={setActiveAgencyTab}>
+                        <TabsList>
+                            {profile.agencies.map(agency => (
+                                <TabsTrigger key={agency.agency_id} value={agency.agency_id}>
+                                    {agency.agency_name}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                )}
 
+
+                <div className="flex items-center justify-between gap-4">
+                    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                        <TabsList className='grid w-full grid-cols-2'>
+                            <TabsTrigger value="For Sale">Sale Buyers</TabsTrigger>
+                            <TabsTrigger value="For Rent">Rent Buyers</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                    {isMobile && (
+                         <div className="flex items-center gap-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="ml-auto">
+                                            {activeStatusFilter}
+                                            <ChevronDown className="ml-2 h-4 w-4" />
+                                        </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                        <DropdownMenuItem onSelect={() => setActiveStatusFilter('All')}>All</DropdownMenuItem>
+                                        {buyerStatuses.map(status => (
+                                            <DropdownMenuItem key={status} onSelect={() => setActiveStatusFilter(status)}>
+                                                {status}
+                                            </DropdownMenuItem>
+                                        ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                        id="select-all-mobile"
+                                        checked={paginatedBuyers.length > 0 && selectedBuyers.length === paginatedBuyers.length}
+                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                />
+                                <label
+                                        htmlFor="select-all-mobile"
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                        Select All
+                                </label>
+                            </div>
+                         </div>
+                    )}
+                </div>
+                <Tabs value={activeTab} onValueChange={handleTabChange}>
+                    <TabsContent value="For Sale" className="mt-4">
+                        {renderContent(paginatedBuyers)}
+                    </TabsContent>
+                    <TabsContent value="For Rent" className="mt-4">
+                        {renderContent(paginatedBuyers)}
+                    </TabsContent>
+                </Tabs>
+            </div>
             {profile.role !== 'Agent' && (
                 <div className={cn("fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                     <TooltipProvider>
@@ -1267,7 +1280,6 @@ export default function BuyersPage() {
                     </TooltipProvider>
                 </div>
             )}
-
             <AddBuyerDialog
                 isOpen={isAddBuyerOpen}
                 setIsOpen={setIsAddBuyerOpen}
@@ -1277,7 +1289,6 @@ export default function BuyersPage() {
                 onSave={handleSaveBuyer}
                 limitReached={isLimitReached}
             />
-
             {buyerForFollowUp && (<AddFollowUpDialog isOpen={isFollowUpOpen} setIsOpen={setIsFollowUpOpen} buyer={buyerForFollowUp} existingFollowUp={buyerFollowUp} onSave={handleSaveFollowUp} />)}
             {appointmentDetails && (<SetAppointmentDialog isOpen={isAppointmentOpen} setIsOpen={setIsAppointmentOpen} onSave={handleSaveAppointment} appointmentDetails={appointmentDetails} />)}
             {selectedBuyerForDetails && (<BuyerDetailsDialog buyer={selectedBuyerForDetails} isOpen={isDetailsOpen} setIsOpen={setIsDetailsOpen} />)}
@@ -1289,7 +1300,6 @@ export default function BuyersPage() {
                     properties={allProperties}
                 />
             )}
-            
             <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -1305,7 +1315,6 @@ export default function BuyersPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
             <AlertDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -1321,7 +1330,7 @@ export default function BuyersPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </TooltipProvider>
     );
 }
 
@@ -1334,5 +1343,7 @@ export default function BuyersPage() {
 
 
 
+
+    
 
     
