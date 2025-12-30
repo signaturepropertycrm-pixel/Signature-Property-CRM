@@ -263,11 +263,6 @@ export default function BuyersPage() {
         setIsAppointmentOpen(true);
     };
 
-    const handleRecommendProperties = (buyer: Buyer) => {
-        setBuyerForRecommendation(buyer);
-        setIsRecommenderOpen(true);
-    };
-
     const handleSaveAppointment = async (appointment: Appointment) => {
         if (!profile.agency_id) return;
         const { id, ...newAppointmentData } = appointment;
@@ -1258,7 +1253,7 @@ export default function BuyersPage() {
             </TooltipProvider>
 
             {profile.role !== 'Agent' && (
-                <div className={cn("fixed bottom-40 md:bottom-24 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
+                <div className={cn("fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -1338,3 +1333,6 @@ export default function BuyersPage() {
     
 
 
+
+
+    
