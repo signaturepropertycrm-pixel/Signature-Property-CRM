@@ -315,7 +315,8 @@ export function AppSidebar() {
                     {allMobileMenuItems
                         .filter(i => 
                             !mobileNavItems.some(navItem => navItem.href === i.href) && 
-                            i.roles.includes(profile.role)
+                            i.roles.includes(profile.role) &&
+                            i.label !== 'Logout' && i.label !== 'Settings' && i.label !== 'Support'
                         )
                         .map((item, index) => (
                         <motion.div
@@ -491,7 +492,7 @@ export function AppSidebar() {
           </SidebarMenu>
           
           <SidebarMenu className="mt-4">
-            <h3 className="text-xs font-semibold text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
+            <h3 className="text-xs text-muted-foreground font-semibold font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
             {growthMenuItems.map(renderMenuItem)}
           </SidebarMenu>
 
