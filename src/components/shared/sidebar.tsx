@@ -118,11 +118,12 @@ const bottomMenuItems = [
 
 const allMobileMenuItems = [
     ...mainMenuItems,
+    { href: '/properties', label: 'Properties', icon: <Building2 />, roles: ['Admin', 'Agent'] },
+    { href: '/buyers', label: 'Buyers', icon: <Users />, roles: ['Admin', 'Agent'] },
     ...productivityMenuItems,
     ...growthMenuItems,
     ...managementMenuItems,
     ...videoMenuItems,
-    { href: '/team', label: 'Team', icon: <UserCog />, roles: ['Admin', 'Agent'] },
     ...bottomMenuItems,
     { href: '/upgrade', label: 'Upgrade Plan', icon: <Gem />, roles: ['Admin'] },
 ];
@@ -340,6 +341,25 @@ export function AppSidebar() {
                             </Link>
                         </motion.div>
                     ))}
+                     <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{
+                            type: 'tween',
+                            ease: 'easeOut',
+                            duration: 0.3,
+                            delay: (allMobileMenuItems.length) * 0.05,
+                        }}
+                        className="flex items-center gap-3"
+                     >
+                        <span className="bg-card text-card-foreground px-3 py-1.5 rounded-lg text-sm font-semibold shadow-lg">
+                            Logout
+                        </span>
+                        <div onClick={handleLogout} className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md">
+                            <LogOut className="h-6 w-6" />
+                        </div>
+                    </motion.div>
                 </div>
                 </>
             )}
@@ -458,10 +478,10 @@ export function AppSidebar() {
             >
               <Separator className="my-2" />
               <p className="text-xs font-semibold text-muted-foreground px-4 py-2">Filter by Status</p>
+              <CollapsibleSubItem key="all" href="/buyers?status=All" label="All" />
               {buyerStatuses.map(status => (
                   <CollapsibleSubItem key={status} href={`/buyers?status=${encodeURIComponent(status)}`} label={status} />
               ))}
-              <CollapsibleSubItem key="all" href="/buyers?status=All" label="All" />
             </CollapsibleMenuItem>
           </SidebarMenu>
 
@@ -471,7 +491,7 @@ export function AppSidebar() {
           </SidebarMenu>
           
           <SidebarMenu className="mt-4">
-            <h3 className="text-xs text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground font-semibold pl-4 mb-1 group-data-[state=collapsed]:pl-0 group-data-[state=collapsed]:text-center">Growth</h3>
             {growthMenuItems.map(renderMenuItem)}
           </SidebarMenu>
 
