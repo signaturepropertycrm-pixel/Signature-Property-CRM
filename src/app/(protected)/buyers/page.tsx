@@ -39,7 +39,6 @@ import { Separator } from '@/components/ui/separator';
 import { PropertyRecommenderDialog } from '@/components/property-recommender-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { AiAssistant } from '@/components/ai-assistant'; 
 
 const ITEMS_PER_PAGE = 50;
 
@@ -1258,10 +1257,6 @@ export default function BuyersPage() {
                 </div>
             </TooltipProvider>
 
-            <div className={cn("fixed bottom-24 md:bottom-8 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-                <AiAssistant /> 
-            </div>
-
             {profile.role !== 'Agent' && (
                 <div className={cn("fixed bottom-40 md:bottom-24 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
                     <Tooltip>
@@ -1339,3 +1334,4 @@ export default function BuyersPage() {
     
 
     
+
