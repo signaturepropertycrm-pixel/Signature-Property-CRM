@@ -1325,7 +1325,7 @@ export default function BuyersPage() {
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Buyers</AlertDialogAction>
-                    <AlertDialogAction onClick={()={() => handleImportClick('For Rent')}>Import Rent Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Buyers</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1333,6 +1333,8 @@ export default function BuyersPage() {
     );
 }
 
+
+    
 
     
 
