@@ -1259,15 +1259,17 @@ export default function BuyersPage() {
 
             {profile.role !== 'Agent' && (
                 <div className={cn("fixed bottom-40 md:bottom-24 right-4 md:right-8 z-50 transition-opacity", isMoreMenuOpen && "opacity-0 pointer-events-none")}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
-                                <PlusCircle className="h-6 w-6" />
-                                <span className="sr-only">Add Buyer</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="left">Add Buyer</TooltipContent>
-                    </Tooltip>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                 <Button onClick={handleAddBuyerClick} className="rounded-full w-14 h-14 shadow-lg glowing-btn" size="icon">
+                                    <PlusCircle className="h-6 w-6" />
+                                    <span className="sr-only">Add Buyer</span>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">Add Buyer</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             )}
 
@@ -1334,4 +1336,5 @@ export default function BuyersPage() {
     
 
     
+
 
