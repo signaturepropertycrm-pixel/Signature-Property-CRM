@@ -98,23 +98,19 @@ export default function BuyersPage() {
     const firestore = useFirestore();
     const importInputRef = useRef<HTMLInputElement>(null);
     
-    // --- UPDATED QUERY LOGIC (FIXED) ---
     const buyersQuery = useMemoFirebase(() => {
-        // 1. Agar Agency ID ya User ID nahi hai, to wait karo
         if (!profile.agency_id || !user?.uid) return null;
 
         const baseRef = collection(firestore, 'agencies', profile.agency_id, 'buyers');
 
-        // 2. Agar banda AGENT hai, to sirf USKE buyers mangwao (Assigned Only)
         if (profile.role === 'Agent') {
             return query(
                 baseRef, 
                 where('assignedTo', '==', user.uid),
-                where('is_deleted', '==', false) // Trash walay na ayen
+                where('is_deleted', '==', false)
             );
         }
-
-        // 3. Agar ADMIN hai, to saaray buyers mangwao jo delete nahi hue
+        
         return query(baseRef, where('is_deleted', '==', false)); 
         
     }, [profile.agency_id, profile.role, user?.uid, firestore]);
@@ -424,8 +420,7 @@ export default function BuyersPage() {
         
         let filtered: Buyer[] = baseBuyers.filter(b => (b.listing_type || 'For Sale') === activeTab);
         
-        // Corrected Status Filtering Logic
-        if (activeStatusFilter && activeStatusFilter !== 'All') {
+        if (activeStatusFilter !== 'All') {
             filtered = filtered.filter(b => b.status === activeStatusFilter);
         }
         
@@ -1330,7 +1325,7 @@ export default function BuyersPage() {
                     <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={() => handleImportClick('For Sale')}>Import Sale Buyers</AlertDialogAction>
-                    <AlertDialogAction onClick={() => handleImportClick('For Rent')}>Import Rent Buyers</AlertDialogAction>
+                    <AlertDialogAction onClick={()={() => handleImportClick('For Rent')}>Import Rent Buyers</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1338,5 +1333,7 @@ export default function BuyersPage() {
     );
 }
 
+
+    
 
     
